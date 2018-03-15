@@ -34,7 +34,7 @@ echo --- Compile KLU ---
 gcc -c -std=c99 $include $klupath/Source/*.c
 
 echo --- Compile SE ---
-g++ -Wno-deprecated-declarations -c -std=c++11 $include -I$amqpath -I$aprpath $sepath/state-estimator.cpp
+g++ -Wno-deprecated-declarations -c -std=c++11 $include -I$amqpath -I$aprpath $sepath/src/state-estimator.cpp
 
 rm cs_convert.o
 
