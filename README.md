@@ -16,7 +16,7 @@ The following is the recommended structure for applications working with gridapp
     ├── service
     │   ├── bin
     │   │   └── state-estimator.out
-    │   ├─- include
+    │   ├── include
     │   ├── src
     │   ├── state-estimator.cpp
     │   └── build.sh
