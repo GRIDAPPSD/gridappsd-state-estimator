@@ -1,7 +1,7 @@
-#include "lib/SEProducer.hpp"
-#include "lib/TopoProcConsumer.hpp"
-#include "lib/SensorDefConsumer.hpp"
-#include "lib/SELoopConsumer.hpp"
+#include "SEProducer.hpp"
+#include "TopoProcConsumer.hpp"
+#include "SensorDefConsumer.hpp"
+#include "SELoopConsumer.hpp"
 
 #include <iostream>
 
