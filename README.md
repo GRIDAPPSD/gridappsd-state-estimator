@@ -15,10 +15,10 @@ The following is the recommended structure for applications working with gridapp
 └── state-estimator
     ├── service
     │   ├── bin
-	│	│	└── state-estimator.out
-	│	├── include
-	│	├── src
-	│	│	└── state-estimator.cpp
+    │   │   └── state-estimator.out
+    │   ├─- include
+    │   ├── src
+    │   ├── state-estimator.cpp
     │   └── build.sh
     └── state-estimator.config
 ````
