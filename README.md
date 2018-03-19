@@ -35,7 +35,7 @@ The following is the recommended structure for applications working with gridapp
 └── gridappsd-state-estimator	
 ````
 
-## Adding your application
+## Adding the state estimator
 
 In order to add the state estimator to the container you will need to modify the docker-compose.yml file included in the gridappsd-docker repository.  Under the gridappsd service there is an example volumes leaf that is commented out.  Uncomment and modify these lines to add the path for the state estimator and conf file.  Adding these lines will mount the stat estimator on the container's filesystem when the container is started.
 
