@@ -6,7 +6,7 @@ The state estimator service will produce and output the best available system st
 
 ## State Estimator Service Layout
 
-The following is the recommended structure for applications working with gridappsd:
+The following is the structure of the state estimator:
 
 ```` bash
 .
@@ -27,10 +27,10 @@ The following is the recommended structure for applications working with gridapp
 
 1. Docker ce version 17.12 or better.  You can install this via the docker_install_ubuntu.sh script.  (note for mint you will need to modify the file to work with xenial rather than ubuntu generically)
 
-1. Please clone the repository <https://github.com/GRIDAPPSD/gridappsd-docker> (refered to as gridappsd-docker repository) next to this repository (they should both have the same parent folder)
+2. Please clone the repository <https://github.com/GRIDAPPSD/gridappsd-docker> (refered to as gridappsd-docker repository) next to this repository (they should both have the same parent folder, assumed to be ~/git in docker-compose.yml)
 
 ```` bash
-.
+~/git
 ├── gridappsd-docker
 └── gridappsd-state-estimator	
 ````
