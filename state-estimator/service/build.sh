@@ -1,6 +1,6 @@
 #!/bin/sh
 
-sspath="../../suitesparse-metis-for-windows/SuiteSparse"
+sspath="../../../suitesparse-metis-for-windows/SuiteSparse"
 ssconfpath="$sspath/SuiteSparse_config"
 cspath="$sspath/CXSparse"
 amdpath="$sspath/AMD"

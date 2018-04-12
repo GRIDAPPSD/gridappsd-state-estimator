@@ -86,17 +86,17 @@ int main(int argc, char** argv){
 		// --------------------------------------------------------------------
 
 		// Set up the ybus consumer
-		string ybusTopic = "tmpYbusTopic";
+		string ybusTopic = "goss.gridappsd.se.response."+simid;
 		TopoProcConsumer ybusConsumer(brokerURI,username,password,ybusTopic);
 		Thread ybusConsumerThread(&ybusConsumer);
 		ybusConsumerThread.start();		// execute ybusConsumer.run()
 		ybusConsumer.waitUntilReady();	// wait for latch release
 
 		// Set up the producer to request the ybus
-		string ybusRequestTopic = "tmpYbusTopic";
-		string ybusRequestText = "ybus_plx";
+		string ybusRequestTopic = "goss.gridappsd.request.config.ybus";
+		string ybusRequestText = "{\"simulationId\":\""+simid+"\"}";
 		SEProducer ybusRequester(brokerURI,username,password,ybusRequestTopic);
-		ybusRequester.send(ybusRequestText);
+		ybusRequester.send(ybusRequestText,ybusTopic);
 		ybusRequester.close();
 		
 		// Initialize topology
@@ -149,17 +149,17 @@ int main(int argc, char** argv){
 		// --------------------------------------------------------------------
 		
 		// Set up the sensors consumer
-		string sensTopic = "tmpSensorsTopic";
+		string sensTopic = "goss.gridappsd.se.response."+simid;
 		SensorDefConsumer sensConsumer(brokerURI,username,password,sensTopic);
 		Thread sensConsumerThread(&sensConsumer);
 		sensConsumerThread.start();		// execute sensConsumer.run()
 		sensConsumer.waitUntilReady();	// wait for latch release
 
 		// Set up the producer to request sensor data
-		string sensRequestTopic = "tmpSensorsTopic";
-		string sensRequestText = "query_for_sensors";
+		string sensRequestTopic = "goss.gridappsd.request.config.sensors";
+		string sensRequestText = "{\"simulationId\":\""+simid+"\"}";
 		SEProducer sensRequester(brokerURI,username,password,sensRequestTopic);
-		sensRequester.send(sensRequestText);
+		sensRequester.send(sensRequestText,sensTopic);
 		sensRequester.close();
 		
 		// Initialize sensors
