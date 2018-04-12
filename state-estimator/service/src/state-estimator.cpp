@@ -81,6 +81,15 @@ int main(int argc, char** argv){
 	try {
 		activemq::library::ActiveMQCPP::initializeLibrary();
 
+
+		// --------------------------------------------------------------------
+		// SET UP THE MESSAGE LOGGER
+		// --------------------------------------------------------------------
+
+		string logtopic = "goss.gridappsd.simulation.log."+simid;
+		SEProducer logger(brokerURI,username,password,logtopic);
+
+
 		// --------------------------------------------------------------------
 		// TOPOLOGY PROCESSOR
 		// --------------------------------------------------------------------
