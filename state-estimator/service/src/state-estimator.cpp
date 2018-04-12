@@ -128,7 +128,8 @@ int main(int argc, char** argv){
 		// DEBUG outputs
 		// print back nodens and their positiions from nodem
 		for ( auto itr = nodens.begin() ; itr != nodens.end() ; itr++ ) 
-			logger.send("Node |" + *itr + "| -> " + nodem[*itr] + '\n'
+			logger.send("Node |" + *itr + "| -> " 
+					+ to_string(nodem[*itr]) + '\n');
 			// std::cout << "Node |" << *itr << "| -> " << nodem[*itr] << '\n';
 		// print select elements of Y
 		// std::cout << "Y[1][1] = " << Y[1][1] << '\n';
@@ -136,14 +137,14 @@ int main(int argc, char** argv){
 		// list the populated index pairs in Y
 		for ( auto itr=Y.begin() ; itr!=Y.end() ; itr++ ) {
 			int i = std::get<0>(*itr);
-			logger.send("coulumns in row " + i + ":\n\t");
+			logger.send("coulumns in row " + to_string(i) + ":\n\t");
 			// std::cout << "coulumns in row " << i << ":\n\t";
 			for ( auto jtr=Y[i].begin() ; jtr!=Y[i].end() ; jtr++ ) {
 				int j = std::get<0>(*jtr);
-				logger.send(j + '\t');
+				logger.send(to_string(j) + '\t');
 				// std::cout << j << '\t';
 			}
-			logger.send('\n');
+			logger.send("\n");
 			// std::cout << '\n';
 		}
 		
@@ -193,7 +194,7 @@ int main(int argc, char** argv){
 		int zqty = mns.size();
 		
 		// DEBUG outputs
-		logger.send('\n');
+		logger.send("\n");
 		// std::cout << '\n';
 		for ( auto itr = mns.begin() ; itr != mns.end() ; itr++ ) {
 			logger.send(*itr + '\n');
