@@ -81,22 +81,32 @@ int main(int argc, char** argv){
 	try {
 		activemq::library::ActiveMQCPP::initializeLibrary();
 
+
+		// --------------------------------------------------------------------
+		// SET UP THE MESSAGE LOGGER
+		// --------------------------------------------------------------------
+
+		string logtopic = "goss.gridappsd.simulation.log."+simid;
+		SEProducer logger(brokerURI,username,password,logtopic);
+		logger.send("State Estimator Initializing\n");
+
+
 		// --------------------------------------------------------------------
 		// TOPOLOGY PROCESSOR
 		// --------------------------------------------------------------------
 
 		// Set up the ybus consumer
-		string ybusTopic = "tmpYbusTopic";
+		string ybusTopic = "goss.gridappsd.se.response."+simid;
 		TopoProcConsumer ybusConsumer(brokerURI,username,password,ybusTopic);
 		Thread ybusConsumerThread(&ybusConsumer);
 		ybusConsumerThread.start();		// execute ybusConsumer.run()
 		ybusConsumer.waitUntilReady();	// wait for latch release
 
 		// Set up the producer to request the ybus
-		string ybusRequestTopic = "tmpYbusTopic";
-		string ybusRequestText = "ybus_plx";
+		string ybusRequestTopic = "goss.gridappsd.request.config.ybus";
+		string ybusRequestText = "{\"simulationId\":\""+simid+"\"}";
 		SEProducer ybusRequester(brokerURI,username,password,ybusRequestTopic);
-		ybusRequester.send(ybusRequestText);
+		ybusRequester.send(ybusRequestText,ybusTopic);
 		ybusRequester.close();
 		
 		// Initialize topology
@@ -118,19 +128,24 @@ int main(int argc, char** argv){
 		// DEBUG outputs
 		// print back nodens and their positiions from nodem
 		for ( auto itr = nodens.begin() ; itr != nodens.end() ; itr++ ) 
-			std::cout << "Node |" << *itr << "| -> " << nodem[*itr] << '\n';
+			logger.send("Node |" + *itr + "| -> " 
+					+ to_string(nodem[*itr]) + '\n');
+			// std::cout << "Node |" << *itr << "| -> " << nodem[*itr] << '\n';
 		// print select elements of Y
-		std::cout << "Y[1][1] = " << Y[1][1] << '\n';
-		std::cout << "Y[35][36] = " << Y[35][36] << '\n';
+		// std::cout << "Y[1][1] = " << Y[1][1] << '\n';
+		// std::cout << "Y[35][36] = " << Y[35][36] << '\n';
 		// list the populated index pairs in Y
 		for ( auto itr=Y.begin() ; itr!=Y.end() ; itr++ ) {
 			int i = std::get<0>(*itr);
-			std::cout << "coulumns in row " << i << ":\n\t";
+			logger.send("coulumns in row " + to_string(i) + ":\n\t");
+			// std::cout << "coulumns in row " << i << ":\n\t";
 			for ( auto jtr=Y[i].begin() ; jtr!=Y[i].end() ; jtr++ ) {
 				int j = std::get<0>(*jtr);
-				std::cout << j << '\t';
+				logger.send(to_string(j) + '\t');
+				// std::cout << j << '\t';
 			}
-			std::cout << '\n';
+			logger.send("\n");
+			// std::cout << '\n';
 		}
 		
 		// INITIALIZE THE STATE VECTOR
@@ -149,17 +164,17 @@ int main(int argc, char** argv){
 		// --------------------------------------------------------------------
 		
 		// Set up the sensors consumer
-		string sensTopic = "tmpSensorsTopic";
+		string sensTopic = "goss.gridappsd.se.response."+simid;
 		SensorDefConsumer sensConsumer(brokerURI,username,password,sensTopic);
 		Thread sensConsumerThread(&sensConsumer);
 		sensConsumerThread.start();		// execute sensConsumer.run()
 		sensConsumer.waitUntilReady();	// wait for latch release
 
 		// Set up the producer to request sensor data
-		string sensRequestTopic = "tmpSensorsTopic";
-		string sensRequestText = "query_for_sensors";
+		string sensRequestTopic = "goss.gridappsd.request.config.sensors";
+		string sensRequestText = "{\"simulationId\":\""+simid+"\"}";
 		SEProducer sensRequester(brokerURI,username,password,sensRequestTopic);
-		sensRequester.send(sensRequestText);
+		sensRequester.send(sensRequestText,sensTopic);
 		sensRequester.close();
 		
 		// Initialize sensors
@@ -179,9 +194,11 @@ int main(int argc, char** argv){
 		int zqty = mns.size();
 		
 		// DEBUG outputs
-		std::cout << '\n';
+		logger.send("\n");
+		// std::cout << '\n';
 		for ( auto itr = mns.begin() ; itr != mns.end() ; itr++ ) {
-			std::cout << *itr << '\n';
+			logger.send(*itr + '\n');
+			// std::cout << *itr << '\n';
 		}
 		
 		// --------------------------------------------------------------------

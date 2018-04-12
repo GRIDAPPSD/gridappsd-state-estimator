@@ -80,7 +80,8 @@ class TopoProcConsumer : public SEConsumer {
 		cout << "Recieved ybus message: \n\t\"" << text << "\"\n";
 
 		// If the message is what we are looking for, process and release
-		string fn = "demo/13Bus/base_ysparse.csv";
+//		string fn = "demo/13Bus/base_ysparse.csv";
+		string fn = text+"base_ysparse.csv";
 		cout << "Loading Y-bus from file: " << fn << "\n";
 		cout << "\t...\n";
 		
@@ -90,7 +91,7 @@ class TopoProcConsumer : public SEConsumer {
 		// For now, pull this in from a file:
 		//	base_nodelist.csv from dss cmd "export ynodelist base_nodelist.csv"
 		std::ifstream nfs;
-		nfs.open("demo/13Bus/base_nodelist.csv",std::ifstream::in);
+		nfs.open(text+"base_nodelist.csv",std::ifstream::in);
 		if ( !nfs ) throw "failed to open node name file";
 		std::string nfsl;
 		while ( std::getline(nfs,nfsl) ) {
