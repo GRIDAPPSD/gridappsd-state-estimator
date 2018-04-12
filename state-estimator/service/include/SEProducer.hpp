@@ -41,7 +41,6 @@ class SEProducer {
 	std::string username;
 	std::string password;
 	std::string topic;
-	std::string replytopic;
 	int started;
 	
 	private:
@@ -95,8 +94,8 @@ class SEProducer {
 			started = 1;
 		}
 	}
-
-	virtual void send(const string& text,const string& replytopic) {
+	
+	virtual void send(const string& text) {
 		try {
 			// Start the interface if necessary
 			if ( !started )	this->init();
@@ -105,7 +104,23 @@ class SEProducer {
 			// Report
 			cout << "<Publishing to "+topic+":\n\t\""+text+"\"\n";
 			// Send the message
-			if ( replytopic != "" ) msg->setStringProperty("reply-to",replytopic);
+			producer->send(msg.get());
+		} catch (CMSException& e) {
+			e.printStackTrace();
+		}
+	}
+	
+	virtual void send(const string& text,const string& replytopic) {
+		try {
+			// Start the interface if necessary
+			if ( !started )	this->init();
+			// Create the message
+			auto_ptr<TextMessage> msg(session->createTextMessage(text));
+			// Report
+			cout << "<Publishing to "+topic+":\n\t\""+text+"\"\n";
+			// Set the reply-to topic
+			msg->setStringProperty("reply-to",replytopic);
+			// Send the message
 			producer->send(msg.get());
 		} catch (CMSException& e) {
 			e.printStackTrace();

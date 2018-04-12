@@ -88,6 +88,7 @@ int main(int argc, char** argv){
 
 		string logtopic = "goss.gridappsd.simulation.log."+simid;
 		SEProducer logger(brokerURI,username,password,logtopic);
+		logger.send("State Estimator Initializing\n");
 
 
 		// --------------------------------------------------------------------
@@ -127,19 +128,23 @@ int main(int argc, char** argv){
 		// DEBUG outputs
 		// print back nodens and their positiions from nodem
 		for ( auto itr = nodens.begin() ; itr != nodens.end() ; itr++ ) 
-			std::cout << "Node |" << *itr << "| -> " << nodem[*itr] << '\n';
+			logger.send("Node |" + *itr + "| -> " + nodem[*itr] + '\n'
+			// std::cout << "Node |" << *itr << "| -> " << nodem[*itr] << '\n';
 		// print select elements of Y
-		std::cout << "Y[1][1] = " << Y[1][1] << '\n';
-		std::cout << "Y[35][36] = " << Y[35][36] << '\n';
+		// std::cout << "Y[1][1] = " << Y[1][1] << '\n';
+		// std::cout << "Y[35][36] = " << Y[35][36] << '\n';
 		// list the populated index pairs in Y
 		for ( auto itr=Y.begin() ; itr!=Y.end() ; itr++ ) {
 			int i = std::get<0>(*itr);
-			std::cout << "coulumns in row " << i << ":\n\t";
+			logger.send("coulumns in row " + i + ":\n\t");
+			// std::cout << "coulumns in row " << i << ":\n\t";
 			for ( auto jtr=Y[i].begin() ; jtr!=Y[i].end() ; jtr++ ) {
 				int j = std::get<0>(*jtr);
-				std::cout << j << '\t';
+				logger.send(j + '\t');
+				// std::cout << j << '\t';
 			}
-			std::cout << '\n';
+			logger.send('\n');
+			// std::cout << '\n';
 		}
 		
 		// INITIALIZE THE STATE VECTOR
@@ -188,9 +193,11 @@ int main(int argc, char** argv){
 		int zqty = mns.size();
 		
 		// DEBUG outputs
-		std::cout << '\n';
+		logger.send('\n');
+		// std::cout << '\n';
 		for ( auto itr = mns.begin() ; itr != mns.end() ; itr++ ) {
-			std::cout << *itr << '\n';
+			logger.send(*itr + '\n');
+			// std::cout << *itr << '\n';
 		}
 		
 		// --------------------------------------------------------------------
