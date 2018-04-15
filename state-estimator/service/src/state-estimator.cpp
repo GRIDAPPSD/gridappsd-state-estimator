@@ -103,7 +103,7 @@ int main(int argc, char** argv){
 		ybusConsumer.waitUntilReady();	// wait for latch release
 
 		// Set up the producer to request the ybus
-		string ybusRequestTopic = "goss.gridappsd.request.config.ybus";
+		string ybusRequestTopic = "goss.gridappsd.process.request.config";
 		string ybusRequestText = 
 			R"({
 				"configurationType":"YBus Export",
