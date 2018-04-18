@@ -104,10 +104,34 @@ int main(int argc, char** argv){
 
 		// Set up the producer to request the ybus
 		string ybusRequestTopic = "goss.gridappsd.request.config.ybus";
-		string ybusRequestText = "{\"simulationId\":\""+simid+"\"}";
+		string ybusRequestText = 
+			R"({
+				"configurationType":"YBus Export",
+				"parameters":{
+					"simulationId":)" + simid + R"("
+				}
+			})";
 		SEProducer ybusRequester(brokerURI,username,password,ybusRequestTopic);
 		ybusRequester.send(ybusRequestText,ybusTopic);
 		ybusRequester.close();
+
+		/*
+		// Spoof message to the consumer
+		string ybusSpoofedResponse = 
+			R"({
+				"data":"{
+					"yParseFilePath":"/tmp/gridappsd_tmp/1129698954/base_ysparse.csv",
+					"nodeListFilePath":"/tmp/gridappsd_tmp/1129698954/base_nodelist.csv",
+					"summaryFilePath":"/tmp/gridappsd_tmp/1129698954/base_summary.csv"
+				}",
+				"responseComplete":true,
+				"id":"6429475f-fed7-4b9e-9f66-21077a322bf6"
+			})";
+		SEProducer ybusSpoofer(brokerURI,username,password,ybusTopic);
+		ybusSpoofer.send(ybusSpoofedResponse);
+		ybusSpoofer.close();
+		*/
+
 		
 		// Initialize topology
 		uint numns;		// number of nodes
@@ -172,7 +196,12 @@ int main(int argc, char** argv){
 
 		// Set up the producer to request sensor data
 		string sensRequestTopic = "goss.gridappsd.request.config.sensors";
-		string sensRequestText = "{\"simulationId\":\""+simid+"\"}";
+		string sensRequestText = 
+			(string)"{"												+
+				(string)"\"configurationType\":\"Sensors\","	+
+				(string)"\"parameters\":{"							+
+					(string)"\"simulationId\":\""+simid+"\"}"		+
+			(string)"}";
 		SEProducer sensRequester(brokerURI,username,password,sensRequestTopic);
 		sensRequester.send(sensRequestText,sensTopic);
 		sensRequester.close();

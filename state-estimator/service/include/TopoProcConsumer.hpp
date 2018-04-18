@@ -1,6 +1,9 @@
 #ifndef TOPOPROCCONSUMER_HPP
 #define TOPOPROCCONSUMER_HPP
 
+#include "json.hpp"
+using json = nlohmann::json;
+
 #include "SEConsumer.hpp"
 
 // for side-loading test cases
@@ -79,6 +82,12 @@ class TopoProcConsumer : public SEConsumer {
 		// --------------------------------------------------------------------
 		cout << "Recieved ybus message: \n\t\"" << text << "\"\n";
 
+		json jtext = text;
+		string yfn = jtext["data"]["yParseFilePath"];
+		string nfn = jtext["data"]["nodeListFilePath"];
+
+		cout << yfn << '\n';
+		cout << nfn << '\n';
 		// If the message is what we are looking for, process and release
 //		string fn = "demo/13Bus/base_ysparse.csv";
 		string fn = text+"base_ysparse.csv";
