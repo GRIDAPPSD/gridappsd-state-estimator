@@ -30,7 +30,7 @@ using namespace decaf::lang;
 using namespace cms;
 using namespace std;
 
-// This class is used to publish messages to a specified topic
+// This class is used to publish messages to a specified topic or queue
 class SEProducer {
 	private:
 	Connection* connection;
@@ -40,7 +40,8 @@ class SEProducer {
 	std::string brokerURI;
 	std::string username;
 	std::string password;
-	std::string topic;
+	std::string target;
+	std::string mode;
 	int started;
 	
 	private:
@@ -51,7 +52,8 @@ class SEProducer {
 	SEProducer(const std::string& brokerURI, 
 					const std::string& username,
 					const std::string& password,
-				   const std::string& topic) :
+				   const std::string& target,
+				   const std::string& mode) :
 		connection(NULL),
 		session(NULL),
 		destination(NULL),
@@ -59,7 +61,8 @@ class SEProducer {
 		brokerURI(brokerURI),
 		username(username),
 		password(password),
-		topic(topic)
+		target(target),
+		mode(mode)
 		{ started = 0; }
 	
 	public:
@@ -83,8 +86,14 @@ class SEProducer {
 				connection->start();
 				// Create a Session
 				session = connection->createSession(Session::AUTO_ACKNOWLEDGE);
-				// Create the destination Topic
-				destination = session->createTopic(topic);
+				// Check the mode and create the destination Topic or Queue
+				if ( mode == "topic" )
+					// Create the destination Topic
+					destination = session->createTopic(target);
+				else if ( mode == "queue" )
+					destination = session->createQueue(target);
+				else
+					throw "unrecognized mode \"" + mode + "\"";
 				// Create a MessageProducer from the Session to the Topic
 				producer = session->createProducer(destination);
 				producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
@@ -102,7 +111,7 @@ class SEProducer {
 			// Create the message
 			auto_ptr<TextMessage> msg(session->createTextMessage(text));
 			// Report
-			cout << "<Publishing to "+topic+":\n\t\""+text+"\"\n";
+			cout << "<Publishing to "+target+":\n\t\""+text+"\"\n";
 			// Send the message
 			producer->send(msg.get());
 		} catch (CMSException& e) {
@@ -117,7 +126,7 @@ class SEProducer {
 			// Create the message
 			auto_ptr<TextMessage> msg(session->createTextMessage(text));
 			// Report
-			cout << "<Publishing to "+topic+":\n\t\""+text+"\"\n";
+			cout << "<Publishing to "+target+":\n\t\""+text+"\"\n";
 			// Set the reply-to topic
 			msg->setStringProperty("reply-to",replytopic);
 			// Send the message

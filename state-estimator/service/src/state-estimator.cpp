@@ -87,7 +87,7 @@ int main(int argc, char** argv){
 		// --------------------------------------------------------------------
 
 		string logtopic = "goss.gridappsd.simulation.log."+simid;
-		SEProducer logger(brokerURI,username,password,logtopic);
+		SEProducer logger(brokerURI,username,password,logtopic,"topic");
 		logger.send("State Estimator Initializing\n");
 
 
@@ -111,7 +111,7 @@ int main(int argc, char** argv){
 					"simulationId":)" + simid + R"("
 				}
 			})";
-		SEProducer ybusRequester(brokerURI,username,password,ybusRequestTopic);
+		SEProducer ybusRequester(brokerURI,username,password,ybusRequestTopic,"queue");
 		ybusRequester.send(ybusRequestText,ybusTopic);
 		ybusRequester.close();
 
@@ -127,7 +127,7 @@ int main(int argc, char** argv){
 				"responseComplete":true,
 				"id":"6429475f-fed7-4b9e-9f66-21077a322bf6"
 			})";
-		SEProducer ybusSpoofer(brokerURI,username,password,ybusTopic);
+		SEProducer ybusSpoofer(brokerURI,username,password,ybusTopic,"topic");
 		ybusSpoofer.send(ybusSpoofedResponse);
 		ybusSpoofer.close();
 		*/
@@ -202,7 +202,7 @@ int main(int argc, char** argv){
 				(string)"\"parameters\":{"							+
 					(string)"\"simulationId\":\""+simid+"\"}"		+
 			(string)"}";
-		SEProducer sensRequester(brokerURI,username,password,sensRequestTopic);
+		SEProducer sensRequester(brokerURI,username,password,sensRequestTopic,"queue");
 		sensRequester.send(sensRequestText,sensTopic);
 		sensRequester.close();
 		
@@ -337,7 +337,7 @@ int main(int argc, char** argv){
 		/*
 		// Spoof measurement messages
 		string fakeMeasurements = "FAKE_MEASUREMENTS";
-		SEProducer measurementSpoofer(brokerURI,username,password,measTopic);
+		SEProducer measurementSpoofer(brokerURI,username,password,measTopic,"topic");
 		for (int ii = 0 ; ii < 10 ; ii++ )
 			measurementSpoofer.send(to_string(ii)+": "+fakeMeasurements);
 		measurementSpoofer.send((string)"stop");
