@@ -45,7 +45,8 @@ class SEConsumer : public ExceptionListener,
 	std::string brokerURI;
 	std::string username;
 	std::string password;
-	std::string topic;
+	std::string target;
+	std::string mode;
 	
 	protected:
 	SEConsumer(const SEConsumer&);
@@ -62,7 +63,8 @@ class SEConsumer : public ExceptionListener,
 		brokerURI((string)""),
 		username((string)""),
 		password((string)""),
-		topic((string)"") {}
+		target((string)""),
+		mode((string)"") {}
 		
 	public:
 	virtual ~SEConsumer() {
@@ -92,10 +94,14 @@ class SEConsumer : public ExceptionListener,
 			this->connection->setExceptionListener(this);
 			// Create a Session
 			this->session = connection->createSession(Session::AUTO_ACKNOWLEDGE);
-			// Create the destination topic
-			this->destination = session->createTopic(topic);
 
-			cout << "---Topic from run: " + topic + '\n';
+			// Check the mode and create the destination Topic or Queue
+			if ( mode == "topic" )
+				destination = session->createTopic(target);
+			else if ( mode == "queue" )
+				destination = session->createQueue(target);
+			else
+				throw "unrecognized mode \"" + mode + "\"";
 
 			// Create a MessageConsumer from the Session to the Topic or Queue
 			this->consumer = session->createConsumer(destination);

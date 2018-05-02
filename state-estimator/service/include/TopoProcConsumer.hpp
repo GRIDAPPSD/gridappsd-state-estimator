@@ -59,11 +59,13 @@ class TopoProcConsumer : public SEConsumer {
 	TopoProcConsumer(const string& brokerURI, 
 				const string& username,
 				const string& password,
-				const string& topic) {
+				const string& target,
+				const string& mode) {
 		this->brokerURI = brokerURI;
 		this->username = username;
 		this->password = password;
-		this->topic = topic;
+		this->target = target;
+		this->mode = mode;
 	}
 
 	public:

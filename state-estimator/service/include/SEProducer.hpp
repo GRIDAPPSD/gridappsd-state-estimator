@@ -88,7 +88,6 @@ class SEProducer {
 				session = connection->createSession(Session::AUTO_ACKNOWLEDGE);
 				// Check the mode and create the destination Topic or Queue
 				if ( mode == "topic" )
-					// Create the destination Topic
 					destination = session->createTopic(target);
 				else if ( mode == "queue" )
 					destination = session->createQueue(target);
