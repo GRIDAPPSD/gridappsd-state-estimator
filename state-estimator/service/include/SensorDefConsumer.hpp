@@ -43,11 +43,12 @@ class SensorDefConsumer : public SEConsumer {
 	SensorDefConsumer(const string& brokerURI, 
 				const string& username,
 				const string& password,
-				const string& topic) {
+				const string& target,
+				const string& mode) {
 		this->brokerURI = brokerURI;
 		this->username = username;
 		this->password = password;
-		this->topic = topic;
+		this->mode = mode;
 	}
 
 	public:

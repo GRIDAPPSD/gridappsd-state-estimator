@@ -97,7 +97,7 @@ int main(int argc, char** argv){
 
 		// Set up the ybus consumer
 		string ybusTopic = "goss.gridappsd.se.response."+simid;
-		TopoProcConsumer ybusConsumer(brokerURI,username,password,ybusTopic);
+		TopoProcConsumer ybusConsumer(brokerURI,username,password,ybusTopic,"queue");
 		Thread ybusConsumerThread(&ybusConsumer);
 		ybusConsumerThread.start();		// execute ybusConsumer.run()
 		ybusConsumer.waitUntilReady();	// wait for latch release
@@ -185,7 +185,7 @@ int main(int argc, char** argv){
 		
 		// Set up the sensors consumer
 		string sensTopic = "goss.gridappsd.se.response."+simid;
-		SensorDefConsumer sensConsumer(brokerURI,username,password,sensTopic);
+		SensorDefConsumer sensConsumer(brokerURI,username,password,sensTopic,"queue");
 		Thread sensConsumerThread(&sensConsumer);
 		sensConsumerThread.start();		// execute sensConsumer.run()
 		sensConsumer.waitUntilReady();	// wait for latch release
@@ -321,7 +321,7 @@ int main(int argc, char** argv){
 		//string measTopic = "tmpMeasurementTopic";
 		//string measTopic = "goss.gridappsd.simulation.output."+simid;
 		string measTopic = "goss.gridappsd.fncs.output";
-		SELoopConsumer loopConsumer(brokerURI,username,password,measTopic); // probably need to pass state to this
+		SELoopConsumer loopConsumer(brokerURI,username,password,measTopic,"topic"); // probably need to pass state to this
 		Thread loopConsumerThread(&loopConsumer);
 		loopConsumerThread.start();		// execute loopConsumer.run()
 		loopConsumer.waitUntilReady();	// wait for the latch to release
