@@ -191,13 +191,10 @@ int main(int argc, char** argv){
 		sensConsumer.waitUntilReady();	// wait for latch release
 
 		// Set up the producer to request sensor data
-		string sensRequestTopic = "goss.gridappsd.request.config.sensors";
+		string sensRequestTopic = "goss.gridappsd.process.request.config";
 		string sensRequestText = 
-			(string)"{"												+
-				(string)"\"configurationType\":\"Sensors\","	+
-				(string)"\"parameters\":{"							+
-					(string)"\"simulationId\":\""+simid+"\"}"		+
-			(string)"}";
+			"{\"configurationType\":\"CIM Dictionary\",\"parameters\":{\"simulationId\":\""
+			+ simid + "\"}}";
 		SEProducer sensRequester(brokerURI,username,password,sensRequestTopic,"queue");
 		sensRequester.send(sensRequestText,sensTopic);
 		sensRequester.close();
