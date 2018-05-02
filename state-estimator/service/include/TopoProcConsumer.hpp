@@ -84,12 +84,14 @@ class TopoProcConsumer : public SEConsumer {
 		// --------------------------------------------------------------------
 		cout << "Recieved ybus message: \n\t\"" << text << "\"\n";
 
-		json jtext = text;
+		json jtext = json::parse(text);
+		cout << "dumping json...\n" + jtext.dump();
+
 		string yfn = jtext["data"]["yParseFilePath"];
 		string nfn = jtext["data"]["nodeListFilePath"];
 
-		cout << yfn << '\n';
-		cout << nfn << '\n';
+		cout << yfn + "\n";
+		cout << nfn + "\n";
 		// If the message is what we are looking for, process and release
 //		string fn = "demo/13Bus/base_ysparse.csv";
 		string fn = text+"base_ysparse.csv";

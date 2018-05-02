@@ -141,7 +141,7 @@ class SEConsumer : public ExceptionListener,
 			} else {
 				text = "NOT A BYTESMESSAGE!";
 			}
-	
+			
 			// implementation-specific actions:
 			process(text);
 
