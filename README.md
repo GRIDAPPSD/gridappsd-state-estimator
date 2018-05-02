@@ -49,3 +49,21 @@ In order to add the state estimator to the container you will need to modify the
        - ~/git/gridappsd-state-estimator/state-estimator/state-estimator.config:/gridappsd/services/state-estimator.config
 
 ````
+
+## Building the state estimator
+
+To build the state estimator, the following repositories should be cloned into ~/git
+
+````
+	- https://github.com/GRIDAPPSD/gridappsd-state-estimator
+	- https://github.com/GRIDAPPSD/suitesparse-metis-for-windows
+	- https://github.com/GRIDAPPSD/json
+
+````
+Navigate to the service directory and execute build.sh:
+
+```` bash
+cd gridasspd-state-estimator/state-estimator/service
+./build.sh
+````
+The executable application will be placed in bin/state-estimator.out
