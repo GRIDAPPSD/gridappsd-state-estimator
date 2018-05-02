@@ -105,12 +105,8 @@ int main(int argc, char** argv){
 		// Set up the producer to request the ybus
 		string ybusRequestTopic = "goss.gridappsd.process.request.config";
 		string ybusRequestText = 
-			R"({
-				"configurationType":"YBus Export",
-				"parameters":{
-					"simulationId":)" + simid + R"("
-				}
-			})";
+			"{\"configurationType\":\"YBus Export\",\"parameters\":{\"simulationId\":\"" 
+			+ simid + "\"}}";
 		SEProducer ybusRequester(brokerURI,username,password,ybusRequestTopic,"queue");
 		ybusRequester.send(ybusRequestText,ybusTopic);
 		ybusRequester.close();
