@@ -82,30 +82,28 @@ class TopoProcConsumer : public SEConsumer {
 		// --------------------------------------------------------------------
 		// PARSE THE MESSAGE AND PROCESS THE TOPOLOGY
 		// --------------------------------------------------------------------
-		cout << "Recieved ybus message: \n\t\"" << text << "\"\n";
-
+		cout << "\nRecieved ybus message: \n\t" + text + "\n\n";
+		
 		json jtext = json::parse(text);
-		cout << "dumping json...\n" + jtext.dump();
 
 		string yfn = jtext["data"]["yParseFilePath"];
 		string nfn = jtext["data"]["nodeListFilePath"];
 
-		cout << yfn + "\n";
-		cout << nfn + "\n";
-		// If the message is what we are looking for, process and release
-//		string fn = "demo/13Bus/base_ysparse.csv";
-		string fn = text+"base_ysparse.csv";
-		cout << "Loading Y-bus from file: " << fn << "\n";
-		cout << "\t...\n";
+		cout << "yfn: " <<  yfn << "\n";
+		cout << "nfn: " << nfn << "\n";
 		
 		// --------------------------------------------------------------------
 		// LOAD THE LIST OF NODE NAMES
 		// --------------------------------------------------------------------
 		// For now, pull this in from a file:
 		//	base_nodelist.csv from dss cmd "export ynodelist base_nodelist.csv"
+		cout << "\nLoading node list from: " << nfn << '\n';
 		std::ifstream nfs;
-		nfs.open(text+"base_nodelist.csv",std::ifstream::in);
-		if ( !nfs ) throw "failed to open node name file";
+		nfs.open(nfn,std::ifstream::in);
+		if ( !nfs ) {
+			cout << "failed to open node file\n";
+			throw "failed to open node name file";
+		}
 		std::string nfsl;
 		while ( std::getline(nfs,nfsl) ) {
 			// strip leading and trailing quotations and white space
@@ -125,10 +123,13 @@ class TopoProcConsumer : public SEConsumer {
 		// --------------------------------------------------------------------
 		// For now, pull the ybus from a file:
 		// base_ysparse.csv from dss cmd "export y triplet base_ysparse.csv"
+		cout << "\nLoading Y-bus from: " << yfn << '\n';
 		std::ifstream yfs;
-		//yfs.open("demo/4node/base_ysparse.csv",std::ifstream::in);
-		yfs.open(fn,std::ifstream::in);
-		if ( !yfs ) throw "failed to open ybus file";
+		yfs.open(yfn,std::ifstream::in);
+		if ( !yfs ) {
+			cout << "failed to open Y-bus file\n";
+			throw "failed to open ybus file";
+		}
 		std::string yfsl;
 		std::getline(yfs,yfsl);		// skip the header
 		//std::cout<<yfsl<<'\n';		// print back the header
@@ -136,14 +137,14 @@ class TopoProcConsumer : public SEConsumer {
 		double G,B;
 		char c;
 		while ( yfs >> i >> c >> j >> c >> G >> c >> B ) {
-			cout << i << '\t' << j << '\t' << G << '\t' << B << '\n';
+//			cout << i << '\t' << j << '\t' << G << '\t' << B << '\n';
 			Y[i][j] = std::complex<double>(G,B);
 			if ( i != j ) Y[j][i] = std::complex<double>(G,B);
 		}
 		yfs.close();
 		// END pull ybus from file
 		
-		cout << "\tNode list loaded.\n";
+		cout << "\tY-bus loaded.\n";
 		
 		// --------------------------------------------------------------------
 		// TOPOLOGY PROCESSING COMPLETE

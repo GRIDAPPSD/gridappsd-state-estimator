@@ -1,4 +1,5 @@
 #include "SEProducer.hpp"
+#include "GenericConsumer.hpp"
 #include "TopoProcConsumer.hpp"
 #include "SensorDefConsumer.hpp"
 #include "SELoopConsumer.hpp"
@@ -87,13 +88,40 @@ int main(int argc, char** argv){
 		// --------------------------------------------------------------------
 
 		string logtopic = "goss.gridappsd.simulation.log."+simid;
-		SEProducer logger(brokerURI,username,password,logtopic,"topic");
-		logger.send("State Estimator Initializing\n");
+		SEProducer logger(brokerURI,username,password,logtopic,"queue");
+		logger.send("State Estimator Initializing");
+
+
+		// --------------------------------------------------------------------
+		// FOR DEMO ONLY -- REQUEST THE LIST OF MODELS
+		// --------------------------------------------------------------------
+		
+		cout << "\nPress ENTER to request the list of models:";
+		while ( cin.get() != '\n');
+
+		// Set up the model query consumer
+		string mqTopic = "goss.gridappsd.se.response."+simid;
+		GenericConsumer mqConsumer(brokerURI,username,password,mqTopic,"queue");
+		Thread mqConsumerThread(&mqConsumer);
+		mqConsumerThread.start();		// execute modelQueryConsumer.run()
+		mqConsumer.waitUntilReady(); 	// wait for latch release
+
+		// Set up the model query producer to request the model query
+		string mqRequestTopic = "goss.gridappsd.process.request.data.powergridmodel";
+		string mqRequestText = 
+			"{\"requestType\":\"QUERY_MODEL_INFO\",\"resultFormat\":\"JSON\"}";
+		SEProducer mqRequester(brokerURI,username,password,mqRequestTopic,"queue");
+		mqRequester.send(mqRequestText,mqTopic);
+		mqRequester.close();
+		mqConsumerThread.join();
 
 
 		// --------------------------------------------------------------------
 		// TOPOLOGY PROCESSOR
 		// --------------------------------------------------------------------
+
+		cout << "\nPress ENTER to send the Y-bus request:";
+		while ( cin.get() != '\n' );
 
 		// Set up the ybus consumer
 		string ybusTopic = "goss.gridappsd.se.response."+simid;
@@ -105,7 +133,7 @@ int main(int argc, char** argv){
 		// Set up the producer to request the ybus
 		string ybusRequestTopic = "goss.gridappsd.process.request.config";
 		string ybusRequestText = 
-			"{\"configurationType\":\"YBus Export\",\"parameters\":{\"simulationId\":\"" 
+			"{\"configurationType\":\"YBus Export\",\"parameters\":{\"simulation_id\":\"" 
 			+ simid + "\"}}";
 		SEProducer ybusRequester(brokerURI,username,password,ybusRequestTopic,"queue");
 		ybusRequester.send(ybusRequestText,ybusTopic);
@@ -145,29 +173,42 @@ int main(int argc, char** argv){
 		ybusConsumer.fillTopo(numns,nodens,nodem,Y);
 		ybusConsumer.close();
 		
-		// DEBUG outputs
-		// print back nodens and their positiions from nodem
-		for ( auto itr = nodens.begin() ; itr != nodens.end() ; itr++ ) 
-			logger.send("Node |" + *itr + "| -> " 
-					+ to_string(nodem[*itr]) + '\n');
-			// std::cout << "Node |" << *itr << "| -> " << nodem[*itr] << '\n';
-		// print select elements of Y
-		// std::cout << "Y[1][1] = " << Y[1][1] << '\n';
-		// std::cout << "Y[35][36] = " << Y[35][36] << '\n';
-		// list the populated index pairs in Y
-		for ( auto itr=Y.begin() ; itr!=Y.end() ; itr++ ) {
+//		// DEBUG outputs
+//		// print back nodens and their positiions from nodem
+//		for ( auto itr = nodens.begin() ; itr != nodens.end() ; itr++ ) 
+//			cout << "Node |" + *itr + "| -> " + to_string(nodem[*itr]) + '\n';
+//		// print select elements of Y
+//		// std::cout << "Y[1][1] = " << Y[1][1] << '\n';
+//		// std::cout << "Y[35][36] = " << Y[35][36] << '\n';
+//		// list the populated index pairs in Y
+//		for ( auto itr=Y.begin() ; itr!=Y.end() ; itr++ ) {
+//			int i = std::get<0>(*itr);
+//			cout << "coulumns in row " + to_string(i) + ":\n\t";
+//			for ( auto jtr=Y[i].begin() ; jtr!=Y[i].end() ; jtr++ ) {
+//				int j = std::get<0>(*jtr);
+//				cout << to_string(j) + '\t';
+//			}
+//			cout << '\n';
+//		}
+	
+		// Report
+		cout << "\nPress ENTER to analyze the Y-bus:";
+		while ( cin.get() != '\n' );
+	
+		// Report the number of nodes
+		unsigned int nodectr = 0;
+		for ( auto itr = nodens.begin() ; itr != nodens.end() ; itr++ ) nodectr++;
+		cout << "\tNumber of nodes loaded: " << nodectr << '\n';
+
+		// Report the number of entries in Y
+		unsigned int ybusctr = 0;
+		for ( auto itr = Y.begin() ; itr != Y.end() ; itr++ ) {
 			int i = std::get<0>(*itr);
-			logger.send("coulumns in row " + to_string(i) + ":\n\t");
-			// std::cout << "coulumns in row " << i << ":\n\t";
-			for ( auto jtr=Y[i].begin() ; jtr!=Y[i].end() ; jtr++ ) {
-				int j = std::get<0>(*jtr);
-				logger.send(to_string(j) + '\t');
-				// std::cout << j << '\t';
-			}
-			logger.send("\n");
-			// std::cout << '\n';
+			for ( auto jtr = Y[i].begin() ; jtr != Y[i].end() ; jtr++ ) ybusctr++;
 		}
-		
+		cout << "\tNumber of Ybus entries loaded: " << ybusctr << '\n';
+
+
 		// INITIALIZE THE STATE VECTOR
 		double vnom = 0.0;	// get this from the CIM?
 		IDMAP xV;	// container for voltage magnitude states
@@ -183,6 +224,9 @@ int main(int argc, char** argv){
 		// SENSOR INITILIZER
 		// --------------------------------------------------------------------
 		
+		cout << "\nPress ENTER to send the sensor request:";
+		while ( cin.get() != '\n' );
+
 		// Set up the sensors consumer
 		string sensTopic = "goss.gridappsd.se.response."+simid;
 		SensorDefConsumer sensConsumer(brokerURI,username,password,sensTopic,"queue");
@@ -193,12 +237,12 @@ int main(int argc, char** argv){
 		// Set up the producer to request sensor data
 		string sensRequestTopic = "goss.gridappsd.process.request.config";
 		string sensRequestText = 
-			"{\"configurationType\":\"CIM Dictionary\",\"parameters\":{\"simulationId\":\""
+			"{\"configurationType\":\"CIM Dictionary\",\"parameters\":{\"simulation_id\":\""
 			+ simid + "\"}}";
 		SEProducer sensRequester(brokerURI,username,password,sensRequestTopic,"queue");
 		sensRequester.send(sensRequestText,sensTopic);
 		sensRequester.close();
-		
+
 		// Initialize sensors
 		uint numms; 	// number of sensors
 		SLIST mns;		// sensor name [list of strings]
@@ -215,13 +259,11 @@ int main(int argc, char** argv){
 		
 		int zqty = mns.size();
 		
-		// DEBUG outputs
-		logger.send("\n");
-		// std::cout << '\n';
-		for ( auto itr = mns.begin() ; itr != mns.end() ; itr++ ) {
-			logger.send(*itr + '\n');
-			// std::cout << *itr << '\n';
-		}
+//		// DEBUG outputs
+//		cout << '\n';
+//		for ( auto itr = mns.begin() ; itr != mns.end() ; itr++ ) {
+//			cout << *itr << '\n';
+//		}
 		
 		// --------------------------------------------------------------------
 		// Build the measurement function h(x) and its Jacobian J(x)
@@ -303,6 +345,7 @@ int main(int argc, char** argv){
 		*/
 		
 		
+/*
 		// --------------------------------------------------------------------
 		// LISTEN FOR MEASUREMENTS
 		// --------------------------------------------------------------------
@@ -327,19 +370,23 @@ int main(int argc, char** argv){
 		// do we need to recover the updated states?
 
 
-		/*
-		// Spoof measurement messages
-		string fakeMeasurements = "FAKE_MEASUREMENTS";
-		SEProducer measurementSpoofer(brokerURI,username,password,measTopic,"topic");
-		for (int ii = 0 ; ii < 10 ; ii++ )
-			measurementSpoofer.send(to_string(ii)+": "+fakeMeasurements);
-		measurementSpoofer.send((string)"stop");
-		measurementSpoofer.close();
-		*/
-		
+//		// Spoof measurement messages
+//		string fakeMeasurements = "FAKE_MEASUREMENTS";
+//		SEProducer measurementSpoofer(brokerURI,username,password,measTopic,"topic");
+//		for (int ii = 0 ; ii < 10 ; ii++ )
+//			measurementSpoofer.send(to_string(ii)+": "+fakeMeasurements);
+//		measurementSpoofer.send((string)"stop");
+//		measurementSpoofer.close();
+
 		// we can wait for the estimator to exit:
 		loopConsumerThread.join(); loopConsumer.close();
 
+*/
+
+		cout << "\nPress ENTER to complete the Demo:";
+		while ( cin.get() != '\n');
+		cout << "\tDemo Complete.\n\n";
+		
 		// now we're done
 		return 0;
 
