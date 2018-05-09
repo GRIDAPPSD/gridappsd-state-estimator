@@ -159,10 +159,9 @@ class SEConsumer : public ExceptionListener,
 
 	public:
 	virtual void process(const string& text) {
-		cout << "Recieved message:\n\t" << text << "\n\n";
-
-		// Default action: release the latch
-		doneLatch.countDown();
+		// implementation-specific actions - default is to print the message
+		cout << "Recieved message:\n\t" << text << '\n';
+		this->doneLatch.countDown();
 	}
 		
 	public:

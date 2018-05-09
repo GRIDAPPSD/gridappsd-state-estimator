@@ -114,6 +114,7 @@ int main(int argc, char** argv){
 		mqRequester.send(mqRequestText,mqTopic);
 		mqRequester.close();
 		mqConsumerThread.join();
+		mqConsumer.close();
 
 
 		// --------------------------------------------------------------------
@@ -138,6 +139,7 @@ int main(int argc, char** argv){
 		SEProducer ybusRequester(brokerURI,username,password,ybusRequestTopic,"queue");
 		ybusRequester.send(ybusRequestText,ybusTopic);
 		ybusRequester.close();
+
 
 		/*
 		// Spoof message to the consumer
@@ -169,6 +171,7 @@ int main(int argc, char** argv){
 		//	-- bij = std::imag(-1.0*Y[i][j]);
 		
 		// Wait for topological processor and retrieve topology
+
 		ybusConsumerThread.join();
 		ybusConsumer.fillTopo(numns,nodens,nodem,Y);
 		ybusConsumer.close();
