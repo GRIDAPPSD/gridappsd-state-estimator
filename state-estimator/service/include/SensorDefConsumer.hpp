@@ -1,6 +1,9 @@
 #ifndef SENSORDEFCONSUMER_HPP
 #define SENSORDEFCONSUMER_HPP
 
+#include "json.hpp"
+using json = nlohmann::json;
+
 #include "SEConsumer.hpp"
 
 // standard data types
@@ -48,6 +51,7 @@ class SensorDefConsumer : public SEConsumer {
 		this->brokerURI = brokerURI;
 		this->username = username;
 		this->password = password;
+		this->target = target;
 		this->mode = mode;
 	}
 
@@ -68,14 +72,68 @@ class SensorDefConsumer : public SEConsumer {
 		// --------------------------------------------------------------------
 		// PARSE THE MESSAGE AND INITIALIZE SENSORS
 		// --------------------------------------------------------------------
-		cout << ">Recieved sensor message: \n\t\"" << text << "\"\n";
+		cout << "Recieved sensor message:\n\t";
 
-		// if the message is what we are looking for, process and release
-		string fn = "demo/13Bus/static_measurements.csv";
-		cout << "Loading sensor definitions from file: " << fn << "\n";
-		cout << "\t...\n";
+		json jtext = json::parse(text);
+		cout << jtext.dump().substr(0,1000) << " ...\n\n";
+
+		cout << "\nPress ENTER to parse:";
+		while ( cin.get() != '\n' );
+
+		json jdata = json::parse(jtext["data"].dump());
+		json feeders = jdata["feeders"];
+		for ( auto itr = feeders.begin() ; itr != feeders.end() ; itr++ ) {
+			json feeder = *itr;
+			cout << "\nFeeder name: " << feeder["name"] << '\n';
+			cout << "\tmRID: " << feeder["mRID"] << '\n';
+			cout << "\tsubstation: " << feeder["substation"] << '\n';
+			cout << "\tsubstationID: " << feeder["substationID"] << '\n';
+			cout << "\tsubregion: " << feeder["subregion"] << '\n';
+			cout << "\tsubregionID: " << feeder["subregionID"] << '\n';
+			cout << "\tregion: " << feeder["region"] << '\n';
+			cout << "\tregionID: " << feeder["regionID"] << '\n';
+
+			vector<string> objs = {"capacitors","switches"};
+			for ( auto jtr = objs.begin() ; jtr != objs.end() ; jtr++ ) {
+				string type = *jtr;
+
+				cout << "\nPress ENTER to list " + type + ": ";
+				while ( cin.get() != '\n' );
+
+				cout << '\t' << type << ": \n";
+				json objs = feeder[type];
+				unsigned int ctr = 0;
+				for ( auto ktr = objs.begin() ; ktr != objs.end() ; ktr++ ) {
+					json obj = *ktr;
+					cout << "\t\t" << obj["name"] << '\n';
+				}
+			}
+
+			cout << "\nPress ENTER to list non-PNV measurements:";
+			while ( cin.get()!='\n' );
+			
+			cout << "\tmeasurements:\n";
+			unsigned int measctr = 0, pnvctr = 0;
+			for ( auto jtr = feeder["measurements"].begin() ; 
+					jtr != feeder["measurements"].end() ; jtr++ ) {
+				measctr++;
+				string meas = (*jtr)["name"];
+				string node = (*jtr)["ConnectivityNode"];
+				string tmeas = (*jtr)["measurementType"];
+				if ( !tmeas.compare("PNV") ) pnvctr++;
+				else cout<<"\t\t"<<(*jtr)["name"]<< " at node "<<node<<" is type "<<tmeas<<'\n';
+			}
+			cout << "\tNumber of measurements: " << measctr << '\n';
+			cout << "\tNumber of PNV measurements: " << pnvctr << '\n';
+		}
+
+
+//		// if the message is what we are looking for, process and release
+//		string fn = "demo/13Bus/static_measurements.csv";
+//		cout << "Loading sensor definitions from file: " << fn << "\n";
+//		cout << "\t...\n";
 		
-		// --------------------------------------------------------------------
+/*		// --------------------------------------------------------------------
 		// LOAD THE SENSORS
 		// --------------------------------------------------------------------
 		// for now, read the sensor objects from a file
@@ -97,12 +155,12 @@ class SensorDefConsumer : public SEConsumer {
 			svals[sn] = sval;
 		}
 		// END read the sensor objects from a file
-		
-		cout << "\tSensors loaded.\n";
+*/		
 		
 		// --------------------------------------------------------------------
 		// SENSOR INITIALIZATION COMPLETE
 		// --------------------------------------------------------------------
+		cout << "\nSensor initialization complete.\n";
 		// release latch
 		doneLatch.countDown();
 	}

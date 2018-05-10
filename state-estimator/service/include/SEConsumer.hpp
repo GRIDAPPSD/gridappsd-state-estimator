@@ -22,6 +22,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <regex>
 
 using namespace activemq::core;
 using namespace decaf::util::concurrent;
@@ -65,7 +66,7 @@ class SEConsumer : public ExceptionListener,
 		password((string)""),
 		target((string)""),
 		mode((string)"") {}
-		
+
 	public:
 	virtual ~SEConsumer() {
 		cleanup();
@@ -142,6 +143,12 @@ class SEConsumer : public ExceptionListener,
 				text = "NOT A BYTESMESSAGE!";
 			}
 			
+			// Print for debugging
+//			cout << "Recieved message:\n\t" + text + "\n\n";
+//			cout << "Removing escape characters:\n";
+//			text = regex_replace(text,(regex)R"(\\)","");
+//			cout << "\t" + text + "\n\n";
+
 			// implementation-specific actions:
 			process(text);
 
@@ -152,8 +159,9 @@ class SEConsumer : public ExceptionListener,
 
 	public:
 	virtual void process(const string& text) {
-		// Default action: print message and release the latch
-		std::cout << "Recieved message:\n\t\"" << text << "\"\n";
+		cout << "Recieved message:\n\t" << text << "\n\n";
+
+		// Default action: release the latch
 		doneLatch.countDown();
 	}
 		

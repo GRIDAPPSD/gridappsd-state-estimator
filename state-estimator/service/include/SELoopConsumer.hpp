@@ -21,13 +21,13 @@ class SELoopConsumer : public SEConsumer {
 	private:
 	virtual void init() {
 		// do unique stuff
-		std::cout << "Unique SELoopConsumer run stuff...\n";
+//		std::cout << "Unique SELoopConsumer run stuff...\n";
 	}
 
 	public:
 	virtual void process(const string& text) {
 		// stuff -- need to preserve the loop
-		cout << ">Message recieved on measurement topic:\n\t\""+text+"\"\n";
+		cout << "\nMessage recieved on measurement topic:\n\t"+text+"\n";
 
 		// I'm not sure what will happen if SE falls behind
 		//	-- skipping messages is bad
