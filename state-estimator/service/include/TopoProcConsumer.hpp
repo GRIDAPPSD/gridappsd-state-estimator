@@ -85,7 +85,6 @@ class TopoProcConsumer : public SEConsumer {
 		cout << "\nRecieved ybus message: \n\t" + text + "\n\n";
 		
 		json jtext = json::parse(text);
-
 		string yfn = jtext["data"]["yParseFilePath"];
 		string nfn = jtext["data"]["nodeListFilePath"];
 
