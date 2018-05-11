@@ -87,10 +87,8 @@ int main(int argc, char** argv){
 		// SET UP THE MESSAGE LOGGER
 		// --------------------------------------------------------------------
 
-		string logtopic = "goss.gridappsd.simulation.log."+simid;
-		SEProducer logger(brokerURI,username,password,logtopic,"queue");
-		logger.send("State Estimator Initializing");
-
+		// string logtopic = "goss.gridappsd.simulation.log."+simid;
+		// SEProducer logger(brokerURI,username,password,logtopic,"queue");
 
 		// --------------------------------------------------------------------
 		// FOR DEMO ONLY -- REQUEST THE LIST OF MODELS
