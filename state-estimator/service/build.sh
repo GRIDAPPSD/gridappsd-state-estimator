@@ -44,7 +44,7 @@ g++ -Wno-deprecated-declarations -c -std=c++11 $include -I$amqpath -I$aprpath $s
 rm cs_convert.o
 
 echo --- Link ---
-g++ *.o -l activemq-cpp -l stdc++ -o bin/state-estimator.out
+g++ *.o -l activemq-cpp -l stdc++ -l ssl -o bin/state-estimator.out
 
 echo --- Cleanup ---
 rm *.o

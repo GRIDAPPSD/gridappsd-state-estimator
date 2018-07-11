@@ -94,11 +94,8 @@ int main(int argc, char** argv){
 		// FOR DEMO ONLY -- REQUEST THE LIST OF MODELS
 		// --------------------------------------------------------------------
 		
-		cout << "\nPress ENTER to request the list of models:";
-		while ( cin.get() != '\n');
-
 		// Set up the model query consumer
-		string mqTopic = "goss.gridappsd.se.response."+simid;
+		string mqTopic = "goss.gridappsd.se.response."+simid+".modquery";
 		GenericConsumer mqConsumer(brokerURI,username,password,mqTopic,"queue");
 		Thread mqConsumerThread(&mqConsumer);
 		mqConsumerThread.start();		// execute modelQueryConsumer.run()
@@ -119,11 +116,8 @@ int main(int argc, char** argv){
 		// TOPOLOGY PROCESSOR
 		// --------------------------------------------------------------------
 
-		cout << "\nPress ENTER to send the Y-bus request:";
-		while ( cin.get() != '\n' );
-
 		// Set up the ybus consumer
-		string ybusTopic = "goss.gridappsd.se.response."+simid;
+		string ybusTopic = "goss.gridappsd.se.response."+simid+".ybus";
 		TopoProcConsumer ybusConsumer(brokerURI,username,password,ybusTopic,"queue");
 		Thread ybusConsumerThread(&ybusConsumer);
 		ybusConsumerThread.start();		// execute ybusConsumer.run()
@@ -192,10 +186,6 @@ int main(int argc, char** argv){
 //			cout << '\n';
 //		}
 	
-		// Report
-		cout << "\nPress ENTER to analyze the Y-bus:";
-		while ( cin.get() != '\n' );
-	
 		// Report the number of nodes
 		unsigned int nodectr = 0;
 		for ( auto itr = nodens.begin() ; itr != nodens.end() ; itr++ ) nodectr++;
@@ -221,15 +211,12 @@ int main(int argc, char** argv){
 		int xqty = xV.size() + xT.size();
 		if ( xqty != 2*numns ) throw "x initialization failed";
 	
-		// --------------------------------------------------------------------
+/*		// --------------------------------------------------------------------
 		// SENSOR INITILIZER
 		// --------------------------------------------------------------------
 		
-		cout << "\nPress ENTER to send the sensor request:";
-		while ( cin.get() != '\n' );
-
 		// Set up the sensors consumer
-		string sensTopic = "goss.gridappsd.se.response."+simid;
+		string sensTopic = "goss.gridappsd.se.response."+simid+".cimdict";
 		SensorDefConsumer sensConsumer(brokerURI,username,password,sensTopic,"queue");
 		Thread sensConsumerThread(&sensConsumer);
 		sensConsumerThread.start();		// execute sensConsumer.run()
@@ -265,7 +252,7 @@ int main(int argc, char** argv){
 //		for ( auto itr = mns.begin() ; itr != mns.end() ; itr++ ) {
 //			cout << *itr << '\n';
 //		}
-		
+*/		
 		// --------------------------------------------------------------------
 		// Build the measurement function h(x) and its Jacobian J(x)
 		// --------------------------------------------------------------------
@@ -346,48 +333,27 @@ int main(int argc, char** argv){
 		*/
 		
 		
-/*
+
 		// --------------------------------------------------------------------
 		// LISTEN FOR MEASUREMENTS
 		// --------------------------------------------------------------------
 
 		// ideally we want to compute an estimate on a thread at intervals and
 		// collect measurements in the meantime
-		int done = 1;
-		while ( !done ) {
-			
-		}
-
-		// for now, use one thread that listens, estimates, and publishes
-		//string measTopic = "tmpMeasurementTopic";
-		//string measTopic = "goss.gridappsd.simulation.output."+simid;
-		string measTopic = "goss.gridappsd.fncs.output";
-		SELoopConsumer loopConsumer(brokerURI,username,password,measTopic,"topic"); // probably need to pass state to this
+		
+		
+		// measurements come from the simulation output
+		string simoutTopic = "goss.gridappsd.simulation.output."+simid;
+		SELoopConsumer loopConsumer(brokerURI,username,password,simoutTopic,"topic");
 		Thread loopConsumerThread(&loopConsumer);
-		loopConsumerThread.start();		// execute loopConsumer.run()
-		loopConsumer.waitUntilReady();	// wait for the latch to release
-
-		// the rest of the app executes in loopConsumer.onMessage() ???
-		// do we need to recover the updated states?
-
-
-//		// Spoof measurement messages
-//		string fakeMeasurements = "FAKE_MEASUREMENTS";
-//		SEProducer measurementSpoofer(brokerURI,username,password,measTopic,"topic");
-//		for (int ii = 0 ; ii < 10 ; ii++ )
-//			measurementSpoofer.send(to_string(ii)+": "+fakeMeasurements);
-//		measurementSpoofer.send((string)"stop");
-//		measurementSpoofer.close();
-
+		loopConsumerThread.start();	// execute loopConsumer.run()
+		loopConsumer.waitUntilReady();	// wait for the startup latch release
+		
+		cout << "\nListening for simulation output on "+simoutTopic+'\n';
+		
 		// we can wait for the estimator to exit:
 		loopConsumerThread.join(); loopConsumer.close();
 
-*/
-
-		cout << "\nPress ENTER to complete the Demo:";
-		while ( cin.get() != '\n');
-		cout << "\tDemo Complete.\n\n";
-		
 		// now we're done
 		return 0;
 
