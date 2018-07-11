@@ -1,6 +1,9 @@
 #ifndef SELOOPCONSUMER_HPP
 #define SELOOPCONSUMER_HPP
 
+#include "json.hpp"
+using json = nlohmann::json;
+
 #include "SEConsumer.hpp"
 
 // This class listens for system state messages
@@ -26,9 +29,21 @@ class SELoopConsumer : public SEConsumer {
 
 	public:
 	virtual void process(const string& text) {
+		
+		json jtext = json::parse(text);
+		string timestamp = jtext["output"]["message"]["timestamp"];
+		
 		// stuff -- need to preserve the loop
-		cout << "\nMessage recieved on measurement topic:\n\t"+text+"\n";
-
+		cout << "\nMessage recieved on measurement topic with timestamp: "
+			+timestamp+"\n";
+/*
+		for ( auto itr = jtext["output"]["message"]["measurements"].begin() ;
+				itr != jtext["output"]["message"]["measurements"].end() ;
+				itr++ ) {
+//			cout << *itr << '\n';
+			cout << '\t' << (*itr)["measurement_mrid"] << '\n';
+		}
+*/
 		// I'm not sure what will happen if SE falls behind
 		//	-- skipping messages is bad
 		//	-- increassing lag is bad
