@@ -110,7 +110,8 @@ class SEProducer {
 			// Create the message
 			auto_ptr<TextMessage> msg(session->createTextMessage(text));
 			// Report
-			cout << "\nPublishing to "+target+":\n\t"+text+"\n";
+//			cout << "\nPublishing to "+target+":\n\t"+text+"\n";
+			cout << "\nPublishing to "+target+"\n";
 			// Send the message
 			producer->send(msg.get());
 		} catch (CMSException& e) {
@@ -128,6 +129,7 @@ class SEProducer {
 			msg->setStringProperty("reply-to",replytopic);
 			// Report
 			cout << "\nPublishing to "+target+":\n\t"+text+"\n";
+//			cout << "\nPublishing to "+target+"\n";
 			// Send the message
 			producer->send(msg.get());
 		} catch (CMSException& e) {

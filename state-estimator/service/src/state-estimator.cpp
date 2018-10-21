@@ -4,6 +4,8 @@
 #include "SensorDefConsumer.hpp"
 #include "SELoopConsumer.hpp"
 
+#include "SensorArray.hpp"
+
 #include <iostream>
 
 // standard data types
@@ -89,7 +91,7 @@ int main(int argc, char** argv){
 
 		// string logtopic = "goss.gridappsd.simulation.log."+simid;
 		// SEProducer logger(brokerURI,username,password,logtopic,"queue");
-
+/*
 		// --------------------------------------------------------------------
 		// FOR DEMO ONLY -- REQUEST THE LIST OF MODELS
 		// --------------------------------------------------------------------
@@ -110,7 +112,7 @@ int main(int argc, char** argv){
 		mqRequester.close();
 		mqConsumerThread.join();
 		mqConsumer.close();
-
+*/
 
 		// --------------------------------------------------------------------
 		// TOPOLOGY PROCESSOR
@@ -204,14 +206,14 @@ int main(int argc, char** argv){
 		double vnom = 0.0;	// get this from the CIM?
 		IDMAP xV;	// container for voltage magnitude states
 		IDMAP xT;	// container for voltage angle states
-		for ( auto itr = nodens.begin() ; itr != nodens.end() ; itr++ ) {
-			xV[nodem[*itr]] = vnom;
-			xT[nodem[*itr]] = 0;
+		for ( auto& nodename : nodens ) {
+			xV[nodem[nodename]] = vnom;
+			xT[nodem[nodename]] = 0;
 		}
 		int xqty = xV.size() + xT.size();
 		if ( xqty != 2*numns ) throw "x initialization failed";
 	
-/*		// --------------------------------------------------------------------
+		// --------------------------------------------------------------------
 		// SENSOR INITILIZER
 		// --------------------------------------------------------------------
 		
@@ -232,27 +234,87 @@ int main(int argc, char** argv){
 		sensRequester.close();
 
 		// Initialize sensors
-		uint numms; 	// number of sensors
-		SLIST mns;		// sensor name [list of strings]
-		SSMAP mts;		// sensor type [sn->str]
-		SDMAP msigs;	// sensor sigma: standard deviation [sn->double]
-		SSMAP mnd1s;	// point node or from node for flow sensors [sn->str]
-		SSMAP mnd2s;	// point node or to node for flow sensors [sn->str]
-		SDMAP mvals;	// value of the latest measurement [sn->double]
+		SensorArray zary;
+//		uint numms; 	// number of sensors
+//		SLIST mns;		// sensor name [list of strings]
+//		SSMAP mts;		// sensor type [sn->str]
+//		SDMAP msigs;	// sensor sigma: standard deviation [sn->double]
+//		SSMAP mnd1s;	// point node or from node for flow sensors [sn->str]
+//		SSMAP mnd2s;	// point node or to node for flow sensors [sn->str]
+//		SDMAP mvals;	// value of the latest measurement [sn->double]
 		
 		// Wait for sensor initializer and retrieve sensors
 		sensConsumerThread.join();
-		sensConsumer.fillSens(numms,mns,mts,msigs,mnd1s,mnd2s,mvals);
+//		sensConsumer.fillSens(numms,mns,mts,msigs,mnd1s,mnd2s,mvals);
+		sensConsumer.fillSens(zary);
 		sensConsumer.close();
 		
-		int zqty = mns.size();
+//		// Print the nodes associated with each sensor
+//		for ( auto& mn : mns ) cout << mnd1s[mn] + '\n';
+
+		// --------------------------------------
+		// COMPARE THE SENSOR NODES TO YBUS NODES
+		// --------------------------------------
+		unordered_map<string,int> dss_node_found;
+		vector<string> unmatched_measurement_nodes;
+		int map_match_ctr = 0;
+		for ( auto& measurement_name : zary.zids ) {
+			// get the node associated with each measurement
+			string measurement_node = zary.znode1s[measurement_name];
+			try {
+				// check whether the measurement node exists in opendss
+				int measurement_node_index = nodem.at(measurement_node);
+//				cout << measurement_node << " maps to index " 
+//						<< measurement_node_index << '\n';
+				dss_node_found[measurement_node] ++;
+				map_match_ctr++;
+			} catch(...) {
+				unmatched_measurement_nodes.push_back(measurement_node);
+			}
+		}
+
+		// report the number of matches
+		cout << "\n\nNumber of measurement nodes successfully mapped to OpenDSS nodes: "
+				<< map_match_ctr << '\n';
+
+		// list the measurement nodes that are not successfully mapped
+		cout << "\n\nMeasurement nodes that do not exist in Ybus:\n";
+		for ( auto& unmatched_measurement_node : unmatched_measurement_nodes ) {
+			cout << "\t" + unmatched_measurement_node + "\n";
+		}
+
+		// list Ybus nodes that have no measurement
+		int measured_ctr = 0;
+		cout << "\n\nYbus nodes that do not have a measurement:\n";
+		for ( auto& ybus_node : nodens ) {
+			if ( dss_node_found[ybus_node] ) measured_ctr++;
+			else cout << "\t" + ybus_node + "\n";
+		}
+
+		// report the number of ybus nodes with measurements
+		cout << "\n\n" << measured_ctr << " Ybus nodes have measurements\n";
+
+		// list Ybus nodes with more than one measurement
+		int multi_measurement_ctr = 0;
+		int multi_meas_aggr = 0;
+//		cout << "\n\nYbus nodes with more than one measurement:\n";
+		for ( auto& ybus_node: nodens ) {
+			if ( dss_node_found[ybus_node] > 1 ) {
+//				cout << ybus_node << " has " 
+//						<< dss_node_found[ybus_node] << " measurements\n";
+				multi_measurement_ctr++;
+				multi_meas_aggr += dss_node_found[ybus_node];
+			}
+		}
+
+		// report the number of ybus nodes with multiple measurements
+		cout << "\n\n" << multi_measurement_ctr 
+				<< " Ybus nodes have multiple measurements for a total of "
+				<< multi_meas_aggr << " measurements\n";
+
+
 		
-//		// DEBUG outputs
-//		cout << '\n';
-//		for ( auto itr = mns.begin() ; itr != mns.end() ; itr++ ) {
-//			cout << *itr << '\n';
-//		}
-*/		
+		
 		// --------------------------------------------------------------------
 		// Build the measurement function h(x) and its Jacobian J(x)
 		// --------------------------------------------------------------------
@@ -340,18 +402,30 @@ int main(int argc, char** argv){
 
 		// ideally we want to compute an estimate on a thread at intervals and
 		// collect measurements in the meantime
-		
-		
+/*	
+		// PUT THIS INSIDE PROCESS
+		"goss.gridappsd.state-estimator.output"+simid
+		SEProducer ybusRequester(brokerURI,username,password,SETopic,"topic");
+*/
 		// measurements come from the simulation output
 		string simoutTopic = "goss.gridappsd.simulation.output."+simid;
-		SELoopConsumer loopConsumer(brokerURI,username,password,simoutTopic,"topic");
+		SELoopConsumer loopConsumer(brokerURI,username,password,simoutTopic,"topic",simid);
 		Thread loopConsumerThread(&loopConsumer);
 		loopConsumerThread.start();	// execute loopConsumer.run()
 		loopConsumer.waitUntilReady();	// wait for the startup latch release
 		
 		cout << "\nListening for simulation output on "+simoutTopic+'\n';
 		
-		// we can wait for the estimator to exit:
+//		// I'm not sure of the right way to synchronously access the message content
+//		// For now, all processing will be done inside the consumer.
+//		//   - messages will be dropped if processing is not complete in time.
+//		//	 - at a minimum, the algorithm cares about the time between measurements
+//		while ( loopConsumer.doneLatch.getCount() ) {
+//			loopConsumer.waitForData();		// don't process until data write is complete
+//
+//		}
+		
+		// wait for the estimator to exit:
 		loopConsumerThread.join(); loopConsumer.close();
 
 		// now we're done
