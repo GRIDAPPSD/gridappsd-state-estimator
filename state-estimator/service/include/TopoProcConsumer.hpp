@@ -77,7 +77,7 @@ class TopoProcConsumer : public SEConsumer {
 	}
 	
 	public:
-	virtual void process(const string& text) {
+	virtual void process() {
 		
 		// --------------------------------------------------------------------
 		// PARSE THE MESSAGE AND PROCESS THE TOPOLOGY
@@ -114,7 +114,6 @@ class TopoProcConsumer : public SEConsumer {
 			}
 		}
 
-
 		// This is actually the list of nodes from nodelist
 		json jlines_nodelist = jtext["data"]["nodeListFilePath"];
 		cout << "nodelist\n\t";
@@ -124,13 +123,26 @@ class TopoProcConsumer : public SEConsumer {
 			// Extract the node name
 			string line = jline;
 			string node_name = regex_replace(line,regex("\""),"");
-//			cout << line + "\n";
 			// Store the node information
 			numns++;
 			nodens.push_back(node_name);
-			nodem[node_name] = idx++;
+			nodem[node_name] = ++idx;
 		}
 
+		// print
+		for ( auto& inode : nodens ) {
+			auto i = nodem[inode];
+			try {
+				auto row = Y.at(i);
+				for ( auto& jnode: nodens ) {
+					auto j = nodem[jnode];
+					try {
+						complex<double> ycomp = row.at(j);
+						cout << "Y(" << i << "," << j << ") -> " << ycomp << '\n';
+					} catch(...) {}
+				}
+			} catch(...) {}
+		}
 
 		// --------------------------------------------------------------------
 		// TOPOLOGY PROCESSING COMPLETE

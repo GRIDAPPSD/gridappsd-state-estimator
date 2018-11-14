@@ -55,6 +55,7 @@ class SEConsumer : public ExceptionListener,
 	std::string password;
 	std::string target;
 	std::string mode;
+	std::string text;
 	
 	protected:
 	SEConsumer(const SEConsumer&);
@@ -125,6 +126,7 @@ class SEConsumer : public ExceptionListener,
 			std::cout.flush();
 			std::cerr.flush();
 
+
 			// Allow implementation-specific actions:
 			this->init();
 
@@ -150,7 +152,8 @@ class SEConsumer : public ExceptionListener,
 		try {
 			const BytesMessage* bytesMessage = 
 					dynamic_cast<const BytesMessage*> (message);
-			string text = "";
+			text = "";
+			text.reserve(5000000);
 			if (bytesMessage != NULL) {
 				for ( int idx = 0 ; idx < bytesMessage->getBodyLength() ; idx++ )
 					text.push_back(bytesMessage->readChar());
@@ -159,7 +162,7 @@ class SEConsumer : public ExceptionListener,
 			}
 			
 			// implementation-specific actions:
-			process(text);
+			process();
 
 		} catch (CMSException& e) {
 			e.printStackTrace();
@@ -167,10 +170,15 @@ class SEConsumer : public ExceptionListener,
 	}
 
 	public:
-	virtual void process(const string& text) {
+	virtual void process() {
 		// implementation-specific actions - default is to print the message
-		cout << "Recieved message:\n\t" << text << '\n';
+		// cout << "Recieved message:\n\t" << text << '\n';
 		this->doneLatch.countDown();
+	}
+
+	public:
+	void get(string& text) {
+		text = this->text;
 	}
 		
 	public:

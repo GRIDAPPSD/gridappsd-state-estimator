@@ -74,7 +74,7 @@ class SensorDefConsumer : public SEConsumer {
 	}
 	
 	public:
-	virtual void process(const string& text) {
+	virtual void process() {
 		// --------------------------------------------------------------------
 		// PARSE THE MESSAGE AND INITIALIZE SENSORS
 		// --------------------------------------------------------------------
@@ -82,16 +82,17 @@ class SensorDefConsumer : public SEConsumer {
 
 		json jtext = json::parse(text);
 		cout << jtext.dump().substr(0,2000) << " ...\n\n";
+//		cout << jtext.dump() << "\n\n";
 
 		for ( auto& feeder : jtext["data"]["feeders"] ) {
 			cout << "\nFeeder name: " << feeder["name"] << '\n';
-			cout << "\tmRID: " << feeder["mRID"] << '\n';
-			cout << "\tsubstation: " << feeder["substation"] << '\n';
-			cout << "\tsubstationID: " << feeder["substationID"] << '\n';
-			cout << "\tsubregion: " << feeder["subregion"] << '\n';
-			cout << "\tsubregionID: " << feeder["subregionID"] << '\n';
-			cout << "\tregion: " << feeder["region"] << '\n';
-			cout << "\tregionID: " << feeder["regionID"] << '\n';
+//			cout << "\tmRID: " << feeder["mRID"] << '\n';
+//			cout << "\tsubstation: " << feeder["substation"] << '\n';
+//			cout << "\tsubstationID: " << feeder["substationID"] << '\n';
+//			cout << "\tsubregion: " << feeder["subregion"] << '\n';
+//			cout << "\tsubregionID: " << feeder["subregionID"] << '\n';
+//			cout << "\tregion: " << feeder["region"] << '\n';
+//			cout << "\tregionID: " << feeder["regionID"] << '\n';
 
 			vector<string> objs = {"capacitors","switches"};
 			for ( string& type : objs ) {
@@ -101,6 +102,11 @@ class SensorDefConsumer : public SEConsumer {
 				for ( auto& obj : objs ) {
 					cout << "\t\t" << obj["name"] << '\n';
 				}
+			}
+			
+
+			for ( auto& reg : feeder["regulators"] ) {
+				cout << reg.dump() + '\n';
 			}
 
 //			cout << "\nPress ENTER to list non-PNV measurements:";
@@ -119,6 +125,7 @@ class SensorDefConsumer : public SEConsumer {
 				string tmeas = m["measurementType"];
 				zary.mmrids.push_back( mmrid );
 				zary.mtypes[mmrid] = tmeas;
+				cout << mmrid << " -> " << tmeas << '\n';
 
 				// build z and supporting structures
 				if ( !tmeas.compare("PNV") ) {
@@ -134,15 +141,17 @@ class SensorDefConsumer : public SEConsumer {
 					if ( !phase.compare("s2") ) node += ".2";	// secondary
 
 					// add the voltage magnitude measurement
-					zary.zqty++;
 					string zid = mmrid + "_Vmag";
 					zary.zids.push_back( zid );
+					zary.zidxs[zid] = zary.zqty++;
 					zary.ztypes[zid] = "Vmag";
 					zary.znode1s[zid] = node;
 					zary.znode2s[zid] = node;
 					zary.zsigs[zid] = 0;		// WHERE DOES THIS COME FROM ??
-					zary.zvals[zid] = 0;		// initialize to 0
-					zary.znew[zid] = false;		// initial measurement is not "new"
+					// these don't necessarily need to be initialized
+					// - they will be initialized on access
+//					zary.zvals[zid] = 0;		// initialize to 0
+//					zary.znew[zid] = false;		// initial measurement is not "new"
 
 					// add the voltage phase measurement
 					// --- LATER ---

@@ -1,8 +1,24 @@
+#define PI 3.1415926535
+
+#include "state_estimator_gridappsd.hpp"
 #include "SEProducer.hpp"
 #include "GenericConsumer.hpp"
 #include "TopoProcConsumer.hpp"
+#include "VnomConsumer.hpp"
 #include "SensorDefConsumer.hpp"
 #include "SELoopConsumer.hpp"
+
+#include "json.hpp"
+using json = nlohmann::json;
+
+#include "gridappsd_requests.hpp"
+using gridappsd_requests::sparql_query;
+
+#include "sparql_queries.hpp"
+using sparql_queries::sparq_conducting_equipment_vbase;
+using sparql_queries::sparq_transformer_end_vbase;
+using sparql_queries::sparq_energy_consumer_pq;
+using sparql_queries::sparq_ratio_tap_changer_nodes;
 
 #include "SensorArray.hpp"
 
@@ -24,6 +40,7 @@
 #define SLIST std::list<std::string>
 #define SIMAP std::unordered_map<std::string,unsigned int>
 #define SDMAP std::unordered_map<std::string,double>
+#define SCMAP std::unordered_map<std::string,std::complex<double>>
 #define SSMAP std::unordered_map<std::string,std::string>
 
 // Hash address (i,j) to the index of a sparse matrix vector
@@ -36,128 +53,103 @@
 int main(int argc, char** argv){
 	
 	// ------------------------------------------------------------------------
-	// GET RUNTME ARGS
+	// INITIALIZE THE STATE ESTIMATOR SESSION WITH RUNTIME ARGS
 	// ------------------------------------------------------------------------
-	std::string simid,addr,port,username,password;
-	
-	// Required first input: simulation ID
-	if ( argc > 1 ) {
-		simid = argv[1];
-	} else {
-		std::cerr << "Usage: " << *argv
-			<< " simid ipaddr port username password\n";
-		// return 0;
-	}
-	
-	// Host address
-	if ( argc > 2 ) addr = argv[2];
-	else addr = "127.0.0.1";
-	
-	// Host port
-	if ( argc > 3 ) port = argv[3];
-	else port = "61616";
-	
-	// Username
-	if ( argc > 4 ) username = argv[4];
-	else username = "system";
-	
-	// Password
-	if ( argc > 5 ) password = argv[5];
-	else password = "manager";
-	
-	// Check for extraneous inputs
-	if (argc > 6 ) {
-		std::cerr << "Unrecognized inpt: " << argv[6] << '\n';
-		std::cerr << "Usage: " << *argv
-			<< " simid ipaddr port username password\n";
-		return 0;
-	}
-	
+	state_estimator_gridappsd::state_estimator_session se;
+	if ( !se.init(argc,argv) ) return 0;
+
+	// ------------------------------------------------------------------------
+	// INITIALIZE THE GRIDAPPS SESSION
+	// ------------------------------------------------------------------------
+	state_estimator_gridappsd::gridappsd_session gad(se);
 
 	// ------------------------------------------------------------------------
 	// START THE AMQ INTERFACE
 	// ------------------------------------------------------------------------
 
-	string brokerURI = "tcp://"+addr+':'+port;
-	//string brokerURI = "failover:(tcp://WE33461.pnl.gov:61616)";
-
 	try {
 		activemq::library::ActiveMQCPP::initializeLibrary();
 
+		// --------------------------------------------------------------------
+		// MAKE SOME MANUAL QUERIES
+		// --------------------------------------------------------------------
 
-		// --------------------------------------------------------------------
-		// SET UP THE MESSAGE LOGGER
-		// --------------------------------------------------------------------
+		json jvbase1 = sparql_query(gad,"vbase1",sparq_conducting_equipment_vbase(gad.modelID));
+		json jvbase2 = sparql_query(gad,"vbase2",sparq_transformer_end_vbase(gad.modelID));
 
-		// string logtopic = "goss.gridappsd.simulation.log."+simid;
-		// SEProducer logger(brokerURI,username,password,logtopic,"queue");
-/*
-		// --------------------------------------------------------------------
-		// FOR DEMO ONLY -- REQUEST THE LIST OF MODELS
-		// --------------------------------------------------------------------
-		
-		// Set up the model query consumer
-		string mqTopic = "goss.gridappsd.se.response."+simid+".modquery";
-		GenericConsumer mqConsumer(brokerURI,username,password,mqTopic,"queue");
-		Thread mqConsumerThread(&mqConsumer);
-		mqConsumerThread.start();		// execute modelQueryConsumer.run()
-		mqConsumer.waitUntilReady(); 	// wait for latch release
+		// VBASE magnitude: process results
+		SLIST busnames;		// bus names
+		SSMAP busids;		// bus name -> bus mRID
+		SDMAP busvbases;	// bus name -> bus vbase
+		for ( auto& bus : jvbase1["data"]["results"]["bindings"] ) {
+			cout << bus.dump() + '\n';
+			string busname = bus["busname"]["value"];
+			string busid = bus["busid"]["value"];
+			string vbasestr = bus["vbase"]["value"];
+			double vbase = stod( vbasestr );
+			busnames.push_back(busname);
+			busids[busname] = busid;
+			busvbases[busname] = vbase;
+		}
+		for ( auto& bus : jvbase2["data"]["results"]["bindings"] ) {
+			cout << bus.dump() + '\n';
+			string busname = bus["busname"]["value"];
+			string busid = bus["busid"]["value"];
+			string vbasestr = bus["vbase"]["value"];
+			double vbase = stod( vbasestr );
+			busnames.push_back(busname);
+			busids[busname] = busid;
+			busvbases[busname] = vbase;
+		}
+		busnames.sort();
+		busnames.unique();
 
-		// Set up the model query producer to request the model query
-		string mqRequestTopic = "goss.gridappsd.process.request.data.powergridmodel";
-		string mqRequestText = 
-			"{\"requestType\":\"QUERY_MODEL_INFO\",\"resultFormat\":\"JSON\"}";
-		SEProducer mqRequester(brokerURI,username,password,mqRequestTopic,"queue");
-		mqRequester.send(mqRequestText,mqTopic);
-		mqRequester.close();
-		mqConsumerThread.join();
-		mqConsumer.close();
-*/
+		// VBASE (magnitude): report results
+		cout << "\n\nBuses from CIM:\n";
+		for ( auto& busname : busnames ) cout << busname << " -> " << busvbases[busname] << '\n';
+
+
+		// PSEUDO-MEASUREMENTS
+		json jpsm = sparql_query(gad,"psm",sparq_energy_consumer_pq(gad.modelID));
+		cout << jpsm.dump() + '\n';
+
 
 		// --------------------------------------------------------------------
 		// TOPOLOGY PROCESSOR
 		// --------------------------------------------------------------------
 
 		// Set up the ybus consumer
-		string ybusTopic = "goss.gridappsd.se.response."+simid+".ybus";
-		TopoProcConsumer ybusConsumer(brokerURI,username,password,ybusTopic,"queue");
+		string ybusTopic = "goss.gridappsd.se.response."+gad.simid+".ybus";
+		TopoProcConsumer ybusConsumer(gad.brokerURI,gad.username,gad.password,ybusTopic,"queue");
 		Thread ybusConsumerThread(&ybusConsumer);
 		ybusConsumerThread.start();		// execute ybusConsumer.run()
 		ybusConsumer.waitUntilReady();	// wait for latch release
 
-		// Set up the producer to request the ybus
-		string ybusRequestTopic = "goss.gridappsd.process.request.config";
+		// Here, we can set up a consumer for the vnom file
+		string vnomTopic = "goss.gridappsd.se.response."+gad.simid+".vnom";
+		VnomConsumer vnomConsumer(gad.brokerURI,gad.username,gad.password,vnomTopic,"queue");
+		Thread vnomConsumerThread(&vnomConsumer);
+		vnomConsumerThread.start();		// execute vnomConsumer.run()
+		vnomConsumer.waitUntilReady();	// wait for latch release
+
+		// Set up the producer to request the ybus and vnom
+		string topoRequestTopic = "goss.gridappsd.process.request.config";
+		SEProducer topoRequester(gad.brokerURI,gad.username,gad.password,topoRequestTopic,"queue");
 		string ybusRequestText = 
 			"{\"configurationType\":\"YBus Export\",\"parameters\":{\"simulation_id\":\"" 
-			+ simid + "\"}}";
-		SEProducer ybusRequester(brokerURI,username,password,ybusRequestTopic,"queue");
-		ybusRequester.send(ybusRequestText,ybusTopic);
-		ybusRequester.close();
+			+ gad.simid + "\"}}";
+		string vnomRequestText = 
+			"{\"configurationType\":\"Vnom Export\",\"parameters\":{\"simulation_id\":\""
+			+ gad.simid + "\"}}";
+		topoRequester.send(ybusRequestText,ybusTopic);
+//		topoRequester.send(vnomRequestText,vnomTopic);
+		topoRequester.close();
 
-
-		/*
-		// Spoof message to the consumer
-		string ybusSpoofedResponse = 
-			R"({
-				"data":"{
-					"yParseFilePath":"/tmp/gridappsd_tmp/1129698954/base_ysparse.csv",
-					"nodeListFilePath":"/tmp/gridappsd_tmp/1129698954/base_nodelist.csv",
-					"summaryFilePath":"/tmp/gridappsd_tmp/1129698954/base_summary.csv"
-				}",
-				"responseComplete":true,
-				"id":"6429475f-fed7-4b9e-9f66-21077a322bf6"
-			})";
-		SEProducer ybusSpoofer(brokerURI,username,password,ybusTopic,"topic");
-		ybusSpoofer.send(ybusSpoofedResponse);
-		ybusSpoofer.close();
-		*/
-
-		
 		// Initialize topology
-		uint numns;		// number of nodes
-		SLIST nodens;	// list of node names
-		SIMAP nodem;	// map from node name to unit-indexed position
-		IMMAP Y;		// double map from indices to complex admittance
+		uint node_qty;		// number of nodes
+		SLIST node_names;	// list of node names
+		SIMAP node_idxs;	// map from node name to unit-indexed position
+		IMMAP Y;			// double map from indices to complex admittance
 		// G, B, g, and b are derived from Y:
 		//	-- Gij = std::real(Y[i][j]);
 		//	-- Bij = std::imag(Y[i][j]);
@@ -165,61 +157,77 @@ int main(int argc, char** argv){
 		//	-- bij = std::imag(-1.0*Y[i][j]);
 		
 		// Wait for topological processor and retrieve topology
-
 		ybusConsumerThread.join();
-		ybusConsumer.fillTopo(numns,nodens,nodem,Y);
+		ybusConsumer.fillTopo(node_qty,node_names,node_idxs,Y);
 		ybusConsumer.close();
-		
-//		// DEBUG outputs
-//		// print back nodens and their positiions from nodem
-//		for ( auto itr = nodens.begin() ; itr != nodens.end() ; itr++ ) 
-//			cout << "Node |" + *itr + "| -> " + to_string(nodem[*itr]) + '\n';
-//		// print select elements of Y
-//		// std::cout << "Y[1][1] = " << Y[1][1] << '\n';
-//		// std::cout << "Y[35][36] = " << Y[35][36] << '\n';
-//		// list the populated index pairs in Y
-//		for ( auto itr=Y.begin() ; itr!=Y.end() ; itr++ ) {
-//			int i = std::get<0>(*itr);
-//			cout << "coulumns in row " + to_string(i) + ":\n\t";
-//			for ( auto jtr=Y[i].begin() ; jtr!=Y[i].end() ; jtr++ ) {
-//				int j = std::get<0>(*jtr);
-//				cout << to_string(j) + '\t';
-//			}
-//			cout << '\n';
-//		}
-	
-		// Report the number of nodes
-		unsigned int nodectr = 0;
-		for ( auto itr = nodens.begin() ; itr != nodens.end() ; itr++ ) nodectr++;
-		cout << "\tNumber of nodes loaded: " << nodectr << '\n';
 
-		// Report the number of entries in Y
-		unsigned int ybusctr = 0;
-		for ( auto itr = Y.begin() ; itr != Y.end() ; itr++ ) {
-			int i = std::get<0>(*itr);
-			for ( auto jtr = Y[i].begin() ; jtr != Y[i].end() ; jtr++ ) ybusctr++;
+		// Initialize nominal voltages
+		SCMAP node_vnoms;
+		
+		// Wait for the vnom processor and retrive vnom
+		vnomConsumer.fillVnom(node_vnoms);
+		int ctr = 0;
+		for ( auto& node : node_names) {
+			ctr ++;
+			cout << node << " vnom: " << node_vnoms[node] << '\n';
+		} cout << ctr << " total nodes\n";
+		
+		// BUILD THE A-MATRIX
+		IMMAP A;
+		json jregs = sparql_query(gad,"regs",sparq_ratio_tap_changer_nodes(gad.modelID));
+		cout << jregs.dump() + '\n';
+		for ( auto& reg : jregs["data"]["results"]["bindings"] ) {
+
+			// Get the primary node
+			string primbus = reg["primbus"]["value"];
+			string primph = reg["primphs"]["value"];
+			string primnode = primbus; for ( auto& c : primnode ) c = toupper(c);
+			cout << primbus + '\t' + primph + '\n';
+			if (!primph.compare("A")) primnode += ".1";
+			if (!primph.compare("B")) primnode += ".2";
+			if (!primph.compare("C")) primnode += ".3";
+			if (!primph.compare("s1")) primnode += ".1";
+			if (!primph.compare("s2")) primnode += ".2";
+			uint primidx = node_idxs[primnode];
+			cout << primnode + " index: " << primidx << '\n';
+
+			// get the regulation node
+			string regbus = reg["regbus"]["value"];
+			string regph = reg["regphs"]["value"];
+			string regnode = regbus; for ( auto& c : regnode ) c = toupper(c);
+			cout << regbus + '\t' + regph + '\n';
+			if (!regph.compare("A")) regnode += ".1";
+			if (!regph.compare("B")) regnode += ".2";
+			if (!regph.compare("C")) regnode += ".3";
+			if (!regph.compare("s1")) regnode += ".1";
+			if (!regph.compare("s2")) regnode += ".2";
+			uint regidx = node_idxs[regnode];
+			cout << regnode + " index: " << regidx << '\n';
+
+			// initialize the A matrix
+			A[primidx][regidx] = 1;		// this will change
+			A[regidx][primidx] = 1;		// this stays unity and may not be required
 		}
-		cout << "\tNumber of Ybus entries loaded: " << ybusctr << '\n';
+
 
 
 		// INITIALIZE THE STATE VECTOR
-		double vnom = 0.0;	// get this from the CIM?
 		IDMAP xV;	// container for voltage magnitude states
 		IDMAP xT;	// container for voltage angle states
-		for ( auto& nodename : nodens ) {
-			xV[nodem[nodename]] = vnom;
-			xT[nodem[nodename]] = 0;
+		for ( auto& node : node_names ) {
+			xV[node_idxs[node]] = abs(node_vnoms[node]);
+			xT[node_idxs[node]] = 180/PI * arg(node_vnoms[node]);
 		}
 		int xqty = xV.size() + xT.size();
-		if ( xqty != 2*numns ) throw "x initialization failed";
+		if ( xqty != 2*node_qty) throw "x initialization failed";
 	
 		// --------------------------------------------------------------------
 		// SENSOR INITILIZER
 		// --------------------------------------------------------------------
 		
 		// Set up the sensors consumer
-		string sensTopic = "goss.gridappsd.se.response."+simid+".cimdict";
-		SensorDefConsumer sensConsumer(brokerURI,username,password,sensTopic,"queue");
+		string sensTopic = "goss.gridappsd.se.response."+gad.simid+".cimdict";
+		SensorDefConsumer sensConsumer(gad.brokerURI,gad.username,gad.password,sensTopic,"queue");
 		Thread sensConsumerThread(&sensConsumer);
 		sensConsumerThread.start();		// execute sensConsumer.run()
 		sensConsumer.waitUntilReady();	// wait for latch release
@@ -228,8 +236,8 @@ int main(int argc, char** argv){
 		string sensRequestTopic = "goss.gridappsd.process.request.config";
 		string sensRequestText = 
 			"{\"configurationType\":\"CIM Dictionary\",\"parameters\":{\"simulation_id\":\""
-			+ simid + "\"}}";
-		SEProducer sensRequester(brokerURI,username,password,sensRequestTopic,"queue");
+			+ gad.simid + "\"}}";
+		SEProducer sensRequester(gad.brokerURI,gad.username,gad.password,sensRequestTopic,"queue");
 		sensRequester.send(sensRequestText,sensTopic);
 		sensRequester.close();
 
@@ -248,168 +256,116 @@ int main(int argc, char** argv){
 //		sensConsumer.fillSens(numms,mns,mts,msigs,mnd1s,mnd2s,mvals);
 		sensConsumer.fillSens(zary);
 		sensConsumer.close();
-		
-//		// Print the nodes associated with each sensor
-//		for ( auto& mn : mns ) cout << mnd1s[mn] + '\n';
-
-		// --------------------------------------
-		// COMPARE THE SENSOR NODES TO YBUS NODES
-		// --------------------------------------
-		unordered_map<string,int> dss_node_found;
-		vector<string> unmatched_measurement_nodes;
-		int map_match_ctr = 0;
-		for ( auto& measurement_name : zary.zids ) {
-			// get the node associated with each measurement
-			string measurement_node = zary.znode1s[measurement_name];
-			try {
-				// check whether the measurement node exists in opendss
-				int measurement_node_index = nodem.at(measurement_node);
-//				cout << measurement_node << " maps to index " 
-//						<< measurement_node_index << '\n';
-				dss_node_found[measurement_node] ++;
-				map_match_ctr++;
-			} catch(...) {
-				unmatched_measurement_nodes.push_back(measurement_node);
-			}
-		}
-
-		// report the number of matches
-		cout << "\n\nNumber of measurement nodes successfully mapped to OpenDSS nodes: "
-				<< map_match_ctr << '\n';
-
-		// list the measurement nodes that are not successfully mapped
-		cout << "\n\nMeasurement nodes that do not exist in Ybus:\n";
-		for ( auto& unmatched_measurement_node : unmatched_measurement_nodes ) {
-			cout << "\t" + unmatched_measurement_node + "\n";
-		}
-
-		// list Ybus nodes that have no measurement
-		int measured_ctr = 0;
-		cout << "\n\nYbus nodes that do not have a measurement:\n";
-		for ( auto& ybus_node : nodens ) {
-			if ( dss_node_found[ybus_node] ) measured_ctr++;
-			else cout << "\t" + ybus_node + "\n";
-		}
-
-		// report the number of ybus nodes with measurements
-		cout << "\n\n" << measured_ctr << " Ybus nodes have measurements\n";
-
-		// list Ybus nodes with more than one measurement
-		int multi_measurement_ctr = 0;
-		int multi_meas_aggr = 0;
-//		cout << "\n\nYbus nodes with more than one measurement:\n";
-		for ( auto& ybus_node: nodens ) {
-			if ( dss_node_found[ybus_node] > 1 ) {
-//				cout << ybus_node << " has " 
-//						<< dss_node_found[ybus_node] << " measurements\n";
-				multi_measurement_ctr++;
-				multi_meas_aggr += dss_node_found[ybus_node];
-			}
-		}
-
-		// report the number of ybus nodes with multiple measurements
-		cout << "\n\n" << multi_measurement_ctr 
-				<< " Ybus nodes have multiple measurements for a total of "
-				<< multi_meas_aggr << " measurements\n";
 
 
-		
-		
-		// --------------------------------------------------------------------
-		// Build the measurement function h(x) and its Jacobian J(x)
-		// --------------------------------------------------------------------
-		
-		/*
-		// INITIALIZE THE MEASUREMENT FUNCTION h(x)
-		enum hx_t {
-				Pij ,
-				Qij ,
-				Pi ,
-				Qi };
-		DVEC hx;
-		std::vector<hx_t> thx;
-		std::vector<uint> hxi;
-		std::vector<std::vector<uint>> hxj;
-	for ( auto itr = sns.begin(); itr != sns.end() ; itr++ ) {
-			// for each measurement:
-			hx.push_back(svals[*itr]);			// set the initial value
-			switch(sts[*itr]) {					// set the measurement type
-				case("Pij"): thx.push_back(Pij); break;
-				case("Qij"): thx.push_back(Qij); break;
-				case("Pi"): thx.push_back(Pi); break;
-				case("Qi"): thx.push_back(Qi); break;
-				default: throw("unrecognized sensor type"); }
-			uint i = snd1s[*itr]];
-			hxi.push_back(nodem[i]);						// set node i
-			if ( sts[*itr] == "Pij" || sts[*itr] == "Qij" )	// set flow j
-				hxj.push_back( (vector)(nodem[snd2s[*itr]]) );
-			else {											// set injection js
-				// locate all adjacent nodes
-				std::vector<uint>> tmpjs;
-				for ( auto jtr=Y[i].begin() ; jtr!=Y[i].end() ; jtr++ ) {
-					uint j = std::get<0>(*jtr);
-					if ( j != i ) tmpjs.push_back(j);
+		// Initialize containers to hold pseudo-measurements
+		SDMAP pseudoP, pseudoQ;
+		// Add nominal load injections
+		for ( auto& load : jpsm["data"]["results"]["bindings"] ) {
+			cout << load.dump() + "\n";
+			string bus = load["busname"]["value"]; for ( char& c : bus ) c = toupper(c);
+			cout << "bus: " + bus + '\n';
+			if ( !load.count("phase") ) {
+				// This is a 3-phase balanced load (handle D and Y the same)
+				string sptot = load["pfixed"]["value"]; double ptot = stod(sptot);
+				string sqtot = load["qfixed"]["value"]; double qtot = stod(sqtot);
+				// Add injection to phase A
+				pseudoP[bus+".1"] -= ptot/3.0/2.0;
+				pseudoQ[bus+".1"] -= qtot/3.0/2.0;
+				// Add injection to phase B
+				pseudoP[bus+".2"] -= ptot/3.0/2.0;
+				pseudoQ[bus+".2"] -= qtot/3.0/2.0;
+				// Add injection to phase C
+				pseudoP[bus+".3"] -= ptot/3.0/2.0;
+				pseudoQ[bus+".3"] -= qtot/3.0/2.0;
+			} else {
+				cout << "not in phase\n";
+				// This is a 1-phase load
+				string spph = load["pfixedphase"]["value"]; double pph = stod(spph);
+				string sqph = load["qfixedphase"]["value"]; double qph = stod(sqph);
+				cout << "pph: " << pph << "\t\t" << "qph: " << qph << '\n';
+				string phase = load["phase"]["value"];
+				// determine the node
+				string node = bus;
+				if (!phase.compare("A")) node += ".1";
+				if (!phase.compare("B")) node += ".2";
+				if (!phase.compare("C")) node += ".3";
+				if (!phase.compare("s1")) node += ".1";
+				if (!phase.compare("s2")) node += ".2";
+				// Handle Wye or Delta load
+				string conn = load["conn"]["value"];
+				if ( !conn.compare("Y") ) {
+					// Wye-connected load - injections are 
+					pseudoP[node] -= pph/2.0;
+					pseudoQ[node] -= qph/2.0;
 				}
-				hxj.push_back(tmpjs);
+				if ( !conn.compare("D") ) {
+					// Delta-connected load - injections depend on load current
+					complex<double> sload = complex<double>(pph,qph);
+					// Find the nominal voltage across the load
+					string n2 = bus;
+					if (!phase.compare("A")) n2 += ".2";
+					if (!phase.compare("B")) n2 += ".3";
+					if (!phase.compare("C")) n2 += ".1";
+					if (!phase.compare("s1")) n2 += ".2";
+					if (!phase.compare("s2")) n2 += ".1";
+					complex<double> vload = node_vnoms[node] - node_vnoms[n2];
+					// Positive injection into the named node
+					pseudoP[node] += real(sload/vload*node_vnoms[node])/2.0;
+					pseudoQ[node] += imag(sload/vload*node_vnoms[node])/2.0;
+					// Negative injection into the second node
+					pseudoP[n2] -= real(sload/vload*node_vnoms[n2])/2.0;
+					pseudoQ[n2] -= imag(sload/vload*node_vnoms[n2])/2.0;
+				}
 			}
 		}
-		*/
-		
-		/*
-		// INITIALIZE THE MEASUREMENT FUNCTION JACOBIAN J(x)
-		enum Jx_t {
-				dPijdVi , dPijdVj , dPijdTi , dPijdTj , 	
-				dQijdVi , dQijdVj , dQijdTi , dQijdTj , 
-				dPidVi  , dPidVj  , dPidTi  , dPidTj  ,
-				dQidVi  , dQidVj  , dQidTi  , dQidTj  };
-		DVEC Jx;
-		std::vector<Jx_t> tJx;
-		// std::vector<uint> Jxi;
-		// std::vector<std::vector<uint>> Jxj;
-		for ( int ii = 0 ; ii < zqty ; ii++ ) {
-			// for each measurement function:
-			for ( int jj = 0 ; jj < xqty ; jj ++ ) {
-				// establish the derivetive with respect to each state
-				
-				// Determine whether the derivative is non-zero
-				
-				
-				// Jx.append(initial value)
-				Jx.push_back(0);
-				// tJx.append(type [Jx_t])
-				switch(thx[ii]) {
-					case(Pij):					// power flow measurement
-						if ( jj < xqty/2 ) {	// voltage state
-							if ( ii ==
-								tJx.push_back(dPijdVi)
-					case(Qij):
-					case(Pi):
-					case(Qi):
-				
-				// i???
-				// j???
-				// rows correspond to measurements
-				// columns correspond to derivatives with respect to states
-			}
+		// Add these injections to the sensor array
+		for ( auto& node : node_names ) {
+			// WHAT TO DO ABOUT THE MRIDS??
+			//  - THESE MEASUREMENTS DON'T GET UPDATED
+			//  - MAYBE WE DON'T ADD TO THE MRIDS
+
+			// Add the P injection
+			string pinj_zid = "pseudo_P_"+node;
+			zary.zids.push_back(pinj_zid);
+			zary.zidxs[pinj_zid] = zary.zqty++;
+			zary.ztypes	[pinj_zid] = "Pi";
+			zary.zsigs	[pinj_zid] = 5000.0;
+			zary.znode1s[pinj_zid] = node;
+			zary.znode2s[pinj_zid] = node;
+			zary.zvals	[pinj_zid] = pseudoP[node];
+			zary.znew	[pinj_zid] = false;
+
+			// Add the Q injection
+			string qinj_zid = "pseudo_Q_"+node;
+			zary.zids.push_back(qinj_zid);
+			zary.zidxs[qinj_zid] = zary.zqty++;
+			zary.ztypes	[qinj_zid] = "Qi";
+			zary.zsigs	[qinj_zid] = 2000.0;
+			zary.znode1s[qinj_zid] = node;
+			zary.znode2s[qinj_zid] = node;
+			zary.zvals	[qinj_zid] = pseudoQ[node];
+			zary.znew	[qinj_zid] = false;
 		}
-		*/
-		
-		
+
+		for ( auto& zid : zary.zids ) {
+			cout << zid << '\t' << zary.zvals[zid] << '\n';
+		}
+
 
 		// --------------------------------------------------------------------
 		// LISTEN FOR MEASUREMENTS
 		// --------------------------------------------------------------------
 
 		// ideally we want to compute an estimate on a thread at intervals and
-		// collect measurements in the meantime
-/*	
-		// PUT THIS INSIDE PROCESS
-		"goss.gridappsd.state-estimator.output"+simid
-		SEProducer ybusRequester(brokerURI,username,password,SETopic,"topic");
-*/
+		//   collect measurements in the meantime
+
+		for ( auto& node: node_names ) cout << node+'\n';
 		// measurements come from the simulation output
-		string simoutTopic = "goss.gridappsd.simulation.output."+simid;
-		SELoopConsumer loopConsumer(brokerURI,username,password,simoutTopic,"topic",simid);
+		string simoutTopic = "goss.gridappsd.simulation.output."+gad.simid;
+		SELoopConsumer loopConsumer(gad.brokerURI,gad.username,gad.password,
+			simoutTopic,"topic",gad.simid,
+			zary,node_qty,node_names,node_idxs,node_vnoms,Y,A);
 		Thread loopConsumerThread(&loopConsumer);
 		loopConsumerThread.start();	// execute loopConsumer.run()
 		loopConsumer.waitUntilReady();	// wait for the startup latch release
@@ -432,7 +388,7 @@ int main(int argc, char** argv){
 		return 0;
 
 	} catch (...) {
-		std::cerr << "Error: Unhandled AMQ Exception\n";
+		std::cerr << "Error: Unhandled Exception\n";
 		throw NULL;
 	}
 	
