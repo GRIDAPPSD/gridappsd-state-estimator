@@ -55,6 +55,7 @@ class SELoopConsumer : public SEConsumer {
 	// system state
 	private:
 //	cs *x, *P;		// state model
+	cs *P;			// x comes from V and A but P is persistent 
 	cs *F, *Q;		// process model
 	cs *R;
 //	cs *z, *R;		// measurement model
@@ -85,7 +86,7 @@ class SELoopConsumer : public SEConsumer {
 	private:
 	ICMAP Vpu;			// voltage state in per-unit
 	IMMAP A;			// regulator tap ratios <- we need reg information
-	cs *State_Cov;		// state covariance matrix;
+//	cs *State_Cov;		// state covariance matrix;
 
 	private:
 	const double sbase = 1000000.0;	//
@@ -163,15 +164,14 @@ class SELoopConsumer : public SEConsumer {
 		double span_vmag = 1.0;
 		double span_varg = 1/3*3.1415926535;
 		double span_taps = 0.2;
-		cs *Raw_State_Cov = cs_spalloc(0,0,xqty,1,1);
+		cs *Praw = cs_spalloc(0,0,xqty,1,1);
 		for ( int idx = 0 ; idx < node_qty ; idx++ ) {
 			// Add variance for the voltage magnitude state
-			cs_entry(Raw_State_Cov,idx,idx,span_vmag);
+			cs_entry(Praw,idx,idx,span_vmag);
 			// Add variance for the voltage phase state
-			cs_entry(Raw_State_Cov,node_qty+idx,node_qty+idx,span_varg);
+			cs_entry(Praw,node_qty+idx,node_qty+idx,span_varg);
 		}
-		State_Cov = cs_compress(Raw_State_Cov);
-		cs_spfree(Raw_State_Cov);
+		P = cs_compress(Praw); cs_spfree(Praw);
 		cout << "State Covariance Matrix Initialized.\n";
 
 
@@ -339,7 +339,7 @@ class SELoopConsumer : public SEConsumer {
 		// x, z, h, and J will be maintained here
 		
 		cout << "prepx ... ";
-		cs *x, *P; this->prep_state(x,P); cout << "complete\n";
+		cs *x; this->prep_x(x); cout << "complete\n";
 		cout << "x is " << x->m << " by " << x->n << " with " << x->nzmax << " entries\n";
 		print_cs_compress(x,"mat/x.csv");
 		cout << "P is " << P->m << " by " << P->n << " with " << P->nzmax << " entries\n";
@@ -526,35 +526,51 @@ class SELoopConsumer : public SEConsumer {
 
 		cout << "P updated\n";
 
-		cout << "Predict step complete.\n";
+		cout << "Update step complete.\n";
+
+		// --------------------------------------------------------------------
+		// Update persistant state (Vpu and A)
+		// --------------------------------------------------------------------
+
+
 
 		// --------------------------------------------------------------------
 		// Clean up
 		// --------------------------------------------------------------------
 		// update system state
+		cout << "freeing xpre and Ppre...\n";
 		cs_spfree(xpre); cs_spfree(Ppre);
-		cs_spfree(x); x = xupd; xupd = NULL;
+
+		// HERE WE NEED TO GET X INTO VPU AND A
+//		cout << "freeing x and setting xupd to NULL...\n";
+//		cs_spfree(x); x = xupd; xupd = NULL;
+		cout << "freeing P and setting Pupd to NULL...\n";
 		cs_spfree(P); P = Pupd; Pupd = NULL;
 		// free residual
+		cout << "freeing ypud and Supd...\n";
 		cs_spfree(yupd); cs_spfree(Supd);
 		// free gain matrix
+		cout << "freeing Kupd...\n";
 		cs_spfree(Kupd);
-		// free measurement variables
-		cs_spfree(x); cs_spfree(P); cs_spfree(z); cs_spfree(h); cs_spfree(J);
+		// free measurement variableas
+//		cout << "freeing x, P, z, h, and J...\n";
+//		cs_spfree(x); cs_spfree(P); cs_spfree(z); cs_spfree(h); cs_spfree(J);
+		cout << "freeing x, z, h, and J";
+		cs_spfree(x); cs_spfree(z); cs_spfree(h); cs_spfree(J);
 
 		// Need to handle P
-		// - P points to State_Cov -- we need the former to 
-		cs *tmp = State_Cov;
-		State_Cov = P; P = NULL;
-		cs_spfree(tmp);
+//		// - P points to State_Cov -- we need the former to 
+//		cout << "Updating State_Cov and stuff...\n";
+//		cs *tmp = State_Cov;
+//		State_Cov = P; P = NULL;
+//		cs_spfree(tmp);
 
 
 	}
 
 	private:
-	void prep_state(cs *&x, cs *&P) {
+	void prep_x(cs *&x) {
 		cout << "In prepx\n";
-
 		// Prepare x
 		cs *xraw = cs_spalloc(xqty,1,xqty,1,1);
 		for ( auto& node_name : node_names ) {
@@ -568,10 +584,9 @@ class SELoopConsumer : public SEConsumer {
 			uint Tidx = xqty + vidx - 1;
 			if ( arg(Vi) ) cs_entry(xraw,Tidx,0,arg(Vi));
 		}
+		cout << "\tmemory management\n";
 		x = cs_compress(xraw); cs_spfree(xraw);
-
-		// Prepare P
-		P = State_Cov;
+		cout << "\tdone\n";
 	}
 
 	private:
@@ -791,7 +806,7 @@ class SELoopConsumer : public SEConsumer {
 					// daji/dv = 0
 				}
 				else if ( !ztype.compare("Vmag") ) {
-					if ( vidx == 1 ) {
+					if ( vidx == i ) {
 						// --- compute dvi/dvi
 						cs_entry(Jraw,zidx,xidx,1.0);
 					}
