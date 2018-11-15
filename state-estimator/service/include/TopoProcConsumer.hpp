@@ -129,20 +129,20 @@ class TopoProcConsumer : public SEConsumer {
 			nodem[node_name] = ++idx;
 		}
 
-		// print
-		for ( auto& inode : nodens ) {
-			auto i = nodem[inode];
-			try {
-				auto row = Y.at(i);
-				for ( auto& jnode: nodens ) {
-					auto j = nodem[jnode];
-					try {
-						complex<double> ycomp = row.at(j);
-						cout << "Y(" << i << "," << j << ") -> " << ycomp << '\n';
-					} catch(...) {}
-				}
-			} catch(...) {}
-		}
+//		// print
+//		for ( auto& inode : nodens ) {
+//			auto i = nodem[inode];
+//			try {
+//				auto row = Y.at(i);
+//				for ( auto& jnode: nodens ) {
+//					auto j = nodem[jnode];
+//					try {
+//						complex<double> ycomp = row.at(j);
+//						cout << "Y(" << i << "," << j << ") -> " << ycomp << '\n';
+//					} catch(...) {}
+//				}
+//			} catch(...) {}
+//		}
 
 		// --------------------------------------------------------------------
 		// TOPOLOGY PROCESSING COMPLETE

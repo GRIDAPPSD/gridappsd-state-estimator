@@ -120,6 +120,7 @@ class SensorDefConsumer : public SEConsumer {
 		// Iterate over the sensors
 		for ( auto& f : jtext["data"]["feeders"] ) {
 			for ( auto& m : f["measurements"] ) {
+				cout << m.dump()+'\n';
 				// store the necessary measurement information
 				string mmrid = m["mRID"];
 				string tmeas = m["measurementType"];

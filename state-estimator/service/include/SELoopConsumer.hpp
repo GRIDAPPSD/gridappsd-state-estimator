@@ -96,6 +96,9 @@ class SELoopConsumer : public SEConsumer {
 	SensorArray zary;
 
 	private:
+	ofstream state_fh;	// file to record states
+
+	private:
 	SEProducer *statePublisher = NULL;
 
 	public:
@@ -195,22 +198,22 @@ class SELoopConsumer : public SEConsumer {
 			} catch(...) {}
 		}
 
-		// print
-		for ( auto& inode : node_names ) {
-			uint i = node_idxs[inode];
-			try {
-				auto& row = Ypu.at(i);
-				for ( auto& jnode: node_names ) {
-					uint j = node_idxs[jnode];
-					try {
-						complex<double> yij = row.at(j);
-						complex<double> vnomi = node_vnoms[inode];
-						complex<double> vnomj = node_vnoms[jnode];
-						cout << "Y(" << i << "," << j << ") -> " << yij << '\n';
-					} catch(...) {}
-				}
-			} catch(...) {}
-		}
+//		// print
+//		for ( auto& inode : node_names ) {
+//			uint i = node_idxs[inode];
+//			try {
+//				auto& row = Ypu.at(i);
+//				for ( auto& jnode: node_names ) {
+//					uint j = node_idxs[jnode];
+//					try {
+//						complex<double> yij = row.at(j);
+//						complex<double> vnomi = node_vnoms[inode];
+//						complex<double> vnomj = node_vnoms[jnode];
+//						cout << "Y(" << i << "," << j << ") -> " << yij << '\n';
+//					} catch(...) {}
+//				}
+//			} catch(...) {}
+//		}
 
 
 		// --------------------------------------------------------------------
@@ -244,6 +247,18 @@ class SELoopConsumer : public SEConsumer {
 //		this->sample_z();
 //		this->calc_h();
 //		this->calc_J();
+
+
+		// --------------------------------------------------------------------
+		// Initialize the state recorder file
+		// --------------------------------------------------------------------
+		state_fh.open("vmag_per-unit.csv",ofstream::out);
+		state_fh << "timestamp,";
+		int ctr = 0;
+		for ( auto& node_name : node_names )
+			state_fh << "\'"+node_name+"\'" << ( ++ctr < node_qty ? ',' : '\n' );
+		state_fh.close();
+
 	}
 
 	// ------------------------------------------------------------------------
@@ -279,16 +294,18 @@ class SELoopConsumer : public SEConsumer {
 			// link back to information about the measurement using its mRID
 			string mmrid = m["measurement_mrid"];
 //			cout << m.dump()+'\n';
-			cout << mmrid+'\n';
+//			cout << mmrid+'\n';
 			string m_type = zary.mtypes[mmrid];
 //			cout << '\t' + m_type + '\n';
 
 			// Check for "PNV" measurement
 			if ( !m_type.compare("PNV") ) {
 
-				// update the voltage magnitude
+				// update the voltage magnitude (in per-unit)
 				string zid = mmrid+"_Vmag";
-				zary.zvals[mmrid+"_Vmag"] = m["magnitude"];
+				double vmag_phys = m["magnitude"];
+				zary.zvals[mmrid+"_Vmag"] = 
+					abs ( vmag_phys / node_vnoms[zary.znode1s[zid]] );
 				zary.znew[mmrid+"_Vmag"] = true;
 
 				cout << mmrid+"_Vmag" << " -> " << zary.zvals[mmrid+"_Vmag"] << '\n';
@@ -311,22 +328,61 @@ class SELoopConsumer : public SEConsumer {
 		this->estimate();
 
 		// --------------------------------------------------------------------
-		// Package and publis the state
+		// Package and publish the state
 		// --------------------------------------------------------------------
+		
+		// Initializae json
 		json jstate;
+		jstate["message"] = json::object();
+		jstate["message"]["timestamp"] = timestamp;
+		jstate["message"]["measurements"] = json::array();
+
+		for ( auto& node_name : node_names ) {
+			// build a json object for each node
+			// NOTE: I will not spend too much time on this until we know
+			//	exactly what the message should look like
+			//  - best guess is node and phase as commented out below
+			//  - this would require a new sparql query and data flows
+			json node_state;
+//			node_state["ConnectivityNode"] = node_buses[node_name];
+//			node_state["phases"] = node_phases[node_name];
+			node_state["dss_node"] = node_name;
+//			node_state["measurementClass"] = "Analog";
+			node_state["measurementType"] = "PNV";
+			// add the state values
+			uint idx = node_idxs[node_name];
+			complex<double> vnom = node_vnoms[node_name];
+			node_state["magnitude"] = abs ( vnom * Vpu[idx] );
+			node_state["angle"] = 180.0/3.1415926535 * arg ( vnom * Vpu[idx] );
+			// append this state to the measurement array
+			jstate["message"]["measurements"].push_back(node_state);
+		}
+
+//		for ( auto& reg_name : reg_names ) {}
 
 		// Publish the message
+		cout << jstate.dump(4).substr(200)+'\n';;
 		statePublisher->send(jstate.dump());
+
+		// write to file
+		state_fh.open("vmag_per-unit.csv",ofstream::app);
+		state_fh << timestamp << ',';
+		int ctr = 0;
+		for ( auto& node_name : node_names ) {
+			double vmag_pu = abs( Vpu[ node_idxs[node_name] ] );
+			state_fh << vmag_pu << ( ++ctr < node_qty ? ',' : '\n' );
+		}
+		state_fh.close();
 
 
 		// --------------------------------------------------------------------
 		// Check whether to stop
 		// --------------------------------------------------------------------
-//		if ( text == "stop" ) {
+		if ( text == "stop" ) {
 			cout << "TIME TO STOP!\n";
 			statePublisher->close();
 			doneLatch.countDown();
-//		}
+		}
 	}
 
 	private:
@@ -336,56 +392,59 @@ class SELoopConsumer : public SEConsumer {
 		cout << "F is " << F->m << " by " << F->n << " with " << F->nzmax << " entries\n";
 		cout << "Q is " << Q->m << " by " << Q->n << " with " << Q->nzmax << " entries\n";
 
+
+		// WE NEED TO HANDLE R-MASK IN HERE SOMEWHERE; ZARY NEEDS TO BE PERSISTANT
+
 		// x, z, h, and J will be maintained here
 		
 		cout << "prepx ... ";
-		cs *x; this->prep_x(x); cout << "complete\n";
+		cs *x; this->prep_x(x);
 		cout << "x is " << x->m << " by " << x->n << " with " << x->nzmax << " entries\n";
-		print_cs_compress(x,"mat/x.csv");
+//		print_cs_compress(x,"mat/x.csv");
 		cout << "P is " << P->m << " by " << P->n << " with " << P->nzmax << " entries\n";
-		print_cs_compress(P,"mat/P.csv");
+//		print_cs_compress(P,"mat/P.csv");
 	
 		cout << "sample_z ... ";
-		cs *z; this->sample_z(z); cout << "complete\n";
+		cs *z; this->sample_z(z);
 		cout << "z is " << z->m << " by " << z->n << " with " << z->nzmax << " entries\n";
-		print_cs_compress(z,"mat/z.csv");
+//		print_cs_compress(z,"mat/z.csv");
 
 		cout << "calc_h ... ";
-		cs *h; this->calc_h(h); cout << "complete\n";
+		cs *h; this->calc_h(h);
 		cout << "h is " << h->m << " by " << h->n << " with " << h->nzmax << " entries\n";
-		for ( int idx = 0 ; idx < h->nzmax ; idx++ )
-			cout << "\th[" << h->i[idx] << "] is " << h->x[idx] << '\n';
-		print_cs_compress(h,"mat/h.csv");
+//		for ( int idx = 0 ; idx < h->nzmax ; idx++ )
+//			cout << "\th[" << h->i[idx] << "] is " << h->x[idx] << '\n';
+//		print_cs_compress(h,"mat/h.csv");
 
 		cout << "calcJ ... ";
-		cs *J; this->calc_J(J); cout << "complete\n";
+		cs *J; this->calc_J(J);
 		cout << "J is " << J->m << " by " << J->n << " with " << J->nzmax << " entries\n";
-		print_cs_compress(J,"mat/J.csv");
+//		print_cs_compress(J,"mat/J.csv");
 
 		// --------------------------------------------------------------------
 		// Predict Step
 		// --------------------------------------------------------------------
 		// -- compute x_predict = F*x | F=I (to improve performance, skip this)
 		cs *xpre = cs_multiply(F,x);
-		if (!xpre) cout << "null xpre\n";
+		if (!xpre) cout << "ERROR: null xpre\n";
 		else cout << "xpre is " << xpre->m << " by " << xpre->n << " with " << xpre->nzmax << " entries\n";
 
 		// -- compute p_predict = F*P*F' + Q | F=I (can be simplified)
 
 		cs *P1 = cs_transpose(F,1);
-		if (!P1) cout << "null P1\n";
+		if (!P1) cout << "ERROR: null P1\n";
 		else cout << "P1 is " << P1->m << " by " << P1->n << " with " << P1->nzmax << " entries\n";
 
 		cs *P2 = cs_multiply(P,P1); cs_spfree(P1);
-		if (!P2) cout << "null P2\n";	// <-----HERE WHERE ARE F AND x ??? 
+		if (!P2) cout << "ERROR: null P2\n";	// <-----HERE WHERE ARE F AND x ??? 
 		else cout << "P2 is " << P2->m << " by " << P2->n << " with " << P2->nzmax << " entries\n";
 
 		cs *P3 = cs_multiply(F,P2); cs_spfree(P2);
-		if (!P3) cout << "null P3\n";
+		if (!P3) cout << "ERROR: null P3\n";
 		else cout << "P3 is " << P3->m << " by " << P3->n << " with " << P3->nzmax << " entries\n";
 
 		cs *Ppre = cs_add(P3,Q,1,1); cs_spfree(P3);
-		if (!Ppre) cout << "null Ppre\n";
+		if (!Ppre) cout << "ERROR: null Ppre\n";
 		else cout << "Ppre is " << Ppre->m << " by " << Ppre->n << " with " << Ppre->nzmax << " entries\n";
 
 		cout << "Predict step complete.\n";
@@ -396,11 +455,11 @@ class SELoopConsumer : public SEConsumer {
 		// -- compute y = J*x_predict + z
 
 		cs *y1 = cs_multiply(J,xpre);
-		if (!y1) cout << "null y1\n";
+		if (!y1) cout << "ERROR: null y1\n";
 		else cout << "y1 is " << y1->m << " by " << y1->n << " with " << y1->nzmax << " entries\n";
 
 		cs *yupd = cs_add(z,y1,1,-1); cs_spfree(y1);
-		if (!yupd) cout << "null yupd\n";
+		if (!yupd) cout << "ERROR: null yupd\n";
 		else cout << "yupd is " << yupd->m << " by " << yupd->n << " with " << yupd->nzmax << " entries\n";
 
 		cout << "y updated\n";
@@ -408,50 +467,50 @@ class SELoopConsumer : public SEConsumer {
 		// -- compute S = J*P_predict*J' + R
 
 		cs *S1 = cs_transpose(J,1);
-		if (!S1) cout << "null S1\n";
+		if (!S1) cout << "ERROR: null S1\n";
 		else cout << "S1 is " << S1->m << " by " << S1->n << " with " << S1->nzmax << " entries\n";
-		print_cs_compress(S1,"mat/S1.csv");
+//		print_cs_compress(S1,"mat/S1.csv");
 
 		cs *S2 = cs_multiply(Ppre,S1); cs_spfree(S1);
-		if (!S2) cout << "null S2\n";
+		if (!S2) cout << "ERROR: null S2\n";
 		else cout << "S2 is " << S2->m << " by " << S2->n << " with " << S2->nzmax << " entries\n";
-		print_cs_compress(S2,"mat/S2.csv");
+//		print_cs_compress(S2,"mat/S2.csv");
 
 		cs *S3 = cs_multiply(J,S2); cs_spfree(S2);
-		if (!S3) cout << "null S3\n";
+		if (!S3) cout << "ERROR: null S3\n";
 		else cout << "S3 is " << S3->m << " by " << S3->n << " with " << S3->nzmax << " entries\n";
-		print_cs_compress(S3,"mat/S3.csv");
+//		print_cs_compress(S3,"mat/S3.csv");
 
 		cs *Supd = cs_add(R,S3,1,1); cs_spfree(S3);
-		if (!Supd) cout << "null Supd\n";
-		else cout << "Supd is " << Supd->m << " by " << Supd->n << '\n';
-		print_cs_compress(Supd,"mat/Supd.csv");
+		if (!Supd) cout << "ERROR: null Supd\n";
+		else cout << "Supd is " << Supd->m << " by " << Supd->n << " with " << Supd->nzmax << " entries\n";
+//		print_cs_compress(Supd,"mat/Supd.csv");
 
 		cout << "S updated\n";
 		cout << "Supd is " << Supd->m << " by " << Supd->n << " with " << Supd->nzmax << " entries\n";
-		cout << "Supd->nzmax is: " << Supd->nzmax << '\n';
-		cout << "Supd->p is: " << Supd->p << '\n';
-		for ( int ii = 0 ; ii < Supd->m + 1 ; ii++ )
-			cout << '\t' << Supd->p[ii] << '\n';
-		cout << "Supd->i is: " << Supd->i << '\n';
-		for ( int ii = 0 ; ii < Supd->nzmax ; ii++ )
-			cout << '\t' << Supd->i[ii] << ", ";
-		cout << '\n';
-		for ( int ii = 0 ; ii < Supd->nzmax ; ii++ )
-			cout << '\t' << Supd->x[ii] << ", ";
-		cout << '\n';
+//		cout << "Supd->nzmax is: " << Supd->nzmax << '\n';
+//		cout << "Supd->p is: " << Supd->p << '\n';
+//		for ( int ii = 0 ; ii < Supd->m + 1 ; ii++ )
+//			cout << '\t' << Supd->p[ii] << '\n';
+//		cout << "Supd->i is: " << Supd->i << '\n';
+//		for ( int ii = 0 ; ii < Supd->nzmax ; ii++ )
+//			cout << '\t' << Supd->i[ii] << ", ";
+//		cout << '\n';
+//		for ( int ii = 0 ; ii < Supd->nzmax ; ii++ )
+//			cout << '\t' << Supd->x[ii] << ", ";
+//		cout << '\n';
 
 		// -- compute K = P_predict*J'*S^-1
 		cs *K1 = cs_transpose(J,1);
-		if (!K1) cout << "null K1\n";
+		if (!K1) cout << "ERROR: null K1\n";
 		else cout << "K1 is " << K1->m << " by " << K1->n << " with " << K1->nzmax << " entries\n";
 
 		cs *K2 = cs_multiply(Ppre,K1); cs_spfree(K1);
-		if (!K2) cout << "null K2\n";
+		if (!K2) cout << "ERROR: null K2\n";
 		else cout << "K2 is " << K2->m << " by " << K2->n << " with " << K2->nzmax << " entries\n";
 
 		cs *K3raw = cs_spalloc(0,0,zqty*zqty,1,1);
-		if (!K3raw) cout << "null K3raw\n";
+		if (!K3raw) cout << "ERROR: null K3raw\n";
 		else cout << "K3raw is " << K3raw->m << " by " << K3raw->n << " with " << K3raw->nzmax << " entries\n";
 
 		try {
@@ -484,11 +543,15 @@ class SELoopConsumer : public SEConsumer {
 			// initialize an identiy right-hand side
 			double *rhs = new double[zqty*zqty];
 			for ( int ii = 0 ; ii < zqty*zqty ; ii++ )
-				rhs[ii] = ii/zqty == ii*zqty ? 1 : 0;
+				rhs[ii] = ii/zqty == ii%zqty ? 1 : 0;
 			
 			cout << "identity rhs created\n";
 
 			klu_solve(klusym,klunum,Supd->m,Supd->n,rhs,&klucom);
+			if (klucom.status) {
+				cout << "Common->status is: " << klucom.status << '\n';
+				throw "klu_solve failed";
+			}
 
 			cout << "klu_solve complete\n";
 
@@ -509,20 +572,39 @@ class SELoopConsumer : public SEConsumer {
 		cout << "left KLU block\n";
 
 		cs *K3 = cs_compress(K3raw); cs_spfree(K3raw);
+		if ( !K3 ) cout << "ERROR: K3 null\n";
+		else cout << "K3 is " << K3->m << " by " << K3->n << " with " << K3->nzmax << " entries\n";
+
 		cs *Kupd = cs_multiply(K2,K3); cs_spfree(K2); cs_spfree(K3);
+		if ( !Kupd ) cout << "ERROR: Kupd null\n";
+		else cout << "Kupd is " << Kupd->m << " by " << Kupd->n << " with " << Kupd->nzmax << " entries\n";
 
 		cout << "K updated\n";
 
 		// -- compute x_update = x_predict + K * y
+
 		cs *x1 = cs_multiply(Kupd,yupd);
+		if ( !x1 ) cout << "ERROR: x1 null\n";
+		else cout << "x1 is " << x1->m << " by " << x1->n << " with " << x1->nzmax << " entries\n";
+		
 		cs *xupd = cs_add(xpre,x1,1,1); cs_spfree(x1);
+		if ( !xupd ) cout << "ERROR: xupd null\n";
+		else cout << "xupd is " << xupd->m << " by " << xupd->n << " with " << xupd->nzmax << " entries\n";
 
 		cout << "x updated\n";
 
 		// -- compute P_update = (KYH+I)*P_predict
 		cs *P4 = cs_multiply(Kupd,J);
+		if ( !P4 ) cout << "ERROR: P4 null\n";
+		else cout << "P4 is " << P4->m << " by " << P4->n << " with " << P4->nzmax << " entries\n";
+
 		cs *P5 = cs_add(eyex,P4,1,-1); cs_spfree(P4);
+		if ( !P5 ) cout << "ERROR: P5 null\n";
+		else cout << "P5 is " << P5->m << " by " << P5->n << " with " << P5->nzmax << " entries\n";
+
 		cs *Pupd = cs_multiply(P5,Ppre); cs_spfree(P5);
+		if ( !Pupd ) cout << "ERROR: Pupd null\n";
+		else cout << "Pupd is " << Pupd->m << " by " << Pupd->n << " with " << P->nzmax << " entries\n";
 
 		cout << "P updated\n";
 
@@ -531,8 +613,8 @@ class SELoopConsumer : public SEConsumer {
 		// --------------------------------------------------------------------
 		// Update persistant state (Vpu and A)
 		// --------------------------------------------------------------------
-
-
+		cout << "calling decompress_state_xupd\n";
+		if (xupd) decompress_state(xupd);
 
 		// --------------------------------------------------------------------
 		// Clean up
@@ -541,7 +623,7 @@ class SELoopConsumer : public SEConsumer {
 		cout << "freeing xpre and Ppre...\n";
 		cs_spfree(xpre); cs_spfree(Ppre);
 
-		// HERE WE NEED TO GET X INTO VPU AND A
+		// X HAS BEEN DECOMPRESSED INTO VPU AND A
 //		cout << "freeing x and setting xupd to NULL...\n";
 //		cs_spfree(x); x = xupd; xupd = NULL;
 		cout << "freeing P and setting Pupd to NULL...\n";
@@ -555,7 +637,7 @@ class SELoopConsumer : public SEConsumer {
 		// free measurement variableas
 //		cout << "freeing x, P, z, h, and J...\n";
 //		cs_spfree(x); cs_spfree(P); cs_spfree(z); cs_spfree(h); cs_spfree(J);
-		cout << "freeing x, z, h, and J";
+		cout << "freeing x, z, h, and J\n";
 		cs_spfree(x); cs_spfree(z); cs_spfree(h); cs_spfree(J);
 
 		// Need to handle P
@@ -569,8 +651,27 @@ class SELoopConsumer : public SEConsumer {
 	}
 
 	private:
+	void decompress_state(cs *&x) {
+		// copy state into vector (states, especially phase, can be 0)
+		vector<double> xvec(x->m,0.0);
+		for ( int idx = 0 ; idx < x->nzmax ; idx++ )
+			xvec[x->i[idx]] = x->x[idx];
+		// update Vpu
+		//  - NOTE: THIS WILL CHANGE IF SOURCE BUS STATES ARE NOT IN X
+		for ( auto& node_name : node_names ) {
+			uint idx = node_idxs[node_name];
+			uint vidx = idx-1;
+			uint Tidx = node_qty + vidx - 1;
+			double vrei = xvec[vidx] * cos(xvec[Tidx]);
+			double vimi = xvec[vidx] * sin(xvec[Tidx]);
+			Vpu[idx] = complex<double>(vrei,vimi);
+		}
+		// update A
+//		for ( auto& reg_name : SLIST reg_names ) {}
+	}
+
+	private:
 	void prep_x(cs *&x) {
-		cout << "In prepx\n";
 		// Prepare x
 		cs *xraw = cs_spalloc(xqty,1,xqty,1,1);
 		for ( auto& node_name : node_names ) {
@@ -581,12 +682,10 @@ class SELoopConsumer : public SEConsumer {
 			uint vidx = idx - 1;
 			if ( abs(Vi) > NEGL ) cs_entry(xraw,vidx,0,abs(Vi));
 			// Add the voltage angle to x
-			uint Tidx = xqty + vidx - 1;
+			uint Tidx = node_qty + vidx - 1;
 			if ( arg(Vi) ) cs_entry(xraw,Tidx,0,arg(Vi));
 		}
-		cout << "\tmemory management\n";
 		x = cs_compress(xraw); cs_spfree(xraw);
-		cout << "\tdone\n";
 	}
 
 	private:
@@ -891,24 +990,19 @@ class SELoopConsumer : public SEConsumer {
 	void print_cs_compress(cs *&a, const string &filename="cs.csv") {
 		// First copy into a map
 		unordered_map<int,unordered_map<int,double>> mat;
-
-		cout << "writing " + filename + '\n';	
 		for ( int i = 0 ; i < a->n ; i++ ) {
 			cout << "in column " << i << " idx from " << a->p[i] << " to " << a->p[i+1] << '\n';
 			for ( int j = a->p[i] ; j < a->p[i+1] ; j++ ) {
-				cout << "\tat index " << j << " dat is " << a->x[j] << '\n';
 				mat[a->i[j]][i] = a->x[j];
 			}
 		}
-
-	
+		// write to file
 		ofstream ofh;
 		ofh.open(filename,ofstream::out);
-	
+		cout << "writing " + filename + '\n';	
 		for ( int i = 0 ; i < a->m ; i++ )
 			for ( int j = 0 ; j < a->n ; j++ )
-				ofh << mat[i][j] << (j == a->n-1 ? '\n' : ',');
-	
+				ofh << mat[i][j] << ( j == a->n-1 ? '\n' : ',' );
 		ofh.close();
 	}
 };
