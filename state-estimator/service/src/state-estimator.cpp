@@ -253,13 +253,16 @@ int main(int argc, char** argv){
 		
 		// Wait for sensor initializer and retrieve sensors
 		sensConsumerThread.join();
-//		sensConsumer.fillSens(numms,mns,mts,msigs,mnd1s,mnd2s,mvals);
+
+//// NO SENSORS RIGHT NOW
 		sensConsumer.fillSens(zary);
 		sensConsumer.close();
 
 
 		// Initialize containers to hold pseudo-measurements
 		SDMAP pseudoP, pseudoQ;
+
+/* PSEUDO MEASUREMENTS EQUAL TO ZERO
 		// Add nominal load injections
 		for ( auto& load : jpsm["data"]["results"]["bindings"] ) {
 			cout << load.dump() + "\n";
@@ -319,6 +322,9 @@ int main(int argc, char** argv){
 				}
 			}
 		}
+*/
+
+/*
 		// Add these injections to the sensor array
 		for ( auto& node : node_names ) {
 			// WHAT TO DO ABOUT THE MRIDS??
@@ -347,7 +353,7 @@ int main(int argc, char** argv){
 			zary.zvals	[qinj_zid] = pseudoQ[node];
 			zary.znew	[qinj_zid] = false;
 		}
-
+*/
 		for ( auto& zid : zary.zids ) {
 			cout << zid << '\t' << zary.zvals[zid] << '\n';
 		}
