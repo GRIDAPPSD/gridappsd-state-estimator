@@ -77,74 +77,73 @@ class TopoProcConsumer : public SEConsumer {
 	}
 	
 	public:
-	virtual void process(const string& text) {
+	virtual void process() {
 		
 		// --------------------------------------------------------------------
 		// PARSE THE MESSAGE AND PROCESS THE TOPOLOGY
 		// --------------------------------------------------------------------
-		cout << "\nRecieved ybus message: \n\t" + text + "\n\n";
-		
-		json jtext = json::parse(text);
-		string yfn = jtext["data"]["yParseFilePath"];
-		string nfn = jtext["data"]["nodeListFilePath"];
+		cout << "\nRecieved ybus message of " << text.length() << " bytes...\n\n";
 
-		cout << "yfn: " <<  yfn << "\n";
-		cout << "nfn: " << nfn << "\n";
-		
-		// --------------------------------------------------------------------
-		// LOAD THE LIST OF NODE NAMES
-		// --------------------------------------------------------------------
-		// For now, pull this in from a file:
-		//	base_nodelist.csv from dss cmd "export ynodelist base_nodelist.csv"
-		cout << "\nLoading node list from: " << nfn << '\n';
-		std::ifstream nfs;
-		nfs.open(nfn,std::ifstream::in);
-		if ( !nfs ) {
-			cout << "failed to open node file\n";
-			throw "failed to open node name file";
+
+		json jtext = json::parse(text);
+
+		// This is actually a list of lines from ysparse
+		json jlines_ysparse = jtext["data"]["yParseFilePath"];
+		cout << "Ysparse:\n\t";
+		cout << jlines_ysparse.dump().substr(0,1000) << " ...\n\n";
+		bool firstline = true;
+		for ( auto& jline : jlines_ysparse ) {
+			if (firstline) firstline = false;
+			else {
+				string tmpline = jline;
+				// split the line {Row,Col,G,B}
+				size_t pos = tmpline.find(",");
+				int i = stoi( tmpline.substr(0,pos) );
+					tmpline.erase(0,pos+1); pos = tmpline.find(",");
+				int j = stoi( tmpline.substr(0,pos) );
+					tmpline.erase(0,pos+1); pos = tmpline.find(",");
+				double G = stod( tmpline.substr(0,pos) );
+					tmpline.erase(0,pos+1); pos = tmpline.find(",");
+				double B = stod( tmpline.substr(0,pos) );
+
+//				cout <<'\t'<< i << '\t' << j << '\t' << G << '\t' << B << '\n';
+
+				Y[i][j] = complex<double>(G,B);
+				if ( i != j ) Y[j][i] = complex<double>(G,B);
+
+			}
 		}
-		std::string nfsl;
-		while ( std::getline(nfs,nfsl) ) {
-			// strip leading and trailing quotations and white space
-			std::string noden = nfsl.substr(nfsl.find_first_not_of("\'\""),
-					nfsl.find_last_not_of(" \t\f\v\n\r\'\""));
-		//	std::cout << "|" << noden << "|\n";
-			nodens.push_back(noden);
-			nodem[noden] = ++numns;
+
+		// This is actually the list of nodes from nodelist
+		json jlines_nodelist = jtext["data"]["nodeListFilePath"];
+		cout << "nodelist\n\t";
+		cout << jlines_nodelist.dump().substr(0,1000) << " ...\n\n";
+		int idx = 0;
+		for ( auto& jline : jlines_nodelist ) {
+			// Extract the node name
+			string line = jline;
+			string node_name = regex_replace(line,regex("\""),"");
+			// Store the node information
+			numns++;
+			nodens.push_back(node_name);
+			nodem[node_name] = ++idx;
 		}
-		nfs.close();
-		// END pull node list from file
-		
-		cout << "\tNode list loaded.\n";
-		
-		// --------------------------------------------------------------------
-		// LOAD THE Y-BUS MATRIX
-		// --------------------------------------------------------------------
-		// For now, pull the ybus from a file:
-		// base_ysparse.csv from dss cmd "export y triplet base_ysparse.csv"
-		cout << "\nLoading Y-bus from: " << yfn << '\n';
-		std::ifstream yfs;
-		yfs.open(yfn,std::ifstream::in);
-		if ( !yfs ) {
-			cout << "failed to open Y-bus file\n";
-			throw "failed to open ybus file";
-		}
-		std::string yfsl;
-		std::getline(yfs,yfsl);		// skip the header
-		//std::cout<<yfsl<<'\n';		// print back the header
-		int i,j;
-		double G,B;
-		char c;
-		while ( yfs >> i >> c >> j >> c >> G >> c >> B ) {
-//			cout << i << '\t' << j << '\t' << G << '\t' << B << '\n';
-			Y[i][j] = std::complex<double>(G,B);
-			if ( i != j ) Y[j][i] = std::complex<double>(G,B);
-		}
-		yfs.close();
-		// END pull ybus from file
-		
-		cout << "\tY-bus loaded.\n";
-		
+
+//		// print
+//		for ( auto& inode : nodens ) {
+//			auto i = nodem[inode];
+//			try {
+//				auto row = Y.at(i);
+//				for ( auto& jnode: nodens ) {
+//					auto j = nodem[jnode];
+//					try {
+//						complex<double> ycomp = row.at(j);
+//						cout << "Y(" << i << "," << j << ") -> " << ycomp << '\n';
+//					} catch(...) {}
+//				}
+//			} catch(...) {}
+//		}
+
 		// --------------------------------------------------------------------
 		// TOPOLOGY PROCESSING COMPLETE
 		// --------------------------------------------------------------------
