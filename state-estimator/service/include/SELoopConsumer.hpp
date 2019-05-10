@@ -80,6 +80,8 @@ class SELoopConsumer : public SEConsumer {
 	SLIST node_names;	// node names [list of strings]
 	SIMAP node_idxs;	// node positional indices [node->int]
 	SCMAP node_vnoms;	// complex nominal voltages of nodes
+	SSMAP node_bmrids;	// string mRIDs of the associated buses
+	SSMAP node_phs;		// string phases
 	IMMAP Yphys;		// Ybus [node->[row->col]] [physical units]
 
 	// system state
@@ -113,6 +115,8 @@ class SELoopConsumer : public SEConsumer {
 				const SLIST& node_names,
 				const SIMAP& node_idxs,
 				const SCMAP& node_vnoms,
+				const SSMAP& node_bmrids,
+				const SSMAP& node_phs,
 				const double sbase,
 				const IMMAP& Yphys,
 				const IMMAP& A) {
@@ -128,6 +132,8 @@ class SELoopConsumer : public SEConsumer {
 		this->node_names = node_names;
 		this->node_idxs = node_idxs;
 		this->node_vnoms = node_vnoms;
+		this->node_bmrids = node_bmrids;
+		this->node_phs = node_phs;
 		this->sbase = sbase;
 		this->Yphys = Yphys; 
 		this->A = A;
@@ -262,7 +268,6 @@ class SELoopConsumer : public SEConsumer {
 		}
 		ofh.close();
 	
-return;
 		// --------------------------------------------------------------------
 		// Initialize cs variables for state estimation
 		// --------------------------------------------------------------------
@@ -409,17 +414,8 @@ return;
 			//  - best guess is node and phase as commented out below
 			//  - this would require a new sparql query and data flows
 			json state;
-//			state["ConnectivityNode"] = node_buses[node_name];
-//			state["phase"] = node_phases[node_name];
-//			node_state["dss_node"] = node_name;
-			string str = node_name;
-			state["ConnectivityNode"] = str.substr(0,str.length()-2);
-			string ph = str.substr(str.length()-1,1);
-			state["phase"] = "UNKNOWN";
-			if (!ph.compare("1")) state["phase"] = "A";
-			if (!ph.compare("2")) state["phase"] = "B";
-			if (!ph.compare("3")) state["phase"] = "C";
-			// WHAT ABOUT SECONDARY PHASES
+			state["ConnectivityNode"] = node_bmrids[node_name];
+			state["phase"] = node_phs[node_name];
 
 			// add the state values
 			uint idx = node_idxs[node_name];

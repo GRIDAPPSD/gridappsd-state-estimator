@@ -160,7 +160,6 @@ class SEConsumer : public ExceptionListener,
 			} else {
 				text = "NOT A BYTESMESSAGE!";
 			}
-			
 			// implementation-specific actions:
 			process();
 
@@ -172,7 +171,7 @@ class SEConsumer : public ExceptionListener,
 	public:
 	virtual void process() {
 		// implementation-specific actions - default is to print the message
-		// cout << "Recieved message:\n\t" << text << '\n';
+		//cout << "Recieved message:\n\t" << text << '\n';
 		this->doneLatch.countDown();
 	}
 
