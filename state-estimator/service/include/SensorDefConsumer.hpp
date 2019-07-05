@@ -82,7 +82,7 @@ class SensorDefConsumer : public SEConsumer {
 
 		json jtext = json::parse(text);
 		cout << jtext.dump().substr(0,2000) << " ...\n\n";
-//		cout << jtext.dump() << "\n\n";
+//		cout << jtext.dump(2);
 
 		for ( auto& feeder : jtext["data"]["feeders"] ) {
 			cout << "\nFeeder name: " << feeder["name"] << '\n';
@@ -113,7 +113,7 @@ class SensorDefConsumer : public SEConsumer {
 //			while ( cin.get()!='\n' );
 			
 		}
-
+/*
 		// --------------------------------------------------------------------
 		// LOAD THE SENSORS -- sensors will deliver measurements
 		// --------------------------------------------------------------------
@@ -148,7 +148,7 @@ class SensorDefConsumer : public SEConsumer {
 					zary.ztypes[zid] = "Vmag";
 					zary.znode1s[zid] = node;
 					zary.znode2s[zid] = node;
-					zary.zsigs[zid] = 0;		// WHERE DOES THIS COME FROM ??
+					zary.zsigs[zid] = 0.0001;		// WHERE DOES THIS COME FROM ??
 					// these don't necessarily need to be initialized
 					// - they will be initialized on access
 //					zary.zvals[zid] = 0;		// initialize to 0
@@ -163,7 +163,7 @@ class SensorDefConsumer : public SEConsumer {
 				}
 			}
 		}
-		
+*/		
 		
 		// --------------------------------------------------------------------
 		// SENSOR INITIALIZATION COMPLETE

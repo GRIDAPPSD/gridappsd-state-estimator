@@ -14,12 +14,15 @@ using json = nlohmann::json;
 #include "gridappsd_requests.hpp"
 using gridappsd_requests::sparql_query;
 
-#include "sparql_queries.hpp"
+//#include "sparql_queries.hpp"
+#include "sparql_queries_CIM100.hpp"
+using sparql_queries::sparq_nodes;
 using sparql_queries::sparq_conducting_equipment_vbase;
 using sparql_queries::sparq_transformer_end_vbase;
 using sparql_queries::sparq_energy_consumer_pq;
 using sparql_queries::sparq_ratio_tap_changer_nodes;
 
+#include "State.hpp"
 #include "SensorArray.hpp"
 
 #include <iostream>
@@ -71,47 +74,98 @@ int main(int argc, char** argv){
 		activemq::library::ActiveMQCPP::initializeLibrary();
 
 		// --------------------------------------------------------------------
-		// MAKE SOME MANUAL QUERIES
+		// MAKE SOME SPARQL QUERIES
 		// --------------------------------------------------------------------
 
+		// get nodes, bus mRIDs and phases
+		json jnodes = sparql_query(gad,"nodes",sparq_nodes(gad.modelID));
+		cout << jnodes.dump(2);
+		SSMAP node_bmrids;
+		SSMAP node_phs;
+		for ( auto& binding : jnodes["data"]["results"]["bindings"] ) {
+			string busname = binding["busname"]["value"];
+			string busid = binding["busid"]["value"];
+			for ( auto& c : busname ) c = toupper(c);
+
+			try { // phs contains one or more discrete phases
+				string phs = binding["phases"]["value"];
+				// phase A
+				if (phs.find("A")!=string::npos) {
+					node_bmrids[busname+".1"] = busid;
+					node_phs[busname+".1"] = "A";
+				}
+				// phase B
+				if (phs.find("B")!=string::npos) {
+					node_bmrids[busname+".2"] = busid;
+					node_phs[busname+".2"] = "B";
+				}
+				// phase C
+				if (phs.find("C")!=string::npos) {
+					node_bmrids[busname+".3"] = busid;
+					node_phs[busname+".3"] = "C";
+				}
+				// phase s1
+				if (phs.find("s1")!=string::npos) {
+					node_bmrids[busname+".1"] = busid;
+					node_phs[busname+".1"] = "s1";
+				}
+				// phase s2
+				if (phs.find("s2")!=string::npos) {
+					node_bmrids[busname+".2"] = busid;
+					node_phs[busname+".2"] = "s2";
+				}
+			} catch ( ... ) {
+				// phase A
+				node_bmrids[busname+".1"] = busid;
+				node_phs[busname+".1"] = "A";
+				// phase B
+				node_bmrids[busname+".2"] = busid;
+				node_phs[busname+".2"] = "B";
+				// phase C
+				node_bmrids[busname+".3"] = busid;
+				node_phs[busname+".3"] = "C";
+			}
+		}
+
+		// QUERY FOR VOLTAGE BASES
 		json jvbase1 = sparql_query(gad,"vbase1",sparq_conducting_equipment_vbase(gad.modelID));
 		json jvbase2 = sparql_query(gad,"vbase2",sparq_transformer_end_vbase(gad.modelID));
 
-		// VBASE magnitude: process results
-		SLIST busnames;		// bus names
-		SSMAP busids;		// bus name -> bus mRID
-		SDMAP busvbases;	// bus name -> bus vbase
-		for ( auto& bus : jvbase1["data"]["results"]["bindings"] ) {
-			cout << bus.dump() + '\n';
-			string busname = bus["busname"]["value"];
-			string busid = bus["busid"]["value"];
-			string vbasestr = bus["vbase"]["value"];
-			double vbase = stod( vbasestr );
-			busnames.push_back(busname);
-			busids[busname] = busid;
-			busvbases[busname] = vbase;
-		}
-		for ( auto& bus : jvbase2["data"]["results"]["bindings"] ) {
-			cout << bus.dump() + '\n';
-			string busname = bus["busname"]["value"];
-			string busid = bus["busid"]["value"];
-			string vbasestr = bus["vbase"]["value"];
-			double vbase = stod( vbasestr );
-			busnames.push_back(busname);
-			busids[busname] = busid;
-			busvbases[busname] = vbase;
-		}
-		busnames.sort();
-		busnames.unique();
-
-		// VBASE (magnitude): report results
-		cout << "\n\nBuses from CIM:\n";
-		for ( auto& busname : busnames ) cout << busname << " -> " << busvbases[busname] << '\n';
+//		// VBASE magnitude: process results
+//		SLIST busnames;		// bus names
+//		SSMAP busids;		// bus name -> bus mRID
+//		SDMAP busvbases;	// bus name -> bus vbase
+//		for ( auto& bus : jvbase1["data"]["results"]["bindings"] ) {
+//			cout << bus.dump() + '\n';
+//			string busname = bus["busname"]["value"];
+//			string busid = bus["busid"]["value"];
+//			string vbasestr = bus["vbase"]["value"];
+//			double vbase = stod( vbasestr );
+//			busnames.push_back(busname);
+//			busids[busname] = busid;
+//			busvbases[busname] = vbase;
+//		}
+//		for ( auto& bus : jvbase2["data"]["results"]["bindings"] ) {
+//			cout << bus.dump() + '\n';
+//			string busname = bus["busname"]["value"];
+//			string busid = bus["busid"]["value"];
+//			string vbasestr = bus["vbase"]["value"];
+//			double vbase = stod( vbasestr );
+//			busnames.push_back(busname);
+//			busids[busname] = busid;
+//			busvbases[busname] = vbase;
+//		}
+//		busnames.sort();
+//		busnames.unique();
+//
+//		// VBASE (magnitude): report results
+//		cout << "\n\nBuses from CIM:\n";
+//		for ( auto& busname : busnames ) cout << busname << " -> " << busvbases[busname] << '\n';
 
 
 		// PSEUDO-MEASUREMENTS
 		json jpsm = sparql_query(gad,"psm",sparq_energy_consumer_pq(gad.modelID));
-		cout << jpsm.dump() + '\n';
+//		cout << jpsm.dump() + '\n';
 
 
 		// --------------------------------------------------------------------
@@ -125,7 +179,7 @@ int main(int argc, char** argv){
 		ybusConsumerThread.start();		// execute ybusConsumer.run()
 		ybusConsumer.waitUntilReady();	// wait for latch release
 
-		// Here, we can set up a consumer for the vnom file
+		// Set up the vnom consumer
 		string vnomTopic = "goss.gridappsd.se.response."+gad.simid+".vnom";
 		VnomConsumer vnomConsumer(gad.brokerURI,gad.username,gad.password,vnomTopic,"queue");
 		Thread vnomConsumerThread(&vnomConsumer);
@@ -254,24 +308,23 @@ int main(int argc, char** argv){
 		// Wait for sensor initializer and retrieve sensors
 		sensConsumerThread.join();
 
-//// NO SENSORS RIGHT NOW
+// NO SENSORS RIGHT NOW
 		sensConsumer.fillSens(zary);
 		sensConsumer.close();
-
 
 		// Initialize containers to hold pseudo-measurements
 		SDMAP pseudoP, pseudoQ;
 
-/* PSEUDO MEASUREMENTS EQUAL TO ZERO
 		// Add nominal load injections
 		for ( auto& load : jpsm["data"]["results"]["bindings"] ) {
 			cout << load.dump() + "\n";
 			string bus = load["busname"]["value"]; for ( char& c : bus ) c = toupper(c);
 			cout << "bus: " + bus + '\n';
 			if ( !load.count("phase") ) {
+				cout << "balanced 3-phase load\n";
 				// This is a 3-phase balanced load (handle D and Y the same)
-				string sptot = load["pfixed"]["value"]; double ptot = stod(sptot);
-				string sqtot = load["qfixed"]["value"]; double qtot = stod(sqtot);
+				string sptot = load["p_3p"]["value"]; double ptot = stod(sptot);
+				string sqtot = load["q_3p"]["value"]; double qtot = stod(sqtot);
 				// Add injection to phase A
 				pseudoP[bus+".1"] -= ptot/3.0/2.0;
 				pseudoQ[bus+".1"] -= qtot/3.0/2.0;
@@ -282,10 +335,10 @@ int main(int argc, char** argv){
 				pseudoP[bus+".3"] -= ptot/3.0/2.0;
 				pseudoQ[bus+".3"] -= qtot/3.0/2.0;
 			} else {
-				cout << "not in phase\n";
+				cout << "single-phase load\n";
 				// This is a 1-phase load
-				string spph = load["pfixedphase"]["value"]; double pph = stod(spph);
-				string sqph = load["qfixedphase"]["value"]; double qph = stod(sqph);
+				string spph = load["p_phase"]["value"]; double pph = stod(spph);
+				string sqph = load["q_phase"]["value"]; double qph = stod(sqph);
 				cout << "pph: " << pph << "\t\t" << "qph: " << qph << '\n';
 				string phase = load["phase"]["value"];
 				// determine the node
@@ -298,11 +351,13 @@ int main(int argc, char** argv){
 				// Handle Wye or Delta load
 				string conn = load["conn"]["value"];
 				if ( !conn.compare("Y") ) {
+					cout << "\tY load\n";
 					// Wye-connected load - injections are 
 					pseudoP[node] -= pph/2.0;
 					pseudoQ[node] -= qph/2.0;
 				}
 				if ( !conn.compare("D") ) {
+					cout << "\tD load\n";
 					// Delta-connected load - injections depend on load current
 					complex<double> sload = complex<double>(pph,qph);
 					// Find the nominal voltage across the load
@@ -313,23 +368,20 @@ int main(int argc, char** argv){
 					if (!phase.compare("s1")) n2 += ".2";
 					if (!phase.compare("s2")) n2 += ".1";
 					complex<double> vload = node_vnoms[node] - node_vnoms[n2];
-					// Positive injection into the named node
-					pseudoP[node] += real(sload/vload*node_vnoms[node])/2.0;
-					pseudoQ[node] += imag(sload/vload*node_vnoms[node])/2.0;
-					// Negative injection into the second node
-					pseudoP[n2] -= real(sload/vload*node_vnoms[n2])/2.0;
-					pseudoQ[n2] -= imag(sload/vload*node_vnoms[n2])/2.0;
+					// Positive load at the named node
+					pseudoP[node] -= real(sload/vload*node_vnoms[node])/2.0;
+					pseudoQ[node] -= imag(sload/vload*node_vnoms[node])/2.0;
+					// Negative load at the second node
+					pseudoP[n2] += real(sload/vload*node_vnoms[n2])/2.0;
+					pseudoQ[n2] += imag(sload/vload*node_vnoms[n2])/2.0;
 				}
 			}
 		}
-*/
 
-/*
+
 		// Add these injections to the sensor array
+		const double sbase = 1000000.0;
 		for ( auto& node : node_names ) {
-			// WHAT TO DO ABOUT THE MRIDS??
-			//  - THESE MEASUREMENTS DON'T GET UPDATED
-			//  - MAYBE WE DON'T ADD TO THE MRIDS
 
 			// Add the P injection
 			string pinj_zid = "pseudo_P_"+node;
@@ -339,7 +391,7 @@ int main(int argc, char** argv){
 			zary.zsigs	[pinj_zid] = 5000.0;
 			zary.znode1s[pinj_zid] = node;
 			zary.znode2s[pinj_zid] = node;
-			zary.zvals	[pinj_zid] = pseudoP[node];
+			zary.zvals	[pinj_zid] = pseudoP[node]/sbase;
 			zary.znew	[pinj_zid] = false;
 
 			// Add the Q injection
@@ -350,12 +402,15 @@ int main(int argc, char** argv){
 			zary.zsigs	[qinj_zid] = 2000.0;
 			zary.znode1s[qinj_zid] = node;
 			zary.znode2s[qinj_zid] = node;
-			zary.zvals	[qinj_zid] = pseudoQ[node];
+			zary.zvals	[qinj_zid] = pseudoQ[node]/sbase;
 			zary.znew	[qinj_zid] = false;
+		
 		}
-*/
+
+
 		for ( auto& zid : zary.zids ) {
-			cout << zid << '\t' << zary.zvals[zid] << '\n';
+			cout << zid << '\t' << zary.zvals[zid] << ", sigma " 
+				<< zary.zsigs[zid] << '\n';
 		}
 
 
@@ -366,12 +421,14 @@ int main(int argc, char** argv){
 		// ideally we want to compute an estimate on a thread at intervals and
 		//   collect measurements in the meantime
 
+
 		for ( auto& node: node_names ) cout << node+'\n';
 		// measurements come from the simulation output
 		string simoutTopic = "goss.gridappsd.simulation.output."+gad.simid;
 		SELoopConsumer loopConsumer(gad.brokerURI,gad.username,gad.password,
-			simoutTopic,"topic",gad.simid,
-			zary,node_qty,node_names,node_idxs,node_vnoms,Y,A);
+			simoutTopic,"topic",gad.simid,zary,
+			node_qty,node_names,node_idxs,node_vnoms,node_bmrids,node_phs,
+			sbase,Y,A);
 		Thread loopConsumerThread(&loopConsumer);
 		loopConsumerThread.start();	// execute loopConsumer.run()
 		loopConsumer.waitUntilReady();	// wait for the startup latch release
