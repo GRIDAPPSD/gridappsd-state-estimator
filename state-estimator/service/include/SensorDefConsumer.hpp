@@ -82,7 +82,7 @@ class SensorDefConsumer : public SEConsumer {
 
 		json jtext = json::parse(text);
 		cout << jtext.dump().substr(0,2000) << " ...\n\n";
-//		cout << jtext.dump() << "\n\n";
+//		cout << jtext.dump(2);
 
 		for ( auto& feeder : jtext["data"]["feeders"] ) {
 			cout << "\nFeeder name: " << feeder["name"] << '\n';
@@ -113,7 +113,7 @@ class SensorDefConsumer : public SEConsumer {
 //			while ( cin.get()!='\n' );
 			
 		}
-
+/*
 		// --------------------------------------------------------------------
 		// LOAD THE SENSORS -- sensors will deliver measurements
 		// --------------------------------------------------------------------
@@ -163,7 +163,7 @@ class SensorDefConsumer : public SEConsumer {
 				}
 			}
 		}
-		
+*/		
 		
 		// --------------------------------------------------------------------
 		// SENSOR INITIALIZATION COMPLETE

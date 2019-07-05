@@ -91,8 +91,8 @@ class SELoopConsumer : public SEConsumer {
 //	cs *State_Cov;		// state covariance matrix;
 
 	private:
-	double sbase;	//
-	IMMAP Ypu;						//
+	double sbase;
+	IMMAP Ypu;
 	
 	private:
 	SensorArray zary;
@@ -237,6 +237,7 @@ class SELoopConsumer : public SEConsumer {
 
 		for ( auto& inode : node_names ) {
 			uint i = node_idxs[inode];
+			cout << inode << " idx is " << i << '\n';
 			try {
 				auto& row = Ypu.at(i);
 				int jctr = 0;
@@ -246,28 +247,89 @@ class SELoopConsumer : public SEConsumer {
 						complex<double> tmp = row.at(j);
 						double tmpre = tmp.real();
 						double tmpim = tmp.imag();
-						
-						cout << '\t' << jctr << '\n';
-
 						ofh << tmpre 
 							<< ( tmpim >= 0 ? "+" : "-" )
 							<< std::abs(tmpim) << "i" 
-							<< ( jctr++ < node_qty ? ',' : '\n' );
+							<< ( ++jctr < node_qty ? ',' : '\n' );
 					} catch ( const std::out_of_range& oor) {
-
-						cout << '\t' << jctr << '\n';
-						
 						ofh << "0+0i" << ( ++jctr < node_qty ? ',' : '\n' );
 					}
 				}
 			} catch ( const std::out_of_range& oor ) {
 				int jctr = 0;
 				for ( auto& jnode : node_names )
-					ofh << "0+0i" << ( ++jctr < node_qty ? ',' : '\n');
+					ofh << "0+0i" << ( ++jctr < node_qty ? ',' : '\n' );
 			}
+		} ofh.close();
+
+		// write Y to file
+		ofh.open("mat/Yphys.csv",ofstream::out);
+		cout << "writing mat/Yphys.csv\n";
+//		for ( auto& inode : node_names ) {
+		for ( uint i = 1 ; i <= node_qty ; i++ ) {
+			try {
+				auto& row = Yphys.at(i);
+				for ( uint j = 1 ; j <= node_qty ; j++ ) {
+					try {
+						complex<double> tmp = row.at(j);
+						double tmpre = tmp.real();
+						double tmpim = tmp.imag();
+						ofh << tmpre
+							<< ( tmpim >= 0 ? "+" : "-" )
+							<< std::abs(tmpim) << "i"
+							<< ( j < node_qty ? ',' : '\n' );
+					} catch ( const std::out_of_range& oor ) {
+						ofh << "0+0i" << ( j < node_qty ? ',' : '\n' );
+					}
+				}
+			} catch ( const std::out_of_range& oor ) {
+				for ( uint j = 0 ; j < node_qty ; j++ )
+					ofh << "0+0i" << ( j < node_qty ? ',' : '\n' );
+			}
+		} ofh.close();
+
+		// write Vbase to file
+		ofh.open("mat/vnoms.csv",ofstream::out);
+		cout << "writing mat/vnoms.csv\n";
+		std::vector<complex<double>> vnoms(node_qty);
+		for ( auto& node_name : node_names ) {
+			cout << node_name << '\n';
+			cout << "\tidx is " << node_idxs[node_name] << '\n';
+			cout << "\tvnom is " << node_vnoms[node_name] << '\n';
+			vnoms[node_idxs[node_name]-1] = node_vnoms[node_name];
+//			vnoms[1] = 13;
 		}
+		for ( complex<double>& vnom : vnoms ) {
+			double re = vnom.real();
+			double im = vnom.imag();
+			ofh << re
+				<< ( im >= 0 ? "+" : "-" )
+				<< std::abs(im) << "i"
+				<< '\n';
+		} ofh.close();
+			
+		// write the node map to file
+		ofh.open("mat/nodem.csv",ofstream::out);
+		cout << "writing mat/nodem.csv\n";
+		for ( auto& node_name : node_names )
+			ofh << node_name << '\n';
 		ofh.close();
-	
+
+		// write sensor information to file
+		ofh.open("mat/meas.txt",ofstream::out);
+		cout << "writing mat/meas.txt\n";
+		ofh << "sensor_type\tsensor_name\tnode1\tnode2\tvalue\tsigma\n";
+		for ( auto& zid : zary.zids ) {
+			ofh << zary.ztypes[zid] << '\t'
+				<< zid << '\t'
+				<< zary.znode1s[zid] << '\t'
+				<< zary.znode2s[zid] << '\t'
+				<< zary.zvals[zid] << '\t'
+				<< zary.zsigs[zid] << '\n';
+		} ofh.close();
+
+		cout << "done writing\n";
+
 		// --------------------------------------------------------------------
 		// Initialize cs variables for state estimation
 		// --------------------------------------------------------------------
@@ -281,7 +343,7 @@ class SELoopConsumer : public SEConsumer {
 		// process covariance matrix (constant)
 		cs *Qraw = cs_spalloc(0,0,xqty,1,1);
 		for ( int ii = 0 ; ii < xqty ; ii++ )
-			cs_entry(Qraw,ii,ii,0.04*sqrt(1.0/4));		// THIS MAY NEED TO CHANGE
+			cs_entry(Qraw,ii,ii,0.04*sqrt(1.0/4));		// TUNABLE
 		Q = cs_compress(Qraw); cs_spfree(Qraw);
 		print_cs_compress(Q,"mat/Q.csv");
 
@@ -294,18 +356,19 @@ class SELoopConsumer : public SEConsumer {
 
 		// measurement covariance matrix (constant)
 		cs *Rraw = cs_spalloc(0,0,zqty,1,1);
-		int idx = 0;
-		for ( auto& measurement : zary.zids ) {
-			cs_entry(Rraw,idx,idx,zary.zsigs[measurement]);
-			idx++;
-		} R = cs_compress(Rraw); cs_spfree(Rraw);
+		for ( auto& zid : zary.zids )
+			cs_entry(Rraw,zary.zidxs[zid],zary.zidxs[zid],zary.zsigs[zid]);
+		R = cs_compress(Rraw); cs_spfree(Rraw);
 		print_cs_compress(R,"mat/R.csv");
 		// initial state vector
 		
 		// initial measurement vector [these actually don't need to be done here]
-//		this->sample_z();
-//		this->calc_h();
-//		this->calc_J();
+		cs* z; this->sample_z(z);
+			print_cs_compress(z,"mat/z.csv"); cs_spfree(z);
+		cs* h; this->calc_h(h);
+			print_cs_compress(h,"mat/h.csv"); cs_spfree(h);
+		cs* J; this->calc_J(J);
+			print_cs_compress(J,"mat/J.csv"); cs_spfree(J);
 
 
 		// --------------------------------------------------------------------
@@ -673,12 +736,14 @@ class SELoopConsumer : public SEConsumer {
 
 		cs *K3 = cs_compress(K3raw); cs_spfree(K3raw);
 		if ( !K3 ) cout << "ERROR: K3 null\n";
-		else cout << "K3 is " << K3->m << " by " << K3->n << " with " << K3->nzmax << " entries\n";
+		else cout << "K3 is " << K3->m << " by " << K3->n << 
+				" with " << K3->nzmax << " entries\n";
 		print_cs_compress(K3,"mat/K3.csv");
 
 		cs *Kupd = cs_multiply(K2,K3); cs_spfree(K2); cs_spfree(K3);
 		if ( !Kupd ) cout << "ERROR: Kupd null\n";
-		else cout << "Kupd is " << Kupd->m << " by " << Kupd->n << " with " << Kupd->nzmax << " entries\n";
+		else cout << "Kupd is " << Kupd->m << " by " << Kupd->n << 
+				" with " << Kupd->nzmax << " entries\n";
 		print_cs_compress(Kupd,"mat/Kupd.csv");
 
 		cout << "K updated\n";
@@ -687,12 +752,14 @@ class SELoopConsumer : public SEConsumer {
 
 		cs *x1 = cs_multiply(Kupd,yupd);
 		if ( !x1 ) cout << "ERROR: x1 null\n";
-		else cout << "x1 is " << x1->m << " by " << x1->n << " with " << x1->nzmax << " entries\n";
+		else cout << "x1 is " << x1->m << " by " << x1->n << 
+				" with " << x1->nzmax << " entries\n";
 		print_cs_compress(x1,"mat/x1.csv");
 		
 		cs *xupd = cs_add(xpre,x1,1,1); cs_spfree(x1);
 		if ( !xupd ) cout << "ERROR: xupd null\n";
-		else cout << "xupd is " << xupd->m << " by " << xupd->n << " with " << xupd->nzmax << " entries\n";
+		else cout << "xupd is " << xupd->m << " by " << xupd->n << 
+				" with " << xupd->nzmax << " entries\n";
 		print_cs_compress(xupd,"mat/xupd.csv");
 
 		cout << "x updated\n";
@@ -700,17 +767,20 @@ class SELoopConsumer : public SEConsumer {
 		// -- compute P_update = (KYH+I)*P_predict
 		cs *P4 = cs_multiply(Kupd,J);
 		if ( !P4 ) cout << "ERROR: P4 null\n";
-		else cout << "P4 is " << P4->m << " by " << P4->n << " with " << P4->nzmax << " entries\n";
+		else cout << "P4 is " << P4->m << " by " << P4->n << 
+				" with " << P4->nzmax << " entries\n";
 		print_cs_compress(P4,"mat/P4.csv");
 
 		cs *P5 = cs_add(eyex,P4,1,-1); cs_spfree(P4);
 		if ( !P5 ) cout << "ERROR: P5 null\n";
-		else cout << "P5 is " << P5->m << " by " << P5->n << " with " << P5->nzmax << " entries\n";
+		else cout << "P5 is " << P5->m << " by " << P5->n << 
+				" with " << P5->nzmax << " entries\n";
 		print_cs_compress(P5,"mat/P5.csv");
 
 		cs *Pupd = cs_multiply(P5,Ppre); cs_spfree(P5);
 		if ( !Pupd ) cout << "ERROR: Pupd null\n";
-		else cout << "Pupd is " << Pupd->m << " by " << Pupd->n << " with " << P->nzmax << " entries\n";
+		else cout << "Pupd is " << Pupd->m << " by " << Pupd->n << 
+				" with " << P->nzmax << " entries\n";
 		print_cs_compress(Pupd,"mat/Pupd.csv");
 
 		cout << "P updated\n";
@@ -801,7 +871,8 @@ class SELoopConsumer : public SEConsumer {
 		cs *zraw = cs_spalloc(zqty,1,zqty,1,1);
 		if ( !zraw ) cout << "Failed to cs_spalloc zraw\n";
 		for ( auto& zid : zary.zids ) {
-			cout << '\n' << zid << '[' << zary.zidxs[zid] << ']' << '\t' << zary.zvals[zid];
+			cout << '\n' << zid << '[' << zary.zidxs[zid] << 
+					']' << '\t' << zary.zvals[zid];
 			if ( zary.zvals[zid] > NEGL || -zary.zvals[zid] > NEGL )
 				cs_entry(zraw,zary.zidxs[zid],0,zary.zvals[zid]);
 		}
@@ -856,7 +927,7 @@ class SELoopConsumer : public SEConsumer {
 				try {
 					Yij = Yrow.at(j);
 					// We know the nodes are coupled; check for Aij
-					// NOTE: A is never iterated over so we don't necessarily need at()
+					// NOTE: A is never iterated over - we don't need at()
 					ai = 1;
 					try {
 						auto Arow = A.at(i);
@@ -865,7 +936,7 @@ class SELoopConsumer : public SEConsumer {
 						} catch(...) {}
 					} catch(...) {}
 					// We know the nodes are coupled; check for Aji
-					// NOTE: A is never iterated over so we don't necessarily need at()
+					// NOTE: A is never iterated over - we don't need at()
 					aj = 1;
 					try {
 						auto Arow = A.at(j);
@@ -1102,7 +1173,8 @@ class SELoopConsumer : public SEConsumer {
 		// First copy into a map
 		unordered_map<int,unordered_map<int,double>> mat;
 		for ( int i = 0 ; i < a->n ; i++ ) {
-//			cout << "in column " << i << " idx from " << a->p[i] << " to " << a->p[i+1] << '\n';
+//			cout << "in column " << i << " idx from " << a->p[i] << 
+//					" to " << a->p[i+1] << '\n';
 			for ( int j = a->p[i] ; j < a->p[i+1] ; j++ ) {
 				mat[a->i[j]][i] = a->x[j];
 			}

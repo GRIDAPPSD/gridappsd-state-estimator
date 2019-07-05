@@ -14,7 +14,8 @@ using json = nlohmann::json;
 #include "gridappsd_requests.hpp"
 using gridappsd_requests::sparql_query;
 
-#include "sparql_queries.hpp"
+//#include "sparql_queries.hpp"
+#include "sparql_queries_CIM100.hpp"
 using sparql_queries::sparq_nodes;
 using sparql_queries::sparq_conducting_equipment_vbase;
 using sparql_queries::sparq_transformer_end_vbase;
@@ -311,7 +312,6 @@ int main(int argc, char** argv){
 		sensConsumer.fillSens(zary);
 		sensConsumer.close();
 
-
 		// Initialize containers to hold pseudo-measurements
 		SDMAP pseudoP, pseudoQ;
 
@@ -323,8 +323,8 @@ int main(int argc, char** argv){
 			if ( !load.count("phase") ) {
 				cout << "balanced 3-phase load\n";
 				// This is a 3-phase balanced load (handle D and Y the same)
-				string sptot = load["pfixed"]["value"]; double ptot = stod(sptot);
-				string sqtot = load["qfixed"]["value"]; double qtot = stod(sqtot);
+				string sptot = load["p_3p"]["value"]; double ptot = stod(sptot);
+				string sqtot = load["q_3p"]["value"]; double qtot = stod(sqtot);
 				// Add injection to phase A
 				pseudoP[bus+".1"] -= ptot/3.0/2.0;
 				pseudoQ[bus+".1"] -= qtot/3.0/2.0;
@@ -337,8 +337,8 @@ int main(int argc, char** argv){
 			} else {
 				cout << "single-phase load\n";
 				// This is a 1-phase load
-				string spph = load["pfixedphase"]["value"]; double pph = stod(spph);
-				string sqph = load["qfixedphase"]["value"]; double qph = stod(sqph);
+				string spph = load["p_phase"]["value"]; double pph = stod(spph);
+				string sqph = load["q_phase"]["value"]; double qph = stod(sqph);
 				cout << "pph: " << pph << "\t\t" << "qph: " << qph << '\n';
 				string phase = load["phase"]["value"];
 				// determine the node
@@ -368,12 +368,12 @@ int main(int argc, char** argv){
 					if (!phase.compare("s1")) n2 += ".2";
 					if (!phase.compare("s2")) n2 += ".1";
 					complex<double> vload = node_vnoms[node] - node_vnoms[n2];
-					// Positive injection into the named node
-					pseudoP[node] += real(sload/vload*node_vnoms[node])/2.0;
-					pseudoQ[node] += imag(sload/vload*node_vnoms[node])/2.0;
-					// Negative injection into the second node
-					pseudoP[n2] -= real(sload/vload*node_vnoms[n2])/2.0;
-					pseudoQ[n2] -= imag(sload/vload*node_vnoms[n2])/2.0;
+					// Positive load at the named node
+					pseudoP[node] -= real(sload/vload*node_vnoms[node])/2.0;
+					pseudoQ[node] -= imag(sload/vload*node_vnoms[node])/2.0;
+					// Negative load at the second node
+					pseudoP[n2] += real(sload/vload*node_vnoms[n2])/2.0;
+					pseudoQ[n2] += imag(sload/vload*node_vnoms[n2])/2.0;
 				}
 			}
 		}
@@ -408,9 +408,10 @@ int main(int argc, char** argv){
 		}
 
 
-//		for ( auto& zid : zary.zids ) {
-//			cout << zid << '\t' << zary.zvals[zid] << '\n';
-//		}
+		for ( auto& zid : zary.zids ) {
+			cout << zid << '\t' << zary.zvals[zid] << ", sigma " 
+				<< zary.zsigs[zid] << '\n';
+		}
 
 
 		// --------------------------------------------------------------------
