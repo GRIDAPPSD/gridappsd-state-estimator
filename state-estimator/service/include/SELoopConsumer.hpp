@@ -182,9 +182,9 @@ class SELoopConsumer : public SEConsumer {
 		cs *Praw = cs_spalloc(0,0,xqty,1,1);
 		for ( int idx = 0 ; idx < node_qty ; idx++ ) {
 			// Add variance for the voltage magnitude state
-			cs_entry(Praw,idx,idx,span_vmag);
+			cs_entry(Praw,idx,idx,0.002*span_vmag);
 			// Add variance for the voltage phase state
-			cs_entry(Praw,node_qty+idx,node_qty+idx,span_varg);
+			cs_entry(Praw,node_qty+idx,node_qty+idx,0.002*span_varg);
 		}
 		P = cs_compress(Praw); cs_spfree(Praw);
 		print_cs_compress(P,"mat/Pinit.csv");
@@ -357,7 +357,7 @@ class SELoopConsumer : public SEConsumer {
 		// measurement covariance matrix (constant)
 		cs *Rraw = cs_spalloc(0,0,zqty,1,1);
 		for ( auto& zid : zary.zids )
-			cs_entry(Rraw,zary.zidxs[zid],zary.zidxs[zid],zary.zsigs[zid]);
+			cs_entry(Rraw,zary.zidxs[zid],zary.zidxs[zid],zary.zsigs[zid]/1000000.0);
 		R = cs_compress(Rraw); cs_spfree(Rraw);
 		print_cs_compress(R,"mat/R.csv");
 		// initial state vector
@@ -1003,10 +1003,15 @@ class SELoopConsumer : public SEConsumer {
 			else if ( !zary.ztypes[zid].compare("aji" ) ) {
 				// aji is a direct state measurement
 			}
-			else if ( !zary.ztypes[zid].compare("Vmag") ) {
-				// Vmag is a direct state measurement
+			else if ( !zary.ztypes[zid].compare("vi") ) {
+				// vi is a direct state measurement
 				uint i = node_idxs[zary.znode1s[zid]];
 				if ( abs(Vpu[i]) > NEGL ) cs_entry(hraw,zidx,0,abs(Vpu[i]));
+			}
+			else if ( !zary.ztypes[zid].compare("Ti") ) {
+				// Ti is a direct state measurement
+				uint i = node_idxs[zary.znode1s[zid]];
+				if ( arg(Vpu[i]) > NEGL ) cs_entry(hraw,zidx,0,arg(Vpu[i]));
 			}
 			else { 
 				cout << "WARNING: Undefined measurement type " + ztype + '\n';
@@ -1086,12 +1091,16 @@ class SELoopConsumer : public SEConsumer {
 				else if ( !ztype.compare("aji") ) {
 					// daji/dv = 0
 				}
-				else if ( !ztype.compare("Vmag") ) {
+				else if ( !ztype.compare("vi") ) {
 					if ( vidx == i ) {
 						// --- compute dvi/dvi
 						cs_entry(Jraw,zidx,xidx,1.0);
 					}
 				}
+				else if ( !ztype.compare("Ti") ) {
+					// dT/dv = 0
+				}
+
 				else {
 					cout << "WARNING: Undefined measurement type " + ztype + '\n';
 				}
@@ -1151,8 +1160,14 @@ class SELoopConsumer : public SEConsumer {
 				else if ( !ztype.compare("ajj") ) {
 					// dajj/dT = 0
 				}
-				else if ( !ztype.compare("Vmag") ) {
+				else if ( !ztype.compare("vi") ) {
 					// dvi/dT = 0
+				}
+				else if ( !ztype.compare("Ti") ) {
+					if ( vidx == i ) {
+						// --- compute dTi/dTi
+						cs_entry(Jraw,zidx,xidx,1.0);
+					}
 				}
 				else {
 					cout << "WARNING: Undefined measurement type " + ztype + '\n';
