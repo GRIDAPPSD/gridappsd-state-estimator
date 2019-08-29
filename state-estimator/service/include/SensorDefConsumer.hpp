@@ -145,7 +145,7 @@ class SensorDefConsumer : public SEConsumer {
 					string zid = mmrid + "_Vmag";
 					zary.zids.push_back( zid );
 					zary.zidxs[zid] = zary.zqty++;
-					zary.ztypes[zid] = "Vmag";
+					zary.ztypes[zid] = "vi";
 					zary.znode1s[zid] = node;
 					zary.znode2s[zid] = node;
 					zary.zsigs[zid] = 0.0001;		// WHERE DOES THIS COME FROM ??

@@ -119,8 +119,8 @@ namespace sparql_queries {
 		string sparq = 
 			"PREFIX r:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
 			"PREFIX c:  <http://iec.ch/TC57/2012/CIM-schema-cim17#>\n"
-			"SELECT ?loadname ?busname ?conn ?phase ?p_3ph ?q_3ph "
-				"?pfixedphase ?qfixedphase WHERE {\n"
+			"SELECT ?loadname ?busname ?conn ?phase ?p_3p ?q_3p "
+				"?p_phase ?q_phase WHERE {\n"
 			"  # conducting equipment as an IdentifiedObject (PowerSystemResource)\n"
 			"  ?econsumer c:IdentifiedObject.name ?loadname.\n"
 			"  # terminals attached to conducting equipment\n"
