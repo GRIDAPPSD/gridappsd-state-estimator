@@ -168,6 +168,8 @@ class SELoopConsumer : public SEConsumer {
 		// --------------------------------------------------------------------
 		for ( auto& node_name : node_names ) {
 			// Important: V is indexed by node index like A and Y
+            // Note: voltage is stored in per-unit;
+            //      the following line is for reference
 //			V[node_idxs[node_name]] = node_vnoms[node_name];
 			Vpu[node_idxs[node_name]] = 1.0;
 		}
@@ -208,9 +210,9 @@ class SELoopConsumer : public SEConsumer {
 						complex<double> vnomi = node_vnoms[inode];
 						complex<double> vnomj = node_vnoms[jnode];
 						Ypu[i][j] = conj(vnomi/sbase) * yij * vnomj;
-					} catch(...) {}
+					} catch(const std::out_of_range& oor) {}
 				}
-			} catch(...) {}
+			} catch(const std::out_of_range& oor) {}
 		}
 
 //		// print
@@ -328,7 +330,7 @@ class SELoopConsumer : public SEConsumer {
 				<< zary.zsigs[zid] << '\n';
 		} ofh.close();
 
-		cout << "done writing\n";
+		cout << "done writing Y, Yphys, vnoms, nodem, and meas files\n";
 
 		// --------------------------------------------------------------------
 		// Initialize cs variables for state estimation
@@ -374,6 +376,7 @@ class SELoopConsumer : public SEConsumer {
 		// --------------------------------------------------------------------
 		// Initialize the state recorder file
 		// --------------------------------------------------------------------
+        // this is a log of estimates at each time step
 		state_fh.open("vmag_per-unit.csv",ofstream::out);
 		state_fh << "timestamp,";
 		int ctr = 0;
@@ -530,6 +533,9 @@ class SELoopConsumer : public SEConsumer {
 
 		// x, z, h, and J will be maintained here
 		
+
+        // propagate new measurements
+
 		cout << "prepx ... ";
 		cs *x; this->prep_x(x);
 		cout << "x is " << x->m << " by " << x->n << 
