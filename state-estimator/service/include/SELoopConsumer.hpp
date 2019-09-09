@@ -14,6 +14,11 @@ using json = nlohmann::json;
 #include <list>
 #include <unordered_map>
 
+// for mkdir and opendir
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <dirent.h>
+
 // SLIST holds the lists of node names and regulator names
 #ifndef SLIST
 #define SLIST std::list<std::string>
@@ -151,6 +156,22 @@ class SELoopConsumer : public SEConsumer {
 		// set up the output message json object
 		jstate["simulation_id"] = simid;
 
+		// create the output directory if needed
+		if (!opendir("output")) {
+			// if output is already a symbolic link to a shared
+			// folder as intended, this won't be needed
+			mkdir("output", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+		}
+
+		// create simulation parent directory
+		std::string simpath = "output/sim_" + simid + "/";
+		mkdir(simpath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+
+		// create init directory
+		std::string initpath = simpath + "init/";
+		mkdir(initpath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+
+
 		// Construct the producer that will be used to publish the state estimate
 		string sePubTopic = "goss.gridappsd.state-estimator.out."+simid;
 		statePublisher = new SEProducer(brokerURI,username,password,sePubTopic,"topic");
@@ -187,7 +208,8 @@ class SELoopConsumer : public SEConsumer {
 			cs_entry(Praw,node_qty+idx,node_qty+idx,0.002*span_varg);
 		}
 		P = cs_compress(Praw); cs_spfree(Praw);
-		print_cs_compress(P,"mat/Pinit.csv");
+
+		print_cs_compress(P,initpath+"Pinit.csv");
 
 
 		cout << "State Covariance Matrix Initialized.\n";
@@ -231,8 +253,8 @@ class SELoopConsumer : public SEConsumer {
 //		}
 		// write to file
 		ofstream ofh;
-		ofh.open("mat/Ypu.csv",ofstream::out);
-		cout << "writing mat/Ypu.csv\n\n";
+		ofh.open(initpath+"Ypu.csv",ofstream::out);
+		cout << "writing " << initpath+"Ypu.csv\n\n";
 		cout << "node_qty is " << node_qty << '\n';
 
 		for ( auto& inode : node_names ) {
@@ -263,8 +285,8 @@ class SELoopConsumer : public SEConsumer {
 		} ofh.close();
 
 		// write Y to file
-		ofh.open("mat/Yphys.csv",ofstream::out);
-		cout << "writing mat/Yphys.csv\n";
+		ofh.open(initpath+"Yphys.csv",ofstream::out);
+		cout << "writing " << initpath+"Yphys.csv\n";
 //		for ( auto& inode : node_names ) {
 		for ( uint i = 1 ; i <= node_qty ; i++ ) {
 			try {
@@ -289,8 +311,8 @@ class SELoopConsumer : public SEConsumer {
 		} ofh.close();
 
 		// write Vbase to file
-		ofh.open("mat/vnoms.csv",ofstream::out);
-		cout << "writing mat/vnoms.csv\n";
+		ofh.open(initpath+"vnoms.csv",ofstream::out);
+		cout << "writing " << initpath+"vnoms.csv\n";
 		std::vector<complex<double>> vnoms(node_qty);
 		for ( auto& node_name : node_names ) {
 			cout << node_name << '\n';
@@ -309,15 +331,15 @@ class SELoopConsumer : public SEConsumer {
 		} ofh.close();
 			
 		// write the node map to file
-		ofh.open("mat/nodem.csv",ofstream::out);
-		cout << "writing mat/nodem.csv\n";
+		ofh.open(initpath+"nodem.csv",ofstream::out);
+		cout << "writing " << initpath+"nodem.csv\n";
 		for ( auto& node_name : node_names )
 			ofh << node_name << '\n';
 		ofh.close();
 
 		// write sensor information to file
-		ofh.open("mat/meas.txt",ofstream::out);
-		cout << "writing mat/meas.txt\n";
+		ofh.open("output/init/meas.txt",ofstream::out);
+		cout << "writing output/init/meas.txt\n";
 		ofh << "sensor_type\tsensor_name\tnode1\tnode2\tvalue\tsigma\n";
 		for ( auto& zid : zary.zids ) {
 			ofh << zary.ztypes[zid] << '\t'
@@ -338,43 +360,43 @@ class SELoopConsumer : public SEConsumer {
 		for ( int ii = 0 ; ii < xqty ; ii++ )
 			cs_entry(Fraw,ii,ii,1);
 		F = cs_compress(Fraw); cs_spfree(Fraw);
-		print_cs_compress(F,"mat/F.csv");
+		print_cs_compress(F,initpath+"F.csv");
 
 		// process covariance matrix (constant)
 		cs *Qraw = cs_spalloc(0,0,xqty,1,1);
 		for ( int ii = 0 ; ii < xqty ; ii++ )
 			cs_entry(Qraw,ii,ii,0.04*sqrt(1.0/4));		// TUNABLE
 		Q = cs_compress(Qraw); cs_spfree(Qraw);
-		print_cs_compress(Q,"mat/Q.csv");
+		print_cs_compress(Q,initpath+"Q.csv");
 
 		// identity matrix of dimension x (constant)
 		cs *eyexraw = cs_spalloc(0,0,xqty,1,1);
 		for ( int ii = 0 ; ii < xqty ; ii++ )
 			cs_entry(eyexraw,ii,ii,1.0);
 		eyex = cs_compress(eyexraw); cs_spfree(eyexraw);
-		print_cs_compress(eyex,"mat/eyex.csv");
+		print_cs_compress(eyex,initpath+"eyex.csv");
 
 		// measurement covariance matrix (constant)
 		cs *Rraw = cs_spalloc(0,0,zqty,1,1);
 		for ( auto& zid : zary.zids )
 			cs_entry(Rraw,zary.zidxs[zid],zary.zidxs[zid],zary.zsigs[zid]/1000000.0);
 		R = cs_compress(Rraw); cs_spfree(Rraw);
-		print_cs_compress(R,"mat/R.csv");
+		print_cs_compress(R,initpath+"R.csv");
 		// initial state vector
 		
 		// initial measurement vector [these actually don't need to be done here]
 		cs* z; this->sample_z(z);
-			print_cs_compress(z,"mat/z.csv"); cs_spfree(z);
+			print_cs_compress(z,initpath+"z.csv"); cs_spfree(z);
 		cs* h; this->calc_h(h);
-			print_cs_compress(h,"mat/h.csv"); cs_spfree(h);
+			print_cs_compress(h,initpath+"h.csv"); cs_spfree(h);
 		cs* J; this->calc_J(J);
-			print_cs_compress(J,"mat/J.csv"); cs_spfree(J);
+			print_cs_compress(J,initpath+"J.csv"); cs_spfree(J);
 
 
 		// --------------------------------------------------------------------
 		// Initialize the state recorder file
 		// --------------------------------------------------------------------
-		state_fh.open("vmag_per-unit.csv",ofstream::out);
+		state_fh.open(simpath+"vmag_per-unit.csv",ofstream::out);
 		state_fh << "timestamp,";
 		int ctr = 0;
 		for ( auto& node_name : node_names )
@@ -450,7 +472,7 @@ class SELoopConsumer : public SEConsumer {
 		// Estimate the state
 		// --------------------------------------------------------------------
 		cout << "ESTIMATING...\n";
-		this->estimate();
+		this->estimate(timestamp);
 
 // STOP EARLY
 //		doneLatch.countDown();
@@ -498,7 +520,8 @@ class SELoopConsumer : public SEConsumer {
 		statePublisher->send(jstate.dump());
 
 		// write to file
-		state_fh.open("vmag_per-unit.csv",ofstream::app);
+		std::string simpath = "output/sim_" + simid + "/";
+		state_fh.open(simpath+"vmag_per-unit.csv",ofstream::app);
 		state_fh << timestamp << ',';
 		int ctr = 0;
 		for ( auto& node_name : node_names ) {
@@ -519,7 +542,7 @@ class SELoopConsumer : public SEConsumer {
 	}
 
 	private:
-	void estimate(void) {
+	void estimate(const int& timestamp) {
 		cout << "xqty is " << xqty << '\n';
 		cout << "zqty is " << zqty << '\n';
 		cout << "F is " << F->m << " by " << F->n << " with " << F->nzmax << " entries\n";
@@ -534,29 +557,39 @@ class SELoopConsumer : public SEConsumer {
 		cs *x; this->prep_x(x);
 		cout << "x is " << x->m << " by " << x->n << 
 			" with " << x->nzmax << " entries\n";
-		print_cs_compress(x,"mat/x.csv");
+
+		// set filename path based on timestamp
+		std::string simpath = "output/sim_" + simid + "/ts_";
+		std::ostringstream out;
+		out << simpath << timestamp << "/";
+		std::string tspath = out.str();
+
+		// create timestamp directory
+		mkdir(tspath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+
+		print_cs_compress(x,tspath+"x.csv");
 		cout << "P is " << P->m << " by " << P->n << 
 			" with " << P->nzmax << " entries\n";
-		print_cs_compress(P,"mat/P.csv");
+		print_cs_compress(P,tspath+"P.csv");
 	
 		cout << "sample_z ... ";
 		cs *z; this->sample_z(z);
 		cout << "z is " << z->m << " by " << z->n << 
 			" with " << z->nzmax << " entries\n";
-		print_cs_compress(z,"mat/z.csv");
+		print_cs_compress(z,tspath+"z.csv");
 		cout << "calc_h ... ";
 		cs *h; this->calc_h(h);
 		cout << "h is " << h->m << " by " << h->n << 
 			" with " << h->nzmax << " entries\n";
 //		for ( int idx = 0 ; idx < h->nzmax ; idx++ )
 //			cout << "\th[" << h->i[idx] << "] is " << h->x[idx] << '\n';
-		print_cs_compress(h,"mat/h.csv");
+		print_cs_compress(h,tspath+"h.csv");
 
 		cout << "calcJ ... ";
 		cs *J; this->calc_J(J);
 		cout << "J is " << J->m << " by " << J->n << 
 			" with " << J->nzmax << " entries\n";
-		print_cs_compress(J,"mat/J.csv");
+		print_cs_compress(J,tspath+"J.csv");
 
 
 		// --------------------------------------------------------------------
@@ -567,7 +600,7 @@ class SELoopConsumer : public SEConsumer {
 		if (!xpre) cout << "ERROR: null xpre\n";
 		else cout << "xpre is " << xpre->m << " by " << xpre->n << 
 			" with " << xpre->nzmax << " entries\n";
-		print_cs_compress(xpre,"mat/xpre.csv");
+		print_cs_compress(xpre,tspath+"xpre.csv");
 
 		// -- compute p_predict = F*P*F' + Q | F=I (can be simplified)
 
@@ -575,25 +608,25 @@ class SELoopConsumer : public SEConsumer {
 		if (!P1) cout << "ERROR: null P1\n";
 		else cout << "P1 is " << P1->m << " by " << P1->n << 
 			" with " << P1->nzmax << " entries\n";
-		print_cs_compress(P1,"mat/P1.csv");
+		print_cs_compress(P1,tspath+"P1.csv");
 
 		cs *P2 = cs_multiply(P,P1); cs_spfree(P1);
 		if (!P2) cout << "ERROR: null P2\n";
 		else cout << "P2 is " << P2->m << " by " << P2->n << 
 			" with " << P2->nzmax << " entries\n";
-		print_cs_compress(P2,"mat/P2.csv");
+		print_cs_compress(P2,tspath+"P2.csv");
 
 		cs *P3 = cs_multiply(F,P2); cs_spfree(P2);
 		if (!P3) cout << "ERROR: null P3\n";
 		else cout << "P3 is " << P3->m << " by " << P3->n << 
 			" with " << P3->nzmax << " entries\n";
-		print_cs_compress(P3,"mat/P3.csv");
+		print_cs_compress(P3,tspath+"P3.csv");
 
 		cs *Ppre = cs_add(P3,Q,1,1); cs_spfree(P3);
 		if (!Ppre) cout << "ERROR: null Ppre\n";
 		else cout << "Ppre is " << Ppre->m << " by " << Ppre->n << 
 			" with " << Ppre->nzmax << " entries\n";
-		print_cs_compress(Ppre,"mat/Ppre.csv");
+		print_cs_compress(Ppre,tspath+"Ppre.csv");
 
 		cout << "Predict step complete.\n";
 		
@@ -606,13 +639,13 @@ class SELoopConsumer : public SEConsumer {
 //		if (!y1) cout << "ERROR: null y1\n";
 //		else cout << "y1 is " << y1->m << " by " << y1->n << 
 //			" with " << y1->nzmax << " entries\n";
-//		print_cs_compress(y1,"mat/y1.csv");
+//		print_cs_compress(y1,tspath+"y1.csv");
 
 		cs *yupd = cs_add(z,h,1,-1); //cs_spfree(y1);
 		if (!yupd) cout << "ERROR: null yupd\n";
 		else cout << "yupd is " << yupd->m << " by " << yupd->n << 
 			" with " << yupd->nzmax << " entries\n";
-		print_cs_compress(yupd,"mat/yupd.csv");
+		print_cs_compress(yupd,tspath+"yupd.csv");
 
 		cout << "y updated\n";
 
@@ -622,25 +655,25 @@ class SELoopConsumer : public SEConsumer {
 		if (!S1) cout << "ERROR: null S1\n";
 		else cout << "S1 is " << S1->m << " by " << S1->n << 
 			" with " << S1->nzmax << " entries\n";
-		print_cs_compress(S1,"mat/S1.csv");
+		print_cs_compress(S1,tspath+"S1.csv");
 
 		cs *S2 = cs_multiply(Ppre,S1); cs_spfree(S1);
 		if (!S2) cout << "ERROR: null S2\n";
 		else cout << "S2 is " << S2->m << " by " << S2->n << 
 			" with " << S2->nzmax << " entries\n";
-		print_cs_compress(S2,"mat/S2.csv");
+		print_cs_compress(S2,tspath+"S2.csv");
 
 		cs *S3 = cs_multiply(J,S2); cs_spfree(S2);
 		if (!S3) cout << "ERROR: null S3\n";
 		else cout << "S3 is " << S3->m << " by " << S3->n << 
 			" with " << S3->nzmax << " entries\n";
-		print_cs_compress(S3,"mat/S3.csv");
+		print_cs_compress(S3,tspath+"S3.csv");
 
 		cs *Supd = cs_add(R,S3,1,1); cs_spfree(S3);
 		if (!Supd) cout << "ERROR: null Supd\n";
 		else cout << "Supd is " << Supd->m << " by " << Supd->n << 
 			" with " << Supd->nzmax << " entries\n";
-		print_cs_compress(Supd,"mat/Supd.csv");
+		print_cs_compress(Supd,tspath+"Supd.csv");
 
 		cout << "S updated\n";
 		cout << "Supd is " << Supd->m << " by " << Supd->n << 
@@ -662,19 +695,19 @@ class SELoopConsumer : public SEConsumer {
 		if (!K1) cout << "ERROR: null K1\n";
 		else cout << "K1 is " << K1->m << " by " << K1->n << 
 			" with " << K1->nzmax << " entries\n";
-		print_cs_compress(K1,"mat/K1.csv");
+		print_cs_compress(K1,tspath+"K1.csv");
 
 		cs *K2 = cs_multiply(Ppre,K1); cs_spfree(K1);
 		if (!K2) cout << "ERROR: null K2\n";
 		else cout << "K2 is " << K2->m << " by " 
 			<< K2->n << " with " << K2->nzmax << " entries\n";
-		print_cs_compress(K2,"mat/K2.csv");
+		print_cs_compress(K2,tspath+"K2.csv");
 
 		cs *K3raw = cs_spalloc(0,0,zqty*zqty,1,1);
 		if (!K3raw) cout << "ERROR: null K3raw\n";
 		else cout << "K3raw is " << K3raw->m << " by " 
 			<< K3raw->n << " with " << K3raw->nzmax << " entries\n";
-//		print_cs_compress(K3raw,"mat/K3raw.csv");
+//		print_cs_compress(K3raw,tspath+"K3raw.csv");
 
 		try {
 		
@@ -738,13 +771,13 @@ class SELoopConsumer : public SEConsumer {
 		if ( !K3 ) cout << "ERROR: K3 null\n";
 		else cout << "K3 is " << K3->m << " by " << K3->n << 
 				" with " << K3->nzmax << " entries\n";
-		print_cs_compress(K3,"mat/K3.csv");
+		print_cs_compress(K3,tspath+"K3.csv");
 
 		cs *Kupd = cs_multiply(K2,K3); cs_spfree(K2); cs_spfree(K3);
 		if ( !Kupd ) cout << "ERROR: Kupd null\n";
 		else cout << "Kupd is " << Kupd->m << " by " << Kupd->n << 
 				" with " << Kupd->nzmax << " entries\n";
-		print_cs_compress(Kupd,"mat/Kupd.csv");
+		print_cs_compress(Kupd,tspath+"Kupd.csv");
 
 		cout << "K updated\n";
 
@@ -754,13 +787,13 @@ class SELoopConsumer : public SEConsumer {
 		if ( !x1 ) cout << "ERROR: x1 null\n";
 		else cout << "x1 is " << x1->m << " by " << x1->n << 
 				" with " << x1->nzmax << " entries\n";
-		print_cs_compress(x1,"mat/x1.csv");
+		print_cs_compress(x1,tspath+"x1.csv");
 		
 		cs *xupd = cs_add(xpre,x1,1,1); cs_spfree(x1);
 		if ( !xupd ) cout << "ERROR: xupd null\n";
 		else cout << "xupd is " << xupd->m << " by " << xupd->n << 
 				" with " << xupd->nzmax << " entries\n";
-		print_cs_compress(xupd,"mat/xupd.csv");
+		print_cs_compress(xupd,tspath+"xupd.csv");
 
 		cout << "x updated\n";
 
@@ -769,19 +802,19 @@ class SELoopConsumer : public SEConsumer {
 		if ( !P4 ) cout << "ERROR: P4 null\n";
 		else cout << "P4 is " << P4->m << " by " << P4->n << 
 				" with " << P4->nzmax << " entries\n";
-		print_cs_compress(P4,"mat/P4.csv");
+		print_cs_compress(P4,tspath+"P4.csv");
 
 		cs *P5 = cs_add(eyex,P4,1,-1); cs_spfree(P4);
 		if ( !P5 ) cout << "ERROR: P5 null\n";
 		else cout << "P5 is " << P5->m << " by " << P5->n << 
 				" with " << P5->nzmax << " entries\n";
-		print_cs_compress(P5,"mat/P5.csv");
+		print_cs_compress(P5,tspath+"P5.csv");
 
 		cs *Pupd = cs_multiply(P5,Ppre); cs_spfree(P5);
 		if ( !Pupd ) cout << "ERROR: Pupd null\n";
 		else cout << "Pupd is " << Pupd->m << " by " << Pupd->n << 
 				" with " << P->nzmax << " entries\n";
-		print_cs_compress(Pupd,"mat/Pupd.csv");
+		print_cs_compress(Pupd,tspath+"Pupd.csv");
 
 		cout << "P updated\n";
 

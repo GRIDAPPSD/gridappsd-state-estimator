@@ -78,7 +78,7 @@ class SensorDefConsumer : public SEConsumer {
 		// --------------------------------------------------------------------
 		// PARSE THE MESSAGE AND INITIALIZE SENSORS
 		// --------------------------------------------------------------------
-		cout << "Recieved sensor message of " << text.length() << " bytes...\n\t";
+		cout << "Received sensor message of " << text.length() << " bytes...\n\t";
 
 		json jtext = json::parse(text);
 		cout << jtext.dump().substr(0,2000) << " ...\n\n";
@@ -112,6 +112,12 @@ class SensorDefConsumer : public SEConsumer {
 //			cout << "\nPress ENTER to list non-PNV measurements:";
 //			while ( cin.get()!='\n' );
 			
+		}
+
+	        for ( auto& f : jtext["data"]["feeders"] ) {
+			for (auto& m : f["measurements"] ) {
+				cout << m.dump() + '\n';
+			}
 		}
 /*
 		// --------------------------------------------------------------------
