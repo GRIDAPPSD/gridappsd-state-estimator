@@ -338,7 +338,7 @@ class SELoopConsumer : public SEConsumer {
 		ofh.close();
 
 		// write sensor information to file
-		ofh.open("output/init/meas.txt",ofstream::out);
+		ofh.open(initpath+"meas.txt",ofstream::out);
 		cout << "writing output/init/meas.txt\n";
 		ofh << "sensor_type\tsensor_name\tnode1\tnode2\tvalue\tsigma\n";
 		for ( auto& zid : zary.zids ) {
@@ -351,6 +351,28 @@ class SELoopConsumer : public SEConsumer {
 		} ofh.close();
 
 		cout << "done writing\n";
+
+
+        // write sensor types to file
+        ofh.open(initpath+"ztypes.csv");
+        for ( auto& zid : zary.zids )
+            ofh << zary.ztypes[zid] << '\n';
+        ofh.close();
+
+
+        // write sensor node 1s
+        ofh.open(initpath+"znode1s.csv");
+        for ( auto& zid : zary.zids )
+            ofh << zary.znode1s[zid] << '\n';
+        ofh.close();
+
+
+        // write sensor node 2s
+        ofh.open(initpath+"znode2s.csv");
+        for ( auto& zid : zary.zids )
+            ofh << zary.znode2s[zid] << '\n';
+        ofh.close();
+
 
 		// --------------------------------------------------------------------
 		// Initialize cs variables for state estimation
@@ -440,7 +462,7 @@ class SELoopConsumer : public SEConsumer {
 		for ( auto& m : jtext["message"]["measurements"] ) {
 			// link back to information about the measurement using its mRID
 			string mmrid = m["measurement_mrid"];
-//			cout << m.dump()+'\n';
+//			cout << m.dump(2)+'\n';
 //			cout << mmrid+'\n';
 			string m_type = zary.mtypes[mmrid];
 //			cout << '\t' + m_type + '\n';
@@ -551,13 +573,6 @@ class SELoopConsumer : public SEConsumer {
 
 		// WE NEED TO HANDLE R-MASK IN HERE SOMEWHERE; ZARY NEEDS TO BE PERSISTANT
 
-		// x, z, h, and J will be maintained here
-		
-		cout << "prepx ... ";
-		cs *x; this->prep_x(x);
-		cout << "x is " << x->m << " by " << x->n << 
-			" with " << x->nzmax << " entries\n";
-
 		// set filename path based on timestamp
 		std::string simpath = "output/sim_" + simid + "/ts_";
 		std::ostringstream out;
@@ -567,6 +582,13 @@ class SELoopConsumer : public SEConsumer {
 		// create timestamp directory
 		mkdir(tspath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
+
+		// x, z, h, and J will be maintained here
+		
+		cout << "prepx ... ";
+		cs *x; this->prep_x(x);
+		cout << "x is " << x->m << " by " << x->n << 
+			" with " << x->nzmax << " entries\n";
 		print_cs_compress(x,tspath+"x.csv");
 		cout << "P is " << P->m << " by " << P->n << 
 			" with " << P->nzmax << " entries\n";
@@ -1229,6 +1251,7 @@ class SELoopConsumer : public SEConsumer {
 		}
 		// write to file
 		ofstream ofh;
+        ofh << std::setprecision(16);
 		ofh.open(filename,ofstream::out);
 		cout << "writing " + filename + "\n\n";	
 		for ( int i = 0 ; i < a->m ; i++ )
