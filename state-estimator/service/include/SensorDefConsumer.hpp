@@ -116,7 +116,7 @@ class SensorDefConsumer : public SEConsumer {
 
 	        for ( auto& f : jtext["data"]["feeders"] ) {
 			for (auto& m : f["measurements"] ) {
-				cout << m.dump() + '\n';
+				cout << m.dump(2) + '\n';
 			}
 		}
 /*
