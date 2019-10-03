@@ -384,6 +384,27 @@ class SELoopConsumer : public SEConsumer {
 		print_cs_compress(R,initpath+"R.csv");
 		// initial state vector
 		
+		// GDB
+		ofh.open(initpath+"Vpu.csv",ofstream::out);
+		cout << "writing " << initpath+"Vpu.csv\n\n";
+		cout << "node_qty is " << node_qty << '\n';
+
+		for ( auto& inode : node_names ) {
+			uint i = node_idxs[inode];
+			cout << inode << " idx is " << i << '\n';
+			try {
+				complex<double> tmp = Vpu.at(i);
+				double tmpre = tmp.real();
+				double tmpim = tmp.imag();
+				ofh << tmpre 
+					<< ( tmpim >= 0 ? "+" : "-" )
+					<< std::abs(tmpim) << "i" 
+					<< '\n';
+			} catch ( const std::out_of_range& oor) {
+				ofh << "0+0i" << '\n';
+			}
+		} ofh.close();
+		
 		// initial measurement vector [these actually don't need to be done here]
 		cs* z; this->sample_z(z);
 			print_cs_compress(z,initpath+"z.csv"); cs_spfree(z);
@@ -572,6 +593,28 @@ class SELoopConsumer : public SEConsumer {
 			" with " << P->nzmax << " entries\n";
 		print_cs_compress(P,tspath+"P.csv");
 	
+		// GDB
+		ofstream ofh;
+		ofh.open(tspath+"Vpu.csv",ofstream::out);
+		cout << "writing " << tspath+"Vpu.csv\n\n";
+		cout << "node_qty is " << node_qty << '\n';
+
+		for ( auto& inode : node_names ) {
+			uint i = node_idxs[inode];
+			cout << inode << " idx is " << i << '\n';
+			try {
+				complex<double> tmp = Vpu.at(i);
+				double tmpre = tmp.real();
+				double tmpim = tmp.imag();
+				ofh << tmpre 
+					<< ( tmpim >= 0 ? "+" : "-" )
+					<< std::abs(tmpim) << "i" 
+					<< '\n';
+			} catch ( const std::out_of_range& oor) {
+				ofh << "0+0i" << '\n';
+			}
+		} ofh.close();
+
 		cout << "sample_z ... ";
 		cs *z; this->sample_z(z);
 		cout << "z is " << z->m << " by " << z->n << 
