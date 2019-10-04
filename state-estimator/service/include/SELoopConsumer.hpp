@@ -1075,14 +1075,14 @@ class SELoopConsumer : public SEConsumer {
 						// Add the real power component flowing from i to j
 						Pi = Pi + vi*vi/ai/ai * g - 
 							vi*vj/ai/aj * (g*cos(T) + b*sin(T));
-						cout << "\t\tvi: " << vi << endl;
-						cout << "\t\tvj: " << vj << endl;
-						cout << "\t\tai: " << ai << endl;
-						cout << "\t\taj: " << aj << endl;
-						cout << "\t\tg: " << g << endl;
-						cout << "\t\tb: " << b << endl;
-						cout << "\t\tT: " << T << endl;
-						cout << "\t\tPi: " << Pi << endl;
+						//cout << "\t\tvi: " << vi << endl;
+						//cout << "\t\tvj: " << vj << endl;
+						//cout << "\t\tai: " << ai << endl;
+						//cout << "\t\taj: " << aj << endl;
+						//cout << "\t\tg: " << g << endl;
+						//cout << "\t\tb: " << b << endl;
+						//cout << "\t\tT: " << T << endl;
+						//cout << "\t\tPi: " << Pi << endl;
 					}
 					// Add the real power component flowing from i to 0
 					set_n(i,0);
