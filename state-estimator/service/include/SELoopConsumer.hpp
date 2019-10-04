@@ -1067,7 +1067,8 @@ class SELoopConsumer : public SEConsumer {
 				double Pi = 0;
 				try {
 					auto& Yrow = Ypu.at(i);
-					for ( auto& rowpair : Yrow ) {
+					std::map<unsigned int,std::complex<double>> YrowOrder(Yrow.begin(), Yrow.end());
+					for ( auto& rowpair : YrowOrder ) {
 						uint j = rowpair.first;
 						cout << "\tj: " << j << endl;
 						set_n(i,j);
