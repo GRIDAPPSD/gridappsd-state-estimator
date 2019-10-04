@@ -1076,6 +1076,8 @@ class SELoopConsumer : public SEConsumer {
 							vi*vj/ai/aj * (g*cos(T) + b*sin(T));
 						cout << "\t\tvi: " << vi << endl;
 						cout << "\t\tvj: " << vj << endl;
+						cout << "\t\tai: " << ai << endl;
+						cout << "\t\taj: " << aj << endl;
 						cout << "\t\tg: " << g << endl;
 						cout << "\t\tb: " << b << endl;
 						cout << "\t\tT: " << T << endl;
