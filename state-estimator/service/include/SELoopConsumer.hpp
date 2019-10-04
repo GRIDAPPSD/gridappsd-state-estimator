@@ -1062,19 +1062,23 @@ class SELoopConsumer : public SEConsumer {
 			if ( !ztype.compare("Pi") ) {
 				// Real power injection into node i
 				uint i = node_idxs[zary.znode1s[zid]];
+				cout << "i: " << i << endl;
 				double Pi = 0;
 				try {
 					auto& Yrow = Ypu.at(i);
 					for ( auto& rowpair : Yrow ) {
 						uint j = rowpair.first;
+						cout << "j: " << j << endl;
 						set_n(i,j);
 						// Add the real power component flowing from i to j
 						Pi = Pi + vi*vi/ai/ai * g - 
 							vi*vj/ai/aj * (g*cos(T) + b*sin(T));
+						cout << "Pi: " << Pi << endl;
 					}
 					// Add the real power component flowing from i to 0
 					set_n(i,0);
 					Pi += vi*vi * g;
+					cout << "Pi post loop: " << Pi << endl;
 				} catch(...) {}
 				// Insert the measurement component
 				if ( abs(Pi) > NEGL ) cs_entry(hraw,zidx,0,Pi);
@@ -1114,6 +1118,8 @@ class SELoopConsumer : public SEConsumer {
 			else { 
 				cout << "WARNING: Undefined measurement type " + ztype + '\n';
 			}
+			// GDB
+			break;
 		}
 		h = cs_compress(hraw); cs_spfree(hraw);
 
