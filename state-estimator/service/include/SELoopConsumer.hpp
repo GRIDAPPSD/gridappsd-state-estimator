@@ -254,6 +254,7 @@ class SELoopConsumer : public SEConsumer {
 		// write to file
 		ofstream ofh;
 		ofh.open(initpath+"Ypu.csv",ofstream::out);
+        ofh << std::setprecision(16);
 		cout << "writing " << initpath+"Ypu.csv\n\n";
 		cout << "node_qty is " << node_qty << '\n';
 
@@ -286,6 +287,7 @@ class SELoopConsumer : public SEConsumer {
 
 		// write Y to file
 		ofh.open(initpath+"Yphys.csv",ofstream::out);
+        ofh << std::setprecision(16);
 		cout << "writing " << initpath+"Yphys.csv\n";
 //		for ( auto& inode : node_names ) {
 		for ( uint i = 1 ; i <= node_qty ; i++ ) {
@@ -312,6 +314,7 @@ class SELoopConsumer : public SEConsumer {
 
 		// write Vbase to file
 		ofh.open(initpath+"vnoms.csv",ofstream::out);
+        ofh << std::setprecision(16);
 		cout << "writing " << initpath+"vnoms.csv\n";
 		std::vector<complex<double>> vnoms(node_qty);
 		for ( auto& node_name : node_names ) {
@@ -408,6 +411,7 @@ class SELoopConsumer : public SEConsumer {
 		
 		// GDB
 		ofh.open(initpath+"Vpu.csv",ofstream::out);
+        ofh << std::setprecision(16);
 		cout << "writing " << initpath+"Vpu.csv\n\n";
 		cout << "node_qty is " << node_qty << '\n';
 
@@ -617,6 +621,7 @@ class SELoopConsumer : public SEConsumer {
 	
 		// GDB
 		ofstream ofh;
+        ofh << std::setprecision(16);
 		ofh.open(tspath+"Vpu.csv",ofstream::out);
 		cout << "writing " << tspath+"Vpu.csv\n\n";
 		cout << "node_qty is " << node_qty << '\n';
@@ -1008,7 +1013,10 @@ class SELoopConsumer : public SEConsumer {
 			try {
 				auto& Yrow = Ypu.at(i);
 				for ( auto& yij_pair : Yrow )
-					Yi0 += yij_pair.second;
+					{   
+                        cout << "\t\t\tYterm: " << yij_pair.second << '\n';
+                        Yi0 += yij_pair.second;
+                    }
 			} catch(...) {}
 			g = real(Yi0);
 			b = imag(Yi0);
@@ -1070,23 +1078,25 @@ class SELoopConsumer : public SEConsumer {
 					std::map<unsigned int,std::complex<double>> YrowOrder(Yrow.begin(), Yrow.end());
 					for ( auto& rowpair : YrowOrder ) {
 						uint j = rowpair.first;
-						cout << "\tj: " << j << endl;
-						set_n(i,j);
-						// Add the real power component flowing from i to j
-						Pi = Pi + vi*vi/ai/ai * g - 
-							vi*vj/ai/aj * (g*cos(T) + b*sin(T));
-						cout << "\t\tvi: " << vi << endl;
-						cout << "\t\tvj: " << vj << endl;
-						cout << "\t\tai: " << ai << endl;
-						cout << "\t\taj: " << aj << endl;
-						cout << "\t\tg: " << g << endl;
-						cout << "\t\tb: " << b << endl;
-						cout << "\t\tT: " << T << endl;
-						cout << "\t\tPi: " << Pi << endl;
+                        if ( j != i ) {
+					    	cout << "\tj: " << j << endl;
+					    	set_n(i,j);
+					    	// Add the real power component flowing from i to j
+					    	Pi = Pi + vi*vi/ai/ai * g - 
+					    		vi*vj/ai/aj * (g*cos(T) + b*sin(T));
+					    	cout << "\t\tvi: " << vi << endl;
+					    	cout << "\t\tvj: " << vj << endl;
+					    	cout << "\t\tai: " << ai << endl;
+					    	cout << "\t\taj: " << aj << endl;
+					    	cout << "\t\tg: " << g << endl;
+					    	cout << "\t\tb: " << b << endl;
+					    	cout << "\t\tT: " << T << endl;
+					    	cout << "\t\tPi: " << Pi << endl;
+                        }
 					}
 					// Add the real power component flowing from i to 0
 					set_n(i,0);
-					Pi += vi*vi * g;
+					Pi += vi*vi * g; // times cos(T) ????
 					cout << "vi post loop: " << vi << endl;
 					cout << "g post loop: " << g << endl;
 					cout << "Pi post loop: " << Pi << endl;
@@ -1129,8 +1139,6 @@ class SELoopConsumer : public SEConsumer {
 			else { 
 				cout << "WARNING: Undefined measurement type " + ztype + '\n';
 			}
-			// GDB
-			break;
 		}
 		h = cs_compress(hraw); cs_spfree(hraw);
 
