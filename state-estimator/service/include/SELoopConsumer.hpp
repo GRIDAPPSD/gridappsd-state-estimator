@@ -649,6 +649,7 @@ class SELoopConsumer : public SEConsumer {
 //		for ( int idx = 0 ; idx < h->nzmax ; idx++ )
 //			cout << "\th[" << h->i[idx] << "] is " << h->x[idx] << '\n';
 		print_cs_compress(h,tspath+"h.csv");
+		exit(0);
 
 		cout << "calcJ ... ";
 		cs *J; this->calc_J(J);
