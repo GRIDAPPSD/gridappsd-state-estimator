@@ -649,13 +649,14 @@ class SELoopConsumer : public SEConsumer {
 //		for ( int idx = 0 ; idx < h->nzmax ; idx++ )
 //			cout << "\th[" << h->i[idx] << "] is " << h->x[idx] << '\n';
 		print_cs_compress(h,tspath+"h.csv");
-		exit(0);
 
 		cout << "calcJ ... ";
 		cs *J; this->calc_J(J);
 		cout << "J is " << J->m << " by " << J->n << 
 			" with " << J->nzmax << " entries\n";
 		print_cs_compress(J,tspath+"J.csv");
+		// GDB abort after first timestamp based calc_h and calc_J calls for debugging
+		exit(0);
 
 
 		// --------------------------------------------------------------------
