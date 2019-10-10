@@ -1004,6 +1004,7 @@ class SELoopConsumer : public SEConsumer {
 			T = arg(Vpu[i]);
 			ai = 0;
 			aj = 0;
+			cerr << "\t\t***SEDBG:set_n j==0 sets ai and aj to 0" << endl;
 			// for per-unit Ybus, shunt admittance is the sum of row admittances
 			complex<double> Yi0;
 			try {
@@ -1022,6 +1023,7 @@ class SELoopConsumer : public SEConsumer {
 			complex<double> Yij;
 			ai = 0;
 			aj = 0;
+			cerr << "\t\t***SEDBG:set_n j: " << j << ", ai and aj initialized to 0" << endl;
 			try {
 				auto& Yrow = Ypu.at(i);
 				try {
@@ -1029,22 +1031,26 @@ class SELoopConsumer : public SEConsumer {
 					// We know the nodes are coupled; check for Aij
 					// NOTE: A is never iterated over - we don't need at()
 					ai = 1;
+			        cerr << "\t\t***SEDBG:set_n ai set to 1" << endl;
 					try {
 						auto Arow = A.at(i);
 						try {
 							ai = real(Arow.at(j));
+			                cerr << "\t\t***SEDBG:set_n ai finalized to: " << ai << endl;
 						} catch(...) {}
 					} catch(...) {}
 					// We know the nodes are coupled; check for Aji
 					// NOTE: A is never iterated over - we don't need at()
 					aj = 1;
+			        cerr << "\t\t***SEDBG:set_n aj set to 1" << endl;
 					try {
 						auto Arow = A.at(j);
 						try {
 							aj = real(Arow.at(i));
+			                cerr << "\t\t***SEDBG:set_n aj finalized to: " << aj << endl;
 						} catch (...) {}
 					} catch(...) {}
-				} catch(...) {}
+			    } catch(...) { cerr << "\t\t***SEDBG:set_n catch on Yrow.at(j) lookup" << endl; }
 			} catch(...) {}
 			g = real(-1.0*Yij);
 			b = imag(-1.0*Yij);
@@ -1057,7 +1063,7 @@ class SELoopConsumer : public SEConsumer {
 		// each z component has a measurement function component
 		cs *hraw = cs_spalloc(zqty,1,zqty,1,1);
 		for ( auto& zid : zary.zids ) {
-			cerr << "***SEDBG:calc_h zid: " << zid << '\n';
+			cerr << "***SEDBG:calc_h zid: " << zid << endl;
 			uint zidx = zary.zidxs[zid];
 			string ztype = zary.ztypes[zid];
 			// Determine the type of z component
@@ -1073,20 +1079,11 @@ class SELoopConsumer : public SEConsumer {
 					std::map<unsigned int,std::complex<double>> YrowOrder(Yrow.begin(), Yrow.end());
 					for ( auto& rowpair : YrowOrder ) {
 						uint j = rowpair.first;
-						cerr << "\t***SEDBG:calc_h j: " << j;
 						set_n(i,j);
 						// Add the real power component flowing from i to j
 						Pi = Pi + vi*vi/ai/ai * g - 
 							vi*vj/ai/aj * (g*cos(T) + b*sin(T));
-						cerr << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", Pi: " << Pi << endl;
-						//cerr << "\t\t***SEDBG:calc_h vi: " << vi << endl;
-						//cerr << "\t\t***SEDBG:calc_h vj: " << vj << endl;
-						//cerr << "\t\t***SEDBG:calc_h ai: " << ai << endl;
-						//cerr << "\t\t***SEDBG:calc_h aj: " << aj << endl;
-						//cerr << "\t\t***SEDBG:calc_h g: " << g << endl;
-						//cerr << "\t\t***SEDBG:calc_h b: " << b << endl;
-						//cerr << "\t\t***SEDBG:calc_h T: " << T << endl;
-						//cerr << "\t\t***SEDBG:calc_h Pi: " << Pi << endl;
+						cerr << "\t***SEDBG:calc_h j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", Pi: " << Pi << endl;
 					}
 					// Add the real power component flowing from i to 0
 					set_n(i,0);
@@ -1169,11 +1166,10 @@ class SELoopConsumer : public SEConsumer {
 					        std::map<unsigned int,std::complex<double>> YrowOrder(Yrow.begin(), Yrow.end());
         					for ( auto& rowpair : YrowOrder ) {
 								uint j = rowpair.first;
-						        cerr << "\t***SEDBG:calc_J j: " << j;
 								set_n(i,j);
 								dP = dP + 2*vi/ai/ai * g - 
 									vj/ai/aj * (g*cos(T) + b*sin(T));
-						        cerr << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << endl;
+						        cerr << "\t***SEDBG:calc_J j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << endl;
 							}
 							// consider the reference node
 							set_n(i,0);
@@ -1187,10 +1183,9 @@ class SELoopConsumer : public SEConsumer {
 				        cerr << "***SEDBG:calc_J magnitude vidx!=i, i: " << i << endl;
 						// --- compute dPi/dvj
 						uint j = vidx;
-   		                cerr << "\t***SEDBG:calc_J j: " << j;
 						set_n(i,j);
 						double dP = -1.0 * vi/ai/aj * (g*cos(T) + b*sin(T));
-				        cerr << ", vi: " << vi << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << endl;
+				        cerr << "\t***SEDBG:calc_J j: " << j << ", vi: " << vi << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << endl;
 						if ( abs(dP) > NEGL ) cs_entry(Jraw,zidx,xidx,dP);
 					}
 				}
@@ -1253,10 +1248,9 @@ class SELoopConsumer : public SEConsumer {
 							auto &Yrow = Ypu.at(i);
 							for ( auto& rowpair : Yrow ) {
 								uint j = rowpair.first;
-						        cerr << "\t***SEDBG:calc_J j: " << j;
 								set_n(i,j);
 								dP = dP + vi*vj/ai/aj * (g*sin(T) - b*cos(T));
-						        cerr << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << endl;
+						        cerr << "\t***SEDBG:calc_J j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << endl;
 							}
 							// reference node component is 0
 						} catch(...) {}
@@ -1265,10 +1259,9 @@ class SELoopConsumer : public SEConsumer {
 				        cerr << "***SEDBG:calc_J phase vidx!=i, i: " << i << endl;
 						// --- compute dP/dTj
 						uint j = vidx;
-						cerr << "\t***SEDBG:calc_J j: " << j;
 						set_n(i,j);
 						double dP = -1.0 * vi*vj/ai/aj * (g*sin(T) - b*cos(T));
-						cerr << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << endl;
+						cerr << "\t***SEDBG:calc_J j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << endl;
 						if ( abs(dP) > NEGL ) cs_entry(Jraw,zidx,xidx,dP);
 					}
 				}
