@@ -1083,11 +1083,13 @@ class SELoopConsumer : public SEConsumer {
 					for ( auto& rowpair : YrowOrder ) {
 					//for ( auto& rowpair : Yrow ) {
 						uint j = rowpair.first;
-						set_n(i,j);
-						// Add the real power component flowing from i to j
-						Pi = Pi + vi*vi/ai/ai * g - 
-							vi*vj/ai/aj * (g*cos(T) + b*sin(T));
-						cerr << "\t***SEDBG:calc_h Pi j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", Pi: " << Pi << endl;
+                        if (j != i) {
+						    set_n(i,j);
+						    // Add the real power component flowing from i to j
+						    Pi = Pi + vi*vi/ai/ai * g - 
+						    	vi*vj/ai/aj * (g*cos(T) + b*sin(T));
+						    cerr << "\t***SEDBG:calc_h Pi j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", Pi: " << Pi << endl;
+                        }
 					}
 					// Add the real power component flowing from i to 0
 					set_n(i,0);
@@ -1105,10 +1107,12 @@ class SELoopConsumer : public SEConsumer {
 					auto& Yrow = Ypu.at(i);
 					for ( auto& rowpair : Yrow ) {
 						uint j = rowpair.first;
-						set_n(i,j);
-						// Add the reactive power component flowing from i to j
-						Qi = Qi - vi*vi/ai/ai * b - 
-							vi*vj/ai/aj * (g*sin(T) - b*cos(T));
+                        if (j != i) {
+						    set_n(i,j);
+    						// Add the reactive power component flowing from i to j
+    						Qi = Qi - vi*vi/ai/ai * b - 
+    							vi*vj/ai/aj * (g*sin(T) - b*cos(T));
+                        }
 					}
 					// Add the reactive power component flowing from i to 0
 					set_n(i,0);
@@ -1123,6 +1127,7 @@ class SELoopConsumer : public SEConsumer {
 				// vi is a direct state measurement
 				uint i = node_idxs[zary.znode1s[zid]];
 				if ( abs(Vpu[i]) > NEGL ) cs_entry(hraw,zidx,0,abs(Vpu[i]));
+				cerr << "***SEDBG:calc_h vi i: " << i << ", abs(Vpu[i]): " << abs(Vpu[i]) << endl;
 			}
 			else if ( !zary.ztypes[zid].compare("Ti") ) {
 				// Ti is a direct state measurement
@@ -1133,7 +1138,7 @@ class SELoopConsumer : public SEConsumer {
 				cout << "WARNING: Undefined measurement type " + ztype + '\n';
 			}
 			// GDB exit loop after first item for debugging
-			break;
+			//break;
 		}
 		h = cs_compress(hraw); cs_spfree(hraw);
 
@@ -1168,10 +1173,12 @@ class SELoopConsumer : public SEConsumer {
         					for ( auto& rowpair : YrowOrder ) {
         					//for ( auto& rowpair : Yrow ) {
 								uint j = rowpair.first;
-								set_n(i,j);
-								dP = dP + 2*vi/ai/ai * g - 
-									vj/ai/aj * (g*cos(T) + b*sin(T));
-						        cerr << "\t***SEDBG:calc_J Pi magnitude j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << endl;
+                                if (j != vidx) {
+   								    set_n(i,j);
+								    dP = dP + 2*vi/ai/ai * g - 
+								    	vj/ai/aj * (g*cos(T) + b*sin(T));
+						            cerr << "\t***SEDBG:calc_J Pi magnitude j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << endl;
+                                }
 							}
 							// consider the reference node
 							set_n(i,0);
@@ -1204,9 +1211,11 @@ class SELoopConsumer : public SEConsumer {
 							auto& Yrow = Ypu.at(i);
 							for ( auto& rowpair : Yrow ) {
 								uint j = rowpair.first;
-								set_n(i,j);
-								dQ = dQ - 2*vi/ai/ai * b - 
-									vj/ai/aj * (g*sin(T) - b*cos(T));
+                                if (j != vidx) {
+								    set_n(i,j);
+								    dQ = dQ - 2*vi/ai/ai * b - 
+								    	vj/ai/aj * (g*sin(T) - b*cos(T));
+                                }
 							}
 							// consider the reference node
 							set_n(i,0);
@@ -1234,6 +1243,7 @@ class SELoopConsumer : public SEConsumer {
 					if ( vidx == i ) {
 						// --- compute dvi/dvi
 						cs_entry(Jraw,zidx,xidx,1.0);
+				        cerr << "***SEDBG:calc_J vi i: " << i << ", J entry set to 1.0" << endl;
 					}
 				}
 				else if ( !ztype.compare("Ti") ) {
@@ -1260,9 +1270,11 @@ class SELoopConsumer : public SEConsumer {
 							auto &Yrow = Ypu.at(i);
 							for ( auto& rowpair : Yrow ) {
 								uint j = rowpair.first;
-								set_n(i,j);
-								dP = dP + vi*vj/ai/aj * (g*sin(T) - b*cos(T));
-						        cerr << "\t***SEDBG:calc_J Pi phase j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << endl;
+                                if (j != vidx) {
+								    set_n(i,j);
+								    dP = dP + vi*vj/ai/aj * (g*sin(T) - b*cos(T));
+						            cerr << "\t***SEDBG:calc_J Pi phase j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << endl;
+                                }
 							}
 							// reference node component is 0
 						} catch(...) {}
@@ -1292,8 +1304,10 @@ class SELoopConsumer : public SEConsumer {
 							auto& Yrow = Ypu.at(i);
 							for ( auto& rowpair : Yrow ) {
 								uint j = rowpair.first;
-								set_n(i,j);
-								dQ = dQ - vi*vj/ai/aj * (g*cos(T) + b*sin(T));
+                                if (j != vidx) {
+								    set_n(i,j);
+						    		dQ = dQ - vi*vj/ai/aj * (g*cos(T) + b*sin(T));
+                                }
 							}
 							// reference component is 0
 						} catch(...) {}
@@ -1335,7 +1349,7 @@ class SELoopConsumer : public SEConsumer {
 
 
 			// GDB exit loop after first item for debugging
-			break;
+			//break;
 		}
 		J = cs_compress(Jraw); cs_spfree(Jraw);
 	}
