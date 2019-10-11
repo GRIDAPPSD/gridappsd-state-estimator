@@ -654,13 +654,14 @@ class SELoopConsumer : public SEConsumer {
 //		for ( int idx = 0 ; idx < h->nzmax ; idx++ )
 //			cout << "\th[" << h->i[idx] << "] is " << h->x[idx] << '\n';
 		print_cs_compress(h,tspath+"h.csv");
-		exit(0);
 
 		cout << "calcJ ... ";
 		cs *J; this->calc_J(J);
 		cout << "J is " << J->m << " by " << J->n << 
 			" with " << J->nzmax << " entries\n";
 		print_cs_compress(J,tspath+"J.csv");
+		// GDB abort after first timestamp based calc_h and calc_J calls for debugging
+		exit(0);
 
 
 		// --------------------------------------------------------------------
@@ -1008,6 +1009,7 @@ class SELoopConsumer : public SEConsumer {
 			T = arg(Vpu[i]);
 			ai = 0;
 			aj = 0;
+			cerr << "\t\t***SEDBG:set_n j==0 sets ai and aj to 0" << endl;
 			// for per-unit Ybus, shunt admittance is the sum of row admittances
 			complex<double> Yi0;
 			try {
@@ -1029,6 +1031,7 @@ class SELoopConsumer : public SEConsumer {
 			complex<double> Yij;
 			ai = 0;
 			aj = 0;
+			cerr << "\t\t***SEDBG:set_n j: " << j << ", ai and aj initialized to 0" << endl;
 			try {
 				auto& Yrow = Ypu.at(i);
 				try {
@@ -1036,22 +1039,26 @@ class SELoopConsumer : public SEConsumer {
 					// We know the nodes are coupled; check for Aij
 					// NOTE: A is never iterated over - we don't need at()
 					ai = 1;
+			        cerr << "\t\t***SEDBG:set_n ai set to 1" << endl;
 					try {
 						auto Arow = A.at(i);
 						try {
 							ai = real(Arow.at(j));
+			                cerr << "\t\t***SEDBG:set_n ai finalized to: " << ai << endl;
 						} catch(...) {}
 					} catch(...) {}
 					// We know the nodes are coupled; check for Aji
 					// NOTE: A is never iterated over - we don't need at()
 					aj = 1;
+			        cerr << "\t\t***SEDBG:set_n aj set to 1" << endl;
 					try {
 						auto Arow = A.at(j);
 						try {
 							aj = real(Arow.at(i));
+			                cerr << "\t\t***SEDBG:set_n aj finalized to: " << aj << endl;
 						} catch (...) {}
 					} catch(...) {}
-				} catch(...) {}
+			    } catch(...) { cerr << "\t\t***SEDBG:set_n catch on Yrow.at(j) lookup" << endl; }
 			} catch(...) {}
 			g = real(-1.0*Yij);
 			b = imag(-1.0*Yij);
@@ -1064,42 +1071,37 @@ class SELoopConsumer : public SEConsumer {
 		// each z component has a measurement function component
 		cs *hraw = cs_spalloc(zqty,1,zqty,1,1);
 		for ( auto& zid : zary.zids ) {
-			cout << zid << '\n';
+			cerr << "***SEDBG:calc_h zid: " << zid << endl;
 			uint zidx = zary.zidxs[zid];
 			string ztype = zary.ztypes[zid];
 			// Determine the type of z component
 			if ( !ztype.compare("Pi") ) {
 				// Real power injection into node i
 				uint i = node_idxs[zary.znode1s[zid]];
-				cout << "i: " << i << endl;
+				cerr << "***SEDBG:calc_h i: " << i << endl;
 				double Pi = 0;
 				try {
 					auto& Yrow = Ypu.at(i);
+                    // GDB iterate over ordered Yrow for better debug output
+					//for ( auto& rowpair : Yrow ) {
 					std::map<unsigned int,std::complex<double>> YrowOrder(Yrow.begin(), Yrow.end());
 					for ( auto& rowpair : YrowOrder ) {
 						uint j = rowpair.first;
-                        if ( j != i ) {
-					    	cout << "\tj: " << j << endl;
-					    	set_n(i,j);
-					    	// Add the real power component flowing from i to j
-					    	Pi = Pi + vi*vi/ai/ai * g - 
-					    		vi*vj/ai/aj * (g*cos(T) + b*sin(T));
-					    //	cout << "\t\tvi: " << vi << endl;
-					    //	cout << "\t\tvj: " << vj << endl;
-					    //	cout << "\t\tai: " << ai << endl;
-					    //	cout << "\t\taj: " << aj << endl;
-					    //	cout << "\t\tg: " << g << endl;
-					    //	cout << "\t\tb: " << b << endl;
-					    //	cout << "\t\tT: " << T << endl;
-					    //	cout << "\t\tPi: " << Pi << endl;
-                        }
+						set_n(i,j);
+						// Add the real power component flowing from i to j
+						Pi = Pi + vi*vi/ai/ai * g - 
+							vi*vj/ai/aj * (g*cos(T) + b*sin(T));
+						cerr << "\t***SEDBG:calc_h j: " << j << ", vi: " << vi << 
+                            ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << 
+                            ", g: " << g << ", b: " << b << ", T: " << T << 
+                            ", Pi: " << Pi << endl;
 					}
 					// Add the real power component flowing from i to 0
 					set_n(i,0);
 					Pi += vi*vi * g; // times cos(T) ????
-					cout << "vi post loop: " << vi << endl;
-					cout << "g post loop: " << g << endl;
-					cout << "Pi post loop: " << Pi << endl;
+					cerr << "***SEDBG:calc_h vi post loop: " << vi << endl;
+					cerr << "***SEDBG:calc_h g post loop: " << g << endl;
+					cerr << "***SEDBG:calc_h Pi post loop: " << Pi << endl;
 				} catch(...) {}
 				// Insert the measurement component
 				if ( abs(Pi) > NEGL ) cs_entry(hraw,zidx,0,Pi);
@@ -1139,6 +1141,8 @@ class SELoopConsumer : public SEConsumer {
 			else { 
 				cout << "WARNING: Undefined measurement type " + ztype + '\n';
 			}
+			// GDB exit loop after first item for debugging
+			break;
 		}
 		h = cs_compress(hraw); cs_spfree(hraw);
 
@@ -1150,6 +1154,7 @@ class SELoopConsumer : public SEConsumer {
 		cs *Jraw = cs_spalloc(zqty,xqty,zqty*xqty,1,1);
 		// loop over z
 		for ( auto& zid : zary.zids ) {
+			cerr << "***SEDBG:calc_J zid: " << zid << '\n';
 			uint zidx = zary.zidxs[zid];
 			string ztype = zary.ztypes[zid];
 			uint i = node_idxs[zary.znode1s[zid]];
@@ -1161,27 +1166,37 @@ class SELoopConsumer : public SEConsumer {
 				// Computation of d/dv depends on the measurement type
 				if ( !ztype.compare("Pi" ) ) {
 					if ( vidx == i ) {
+				        cerr << "***SEDBG:calc_J magnitude vidx==i, i: " << i << endl;
 						// --- compute dPi/dvi
 						double dP = 0;
 						// loop over adjacent nodes
 						try {
 							auto& Yrow = Ypu.at(i);
-							for ( auto& rowpair : Yrow ) {
+                            // GDB iterate over ordered Yrow for better debug output
+        					//for ( auto& rowpair : Yrow ) {
+					        std::map<unsigned int,std::complex<double>> YrowOrder(Yrow.begin(), Yrow.end());
+        					for ( auto& rowpair : YrowOrder ) {
 								uint j = rowpair.first;
 								set_n(i,j);
 								dP = dP + 2*vi/ai/ai * g - 
 									vj/ai/aj * (g*cos(T) + b*sin(T));
+						        cerr << "\t***SEDBG:calc_J j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << endl;
 							}
 							// consider the reference node
 							set_n(i,0);
 							dP = dP + 2*vi * g;
+					        cerr << "***SEDBG:calc_J vi post loop: " << vi << endl;
+        					cerr << "***SEDBG:calc_J g post loop: " << g << endl;
+	        				cerr << "***SEDBG:calc_J dP post loop: " << dP << endl;
 						} catch(...) {}
 						if ( abs(dP > NEGL ) ) cs_entry(Jraw,zidx,xidx,dP);
 					} else {
+				        cerr << "***SEDBG:calc_J magnitude vidx!=i, i: " << i << endl;
 						// --- compute dPi/dvj
 						uint j = vidx;
 						set_n(i,j);
 						double dP = -1.0 * vi/ai/aj * (g*cos(T) + b*sin(T));
+				        cerr << "\t***SEDBG:calc_J j: " << j << ", vi: " << vi << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << endl;
 						if ( abs(dP) > NEGL ) cs_entry(Jraw,zidx,xidx,dP);
 					}
 				}
@@ -1236,6 +1251,7 @@ class SELoopConsumer : public SEConsumer {
 				uint xidx = vidx-1 + node_qty; // THIS WOULD CHANGE IF SOURCES KNOWN
 				if ( !ztype.compare("Pi") ) {
 					if ( vidx == i ) {
+				        cerr << "***SEDBG:calc_J phase vidx==i, i: " << i << endl;
 						// --- compute dPi/dTi
 						double dP = 0;
 						// loop over adjacent nodes
@@ -1245,15 +1261,18 @@ class SELoopConsumer : public SEConsumer {
 								uint j = rowpair.first;
 								set_n(i,j);
 								dP = dP + vi*vj/ai/aj * (g*sin(T) - b*cos(T));
+						        cerr << "\t***SEDBG:calc_J j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << endl;
 							}
 							// reference node component is 0
 						} catch(...) {}
 						if ( abs(dP) > NEGL ) cs_entry(Jraw,zidx,xidx,dP);
 					} else {
+				        cerr << "***SEDBG:calc_J phase vidx!=i, i: " << i << endl;
 						// --- compute dP/dTj
 						uint j = vidx;
 						set_n(i,j);
 						double dP = -1.0 * vi*vj/ai/aj * (g*sin(T) - b*cos(T));
+						cerr << "\t***SEDBG:calc_J j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << endl;
 						if ( abs(dP) > NEGL ) cs_entry(Jraw,zidx,xidx,dP);
 					}
 				}
@@ -1302,6 +1321,8 @@ class SELoopConsumer : public SEConsumer {
 			// -------------
 
 
+			// GDB exit loop after first item for debugging
+			break;
 		}
 		J = cs_compress(Jraw); cs_spfree(Jraw);
 	}
