@@ -386,8 +386,11 @@ class SELoopConsumer : public SEConsumer {
 
         // process covariance matrix (constant)
         cs *Qraw = cs_spalloc(0,0,xqty,1,1);
-        for ( int ii = 0 ; ii < xqty ; ii++ )
-            cs_entry(Qraw,ii,ii,0.04*sqrt(1.0/4));      // TUNABLE
+        //for ( int ii = 0 ; ii < xqty ; ii++ )
+        //    cs_entry(Qraw,ii,ii,0.04*sqrt(1.0/4));      // TUNABLE
+        for ( int idx = 0 ; idx < node_qty ; idx++ )
+            cs_entry(Qraw,idx,idx,0.001);
+            cs_entry(Qraw,node_qty+idx,node_qty+idx,0.001*3.1415926535);
         Q = cs_compress(Qraw); cs_spfree(Qraw);
         print_cs_compress(Q,initpath+"Q.csv");
 
@@ -406,7 +409,6 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(R,initpath+"R.csv");
         // initial state vector
         
-        // GDB
         ofh.open(initpath+"Vpu.csv",ofstream::out);
         cout << "writing " << initpath+"Vpu.csv\n\n";
         cout << "node_qty is " << node_qty << '\n';
@@ -615,7 +617,6 @@ class SELoopConsumer : public SEConsumer {
             " with " << P->nzmax << " entries\n";
         print_cs_compress(P,tspath+"P.csv");
     
-        // GDB
         ofstream ofh;
         ofh.open(tspath+"Vpu.csv",ofstream::out);
         cout << "writing " << tspath+"Vpu.csv\n\n";
@@ -655,8 +656,6 @@ class SELoopConsumer : public SEConsumer {
         cout << "J is " << J->m << " by " << J->n << 
             " with " << J->nzmax << " entries\n";
         print_cs_compress(J,tspath+"J.csv");
-        // GDB abort after first timestamp based calc_h and calc_J calls for debugging
-        exit(0);
 
 
         // --------------------------------------------------------------------
@@ -959,7 +958,7 @@ class SELoopConsumer : public SEConsumer {
             uint vidx = idx - 1;
             if ( abs(Vi) > NEGL ) cs_entry(xraw,vidx,0,abs(Vi));
             // Add the voltage angle to x
-            uint Tidx = node_qty + vidx - 1;
+            uint Tidx = node_qty + idx - 1;
             if ( arg(Vi) ) cs_entry(xraw,Tidx,0,arg(Vi));
         }
         x = cs_compress(xraw); cs_spfree(xraw);
@@ -1078,10 +1077,7 @@ class SELoopConsumer : public SEConsumer {
                 double Pi = 0;
                 try {
                     auto& Yrow = Ypu.at(i);
-                    // GDB iterate over ordered Yrow for better debug output
-                    std::map<unsigned int,std::complex<double>> YrowOrder(Yrow.begin(), Yrow.end());
-                    for ( auto& rowpair : YrowOrder ) {
-                    //for ( auto& rowpair : Yrow ) {
+                    for ( auto& rowpair : Yrow ) {
                         uint j = rowpair.first;
                         if (j != i) {
                             set_n(i,j);
@@ -1137,8 +1133,6 @@ class SELoopConsumer : public SEConsumer {
             else { 
                 cout << "WARNING: Undefined measurement type " + ztype + '\n';
             }
-            // GDB exit loop after first item for debugging
-            //break;
         }
         h = cs_compress(hraw); cs_spfree(hraw);
 
@@ -1168,10 +1162,7 @@ class SELoopConsumer : public SEConsumer {
                         // loop over adjacent nodes
                         try {
                             auto& Yrow = Ypu.at(i);
-                            // GDB iterate over ordered Yrow for better debug output
-                            std::map<unsigned int,std::complex<double>> YrowOrder(Yrow.begin(), Yrow.end());
-                            for ( auto& rowpair : YrowOrder ) {
-                            //for ( auto& rowpair : Yrow ) {
+                            for ( auto& rowpair : Yrow ) {
                                 uint j = rowpair.first;
                                 if (j != vidx) {
                                     set_n(i,j);
@@ -1347,9 +1338,6 @@ class SELoopConsumer : public SEConsumer {
             // --- LATER ---
             // -------------
 
-
-            // GDB exit loop after first item for debugging
-            //break;
         }
         J = cs_compress(Jraw); cs_spfree(Jraw);
     }

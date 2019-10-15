@@ -84,7 +84,6 @@ class TopoProcConsumer : public SEConsumer {
 		// --------------------------------------------------------------------
 		cout << "\nRecieved ybus message of " << text.length() << " bytes...\n\n";
 
-
 		json jtext = json::parse(text);
 
 		// This is actually a list of lines from ysparse

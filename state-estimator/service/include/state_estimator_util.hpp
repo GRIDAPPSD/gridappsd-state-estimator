@@ -160,7 +160,7 @@ namespace state_estimator_util{
 				zary.zsigs  [vmag_zid] = 0.001;
 				zary.znode1s[vmag_zid] = node;
 				zary.znode2s[vmag_zid] = node;
-				zary.zvals  [vmag_zid] = 1.2;
+				zary.zvals  [vmag_zid] = 1.02;
 				zary.znew   [vmag_zid] = true;
 
 				// Add sourcebus voltage phase
