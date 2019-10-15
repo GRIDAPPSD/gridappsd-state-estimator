@@ -391,9 +391,10 @@ class SELoopConsumer : public SEConsumer {
         cs *Qraw = cs_spalloc(0,0,xqty,1,1);
         //for ( int ii = 0 ; ii < xqty ; ii++ )
         //    cs_entry(Qraw,ii,ii,0.04*sqrt(1.0/4));      // TUNABLE
-        for ( int idx = 0 ; idx < node_qty ; idx++ )
+        for ( int idx = 0 ; idx < node_qty ; idx++ ) {
             cs_entry(Qraw,idx,idx,0.001);
             cs_entry(Qraw,node_qty+idx,node_qty+idx,0.001*3.1415926535);
+        }
         Q = cs_compress(Qraw); cs_spfree(Qraw);
         print_cs_compress(Q,initpath+"Q.csv");
 
