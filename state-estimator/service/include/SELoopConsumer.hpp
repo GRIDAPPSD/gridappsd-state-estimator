@@ -254,6 +254,7 @@ class SELoopConsumer : public SEConsumer {
         // write to file
         ofstream ofh;
         ofh.open(initpath+"Ypu.csv",ofstream::out);
+        ofh << std::setprecision(16);
         cout << "writing " << initpath+"Ypu.csv\n\n";
         cout << "node_qty is " << node_qty << '\n';
 
@@ -286,6 +287,7 @@ class SELoopConsumer : public SEConsumer {
 
         // write Y to file
         ofh.open(initpath+"Yphys.csv",ofstream::out);
+        ofh << std::setprecision(16);
         cout << "writing " << initpath+"Yphys.csv\n";
 //      for ( auto& inode : node_names ) {
         for ( uint i = 1 ; i <= node_qty ; i++ ) {
@@ -312,6 +314,7 @@ class SELoopConsumer : public SEConsumer {
 
         // write Vbase to file
         ofh.open(initpath+"vnoms.csv",ofstream::out);
+        ofh << std::setprecision(16);
         cout << "writing " << initpath+"vnoms.csv\n";
         std::vector<complex<double>> vnoms(node_qty);
         for ( auto& node_name : node_names ) {
@@ -408,6 +411,7 @@ class SELoopConsumer : public SEConsumer {
         
         // GDB
         ofh.open(initpath+"Vpu.csv",ofstream::out);
+        ofh << std::setprecision(16);
         cout << "writing " << initpath+"Vpu.csv\n\n";
         cout << "node_qty is " << node_qty << '\n';
 
@@ -618,6 +622,7 @@ class SELoopConsumer : public SEConsumer {
         // GDB
         ofstream ofh;
         ofh.open(tspath+"Vpu.csv",ofstream::out);
+        ofh << std::setprecision(16);
         cout << "writing " << tspath+"Vpu.csv\n\n";
         cout << "node_qty is " << node_qty << '\n';
 
@@ -1093,7 +1098,7 @@ class SELoopConsumer : public SEConsumer {
                     }
                     // Add the real power component flowing from i to 0
                     set_n(i,0);
-                    Pi += vi*vi * g;
+                    Pi += vi*vi * g; // times cos(T) ????
                     cerr << "***SEDBG:calc_h Pi post summation vi: " << vi << ", g: " << g << ", Pi: " << Pi << endl;
                 } catch(...) {}
                 // Insert the measurement component
