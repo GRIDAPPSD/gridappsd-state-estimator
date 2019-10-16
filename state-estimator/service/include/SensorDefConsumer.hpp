@@ -64,13 +64,6 @@ class SensorDefConsumer : public SEConsumer {
 	public:
 	void fillSens(SensorArray &zary) {
 		zary = this->zary;
-//		zqty = this->zqty;
-//		zids = this->zids;
-//		ztypes = this->ztypes;
-//		zsigs = this->zsigs;
-//		znode1s = this->znode1s;
-//		znode2s = this->znode2s;
-//		zvals = this->zvals;
 	}
 	
 	public:
@@ -119,11 +112,13 @@ class SensorDefConsumer : public SEConsumer {
 				cout << m.dump(2) + '\n';
 			}
 		}
-/*
+
 		// --------------------------------------------------------------------
 		// LOAD THE SENSORS -- sensors will deliver measurements
 		// --------------------------------------------------------------------
 		// Iterate over the sensors
+        // TODO: Uncomment the following for loop to support sensor dynamic measurements
+        /*
 		for ( auto& f : jtext["data"]["feeders"] ) {
 			for ( auto& m : f["measurements"] ) {
 				cout << m.dump()+'\n';
@@ -169,7 +164,7 @@ class SensorDefConsumer : public SEConsumer {
 				}
 			}
 		}
-*/		
+        */
 		
 		// --------------------------------------------------------------------
 		// SENSOR INITIALIZATION COMPLETE

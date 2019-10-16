@@ -501,6 +501,8 @@ class SELoopConsumer : public SEConsumer {
                 // update the voltage magnitude (in per-unit)
                 string zid = mmrid+"_Vmag";
                 double vmag_phys = m["magnitude"];
+                // TODO: This uses vnom filled from OpenDSS values, but needs to use
+                // GridLAB-D values
                 zary.zvals[mmrid+"_Vmag"] = 
                     abs ( vmag_phys / node_vnoms[zary.znode1s[zid]] );
                 zary.znew[mmrid+"_Vmag"] = true;
@@ -512,8 +514,7 @@ class SELoopConsumer : public SEConsumer {
                 // -------------
             }
 
-            // the number and type of z entries depends on the measurement type
-            if ( !m_type.compare("") ) { 
+            else if ( !m_type.compare("") ) { 
             }
         }
         
@@ -556,8 +557,9 @@ class SELoopConsumer : public SEConsumer {
             uint idx = node_idxs[node_name];
             complex<double> vnom = node_vnoms[node_name];
             state["v"] = abs ( vnom * Vpu[idx] );
-            state["vVariance"] = 0;         // This comes from P
             state["angle"] = 180.0/3.1415926535 * arg ( vnom * Vpu[idx] );
+            // TODO: Add v and angle variance values
+            state["vVariance"] = 0;         // This comes from P
             state["angleVariance"] = 0;     // This comes from P
             // append this state to the measurement array
             jstate["message"]["Estimate"]["SvEstVoltages"].push_back(state);
@@ -649,6 +651,7 @@ class SELoopConsumer : public SEConsumer {
         cout << "z is " << z->m << " by " << z->n << 
             " with " << z->nzmax << " entries\n";
         print_cs_compress(z,tspath+"z.csv");
+
         cout << "calc_h ... ";
         cs *h; this->calc_h(h);
         cout << "h is " << h->m << " by " << h->n << 
@@ -869,7 +872,7 @@ class SELoopConsumer : public SEConsumer {
 
         cout << "x updated\n";
 
-        // -- compute P_update = (KYH+I)*P_predict
+        // -- compute P_update = (I-K_update*J)*P_predict
         cs *P4 = cs_multiply(Kupd,J);
         if ( !P4 ) cout << "ERROR: P4 null\n";
         else cout << "P4 is " << P4->m << " by " << P4->n << 
@@ -917,18 +920,8 @@ class SELoopConsumer : public SEConsumer {
         cout << "freeing Kupd...\n";
         cs_spfree(Kupd);
         // free measurement variableas
-//      cout << "freeing x, P, z, h, and J...\n";
-//      cs_spfree(x); cs_spfree(P); cs_spfree(z); cs_spfree(h); cs_spfree(J);
         cout << "freeing x, z, h, and J\n";
         cs_spfree(x); cs_spfree(z); cs_spfree(h); cs_spfree(J);
-
-        // Need to handle P
-//      // - P points to State_Cov -- we need the former to 
-//      cout << "Updating State_Cov and stuff...\n";
-//      cs *tmp = State_Cov;
-//      State_Cov = P; P = NULL;
-//      cs_spfree(tmp);
-
 
     }
 

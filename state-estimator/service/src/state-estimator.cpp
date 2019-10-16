@@ -198,10 +198,9 @@ int main(int argc, char** argv){
 		// Wait for sensor initializer and retrieve sensors
 		sensConsumerThread.join();
 
-
-//// NO SENSORS RIGHT NOW
-//		sensConsumer.fillSens(zary);
-//		sensConsumer.close();
+        // TODO: Uncomment the following two lines to add sensors
+		//sensConsumer.fillSens(zary);
+		//sensConsumer.close();
 
 		// Add Pseudo-Measurements
 		const double sbase = 1000000.0;
