@@ -1,0 +1,11 @@
+1. Scale up to 9500-node model via 123-bus model
+
+2. Resolve differences between vnom angles from OpenDSS and GLD (determine vnom angles from GLD)
+
+3. Subscribe to sensor service output rather than simulation output
+
+4. Add other dynamic measurements such as voltage angles
+
+5. Have plotter scubscribe to simulation output and/or sensor service output for SE validation (e.g., % error over time)
+
+6. General code optimiation and clean-up
