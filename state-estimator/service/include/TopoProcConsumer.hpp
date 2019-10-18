@@ -83,13 +83,13 @@ class TopoProcConsumer : public SEConsumer {
 		// PARSE THE MESSAGE AND PROCESS THE TOPOLOGY
 		// --------------------------------------------------------------------
 		cout << "\nRecieved ybus message of " << text.length() << " bytes...\n\n";
+        cout << "Ybus message:\n" + text.substr(0,2000) + '\n';
 
 		json jtext = json::parse(text);
 
+
 		// This is actually a list of lines from ysparse
-		json jlines_ysparse = jtext["data"]["yParseFilePath"];
-		cout << "Ysparse:\n\t";
-		cout << jlines_ysparse.dump().substr(0,1000) << " ...\n\n";
+		json jlines_ysparse = jtext["data"]["yParse"];
 		bool firstline = true;
 		for ( auto& jline : jlines_ysparse ) {
 			if (firstline) firstline = false;
@@ -114,9 +114,7 @@ class TopoProcConsumer : public SEConsumer {
 		}
 
 		// This is actually the list of nodes from nodelist
-		json jlines_nodelist = jtext["data"]["nodeListFilePath"];
-		cout << "nodelist\n\t";
-		cout << jlines_nodelist.dump().substr(0,1000) << " ...\n\n";
+		json jlines_nodelist = jtext["data"]["nodeList"];
 		int idx = 0;
 		for ( auto& jline : jlines_nodelist ) {
 			// Extract the node name

@@ -58,27 +58,27 @@ class VnomConsumer: public SEConsumer {
 	}
 	
 	public:
-	virtual void init() {
-		// WHEN THE API CALL EXISTS, WE CAN DELETE init()
-		//  - normally, a message populates this->text and calls process()
-		//  - here, we'll populate this->text from a file and call process()
-		json jtext;
-		jtext["data"] = json::object();
-		jtext["data"]["vnomFile"] = json::array();
-
-		// for each line
-		ifstream ifh("base_nominal_voltages.csv");
-
-		string line;
-		while ( getline(ifh,line) )
-			jtext["data"]["vnomFile"].push_back(line);
-
-		text = jtext.dump();
-
-		cout << text + '\n';
-
-		process();
-	}
+//	virtual void init() {
+//		// WHEN THE API CALL EXISTS, WE CAN DELETE init()
+//		//  - normally, a message populates this->text and calls process()
+//		//  - here, we'll populate this->text from a file and call process()
+//		json jtext;
+//		jtext["data"] = json::object();
+//		jtext["data"]["vnomFile"] = json::array();
+//
+//		// for each line
+//		ifstream ifh("base_nominal_voltages.csv");
+//
+//		string line;
+//		while ( getline(ifh,line) )
+//			jtext["data"]["vnomFile"].push_back(line);
+//
+//		text = jtext.dump();
+//
+//		cout << text + '\n';
+//
+//		process();
+//	}
 
 
 	public:
@@ -93,10 +93,10 @@ class VnomConsumer: public SEConsumer {
 		json jtext = json::parse(text);
 
 		// This is actually a list of lines from a dss voltage export file
-		cout << jtext.dump() + "\n\n";
+		cout << "Vnom Message:\n" + jtext.dump(2) + "\n\n";
 
 		bool firstline = true;
-		for ( auto& jline : jtext["data"]["vnomFile"] ) {
+		for ( auto& jline : jtext["data"]["vnom"] ) {
 			if (firstline) firstline = false;
 			else {
 				string s = jline;

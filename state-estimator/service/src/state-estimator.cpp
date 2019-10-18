@@ -120,7 +120,7 @@ int main(int argc, char** argv){
 			"{\"configurationType\":\"Vnom Export\",\"parameters\":{\"simulation_id\":\""
 			+ gad.simid + "\"}}";
 		topoRequester.send(ybusRequestText,ybusTopic);
-//		topoRequester.send(vnomRequestText,vnomTopic);
+		topoRequester.send(vnomRequestText,vnomTopic);
 		topoRequester.close();
 
 		// Initialize topology
@@ -143,13 +143,16 @@ int main(int argc, char** argv){
 		SCMAP node_vnoms;
 		
 		// Wait for the vnom processor and retrive vnom
+        vnomConsumerThread.join();
 		vnomConsumer.fillVnom(node_vnoms);
+        vnomConsumer.close();
 		int ctr = 0;
 		for ( auto& node : node_names) {
 			ctr ++;
 			cout << node << " vnom: " << node_vnoms[node] << '\n';
 		} cout << ctr << " total nodes\n";
-		
+	
+        
 		// BUILD THE A-MATRIX
 		IMMAP A;
 		state_estimator_util::build_A_matrix(gad,A,node_idxs);
