@@ -180,6 +180,25 @@ namespace sparql_queries {
 			"ORDER by ?rtcname\n";
 		return sparq;
 	}
+
+    string sparq_energy_source_buses(string fdrid) {
+        string sparq = 
+            "# substation source - DistSubstation\n"
+            "PREFIX r:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+            "PREFIX c:  <http://iec.ch/TC57/CIM100#>\n"
+            "SELECT ?bus WHERE {\n"
+            "?s r:type c:EnergySource.\n"
+            "# feeder selection options - if all commented out, query matches all feeders\n"
+            "  VALUES ?fdrid {\\\""+fdrid+"\\\"}  # 123 bus\n"
+            "  ?s c:Equipment.EquipmentContainer ?fdr.\n"
+            "  ?fdr c:IdentifiedObject.mRID ?fdrid.\n"
+            "  ?t c:Terminal.ConductingEquipment ?s.\n"
+            "  ?t c:Terminal.ConnectivityNode ?cn.\n"
+            "  ?cn c:IdentifiedObject.name ?bus\n"
+            "}\n"
+            "ORDER by ?name\n";
+        return sparq;
+    }
 }
 
 #endif

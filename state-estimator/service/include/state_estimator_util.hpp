@@ -13,6 +13,7 @@ using sparql_queries::sparq_nodes;
 using sparql_queries::sparq_transformer_end_vbase;
 using sparql_queries::sparq_energy_consumer_pq;
 using sparql_queries::sparq_ratio_tap_changer_nodes;
+using sparql_queries::sparq_energy_source_buses;
 
 #include <string>
 #define SLIST std::list<std::string>
@@ -147,11 +148,29 @@ namespace state_estimator_util{
 
 
 		// Add these injections and sourcebus voltages to the sensor array
+		json jesources = sparql_query(gad,"esources",sparq_energy_source_buses(gad.modelID));
+
+        json source_buses = jesources["data"]["results"]["bindings"];
+
+        cout << source_buses.dump(2) << endl;
+
+        if ( source_buses.size() != 1 ) {
+            cerr << "ERROR: number of energy sources (" << source_buses.size() << ") is not 1\n";
+            throw("invalid number of energy sources");
+        }
+
+        string sourcebus = source_buses[0]["bus"]["value"]; 
+        std::transform( sourcebus.begin(), sourcebus.end(), sourcebus.begin(), ::toupper );
+        string source_node_prefix = sourcebus + ".";
+
+
 //		const double sbase = 1000000.0;
 		for ( auto& node : node_names ) {
 
 			// Check for SOURCEBUS
-			if ( !node.compare(0,9,"SOURCEBUS") ) {
+//			if ( !node.compare(0,9,"SOURCEBUS") ) {
+            if ( !node.rfind(source_node_prefix,0) ) {
+
 				// Add sourcebus voltage magnitude
 				string vmag_zid = "source_V_"+node;
 				zary.zids.push_back(vmag_zid);
@@ -199,8 +218,7 @@ namespace state_estimator_util{
 				zary.znew	[qinj_zid] = false;
 			}
 		}
-
-
+        
 		for ( auto& zid : zary.zids ) {
 			cout << zid << '\t' << zary.zvals[zid] << ", sigma " 
 				<< zary.zsigs[zid] << '\n';
