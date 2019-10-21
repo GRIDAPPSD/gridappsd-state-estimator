@@ -198,7 +198,7 @@ class SELoopConsumer : public SEConsumer {
         // Initialize State Covariance Matrix
         // --------------------------------------------------------------------
         double span_vmag = 1.0;
-        double span_varg = 1.0/3.0*3.1415926535;
+        double span_varg = 1.0/3.0*PI;
         double span_taps = 0.2;
         cs *Praw = cs_spalloc(0,0,xqty,1,1);
         for ( int idx = 0 ; idx < node_qty ; idx++ ) {
@@ -393,7 +393,7 @@ class SELoopConsumer : public SEConsumer {
         //    cs_entry(Qraw,ii,ii,0.04*sqrt(1.0/4));      // TUNABLE
         for ( int idx = 0 ; idx < node_qty ; idx++ ) {
             cs_entry(Qraw,idx,idx,0.001);
-            cs_entry(Qraw,node_qty+idx,node_qty+idx,0.001*3.1415926535);
+            cs_entry(Qraw,node_qty+idx,node_qty+idx,0.001*PI);
         }
         Q = cs_compress(Qraw); cs_spfree(Qraw);
         print_cs_compress(Q,initpath+"Q.csv");
@@ -557,7 +557,7 @@ class SELoopConsumer : public SEConsumer {
             uint idx = node_idxs[node_name];
             complex<double> vnom = node_vnoms[node_name];
             state["v"] = abs ( vnom * Vpu[idx] );
-            state["angle"] = 180.0/3.1415926535 * arg ( vnom * Vpu[idx] );
+            state["angle"] = 180.0/PI * arg ( vnom * Vpu[idx] );
             // TODO: Add v and angle variance values
             state["vVariance"] = 0;         // This comes from P
             state["angleVariance"] = 0;     // This comes from P

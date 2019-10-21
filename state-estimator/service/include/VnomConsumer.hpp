@@ -150,7 +150,6 @@ class VnomConsumer: public SEConsumer {
 					<< node3 << '\t' << mag3 << '\t' << arg3 << '\t' << vpu3 << "\n";
 			
 				// Each of the the three nodes is a potential entry
-				#define PI 3.1415926535
 				string node;
 				double vre, vim;
 				complex<double> vnom;
