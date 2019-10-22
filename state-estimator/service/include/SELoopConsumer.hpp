@@ -958,8 +958,8 @@ class SELoopConsumer : public SEConsumer {
             if (!klunum) {
 #ifdef DEBUG_PRIMARY
                 cout << "Common->status is: " << klucom.status << '\n';
-#endif
                 if ( klucom.status == 1 ) cout << "\tKLU_SINGULAR\n";
+#endif
                 throw "klu_factor failed";
             }
 
