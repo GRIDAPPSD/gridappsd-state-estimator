@@ -71,12 +71,17 @@ class SensorDefConsumer : public SEConsumer {
 		// --------------------------------------------------------------------
 		// PARSE THE MESSAGE AND INITIALIZE SENSORS
 		// --------------------------------------------------------------------
+#ifdef DEBUG_PRIMARY
 		cout << "Received sensor message of " << text.length() << " bytes...\n\t";
+#endif
 
 		json jtext = json::parse(text);
+#ifdef DEBUG_PRIMARY
 		cout << jtext.dump().substr(0,2000) << " ...\n\n";
 //		cout << jtext.dump(2);
+#endif
 
+#ifdef DEBUG_PRIMARY
 		for ( auto& feeder : jtext["data"]["feeders"] ) {
 			cout << "\nFeeder name: " << feeder["name"] << '\n';
 //			cout << "\tmRID: " << feeder["mRID"] << '\n';
@@ -107,11 +112,13 @@ class SensorDefConsumer : public SEConsumer {
 			
 		}
 
-	        for ( auto& f : jtext["data"]["feeders"] ) {
+	    for ( auto& f : jtext["data"]["feeders"] ) {
 			for (auto& m : f["measurements"] ) {
 				cout << m.dump(2) + '\n';
 			}
 		}
+#endif
+        
 
 		// --------------------------------------------------------------------
 		// LOAD THE SENSORS -- sensors will deliver measurements
@@ -169,7 +176,9 @@ class SensorDefConsumer : public SEConsumer {
 		// --------------------------------------------------------------------
 		// SENSOR INITIALIZATION COMPLETE
 		// --------------------------------------------------------------------
+#ifdef DEBUG_PRIMARY
 		cout << "\nSensor initialization complete.\n";
+#endif
 		// release latch
 		doneLatch.countDown();
 	}

@@ -108,13 +108,16 @@ class SEConsumer : public ExceptionListener,
 			if ( mode == "topic" ){
 				destination = session->createTopic(target);
 				cms::Topic *tmpTopic = session->createTopic(target);
-				cout << "topic: " <<
-					(tmpTopic)->getTopicName() << '\n';
+#ifdef DEBUG_PRIMARY
+				cout << "topic: " << (tmpTopic)->getTopicName() << '\n';
+#endif
 			}
 			else if ( mode == "queue" ){
 				destination = session->createQueue(target);
+#ifdef DEBUG_PRIMARY
 //				cout << "queue: " <<
 //					((activemq::commands::ActiveMQQueue)(destination))->getQueueName() << '\n';
+#endif
 			}
 			else
 				throw "unrecognized mode \"" + mode + "\"";

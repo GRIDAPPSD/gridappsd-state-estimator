@@ -1,3 +1,7 @@
+#define DEBUG_PRIMARY
+//#define DEBUG_DETAILS
+//#define DEBUG_FILES
+
 #define PI 3.1415926535
 
 #include "state_estimator_gridappsd.hpp"
@@ -146,11 +150,13 @@ int main(int argc, char** argv){
         vnomConsumerThread.join();
 		vnomConsumer.fillVnom(node_vnoms);
         vnomConsumer.close();
+#ifdef DEBUG_PRIMARY
 		int ctr = 0;
 		for ( auto& node : node_names) {
 			ctr ++;
 			cout << node << " vnom: " << node_vnoms[node] << '\n';
 		} cout << ctr << " total nodes\n";
+#endif
 	
         
 		// BUILD THE A-MATRIX
@@ -218,7 +224,10 @@ int main(int argc, char** argv){
 		//   collect measurements in the meantime
 
 
+#ifdef DEBUG_PRIMARY
 		for ( auto& node: node_names ) cout << node+'\n';
+#endif
+
 		// measurements come from the simulation output
 		string simoutTopic = "goss.gridappsd.simulation.output."+gad.simid;
 		SELoopConsumer loopConsumer(gad.brokerURI,gad.username,gad.password,
@@ -229,7 +238,9 @@ int main(int argc, char** argv){
 		loopConsumerThread.start();	// execute loopConsumer.run()
 		loopConsumer.waitUntilReady();	// wait for the startup latch release
 		
+#ifdef DEBUG_PRIMARY
 		cout << "\nListening for simulation output on "+simoutTopic+'\n';
+#endif
 		
 		// wait for the estimator to exit:
 		loopConsumerThread.join(); loopConsumer.close();
@@ -238,7 +249,7 @@ int main(int argc, char** argv){
 		return 0;
 
 	} catch (...) {
-		std::cerr << "Error: Unhandled Exception\n";
+		cerr << "Error: Unhandled Exception\n";
 		throw NULL;
 	}
 	

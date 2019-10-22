@@ -82,8 +82,10 @@ class TopoProcConsumer : public SEConsumer {
 		// --------------------------------------------------------------------
 		// PARSE THE MESSAGE AND PROCESS THE TOPOLOGY
 		// --------------------------------------------------------------------
+#ifdef DEBUG_PRMIARY
 		cout << "\nRecieved ybus message of " << text.length() << " bytes...\n\n";
         cout << "Ybus message:\n" + text.substr(0,2000) + '\n';
+#endif
 
 		json jtext = json::parse(text);
 
@@ -105,7 +107,9 @@ class TopoProcConsumer : public SEConsumer {
 					tmpline.erase(0,pos+1); pos = tmpline.find(",");
 				double B = stod( tmpline.substr(0,pos) );
 
+#ifdef DEBUG_PRMIARY
 //				cout <<'\t'<< i << '\t' << j << '\t' << G << '\t' << B << '\n';
+#endif
 
 				Y[i][j] = complex<double>(G,B);
 				if ( i != j ) Y[j][i] = complex<double>(G,B);
