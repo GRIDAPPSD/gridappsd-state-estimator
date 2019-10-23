@@ -72,7 +72,7 @@ class SensorDefConsumer : public SEConsumer {
 		// PARSE THE MESSAGE AND INITIALIZE SENSORS
 		// --------------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-		cout << "Received sensor message of " << text.length() << " bytes...\n\t";
+		cout << "Received sensor message of " << text.length() << " bytes...\n\n";
 #endif
 
 		json jtext = json::parse(text);
@@ -177,7 +177,7 @@ class SensorDefConsumer : public SEConsumer {
 		// SENSOR INITIALIZATION COMPLETE
 		// --------------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-		cout << "\nSensor initialization complete.\n";
+		cout << "Sensor initialization complete.\n\n";
 #endif
 		// release latch
 		doneLatch.countDown();
