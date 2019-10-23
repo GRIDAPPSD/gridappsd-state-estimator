@@ -125,7 +125,7 @@ class SELoopConsumer : public SEConsumer {
                 const double sbase,
                 const IMMAP& Yphys,
                 const IMMAP& A) {
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
         for ( auto& node : node_names ) cout << node+'\n';
 #endif
         this->brokerURI = brokerURI;
@@ -144,7 +144,7 @@ class SELoopConsumer : public SEConsumer {
         this->sbase = sbase;
         this->Yphys = Yphys; 
         this->A = A;
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
         cout << "------\n";
         for ( auto& node : this->node_names ) cout << node+'\n';
         cout << "------\n";
@@ -233,8 +233,17 @@ class SELoopConsumer : public SEConsumer {
         // --------------------------------------------------------------------
         // Compute Ypu
         // --------------------------------------------------------------------
+#ifdef DEBUG_PRIMARY
+        cout << "Computing Ypu ...\n";
+#endif
+        complex<double> yij, vnomi, vnomj;
+        unsigned int beat_ctr = 0;
         for ( auto& inode : node_names ) {
 #ifdef DEBUG_PRIMARY
+            if ( beat_ctr++ % 500 == 0 ) 
+                cout << "--- heartbeat - " << beat_ctr << " ---\n";
+#endif
+#ifdef DEBUG_SECONDARY
             cout << inode << '\n';
 #endif
             uint i = node_idxs[inode];
@@ -243,14 +252,18 @@ class SELoopConsumer : public SEConsumer {
                 for ( auto& jnode : node_names ) {
                     uint j = node_idxs[jnode];
                     try {
-                        complex<double> yij = row.at(j);
-                        complex<double> vnomi = node_vnoms[inode];
-                        complex<double> vnomj = node_vnoms[jnode];
-                        Ypu[i][j] = conj(vnomi/sbase) * yij * vnomj;
+                        yij = row.at(j);
+                        // vnomi = node_vnoms[inode];
+                        // vnomj = node_vnoms[jnode];
+                        Ypu[i][j] = conj(node_vnoms[inode]/sbase) 
+                            * yij * node_vnoms[jnode];
                     } catch(...) {}
                 }
             } catch(...) {}
         }
+#ifdef DEBUG_PRIMARY
+        cout << "Ypu computation complete\n";
+#endif
 
 //      // print
 //      for ( auto& inode : node_names ) {
@@ -416,14 +429,23 @@ class SELoopConsumer : public SEConsumer {
         // --------------------------------------------------------------------
         // state transition matrix (constant)
         cs *Fraw = cs_spalloc(0,0,xqty,1,1);
+#ifdef DEBUG_PRIMARY
+        cout << "Initializing F\n";
+#endif
         for ( int ii = 0 ; ii < xqty ; ii++ )
             cs_entry(Fraw,ii,ii,1);
         F = cs_compress(Fraw); cs_spfree(Fraw);
 #ifdef DEBUG_FILES
         print_cs_compress(F,initpath+"F.csv");
 #endif
+#ifdef DEBUG_PRIMARY
+        cout << "F is " << F->m << " by " << F->n << " with " << F->nzmax << " entries\n";
+#endif
 
         // process covariance matrix (constant)
+#ifdef DEBUG_PRIMARY
+        cout << "Initializing Q\n";
+#endif
         cs *Qraw = cs_spalloc(0,0,xqty,1,1);
         //for ( int ii = 0 ; ii < xqty ; ii++ )
         //    cs_entry(Qraw,ii,ii,0.04*sqrt(1.0/4));      // TUNABLE
@@ -435,8 +457,14 @@ class SELoopConsumer : public SEConsumer {
 #ifdef DEBUG_FILES
         print_cs_compress(Q,initpath+"Q.csv");
 #endif
+#ifdef DEBUG_PRIMARY
+        cout << "Q is " << Q->m << " by " << Q->n << " with " << Q->nzmax << " entries\n";
+#endif
 
         // identity matrix of dimension x (constant)
+#ifdef DEBUG_PRIMARY
+        cout << "Initializing eye\n";
+#endif
         cs *eyexraw = cs_spalloc(0,0,xqty,1,1);
         for ( int ii = 0 ; ii < xqty ; ii++ )
             cs_entry(eyexraw,ii,ii,1.0);
@@ -446,6 +474,9 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
         // measurement covariance matrix (constant)
+#ifdef DEBUG_PRIMARY
+        cout << "Initializing R\n";
+#endif
         cs *Rraw = cs_spalloc(0,0,zqty,1,1);
         for ( auto& zid : zary.zids )
             cs_entry(Rraw,zary.zidxs[zid],zary.zidxs[zid],zary.zsigs[zid]/1000000.0);
@@ -453,9 +484,9 @@ class SELoopConsumer : public SEConsumer {
 #ifdef DEBUG_FILES
         print_cs_compress(R,initpath+"R.csv");
 #endif
-        // initial state vector
         
 #ifdef DEBUG_FILES
+        // print initial state vector
         ofh.open(initpath+"Vpu.csv",ofstream::out);
         ofh << std::setprecision(16);
         cout << "writing " << initpath+"Vpu.csv\n\n";
@@ -477,19 +508,20 @@ class SELoopConsumer : public SEConsumer {
             }
         } ofh.close();
 #endif
-        
+
+#ifdef DEBUG_FILES
         // initial measurement vector [these actually don't need to be done here]
         cs* z; this->sample_z(z);
-#ifdef DEBUG_FILES
-            print_cs_compress(z,initpath+"z.csv"); cs_spfree(z);
-#endif
+        print_cs_compress(z,initpath+"z.csv"); 
+        cs_spfree(z);
+
         cs* h; this->calc_h(h);
-#ifdef DEBUG_FILES
-            print_cs_compress(h,initpath+"h.csv"); cs_spfree(h);
-#endif
+        print_cs_compress(h,initpath+"h.csv"); 
+        cs_spfree(h);
+        
         cs* J; this->calc_J(J);
-#ifdef DEBUG_FILES
-            print_cs_compress(J,initpath+"J.csv"); cs_spfree(J);
+        print_cs_compress(J,initpath+"J.csv"); 
+        cs_spfree(J);
 #endif
 
 
@@ -513,7 +545,7 @@ class SELoopConsumer : public SEConsumer {
     public:
     virtual void process() {
 #ifdef DEBUG_PRIMARY
-        cout << "\nMessage of " << text.length() 
+        cout << "\nProcessing message of " << text.length() 
             << " bytes recieved on measurement topic.\n";
 #endif
 
@@ -521,11 +553,13 @@ class SELoopConsumer : public SEConsumer {
         int timestamp = jtext["message"]["timestamp"];
 #ifdef DEBUG_PRIMARY
         cout << "\ttimestamp: " << timestamp << "\n";
-        
+#endif
+
+#ifdef DEBUG_SECONDARY
         cout << text << "\n\n";
 #endif
 
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
         for ( auto& mobj : zary.mmrids ) {
 //          cout << mobj << " -> " << zary.mtypes[mobj] << '\n';
         }
@@ -549,7 +583,7 @@ class SELoopConsumer : public SEConsumer {
             // link back to information about the measurement using its mRID
             string mmrid = m["measurement_mrid"];
             string m_type = zary.mtypes[mmrid];
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 //          cout << m.dump(2)+'\n';
 //          cout << mmrid+'\n';
 //          cout << '\t' + m_type + '\n';
@@ -567,7 +601,7 @@ class SELoopConsumer : public SEConsumer {
                     abs ( vmag_phys / node_vnoms[zary.znode1s[zid]] );
                 zary.znew[mmrid+"_Vmag"] = true;
 
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
                 cout << mmrid+"_Vmag" << " -> " << zary.zvals[mmrid+"_Vmag"] << '\n';
 #endif
 
@@ -632,7 +666,7 @@ class SELoopConsumer : public SEConsumer {
 //      for ( auto& reg_name : reg_names ) {}
 
         // Publish the message
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
         cout << jstate.dump(4).substr(200)+'\n';;
 #endif
         statePublisher->send(jstate.dump());
@@ -691,14 +725,26 @@ class SELoopConsumer : public SEConsumer {
         cout << "prepx ... ";
 #endif
         cs *x; this->prep_x(x);
-#ifdef DEBUG_FILES
+
+#ifdef DEBUG_PRIMARY
         cout << "x is " << x->m << " by " << x->n << 
             " with " << x->nzmax << " entries\n";
+#endif
+
+#ifdef DEBUG_FILES
         print_cs_compress(x,tspath+"x.csv");
+#endif
+
+#ifdef DEBUG_PRIMARY
         cout << "P is " << P->m << " by " << P->n << 
             " with " << P->nzmax << " entries\n";
+#endif
+
+#ifdef DEBUG_FILES
         print_cs_compress(P,tspath+"P.csv");
-    
+#endif
+
+#ifdef DEBUG_FILES
         ofstream ofh;
         ofh.open(tspath+"Vpu.csv",ofstream::out);
         ofh << std::setprecision(16);
@@ -726,26 +772,32 @@ class SELoopConsumer : public SEConsumer {
         cout << "sample_z ... ";
 #endif
         cs *z; this->sample_z(z);
-#ifdef DEBUG_FILES
+
+#ifdef DEBUG_PRIMARY
         cout << "z is " << z->m << " by " << z->n << 
             " with " << z->nzmax << " entries\n";
+#endif
+
+#ifdef DEBUG_FILES
         print_cs_compress(z,tspath+"z.csv");
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "calc_h ... ";
+        cout << "calc_h ... " << std::flush;
 #endif
         cs *h; this->calc_h(h);
-#ifdef DEBUG_FILES
+
+#ifdef DEBUG_PRIMARY
         cout << "h is " << h->m << " by " << h->n << 
             " with " << h->nzmax << " entries\n";
-//      for ( int idx = 0 ; idx < h->nzmax ; idx++ )
-//          cout << "\th[" << h->i[idx] << "] is " << h->x[idx] << '\n';
+#endif
+
+#ifdef DEBUG_FILES
         print_cs_compress(h,tspath+"h.csv");
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "calcJ ... ";
+        cout << "calcJ ... " << std::flush;
 #endif
         cs *J; this->calc_J(J);
 #ifdef DEBUG_FILES
@@ -765,6 +817,7 @@ class SELoopConsumer : public SEConsumer {
         else cout << "xpre is " << xpre->m << " by " << xpre->n << 
             " with " << xpre->nzmax << " entries\n";
 #endif
+
 #ifdef DEBUG_FILES
         print_cs_compress(xpre,tspath+"xpre.csv");
 #endif
@@ -777,12 +830,15 @@ class SELoopConsumer : public SEConsumer {
         else cout << "P1 is " << P1->m << " by " << P1->n << 
             " with " << P1->nzmax << " entries\n";
 #endif
+
 #ifdef DEBUG_FILES
         print_cs_compress(P1,tspath+"P1.csv");
 #endif
 
-        cs *P2 = cs_multiply(P,P1); cs_spfree(P1);
+        cs *P2 = cs_multiply(P,P1);
+        cs_spfree(P1);
         if (!P2) cout << "ERROR: null P2\n";
+
 #ifdef DEBUG_PRIMARY
         else cout << "P2 is " << P2->m << " by " << P2->n << 
             " with " << P2->nzmax << " entries\n";
@@ -791,7 +847,8 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(P2,tspath+"P2.csv");
 #endif
 
-        cs *P3 = cs_multiply(F,P2); cs_spfree(P2);
+        cs *P3 = cs_multiply(F,P2); 
+        cs_spfree(P2);
         if (!P3) cout << "ERROR: null P3\n";
 #ifdef DEBUG_PRIMARY
         else cout << "P3 is " << P3->m << " by " << P3->n << 
@@ -801,7 +858,8 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(P3,tspath+"P3.csv");
 #endif
 
-        cs *Ppre = cs_add(P3,Q,1,1); cs_spfree(P3);
+        cs *Ppre = cs_add(P3,Q,1,1);
+        cs_spfree(P3);
         if (!Ppre) cout << "ERROR: null Ppre\n";
 #ifdef DEBUG_PRIMARY
         else cout << "Ppre is " << Ppre->m << " by " << Ppre->n << 
@@ -848,11 +906,13 @@ class SELoopConsumer : public SEConsumer {
         else cout << "S1 is " << S1->m << " by " << S1->n << 
             " with " << S1->nzmax << " entries\n";
 #endif
+
 #ifdef DEBUG_FILES
         print_cs_compress(S1,tspath+"S1.csv");
 #endif
 
-        cs *S2 = cs_multiply(Ppre,S1); cs_spfree(S1);
+        cs *S2 = cs_multiply(Ppre,S1);
+        cs_spfree(S1);
         if (!S2) cout << "ERROR: null S2\n";
 #ifdef DEBUG_PRIMARY
         else cout << "S2 is " << S2->m << " by " << S2->n << 
@@ -862,7 +922,8 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(S2,tspath+"S2.csv");
 #endif
 
-        cs *S3 = cs_multiply(J,S2); cs_spfree(S2);
+        cs *S3 = cs_multiply(J,S2);
+        cs_spfree(S2);
         if (!S3) cout << "ERROR: null S3\n";
 #ifdef DEBUG_PRIMARY
         else cout << "S3 is " << S3->m << " by " << S3->n << 
@@ -872,7 +933,8 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(S3,tspath+"S3.csv");
 #endif
 
-        cs *Supd = cs_add(R,S3,1,1); cs_spfree(S3);
+        cs *Supd = cs_add(R,S3,1,1);
+        cs_spfree(S3);
         if (!Supd) cout << "ERROR: null Supd\n";
 #ifdef DEBUG_PRIMARY
         else cout << "Supd is " << Supd->m << " by " << Supd->n << 
@@ -906,11 +968,13 @@ class SELoopConsumer : public SEConsumer {
         else cout << "K1 is " << K1->m << " by " << K1->n << 
             " with " << K1->nzmax << " entries\n";
 #endif
+
 #ifdef DEBUG_FILES
         print_cs_compress(K1,tspath+"K1.csv");
 #endif
 
-        cs *K2 = cs_multiply(Ppre,K1); cs_spfree(K1);
+        cs *K2 = cs_multiply(Ppre,K1);
+        cs_spfree(K1);
         if (!K2) cout << "ERROR: null K2\n";
 #ifdef DEBUG_PRIMARY
         else cout << "K2 is " << K2->m << " by " 
@@ -926,6 +990,7 @@ class SELoopConsumer : public SEConsumer {
         else cout << "K3raw is " << K3raw->m << " by " 
             << K3raw->n << " with " << K3raw->nzmax << " entries\n";
 #endif
+
 #ifdef DEBUG_FILES
 //      print_cs_compress(K3raw,tspath+"K3raw.csv");
 #endif
@@ -956,10 +1021,8 @@ class SELoopConsumer : public SEConsumer {
 
             klunum = klu_factor(Supd->p,Supd->i,Supd->x,klusym,&klucom);
             if (!klunum) {
-#ifdef DEBUG_PRIMARY
                 cout << "Common->status is: " << klucom.status << '\n';
                 if ( klucom.status == 1 ) cout << "\tKLU_SINGULAR\n";
-#endif
                 throw "klu_factor failed";
             }
 
@@ -978,9 +1041,7 @@ class SELoopConsumer : public SEConsumer {
 
             klu_solve(klusym,klunum,Supd->m,Supd->n,rhs,&klucom);
             if (klucom.status) {
-#ifdef DEBUG_PRIMARY
                 cout << "Common->status is: " << klucom.status << '\n';
-#endif
                 throw "klu_solve failed";
             }
 
@@ -1000,9 +1061,7 @@ class SELoopConsumer : public SEConsumer {
 
             delete rhs;
         } catch (const char *msg) {
-#ifdef DEBUG_PRIMARY
             cout << "ERROR: " << msg << '\n';
-#endif
             return;
         }
 
@@ -1010,22 +1069,26 @@ class SELoopConsumer : public SEConsumer {
         cout << "left KLU block\n";
 #endif
 
-        cs *K3 = cs_compress(K3raw); cs_spfree(K3raw);
+        cs *K3 = cs_compress(K3raw);
+        cs_spfree(K3raw);
         if ( !K3 ) cout << "ERROR: K3 null\n";
 #ifdef DEBUG_PRIMARY
         else cout << "K3 is " << K3->m << " by " << K3->n << 
                 " with " << K3->nzmax << " entries\n";
 #endif
+
 #ifdef DEBUG_FILES
         print_cs_compress(K3,tspath+"K3.csv");
 #endif
 
-        cs *Kupd = cs_multiply(K2,K3); cs_spfree(K2); cs_spfree(K3);
+        cs *Kupd = cs_multiply(K2,K3); cs_spfree(K2);
+        cs_spfree(K3);
         if ( !Kupd ) cout << "ERROR: Kupd null\n";
 #ifdef DEBUG_PRIMARY
         else cout << "Kupd is " << Kupd->m << " by " << Kupd->n << 
                 " with " << Kupd->nzmax << " entries\n";
 #endif
+
 #ifdef DEBUG_FILES
         print_cs_compress(Kupd,tspath+"Kupd.csv");
 #endif
@@ -1042,16 +1105,19 @@ class SELoopConsumer : public SEConsumer {
         else cout << "x1 is " << x1->m << " by " << x1->n << 
                 " with " << x1->nzmax << " entries\n";
 #endif
+
 #ifdef DEBUG_FILES
         print_cs_compress(x1,tspath+"x1.csv");
 #endif
         
-        cs *xupd = cs_add(xpre,x1,1,1); cs_spfree(x1);
+        cs *xupd = cs_add(xpre,x1,1,1);
+        cs_spfree(x1);
         if ( !xupd ) cout << "ERROR: xupd null\n";
 #ifdef DEBUG_PRIMARY
         else cout << "xupd is " << xupd->m << " by " << xupd->n << 
                 " with " << xupd->nzmax << " entries\n";
 #endif
+
 #ifdef DEBUG_FILES
         print_cs_compress(xupd,tspath+"xupd.csv");
 #endif
@@ -1067,26 +1133,31 @@ class SELoopConsumer : public SEConsumer {
         else cout << "P4 is " << P4->m << " by " << P4->n << 
                 " with " << P4->nzmax << " entries\n";
 #endif
+
 #ifdef DEBUG_FILES
         print_cs_compress(P4,tspath+"P4.csv");
 #endif
 
-        cs *P5 = cs_add(eyex,P4,1,-1); cs_spfree(P4);
+        cs *P5 = cs_add(eyex,P4,1,-1);
+        cs_spfree(P4);
         if ( !P5 ) cout << "ERROR: P5 null\n";
 #ifdef DEBUG_PRIMARY
         else cout << "P5 is " << P5->m << " by " << P5->n << 
                 " with " << P5->nzmax << " entries\n";
 #endif
+
 #ifdef DEBUG_FILES
         print_cs_compress(P5,tspath+"P5.csv");
 #endif
 
-        cs *Pupd = cs_multiply(P5,Ppre); cs_spfree(P5);
+        cs *Pupd = cs_multiply(P5,Ppre);
+        cs_spfree(P5);
         if ( !Pupd ) cout << "ERROR: Pupd null\n";
 #ifdef DEBUG_PRIMARY
         else cout << "Pupd is " << Pupd->m << " by " << Pupd->n << 
                 " with " << P->nzmax << " entries\n";
 #endif
+
 #ifdef DEBUG_FILES
         print_cs_compress(Pupd,tspath+"Pupd.csv");
 #endif
@@ -1112,7 +1183,8 @@ class SELoopConsumer : public SEConsumer {
 #ifdef DEBUG_PRIMARY
         cout << "freeing xpre and Ppre...\n";
 #endif
-        cs_spfree(xpre); cs_spfree(Ppre);
+        cs_spfree(xpre);
+        cs_spfree(Ppre);
 
         // X HAS BEEN DECOMPRESSED INTO VPU AND A
 //      cout << "freeing x and setting xupd to NULL...\n";
@@ -1120,12 +1192,17 @@ class SELoopConsumer : public SEConsumer {
 #ifdef DEBUG_PRIMARY
         cout << "freeing P and setting Pupd to NULL...\n";
 #endif
-        cs_spfree(P); P = Pupd; Pupd = NULL;
+        cs_spfree(P);
+        P = Pupd;
+        Pupd = NULL;
+
         // free residual
 #ifdef DEBUG_PRIMARY
         cout << "freeing ypud and Supd...\n";
 #endif
-        cs_spfree(yupd); cs_spfree(Supd);
+        cs_spfree(yupd);
+        cs_spfree(Supd);
+        
         // free gain matrix
 #ifdef DEBUG_PRIMARY
         cout << "freeing Kupd...\n";
@@ -1135,8 +1212,10 @@ class SELoopConsumer : public SEConsumer {
 #ifdef DEBUG_PRIMARY
         cout << "freeing x, z, h, and J\n";
 #endif
-        cs_spfree(x); cs_spfree(z); cs_spfree(h); cs_spfree(J);
-
+        cs_spfree(x);
+        cs_spfree(z);
+        cs_spfree(h);
+        cs_spfree(J);
     }
 
     private:
@@ -1174,7 +1253,8 @@ class SELoopConsumer : public SEConsumer {
             uint Tidx = node_qty + idx - 1;
             if ( arg(Vi) ) cs_entry(xraw,Tidx,0,arg(Vi));
         }
-        x = cs_compress(xraw); cs_spfree(xraw);
+        x = cs_compress(xraw);
+        cs_spfree(xraw);
     }
 
     private:
@@ -1183,14 +1263,14 @@ class SELoopConsumer : public SEConsumer {
         cs *zraw = cs_spalloc(zqty,1,zqty,1,1);
         if ( !zraw ) cout << "ERROR: Failed to cs_spalloc zraw\n";
         for ( auto& zid : zary.zids ) {
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
             cout << '\n' << zid << '[' << zary.zidxs[zid] << 
                     ']' << '\t' << zary.zvals[zid];
 #endif
             if ( zary.zvals[zid] > NEGL || -zary.zvals[zid] > NEGL )
                 cs_entry(zraw,zary.zidxs[zid],0,zary.zvals[zid]);
         }
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
         cout << '\n';
 #endif
         z = cs_compress(zraw); 

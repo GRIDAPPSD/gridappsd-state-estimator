@@ -76,12 +76,12 @@ class SensorDefConsumer : public SEConsumer {
 #endif
 
 		json jtext = json::parse(text);
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 		cout << jtext.dump().substr(0,2000) << " ...\n\n";
 //		cout << jtext.dump(2);
 #endif
 
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 		for ( auto& feeder : jtext["data"]["feeders"] ) {
 			cout << "\nFeeder name: " << feeder["name"] << '\n';
 //			cout << "\tmRID: " << feeder["mRID"] << '\n';

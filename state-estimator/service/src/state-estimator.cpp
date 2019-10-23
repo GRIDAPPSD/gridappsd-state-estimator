@@ -1,4 +1,5 @@
 #define DEBUG_PRIMARY
+//#define DEBUT_SECONDARY
 //#define DEBUG_DETAILS
 //#define DEBUG_FILES
 
@@ -150,7 +151,7 @@ int main(int argc, char** argv){
         vnomConsumerThread.join();
 		vnomConsumer.fillVnom(node_vnoms);
         vnomConsumer.close();
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 		int ctr = 0;
 		for ( auto& node : node_names) {
 			ctr ++;
@@ -224,7 +225,7 @@ int main(int argc, char** argv){
 		//   collect measurements in the meantime
 
 
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 		for ( auto& node: node_names ) cout << node+'\n';
 #endif
 

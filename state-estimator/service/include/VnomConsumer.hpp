@@ -94,7 +94,7 @@ class VnomConsumer: public SEConsumer {
 
 		json jtext = json::parse(text);
 
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 		// This is actually a list of lines from a dss voltage export file
 		cout << "Vnom Message:\n" + jtext.dump(2) + "\n\n";
 #endif
@@ -104,13 +104,13 @@ class VnomConsumer: public SEConsumer {
 			if (firstline) firstline = false;
 			else {
 				string s = jline;
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 				cout << s + '\n';
 #endif
 				
 				// strip out white space
 				s.erase( remove( s.begin(), s.end(), ' ' ), s.end() );
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 				cout<< s + '\n';
 #endif
 
@@ -152,7 +152,7 @@ class VnomConsumer: public SEConsumer {
 				double vpu3 = stod( s.substr(0,pos) );
 					s.erase(0,pos+1); pos = s.find(",");
 
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 				cout <<'\t'<< bus << '\t' << basekv << "\n\t"
 					<< node1 << '\t' << mag1 << '\t' << arg1 << '\t' << vpu1 << "\n\t"
 					<< node2 << '\t' << mag2 << '\t' << arg2 << '\t' << vpu2 << "\n\t"
@@ -170,7 +170,7 @@ class VnomConsumer: public SEConsumer {
 					vre = mag1 * cos( arg1 * PI/180 );
 					vim = mag1 * sin( arg1 * PI/180);
 					vnom = complex<double>(vre,vim);
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 					cout << vnom << endl;
 #endif
 					node_vnoms[node] = vnom;
@@ -182,7 +182,7 @@ class VnomConsumer: public SEConsumer {
 					vre = mag2 * cos( arg2 * PI/180 );
 					vim = mag2 * sin( arg2 * PI/180 );
 					vnom = complex<double>(vre,vim);
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 					cout << vnom << endl;
 #endif
 					node_vnoms[node] = vnom;
@@ -194,7 +194,7 @@ class VnomConsumer: public SEConsumer {
 					vre = mag3 * cos( arg3 * PI/180 );
 					vim = mag3 * sin( arg3 * PI/180 );
 					vnom = complex<double>(vre,vim);
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 					cout << vnom << endl;
 #endif
 					node_vnoms[node] = vnom;

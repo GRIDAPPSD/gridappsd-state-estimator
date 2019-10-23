@@ -84,16 +84,16 @@ namespace state_estimator_util{
 
 		// Add nominal load injections
 		for ( auto& load : jpsm["data"]["results"]["bindings"] ) {
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 			cout << load.dump() + "\n";
 #endif
 		 	string bus = load["busname"]["value"]; for ( char& c : bus ) c = toupper(c);
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 			cout << "bus: " + bus + '\n';
 #endif
 
 			if ( !load.count("phase") ) {
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 				cout << "balanced 3-phase load\n";
 #endif
 				// This is a 3-phase balanced load (handle D and Y the same)
@@ -109,13 +109,13 @@ namespace state_estimator_util{
 				pseudoP[bus+".3"] -= ptot/3.0/2.0;
 				pseudoQ[bus+".3"] -= qtot/3.0/2.0;
 			} else {
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 				cout << "single-phase load\n";
 #endif
 				// This is a 1-phase load
 				string spph = load["p_phase"]["value"]; double pph = stod(spph);
 				string sqph = load["q_phase"]["value"]; double qph = stod(sqph);
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 				cout << "pph: " << pph << "\t\t" << "qph: " << qph << '\n';
 #endif
 				string phase = load["phase"]["value"];
@@ -129,7 +129,7 @@ namespace state_estimator_util{
 				// Handle Wye or Delta load
 				string conn = load["conn"]["value"];
 				if ( !conn.compare("Y") ) {
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 					cout << "\tY load\n";
 #endif
 					// Wye-connected load - injections are 
@@ -137,7 +137,7 @@ namespace state_estimator_util{
 					pseudoQ[node] -= qph/2.0;
 				}
 				if ( !conn.compare("D") ) {
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 					cout << "\tD load\n";
 #endif
 					// Delta-connected load - injections depend on load current
@@ -231,7 +231,7 @@ namespace state_estimator_util{
 			}
 		}
         
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 		for ( auto& zid : zary.zids ) {
 			cout << zid << '\t' << zary.zvals[zid] << ", sigma " 
 				<< zary.zsigs[zid] << '\n';
@@ -243,7 +243,7 @@ namespace state_estimator_util{
 
 	void build_A_matrix(gridappsd_session& gad, IMMAP& A, SIMAP& node_idxs) {
 		json jregs = sparql_query(gad,"regs",sparq_ratio_tap_changer_nodes(gad.modelID));
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 		cout << jregs.dump() + '\n';
 #endif
 		for ( auto& reg : jregs["data"]["results"]["bindings"] ) {
@@ -252,7 +252,7 @@ namespace state_estimator_util{
 			string primbus = reg["primbus"]["value"];
 			string primph = reg["primphs"]["value"];
 			string primnode = primbus; for ( auto& c : primnode ) c = toupper(c);
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 			cout << primbus + '\t' + primph + '\n';
 #endif
 			if (!primph.compare("A")) primnode += ".1";
@@ -261,7 +261,7 @@ namespace state_estimator_util{
 			if (!primph.compare("s1")) primnode += ".1";
 			if (!primph.compare("s2")) primnode += ".2";
 			uint primidx = node_idxs[primnode];
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 			cout << primnode + " index: " << primidx << '\n';
 #endif
 
@@ -269,7 +269,7 @@ namespace state_estimator_util{
 			string regbus = reg["regbus"]["value"];
 			string regph = reg["regphs"]["value"];
 			string regnode = regbus; for ( auto& c : regnode ) c = toupper(c);
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 			cout << regbus + '\t' + regph + '\n';
 #endif
 			if (!regph.compare("A")) regnode += ".1";
@@ -278,7 +278,7 @@ namespace state_estimator_util{
 			if (!regph.compare("s1")) regnode += ".1";
 			if (!regph.compare("s2")) regnode += ".2";
 			uint regidx = node_idxs[regnode];
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
 			cout << regnode + " index: " << regidx << '\n';
 #endif
 
