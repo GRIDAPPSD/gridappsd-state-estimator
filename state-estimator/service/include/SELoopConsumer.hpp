@@ -240,7 +240,7 @@ class SELoopConsumer : public SEConsumer {
         uint beat_ctr = 0;
         for ( auto& inode : node_names ) {
 #ifdef DEBUG_PRIMARY
-            if ( beat_ctr % 250 == 0 ) 
+            if ( beat_ctr % 100 == 0 ) 
                 cout << "--- Ypu heartbeat - " << beat_ctr++ << " ---\n" << std::flush;
 #endif
 #ifdef DEBUG_SECONDARY
@@ -1483,7 +1483,7 @@ class SELoopConsumer : public SEConsumer {
         // loop over z
         for ( auto& zid : zary.zids ) {
 #ifdef DEBUG_PRIMARY
-            if ( beat_ctr % 250 == 0 ) 
+            if ( beat_ctr % 100 == 0 ) 
                 cout << "--- calc_J heartbeat - " << beat_ctr++ << " ---\n" << std::flush;
 #endif
 #ifdef DEBUG_DETAILS
