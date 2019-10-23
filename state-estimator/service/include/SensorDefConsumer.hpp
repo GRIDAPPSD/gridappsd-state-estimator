@@ -72,18 +72,18 @@ class SensorDefConsumer : public SEConsumer {
 		// PARSE THE MESSAGE AND INITIALIZE SENSORS
 		// --------------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-		cout << "Received sensor message of " << text.length() << " bytes...\n\n";
+		cout << "Received sensor message of " << text.length() << " bytes...\n\n" << std::flush;
 #endif
 
 		json jtext = json::parse(text);
 #ifdef DEBUG_SECONDARY
-		cout << jtext.dump().substr(0,2000) << " ...\n\n";
+		cout << jtext.dump().substr(0,2000) << " ...\n\n" << std::flush;
 //		cout << jtext.dump(2);
 #endif
 
 #ifdef DEBUG_SECONDARY
 		for ( auto& feeder : jtext["data"]["feeders"] ) {
-			cout << "\nFeeder name: " << feeder["name"] << '\n';
+			cout << "\nFeeder name: " << feeder["name"] << '\n' << std::flush;
 //			cout << "\tmRID: " << feeder["mRID"] << '\n';
 //			cout << "\tsubstation: " << feeder["substation"] << '\n';
 //			cout << "\tsubstationID: " << feeder["substationID"] << '\n';
@@ -98,13 +98,13 @@ class SensorDefConsumer : public SEConsumer {
 				json objs = feeder[type];
 				unsigned int ctr = 0;
 				for ( auto& obj : objs ) {
-					cout << "\t\t" << obj["name"] << '\n';
+					cout << "\t\t" << obj["name"] << '\n' << std::flush;
 				}
 			}
 			
 
 			for ( auto& reg : feeder["regulators"] ) {
-				cout << reg.dump() + '\n';
+				cout << reg.dump() + '\n' << std::flush;
 			}
 
 //			cout << "\nPress ENTER to list non-PNV measurements:";
@@ -114,7 +114,7 @@ class SensorDefConsumer : public SEConsumer {
 
 	    for ( auto& f : jtext["data"]["feeders"] ) {
 			for (auto& m : f["measurements"] ) {
-				cout << m.dump(2) + '\n';
+				cout << m.dump(2) + '\n' << std::flush;
 			}
 		}
 #endif
@@ -128,13 +128,13 @@ class SensorDefConsumer : public SEConsumer {
         /*
 		for ( auto& f : jtext["data"]["feeders"] ) {
 			for ( auto& m : f["measurements"] ) {
-				cout << m.dump()+'\n';
+				cout << m.dump()+'\n' << std::flush;
 				// store the necessary measurement information
 				string mmrid = m["mRID"];
 				string tmeas = m["measurementType"];
 				zary.mmrids.push_back( mmrid );
 				zary.mtypes[mmrid] = tmeas;
-				cout << mmrid << " -> " << tmeas << '\n';
+				cout << mmrid << " -> " << tmeas << '\n' << std::flush;
 
 				// build z and supporting structures
 				if ( !tmeas.compare("PNV") ) {
@@ -177,7 +177,7 @@ class SensorDefConsumer : public SEConsumer {
 		// SENSOR INITIALIZATION COMPLETE
 		// --------------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-		cout << "Sensor initialization complete.\n\n";
+		cout << "Sensor initialization complete.\n\n" << std::flush;
 #endif
 		// release latch
 		doneLatch.countDown();
