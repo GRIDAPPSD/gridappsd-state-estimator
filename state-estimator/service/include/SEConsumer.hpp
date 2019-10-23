@@ -109,7 +109,7 @@ class SEConsumer : public ExceptionListener,
 				destination = session->createTopic(target);
 				cms::Topic *tmpTopic = session->createTopic(target);
 #ifdef DEBUG_PRIMARY
-				cout << "topic: " << (tmpTopic)->getTopicName() << '\n';
+				cout << "topic: " << (tmpTopic)->getTopicName() << "\n\n";
 #endif
 			}
 			else if ( mode == "queue" ){
@@ -179,7 +179,7 @@ class SEConsumer : public ExceptionListener,
 	public:
 	virtual void process() {
 		// implementation-specific actions - default is to print the message
-		//cout << "Recieved message:\n\t" << text << '\n';
+		//cout << "Received message:\n\t" << text << '\n';
 		this->doneLatch.countDown();
 	}
 

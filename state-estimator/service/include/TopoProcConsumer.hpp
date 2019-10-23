@@ -83,7 +83,7 @@ class TopoProcConsumer : public SEConsumer {
 		// PARSE THE MESSAGE AND PROCESS THE TOPOLOGY
 		// --------------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-		cout << "\nRecieved ybus message of " << text.length() << " bytes...\n\n";
+		cout << "Received ybus message of " << text.length() << " bytes...\n\n";
 #endif
 
 #ifdef DEBUG_SECONDARY
@@ -93,7 +93,7 @@ class TopoProcConsumer : public SEConsumer {
 		json jtext = json::parse(text);
 
 #ifdef DEBUG_PRIMARY
-        cout << "Parsing ybus \n\n";
+        cout << "Parsing ybus ... " << std::flush;
 #endif
 		// This is actually a list of lines from ysparse
 		json jlines_ysparse = jtext["data"]["yParse"];
@@ -122,8 +122,8 @@ class TopoProcConsumer : public SEConsumer {
 			}
 		}
 #ifdef DEBUG_PRIMARY
-        cout << "Ybus parsing complete.\n\n";
-        cout << "Parsing nodelist ... \n\n";
+        cout << "complete.\n\n";
+        cout << "Parsing nodelist ... " << std::flush;
 #endif
 		// This is actually the list of nodes from nodelist
 		json jlines_nodelist = jtext["data"]["nodeList"];
@@ -138,7 +138,7 @@ class TopoProcConsumer : public SEConsumer {
 			nodem[node_name] = ++idx;
 		}
 #ifdef DEBUG_PRIMARY
-        cout << "nodelist parsing complete.\n\n";
+        cout << "complete.\n\n";
 #endif
 //		// print
 //		for ( auto& inode : nodens ) {

@@ -181,7 +181,7 @@ class SELoopConsumer : public SEConsumer {
         string sePubTopic = "goss.gridappsd.state-estimator.out."+simid;
         statePublisher = new SEProducer(brokerURI,username,password,sePubTopic,"topic");
 #ifdef DEBUG_PRIMARY
-        cout << "State Estimate Message Producer Constructed.\n";
+        cout << "State Estimate Message Producer Constructed.\n\n";
 #endif
 
         // --------------------------------------------------------------------
@@ -190,7 +190,7 @@ class SELoopConsumer : public SEConsumer {
         xqty = 2*node_qty;
         zqty = zary.zqty;
 #ifdef DEBUG_PRIMARY
-        cout << "zary.zqty is " << zary.zqty << '\n';
+        cout << "zary.zqty is " << zary.zqty << "\n\n";
 #endif
 
         // --------------------------------------------------------------------
@@ -202,7 +202,7 @@ class SELoopConsumer : public SEConsumer {
             Vpu[node_idxs[node_name]] = 1.0;
         }
 #ifdef DEBUG_PRIMARY
-        cout << "Voltages Initialized.\n";
+        cout << "Voltages Initialized.\n\n";
 #endif
 
         // --------------------------------------------------------------------
@@ -226,7 +226,7 @@ class SELoopConsumer : public SEConsumer {
 
 
 #ifdef DEBUG_PRIMARY
-        cout << "State Covariance Matrix Initialized.\n";
+        cout << "State Covariance Matrix Initialized.\n\n";
 #endif
 
 
@@ -240,8 +240,8 @@ class SELoopConsumer : public SEConsumer {
         unsigned int beat_ctr = 0;
         for ( auto& inode : node_names ) {
 #ifdef DEBUG_PRIMARY
-            if ( beat_ctr++ % 500 == 0 ) 
-                cout << "--- heartbeat - " << beat_ctr << " ---\n";
+            if ( ++beat_ctr % 500 == 0 ) 
+                cout << "--- Ypu heartbeat - " << beat_ctr << " ---\n";
 #endif
 #ifdef DEBUG_SECONDARY
             cout << inode << '\n';
@@ -262,7 +262,7 @@ class SELoopConsumer : public SEConsumer {
             } catch(...) {}
         }
 #ifdef DEBUG_PRIMARY
-        cout << "Ypu computation complete\n";
+        cout << "Ypu computation complete.\n\n";
 #endif
 
 //      // print
@@ -439,7 +439,7 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(F,initpath+"F.csv");
 #endif
 #ifdef DEBUG_PRIMARY
-        cout << "F is " << F->m << " by " << F->n << " with " << F->nzmax << " entries\n";
+        cout << "F is " << F->m << " by " << F->n << " with " << F->nzmax << " entries\n\n";
 #endif
 
         // process covariance matrix (constant)
@@ -458,12 +458,12 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(Q,initpath+"Q.csv");
 #endif
 #ifdef DEBUG_PRIMARY
-        cout << "Q is " << Q->m << " by " << Q->n << " with " << Q->nzmax << " entries\n";
+        cout << "Q is " << Q->m << " by " << Q->n << " with " << Q->nzmax << " entries\n\n";
 #endif
 
         // identity matrix of dimension x (constant)
 #ifdef DEBUG_PRIMARY
-        cout << "Initializing eye\n";
+        cout << "Initializing eye\n\n";
 #endif
         cs *eyexraw = cs_spalloc(0,0,xqty,1,1);
         for ( int ii = 0 ; ii < xqty ; ii++ )
@@ -475,7 +475,7 @@ class SELoopConsumer : public SEConsumer {
 
         // measurement covariance matrix (constant)
 #ifdef DEBUG_PRIMARY
-        cout << "Initializing R\n";
+        cout << "Initializing R\n\n";
 #endif
         cs *Rraw = cs_spalloc(0,0,zqty,1,1);
         for ( auto& zid : zary.zids )
@@ -797,12 +797,14 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "calcJ ... " << std::flush;
+        cout << "calc_J ... \n";
 #endif
         cs *J; this->calc_J(J);
-#ifdef DEBUG_FILES
+#ifdef DEBUG_PRIMARY
         cout << "J is " << J->m << " by " << J->n << 
             " with " << J->nzmax << " entries\n";
+#endif
+#ifdef DEBUG_FILES
         print_cs_compress(J,tspath+"J.csv");
 #endif
 
@@ -1473,6 +1475,9 @@ class SELoopConsumer : public SEConsumer {
         cs *Jraw = cs_spalloc(zqty,xqty,zqty*xqty,1,1);
         // loop over z
         for ( auto& zid : zary.zids ) {
+#ifdef DEBUG_PRIMARY
+            cerr << "***calc_J zid: " << zid << '\n';
+#endif
 #ifdef DEBUG_DETAILS
             cerr << "***SEDBG:calc_J zid: " << zid << '\n';
 #endif
@@ -1482,6 +1487,9 @@ class SELoopConsumer : public SEConsumer {
 
             // loop over voltage magnitude states
             for ( auto& node_name : node_names ) {
+#ifdef DEBUG_PRIMARY
+                cerr << "***calc_J node_name: " << node_name << '\n';
+#endif
                 uint vidx = node_idxs[node_name];
                 uint xidx = vidx-1;
                 // Computation of d/dv depends on the measurement type

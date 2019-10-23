@@ -88,7 +88,7 @@ class VnomConsumer: public SEConsumer {
 		// PARSE THE MESSAGE AND PROCESS THE TOPOLOGY
 		// --------------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-		cout << "\nReceived vnom message of " << text.length() << " bytes...\n\n";
+		cout << "Received vnom message of " << text.length() << " bytes...\n\n";
 #endif
 
 
