@@ -94,7 +94,7 @@ int main(int argc, char** argv){
 
 //		// PSEUDO-MEASUREMENTS
 //		json jpsm = sparql_query(gad,"psm",sparq_energy_consumer_pq(gad.modelID));
-//		cout << jpsm.dump() + '\n';
+//		cout << jpsm.dump() + '\n' << std::flush;
 
 
 		// --------------------------------------------------------------------
@@ -155,8 +155,8 @@ int main(int argc, char** argv){
 		int ctr = 0;
 		for ( auto& node : node_names) {
 			ctr ++;
-			cout << node << " vnom: " << node_vnoms[node] << '\n';
-		} cout << ctr << " total nodes\n";
+			cout << node << " vnom: " << node_vnoms[node] << '\n' << std::flush;
+		} cout << ctr << " total nodes\n" << std::flush;
 #endif
 	
         
@@ -226,7 +226,7 @@ int main(int argc, char** argv){
 
 
 #ifdef DEBUG_SECONDARY
-		for ( auto& node: node_names ) cout << node+'\n';
+		for ( auto& node: node_names ) cout << node+'\n' << std::flush;
 #endif
 
 		// measurements come from the simulation output
@@ -240,7 +240,7 @@ int main(int argc, char** argv){
 		loopConsumer.waitUntilReady();	// wait for the startup latch release
 		
 #ifdef DEBUG_PRIMARY
-		cout << "\nListening for simulation output on "+simoutTopic+'\n';
+		cout << "\nListening for simulation output on "+simoutTopic+'\n' << std::flush;
 #endif
 		
 		// wait for the estimator to exit:
@@ -250,7 +250,7 @@ int main(int argc, char** argv){
 		return 0;
 
 	} catch (...) {
-		cerr << "Error: Unhandled Exception\n";
+		cerr << "Error: Unhandled Exception\n" << std::flush;
 		throw NULL;
 	}
 	

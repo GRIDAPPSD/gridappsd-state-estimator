@@ -111,8 +111,8 @@ class SEProducer {
 			auto_ptr<TextMessage> msg(session->createTextMessage(text));
 #ifdef DEBUG_PRIMARY
 			// Report
-//			cout << "Publishing to "+target+":\n\t"+text+"\n\n";
-			cout << "Publishing to "+target+"\n\n";
+//			cout << "Publishing to "+target+":\n\t"+text+"\n\n" << std::flush;
+			cout << "Publishing to "+target+"\n\n" << std::flush;
 #endif
 			// Send the message
 			producer->send(msg.get());
@@ -130,13 +130,13 @@ class SEProducer {
 			// Set the reply-to topic
 			msg->setStringProperty("reply-to",replytopic);
 #ifdef DEBUG_PRIMARY
-            cout << "Publishing to "+target+"\n\n";
+            cout << "Publishing to "+target+"\n\n" << std::flush;
 #endif
 
 #ifdef DEBUG_SECONDARY
 			// Report
-			cout << "Publishing to "+target+":\n\t"+text+"\n\n";
-//			cout << "Publishing to "+target+"\n\n";
+			cout << "Publishing to "+target+":\n\t"+text+"\n\n" << std::flush;
+//			cout << "Publishing to "+target+"\n\n" << std::flush;
 #endif
 			// Send the message
 			producer->send(msg.get());
