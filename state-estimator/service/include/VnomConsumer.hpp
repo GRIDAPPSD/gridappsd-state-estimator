@@ -91,7 +91,6 @@ class VnomConsumer: public SEConsumer {
 		cout << "Received vnom message of " << text.length() << " bytes...\n\n";
 #endif
 
-
 		json jtext = json::parse(text);
 
 #ifdef DEBUG_SECONDARY

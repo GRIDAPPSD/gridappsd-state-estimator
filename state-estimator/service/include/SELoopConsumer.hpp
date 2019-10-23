@@ -1473,10 +1473,14 @@ class SELoopConsumer : public SEConsumer {
     void calc_J(cs *&J) {
         // each z component has a Jacobian component for each state
         cs *Jraw = cs_spalloc(zqty,xqty,zqty*xqty,1,1);
+#ifdef DEBUG_PRIMARY
+        uint beat_ctr = 0;
+#endif
         // loop over z
         for ( auto& zid : zary.zids ) {
 #ifdef DEBUG_PRIMARY
-            cerr << "***calc_J zid: " << zid << '\n';
+            if ( ++beat_ctr % 250 == 0 ) 
+                cout << "--- calc_J heartbeat - " << beat_ctr << " ---\n";
 #endif
 #ifdef DEBUG_DETAILS
             cerr << "***SEDBG:calc_J zid: " << zid << '\n';
@@ -1484,14 +1488,9 @@ class SELoopConsumer : public SEConsumer {
             uint zidx = zary.zidxs[zid];
             string ztype = zary.ztypes[zid];
             uint i = node_idxs[zary.znode1s[zid]];
-            uint beat_ctr = 0;
 
             // loop over voltage magnitude states
             for ( auto& node_name : node_names ) {
-#ifdef DEBUG_PRIMARY
-                if ( ++beat_ctr % 500 == 0 ) 
-                    cout << "--- calc_J heartbeat - " << beat_ctr << " ---\n";
-#endif
                 uint vidx = node_idxs[node_name];
                 uint xidx = vidx-1;
                 // Computation of d/dv depends on the measurement type
