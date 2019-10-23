@@ -236,8 +236,9 @@ class SELoopConsumer : public SEConsumer {
 #ifdef DEBUG_PRIMARY
         cout << "Computing Ypu ...\n" << std::flush;
 #endif
-        complex<double> yij, vnomi, vnomj;
+#ifdef DEBUG_PRIMARY
         uint beat_ctr = 0;
+#endif
         for ( auto& inode : node_names ) {
 #ifdef DEBUG_PRIMARY
             if ( ++beat_ctr % 100 == 0 ) 
@@ -247,16 +248,15 @@ class SELoopConsumer : public SEConsumer {
             cout << inode << "\n" << std::flush;
 #endif
             uint i = node_idxs[inode];
+            complex<double> conjterm = conj(node_vnoms[inode]/sbase);
             try {
                 auto& row = Yphys.at(i);
                 for ( auto& jnode : node_names ) {
                     uint j = node_idxs[jnode];
                     try {
-                        yij = row.at(j);
-                        // vnomi = node_vnoms[inode];
-                        // vnomj = node_vnoms[jnode];
-                        Ypu[i][j] = conj(node_vnoms[inode]/sbase) 
-                            * yij * node_vnoms[jnode];
+                        //yij = row.at(j);
+                        //Ypu[i][j] = conjterm * yij * node_vnoms[jnode];
+                        Ypu[i][j] = conjterm * row.at(j) * node_vnoms[jnode];
                     } catch(...) {}
                 }
             } catch(...) {}
