@@ -237,7 +237,7 @@ class SELoopConsumer : public SEConsumer {
         cout << "Computing Ypu ...\n";
 #endif
         complex<double> yij, vnomi, vnomj;
-        unsigned int beat_ctr = 0;
+        uint beat_ctr = 0;
         for ( auto& inode : node_names ) {
 #ifdef DEBUG_PRIMARY
             if ( ++beat_ctr % 500 == 0 ) 
@@ -1484,11 +1484,13 @@ class SELoopConsumer : public SEConsumer {
             uint zidx = zary.zidxs[zid];
             string ztype = zary.ztypes[zid];
             uint i = node_idxs[zary.znode1s[zid]];
+            uint beat_ctr = 0;
 
             // loop over voltage magnitude states
             for ( auto& node_name : node_names ) {
 #ifdef DEBUG_PRIMARY
-                cerr << "***calc_J node_name: " << node_name << '\n';
+                if ( ++beat_ctr % 500 == 0 ) 
+                    cout << "--- calc_J heartbeat - " << beat_ctr << " ---\n";
 #endif
                 uint vidx = node_idxs[node_name];
                 uint xidx = vidx-1;
