@@ -135,8 +135,10 @@ class SEConsumer : public ExceptionListener,
 
 			// Indicate we are ready for messages.
 			this->latch.countDown();
+
 			// Wait for the response
 			this->doneLatch.await();
+
 		} catch (CMSException& e) {
 			// Indicate we are ready for messages.
 			this->latch.countDown();
@@ -153,10 +155,13 @@ class SEConsumer : public ExceptionListener,
 	virtual void onMessage(const Message* message) {
 		// What to do when a message is recieved
 		try {
+            // wait for init() to finish -- otherwise messages interrupt this thread
+            latch.await();
+
 			const BytesMessage* bytesMessage = 
 					dynamic_cast<const BytesMessage*> (message);
 			text = "";
-			text.reserve(5000000);
+			text.reserve(50000000);
 			if (bytesMessage != NULL) {
 				for ( int idx = 0 ; idx < bytesMessage->getBodyLength() ; idx++ )
 					text.push_back(bytesMessage->readChar());
