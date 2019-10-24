@@ -125,16 +125,20 @@ class SensorDefConsumer : public SEConsumer {
 		// --------------------------------------------------------------------
 		// Iterate over the sensors
         // TODO: Uncomment the following for loop to support sensor dynamic measurements
-        /*
+        
 		for ( auto& f : jtext["data"]["feeders"] ) {
 			for ( auto& m : f["measurements"] ) {
+#ifdef DEBUG_SECONDARY
 				cout << m.dump()+'\n' << std::flush;
+#endif
 				// store the necessary measurement information
 				string mmrid = m["mRID"];
 				string tmeas = m["measurementType"];
 				zary.mmrids.push_back( mmrid );
 				zary.mtypes[mmrid] = tmeas;
-				cout << mmrid << " -> " << tmeas << '\n' << std::flush;
+#ifdef DEBUG_SECONDARY
+                cout << mmrid << " -> " << tmeas << '\n' << std::flush;
+#endif                
 
 				// build z and supporting structures
 				if ( !tmeas.compare("PNV") ) {
@@ -156,7 +160,7 @@ class SensorDefConsumer : public SEConsumer {
 					zary.ztypes[zid] = "vi";
 					zary.znode1s[zid] = node;
 					zary.znode2s[zid] = node;
-					zary.zsigs[zid] = 0.0001;		// WHERE DOES THIS COME FROM ??
+					zary.zsigs[zid] = 0.01;		// WHERE DOES THIS COME FROM ??
 					// these don't necessarily need to be initialized
 					// - they will be initialized on access
 //					zary.zvals[zid] = 0;		// initialize to 0
@@ -171,7 +175,7 @@ class SensorDefConsumer : public SEConsumer {
 				}
 			}
 		}
-        */
+        
 		
 		// --------------------------------------------------------------------
 		// SENSOR INITIALIZATION COMPLETE

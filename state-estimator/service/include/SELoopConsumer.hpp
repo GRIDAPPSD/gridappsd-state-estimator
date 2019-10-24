@@ -598,7 +598,7 @@ class SELoopConsumer : public SEConsumer {
                 // TODO: This uses vnom filled from OpenDSS values, but needs to use
                 // GridLAB-D values
                 zary.zvals[mmrid+"_Vmag"] = 
-                    abs ( vmag_phys / node_vnoms[zary.znode1s[zid]] );
+                    vmag_phys / abs(node_vnoms[zary.znode1s[zid]]);
                 zary.znew[mmrid+"_Vmag"] = true;
 
 #ifdef DEBUG_SECONDARY
