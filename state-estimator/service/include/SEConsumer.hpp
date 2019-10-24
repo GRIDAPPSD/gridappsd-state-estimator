@@ -156,13 +156,7 @@ class SEConsumer : public ExceptionListener,
 		// What to do when a message is recieved
 		try {
             // wait for init() to finish -- otherwise messages interrupt this thread
-#ifdef DEBUG_PRIMARY
-            cout << "SEConsumer onMessage latch waiting ...\n\n" << std::flush;
-#endif
             latch.await();
-#ifdef DEBUG_PRIMARY
-            cout << "SEConsumer onMessage done latch wating.\n\n" << std::flush;
-#endif
 
 			const BytesMessage* bytesMessage = 
 					dynamic_cast<const BytesMessage*> (message);
