@@ -1501,7 +1501,6 @@ class SELoopConsumer : public SEConsumer {
         for ( auto& zid : zary.zids ) {
 #ifdef DEBUG_PRIMARY
             if ( ++beat_ctr % 100 == 0 ) 
-                cout << "--- calc_J heartbeat - " << beat_ctr << ", " << getMinSec(getWallTime()-startTime) << " ---\n" << std::flush;
                 cout << "--- calc_J heartbeat - " << beat_ctr << ", " << getPerComp(beat_ctr, total_ctr) << ", " << getMinSec(getWallTime()-startTime) << " ---\n" << std::flush;
 #endif
 #ifdef DEBUG_DETAILS
