@@ -19,6 +19,11 @@ using json = nlohmann::json;
 #include <sys/types.h>
 #include <dirent.h>
 
+#ifdef DEBUG_PRIMARY
+#include <sys/time.h>
+#include <time.h>
+#endif
+
 // SLIST holds the lists of node names and regulator names
 #ifndef SLIST
 #define SLIST std::list<std::string>
@@ -238,6 +243,7 @@ class SELoopConsumer : public SEConsumer {
 #endif
 #ifdef DEBUG_PRIMARY
         uint beat_ctr = 0;
+        double startTime = getWallTime();
 #endif
         for ( auto& inode : node_names ) {
 #ifdef DEBUG_PRIMARY
@@ -263,6 +269,8 @@ class SELoopConsumer : public SEConsumer {
         }
 #ifdef DEBUG_PRIMARY
         cout << "Ypu computation complete.\n\n" << std::flush;
+        double endTime = getWallTime();
+        cout << "Ypu wall clock execution time: " << getMinSec(endTime-startTime) << "\n\n" << std::flush;
 #endif
 
 //      // print
@@ -802,9 +810,12 @@ class SELoopConsumer : public SEConsumer {
 
 #ifdef DEBUG_PRIMARY
         cout << "calc_J ... \n" << std::flush;
+        double startTime = getWallTime();
 #endif
         cs *J; this->calc_J(J);
 #ifdef DEBUG_PRIMARY
+        double endTime = getWallTime();
+        cout << "calc_J wall clock execution time: " << getMinSec(endTime-startTime) << "\n\n" << std::flush;
         cout << "J is " << J->m << " by " << J->n << 
             " with " << J->nzmax << " entries\n" << std::flush;
 #endif
@@ -1733,6 +1744,27 @@ class SELoopConsumer : public SEConsumer {
         ofh.close();
     }
 #endif
+
+#ifdef DEBUG_PRIMARY
+    private:
+    double getWallTime() {
+        struct timeval time;
+
+        if (gettimeofday(&time, NULL))
+            return 0;
+
+        return (double)time.tv_sec + (double)time.tv_usec*0.000001;
+    }
+
+    private:
+    string getMinSec(double seconds) {
+        uint min = seconds/60;
+        uint sec = (int)seconds % 60;
+        string minsec = std::to_string(min) + ":" + std::to_string(sec);
+        return minsec;
+    }
+
 };
+#endif
 
 #endif
