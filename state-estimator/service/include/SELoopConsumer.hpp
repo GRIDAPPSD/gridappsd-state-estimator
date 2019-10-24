@@ -287,12 +287,16 @@ class SELoopConsumer : public SEConsumer {
         ofstream ofh;
         ofh.open(initpath+"Ypu.csv",ofstream::out);
         ofh << std::setprecision(16);
+#ifdef DEBUG_SECONDARY
         cout << "writing " << initpath+"Ypu.csv\n\n" << std::flush;
         cout << "node_qty is " << node_qty << "\n" << std::flush;
+#endif
 
         for ( auto& inode : node_names ) {
             uint i = node_idxs[inode];
+#ifdef DEBUG_SECONDARY
             cout << inode << " idx is " << i << "\n" << std::flush;
+#endif
             try {
                 auto& row = Ypu.at(i);
                 int jctr = 0;
