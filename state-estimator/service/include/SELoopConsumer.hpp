@@ -19,6 +19,11 @@ using json = nlohmann::json;
 #include <sys/types.h>
 #include <dirent.h>
 
+#ifdef DEBUG_PRIMARY
+#include <sys/time.h>
+#include <time.h>
+#endif
+
 // SLIST holds the lists of node names and regulator names
 #ifndef SLIST
 #define SLIST std::list<std::string>
@@ -126,7 +131,7 @@ class SELoopConsumer : public SEConsumer {
                 const IMMAP& Yphys,
                 const IMMAP& A) {
 #ifdef DEBUG_SECONDARY
-        for ( auto& node : node_names ) cout << node+'\n';
+        for ( auto& node : node_names ) cout << node+"\n" << std::flush;
 #endif
         this->brokerURI = brokerURI;
         this->username = username;
@@ -145,13 +150,13 @@ class SELoopConsumer : public SEConsumer {
         this->Yphys = Yphys; 
         this->A = A;
 #ifdef DEBUG_SECONDARY
-        cout << "------\n";
-        for ( auto& node : this->node_names ) cout << node+'\n';
-        cout << "------\n";
+        cout << "------\n" << std::flush;
+        for ( auto& node : this->node_names ) cout << node+"\n" << std::flush;
+        cout << "------\n" << std::flush;
         for ( auto& zid : this->zary.zids ) {
-            cout << '\t' << zid << '\t' << this->zary.zvals[zid] << '\n';
+            cout << "\t" << zid << "\t" << this->zary.zvals[zid] << "\n" << std::flush;
         }
-        cout << "------\n";
+        cout << "------\n" << std::flush;
 #endif
     }
 
@@ -181,7 +186,7 @@ class SELoopConsumer : public SEConsumer {
         string sePubTopic = "goss.gridappsd.state-estimator.out."+simid;
         statePublisher = new SEProducer(brokerURI,username,password,sePubTopic,"topic");
 #ifdef DEBUG_PRIMARY
-        cout << "State Estimate Message Producer Constructed.\n\n";
+        cout << "State Estimate Message Producer Constructed.\n\n" << std::flush;
 #endif
 
         // --------------------------------------------------------------------
@@ -190,7 +195,7 @@ class SELoopConsumer : public SEConsumer {
         xqty = 2*node_qty;
         zqty = zary.zqty;
 #ifdef DEBUG_PRIMARY
-        cout << "zary.zqty is " << zary.zqty << "\n\n";
+        cout << "zary.zqty is " << zary.zqty << "\n\n" << std::flush;
 #endif
 
         // --------------------------------------------------------------------
@@ -202,7 +207,7 @@ class SELoopConsumer : public SEConsumer {
             Vpu[node_idxs[node_name]] = 1.0;
         }
 #ifdef DEBUG_PRIMARY
-        cout << "Voltages Initialized.\n\n";
+        cout << "Voltages Initialized.\n\n" << std::flush;
 #endif
 
         // --------------------------------------------------------------------
@@ -226,7 +231,7 @@ class SELoopConsumer : public SEConsumer {
 
 
 #ifdef DEBUG_PRIMARY
-        cout << "State Covariance Matrix Initialized.\n\n";
+        cout << "State Covariance Matrix Initialized.\n\n" << std::flush;
 #endif
 
 
@@ -234,35 +239,39 @@ class SELoopConsumer : public SEConsumer {
         // Compute Ypu
         // --------------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-        cout << "Computing Ypu ...\n";
+        cout << "Computing Ypu ...\n" << std::flush;
 #endif
-        complex<double> yij, vnomi, vnomj;
+#ifdef DEBUG_PRIMARY
         uint beat_ctr = 0;
+        double startTime = getWallTime();
+        uint total_ctr = node_names.size();
+#endif
         for ( auto& inode : node_names ) {
 #ifdef DEBUG_PRIMARY
-            if ( ++beat_ctr % 500 == 0 ) 
-                cout << "--- Ypu heartbeat - " << beat_ctr << " ---\n";
+            if ( ++beat_ctr % 100 == 0 ) 
+                cout << "--- Ypu heartbeat - " << beat_ctr << ", " << getPerComp(beat_ctr, total_ctr) << ", " << getMinSec(getWallTime()-startTime) << " ---\n" << std::flush;
 #endif
 #ifdef DEBUG_SECONDARY
-            cout << inode << '\n';
+            cout << inode << "\n" << std::flush;
 #endif
             uint i = node_idxs[inode];
+            complex<double> conjterm = conj(node_vnoms[inode]/sbase);
             try {
                 auto& row = Yphys.at(i);
                 for ( auto& jnode : node_names ) {
                     uint j = node_idxs[jnode];
                     try {
-                        yij = row.at(j);
-                        // vnomi = node_vnoms[inode];
-                        // vnomj = node_vnoms[jnode];
-                        Ypu[i][j] = conj(node_vnoms[inode]/sbase) 
-                            * yij * node_vnoms[jnode];
+                        //yij = row.at(j);
+                        //Ypu[i][j] = conjterm * yij * node_vnoms[jnode];
+                        Ypu[i][j] = conjterm * row.at(j) * node_vnoms[jnode];
                     } catch(...) {}
                 }
             } catch(...) {}
         }
 #ifdef DEBUG_PRIMARY
-        cout << "Ypu computation complete.\n\n";
+        cout << "Ypu computation complete.\n\n" << std::flush;
+        double endTime = getWallTime();
+        cout << "Ypu wall clock execution time: " << getMinSec(endTime-startTime) << "\n\n" << std::flush;
 #endif
 
 //      // print
@@ -276,7 +285,7 @@ class SELoopConsumer : public SEConsumer {
 //                      complex<double> yij = row.at(j);
 //                      complex<double> vnomi = node_vnoms[inode];
 //                      complex<double> vnomj = node_vnoms[jnode];
-//                      cout << "Y(" << i << "," << j << ") -> " << yij << '\n';
+//                      cout << "Y(" << i << "," << j << ") -> " << yij << "\n" << std::flush;
 //                  } catch(...) {}
 //              }
 //          } catch(...) {}
@@ -287,12 +296,16 @@ class SELoopConsumer : public SEConsumer {
         ofstream ofh;
         ofh.open(initpath+"Ypu.csv",ofstream::out);
         ofh << std::setprecision(16);
-        cout << "writing " << initpath+"Ypu.csv\n\n";
-        cout << "node_qty is " << node_qty << '\n';
+#ifdef DEBUG_SECONDARY
+        cout << "writing " << initpath+"Ypu.csv\n\n" << std::flush;
+        cout << "node_qty is " << node_qty << "\n" << std::flush;
+#endif
 
         for ( auto& inode : node_names ) {
             uint i = node_idxs[inode];
-            cout << inode << " idx is " << i << '\n';
+#ifdef DEBUG_SECONDARY
+            cout << inode << " idx is " << i << "\n" << std::flush;
+#endif
             try {
                 auto& row = Ypu.at(i);
                 int jctr = 0;
@@ -305,15 +318,15 @@ class SELoopConsumer : public SEConsumer {
                         ofh << tmpre 
                             << ( tmpim >= 0 ? "+" : "-" )
                             << std::abs(tmpim) << "i" 
-                            << ( ++jctr < node_qty ? ',' : '\n' );
+                            << ( ++jctr < node_qty ? ',' : "\n" );
                     } catch ( const std::out_of_range& oor) {
-                        ofh << "0+0i" << ( ++jctr < node_qty ? ',' : '\n' );
+                        ofh << "0+0i" << ( ++jctr < node_qty ? ',' : "\n" );
                     }
                 }
             } catch ( const std::out_of_range& oor ) {
                 int jctr = 0;
                 for ( auto& jnode : node_names )
-                    ofh << "0+0i" << ( ++jctr < node_qty ? ',' : '\n' );
+                    ofh << "0+0i" << ( ++jctr < node_qty ? ',' : "\n" );
             }
         } ofh.close();
 #endif
@@ -322,7 +335,7 @@ class SELoopConsumer : public SEConsumer {
         // write Y to file
         ofh.open(initpath+"Yphys.csv",ofstream::out);
         ofh << std::setprecision(16);
-        cout << "writing " << initpath+"Yphys.csv\n";
+        cout << "writing " << initpath+"Yphys.csv\n" << std::flush;
 //      for ( auto& inode : node_names ) {
         for ( uint i = 1 ; i <= node_qty ; i++ ) {
             try {
@@ -335,14 +348,14 @@ class SELoopConsumer : public SEConsumer {
                         ofh << tmpre
                             << ( tmpim >= 0 ? "+" : "-" )
                             << std::abs(tmpim) << "i"
-                            << ( j < node_qty ? ',' : '\n' );
+                            << ( j < node_qty ? ',' : "\n" );
                     } catch ( const std::out_of_range& oor ) {
-                        ofh << "0+0i" << ( j < node_qty ? ',' : '\n' );
+                        ofh << "0+0i" << ( j < node_qty ? ',' : "\n" );
                     }
                 }
             } catch ( const std::out_of_range& oor ) {
                 for ( uint j = 0 ; j < node_qty ; j++ )
-                    ofh << "0+0i" << ( j < node_qty ? ',' : '\n' );
+                    ofh << "0+0i" << ( j < node_qty ? ',' : "\n" );
             }
         } ofh.close();
 #endif
@@ -351,12 +364,12 @@ class SELoopConsumer : public SEConsumer {
         // write Vbase to file
         ofh.open(initpath+"vnoms.csv",ofstream::out);
         ofh << std::setprecision(16);
-        cout << "writing " << initpath+"vnoms.csv\n";
+        cout << "writing " << initpath+"vnoms.csv\n" << std::flush;
         std::vector<complex<double>> vnoms(node_qty);
         for ( auto& node_name : node_names ) {
-            cout << node_name << '\n';
-            cout << "\tidx is " << node_idxs[node_name] << '\n';
-            cout << "\tvnom is " << node_vnoms[node_name] << '\n';
+            cout << node_name << "\n" << std::flush;
+            cout << "\tidx is " << node_idxs[node_name] << "\n" << std::flush;
+            cout << "\tvnom is " << node_vnoms[node_name] << "\n" << std::flush;
             vnoms[node_idxs[node_name]-1] = node_vnoms[node_name];
 //          vnoms[1] = 13;
         }
@@ -366,34 +379,34 @@ class SELoopConsumer : public SEConsumer {
             ofh << re
                 << ( im >= 0 ? "+" : "-" )
                 << std::abs(im) << "i"
-                << '\n';
+                << "\n";
         } ofh.close();
 #endif
             
 #ifdef DEBUG_FILES
         // write the node map to file
         ofh.open(initpath+"nodem.csv",ofstream::out);
-        cout << "writing " << initpath+"nodem.csv\n";
+        cout << "writing " << initpath+"nodem.csv\n" << std::flush;
         for ( auto& node_name : node_names )
-            ofh << node_name << '\n';
+            ofh << node_name << "\n";
         ofh.close();
 #endif
 
 #ifdef DEBUG_FILES
         // write sensor information to file
         ofh.open(initpath+"meas.txt",ofstream::out);
-        cout << "writing output/init/meas.txt\n";
+        cout << "writing output/init/meas.txt\n" << std::flush;
         ofh << "sensor_type\tsensor_name\tnode1\tnode2\tvalue\tsigma\n";
         for ( auto& zid : zary.zids ) {
-            ofh << zary.ztypes[zid] << '\t'
-                << zid << '\t'
-                << zary.znode1s[zid] << '\t'
-                << zary.znode2s[zid] << '\t'
-                << zary.zvals[zid] << '\t'
-                << zary.zsigs[zid] << '\n';
+            ofh << zary.ztypes[zid] << "\t"
+                << zid << "\t"
+                << zary.znode1s[zid] << "\t"
+                << zary.znode2s[zid] << "\t"
+                << zary.zvals[zid] << "\t"
+                << zary.zsigs[zid] << "\n";
         } ofh.close();
 
-        cout << "done writing\n";
+        cout << "done writing\n" << std::flush;
 #endif
 
 
@@ -401,7 +414,7 @@ class SELoopConsumer : public SEConsumer {
         // write sensor types to file
         ofh.open(initpath+"ztypes.csv");
         for ( auto& zid : zary.zids )
-            ofh << zary.ztypes[zid] << '\n';
+            ofh << zary.ztypes[zid] << "\n";
         ofh.close();
 #endif
 
@@ -410,7 +423,7 @@ class SELoopConsumer : public SEConsumer {
         // write sensor node 1s
         ofh.open(initpath+"znode1s.csv");
         for ( auto& zid : zary.zids )
-            ofh << zary.znode1s[zid] << '\n';
+            ofh << zary.znode1s[zid] << "\n";
         ofh.close();
 #endif
 
@@ -419,7 +432,7 @@ class SELoopConsumer : public SEConsumer {
         // write sensor node 2s
         ofh.open(initpath+"znode2s.csv");
         for ( auto& zid : zary.zids )
-            ofh << zary.znode2s[zid] << '\n';
+            ofh << zary.znode2s[zid] << "\n";
         ofh.close();
 #endif
 
@@ -430,7 +443,7 @@ class SELoopConsumer : public SEConsumer {
         // state transition matrix (constant)
         cs *Fraw = cs_spalloc(0,0,xqty,1,1);
 #ifdef DEBUG_PRIMARY
-        cout << "Initializing F\n";
+        cout << "Initializing F\n" << std::flush;
 #endif
         for ( int ii = 0 ; ii < xqty ; ii++ )
             cs_entry(Fraw,ii,ii,1);
@@ -439,12 +452,12 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(F,initpath+"F.csv");
 #endif
 #ifdef DEBUG_PRIMARY
-        cout << "F is " << F->m << " by " << F->n << " with " << F->nzmax << " entries\n\n";
+        cout << "F is " << F->m << " by " << F->n << " with " << F->nzmax << " entries\n\n" << std::flush;
 #endif
 
         // process covariance matrix (constant)
 #ifdef DEBUG_PRIMARY
-        cout << "Initializing Q\n";
+        cout << "Initializing Q\n" << std::flush;
 #endif
         cs *Qraw = cs_spalloc(0,0,xqty,1,1);
         //for ( int ii = 0 ; ii < xqty ; ii++ )
@@ -458,12 +471,12 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(Q,initpath+"Q.csv");
 #endif
 #ifdef DEBUG_PRIMARY
-        cout << "Q is " << Q->m << " by " << Q->n << " with " << Q->nzmax << " entries\n\n";
+        cout << "Q is " << Q->m << " by " << Q->n << " with " << Q->nzmax << " entries\n\n" << std::flush;
 #endif
 
         // identity matrix of dimension x (constant)
 #ifdef DEBUG_PRIMARY
-        cout << "Initializing eye\n\n";
+        cout << "Initializing eye\n\n" << std::flush;
 #endif
         cs *eyexraw = cs_spalloc(0,0,xqty,1,1);
         for ( int ii = 0 ; ii < xqty ; ii++ )
@@ -475,7 +488,7 @@ class SELoopConsumer : public SEConsumer {
 
         // measurement covariance matrix (constant)
 #ifdef DEBUG_PRIMARY
-        cout << "Initializing R\n\n";
+        cout << "Initializing R\n\n" << std::flush;
 #endif
         cs *Rraw = cs_spalloc(0,0,zqty,1,1);
         for ( auto& zid : zary.zids )
@@ -489,12 +502,12 @@ class SELoopConsumer : public SEConsumer {
         // print initial state vector
         ofh.open(initpath+"Vpu.csv",ofstream::out);
         ofh << std::setprecision(16);
-        cout << "writing " << initpath+"Vpu.csv\n\n";
-        cout << "node_qty is " << node_qty << '\n';
+        cout << "writing " << initpath+"Vpu.csv\n\n" << std::flush;
+        cout << "node_qty is " << node_qty << "\n" << std::flush;
 
         for ( auto& inode : node_names ) {
             uint i = node_idxs[inode];
-            cout << inode << " idx is " << i << '\n';
+            cout << inode << " idx is " << i << "\n" << std::flush;
             try {
                 complex<double> tmp = Vpu.at(i);
                 double tmpre = tmp.real();
@@ -502,9 +515,9 @@ class SELoopConsumer : public SEConsumer {
                 ofh << tmpre 
                     << ( tmpim >= 0 ? "+" : "-" )
                     << std::abs(tmpim) << "i" 
-                    << '\n';
+                    << "\n";
             } catch ( const std::out_of_range& oor) {
-                ofh << "0+0i" << '\n';
+                ofh << "0+0i" << "\n";
             }
         } ofh.close();
 #endif
@@ -533,7 +546,7 @@ class SELoopConsumer : public SEConsumer {
         state_fh << "timestamp,";
         int ctr = 0;
         for ( auto& node_name : node_names )
-            state_fh << "\'"+node_name+"\'" << ( ++ctr < node_qty ? ',' : '\n' );
+            state_fh << "\'"+node_name+"\'" << ( ++ctr < node_qty ? ',' : "\n" );
         state_fh.close();
 #endif
 
@@ -546,22 +559,22 @@ class SELoopConsumer : public SEConsumer {
     virtual void process() {
 #ifdef DEBUG_PRIMARY
         cout << "\nProcessing message of " << text.length() 
-            << " bytes recieved on measurement topic.\n";
+            << " bytes recieved on measurement topic.\n" << std::flush;
 #endif
 
         jtext = json::parse(text);
         int timestamp = jtext["message"]["timestamp"];
 #ifdef DEBUG_PRIMARY
-        cout << "\ttimestamp: " << timestamp << "\n";
+        cout << "\ttimestamp: " << timestamp << "\n" << std::flush;
 #endif
 
 #ifdef DEBUG_SECONDARY
-        cout << text << "\n\n";
+        cout << text << "\n\n" << std::flush;
 #endif
 
 #ifdef DEBUG_SECONDARY
         for ( auto& mobj : zary.mmrids ) {
-//          cout << mobj << " -> " << zary.mtypes[mobj] << '\n';
+            cout << mobj << " -> " << zary.mtypes[mobj] << "\n" << std::flush;
         }
 #endif
 
@@ -584,9 +597,9 @@ class SELoopConsumer : public SEConsumer {
             string mmrid = m["measurement_mrid"];
             string m_type = zary.mtypes[mmrid];
 #ifdef DEBUG_SECONDARY
-//          cout << m.dump(2)+'\n';
-//          cout << mmrid+'\n';
-//          cout << '\t' + m_type + '\n';
+//          cout << m.dump(2)+"\n" << std::flush;
+//          cout << mmrid+"\n" << std::flush;
+//          cout << "\t" + m_type + "\n" << std::flush;
 #endif
 
             // Check for "PNV" measurement
@@ -602,7 +615,7 @@ class SELoopConsumer : public SEConsumer {
                 zary.znew[mmrid+"_Vmag"] = true;
 
 #ifdef DEBUG_SECONDARY
-                cout << mmrid+"_Vmag" << " -> " << zary.zvals[mmrid+"_Vmag"] << '\n';
+                cout << mmrid+"_Vmag" << " -> " << zary.zvals[mmrid+"_Vmag"] << "\n" << std::flush;
 #endif
 
                 // update the voltage phase
@@ -619,7 +632,7 @@ class SELoopConsumer : public SEConsumer {
         // Estimate the state
         // --------------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-        cout << "ESTIMATING...\n";
+        cout << "Estimating state ... \n" << std::flush;
 #endif
         this->estimate(timestamp);
 
@@ -667,7 +680,7 @@ class SELoopConsumer : public SEConsumer {
 
         // Publish the message
 #ifdef DEBUG_SECONDARY
-        cout << jstate.dump(4).substr(200)+'\n';;
+        cout << jstate.dump(4).substr(200)+"\n" << std::flush;
 #endif
         statePublisher->send(jstate.dump());
 
@@ -679,7 +692,7 @@ class SELoopConsumer : public SEConsumer {
         int ctr = 0;
         for ( auto& node_name : node_names ) {
             double vmag_pu = abs( Vpu[ node_idxs[node_name] ] );
-            state_fh << vmag_pu << ( ++ctr < node_qty ? ',' : '\n' );
+            state_fh << vmag_pu << ( ++ctr < node_qty ? ',' : "\n" );
         }
         state_fh.close();
 #endif
@@ -689,7 +702,7 @@ class SELoopConsumer : public SEConsumer {
         // Check whether to stop
         // --------------------------------------------------------------------
         if ( text == "stop" ) {
-            cout << "TIME TO STOP!\n";
+            cout << "TIME TO STOP!\n" << std::flush;
             statePublisher->close();
             doneLatch.countDown();
         }
@@ -698,10 +711,10 @@ class SELoopConsumer : public SEConsumer {
     private:
     void estimate(const int& timestamp) {
 #ifdef DEBUG_PRIMARY
-        cout << "xqty is " << xqty << '\n';
-        cout << "zqty is " << zqty << '\n';
-        cout << "F is " << F->m << " by " << F->n << " with " << F->nzmax << " entries\n";
-        cout << "Q is " << Q->m << " by " << Q->n << " with " << Q->nzmax << " entries\n";
+        cout << "xqty is " << xqty << "\n" << std::flush;
+        cout << "zqty is " << zqty << "\n" << std::flush;
+        cout << "F is " << F->m << " by " << F->n << " with " << F->nzmax << " entries\n" << std::flush;
+        cout << "Q is " << Q->m << " by " << Q->n << " with " << Q->nzmax << " entries\n" << std::flush;
 #endif
 
 
@@ -722,13 +735,13 @@ class SELoopConsumer : public SEConsumer {
         // x, z, h, and J will be maintained here
         
 #ifdef DEBUG_PRIMARY
-        cout << "prepx ... ";
+        cout << "prepx ... " << std::flush;
 #endif
         cs *x; this->prep_x(x);
 
 #ifdef DEBUG_PRIMARY
         cout << "x is " << x->m << " by " << x->n << 
-            " with " << x->nzmax << " entries\n";
+            " with " << x->nzmax << " entries\n" << std::flush;
 #endif
 
 #ifdef DEBUG_FILES
@@ -737,7 +750,7 @@ class SELoopConsumer : public SEConsumer {
 
 #ifdef DEBUG_PRIMARY
         cout << "P is " << P->m << " by " << P->n << 
-            " with " << P->nzmax << " entries\n";
+            " with " << P->nzmax << " entries\n" << std::flush;
 #endif
 
 #ifdef DEBUG_FILES
@@ -748,12 +761,12 @@ class SELoopConsumer : public SEConsumer {
         ofstream ofh;
         ofh.open(tspath+"Vpu.csv",ofstream::out);
         ofh << std::setprecision(16);
-        cout << "writing " << tspath+"Vpu.csv\n\n";
-        cout << "node_qty is " << node_qty << '\n';
+        cout << "writing " << tspath+"Vpu.csv\n\n" << std::flush;
+        cout << "node_qty is " << node_qty << "\n" << std::flush;
 
         for ( auto& inode : node_names ) {
             uint i = node_idxs[inode];
-            cout << inode << " idx is " << i << '\n';
+            cout << inode << " idx is " << i << "\n" << std::flush;
             try {
                 complex<double> tmp = Vpu.at(i);
                 double tmpre = tmp.real();
@@ -761,21 +774,21 @@ class SELoopConsumer : public SEConsumer {
                 ofh << tmpre 
                     << ( tmpim >= 0 ? "+" : "-" )
                     << std::abs(tmpim) << "i" 
-                    << '\n';
+                    << "\n";
             } catch ( const std::out_of_range& oor) {
-                ofh << "0+0i" << '\n';
+                ofh << "0+0i" << "\n";
             }
         } ofh.close();
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "sample_z ... ";
+        cout << "sample_z ... " << std::flush;
 #endif
         cs *z; this->sample_z(z);
 
 #ifdef DEBUG_PRIMARY
         cout << "z is " << z->m << " by " << z->n << 
-            " with " << z->nzmax << " entries\n";
+            " with " << z->nzmax << " entries\n" << std::flush;
 #endif
 
 #ifdef DEBUG_FILES
@@ -789,7 +802,7 @@ class SELoopConsumer : public SEConsumer {
 
 #ifdef DEBUG_PRIMARY
         cout << "h is " << h->m << " by " << h->n << 
-            " with " << h->nzmax << " entries\n";
+            " with " << h->nzmax << " entries\n" << std::flush;
 #endif
 
 #ifdef DEBUG_FILES
@@ -797,12 +810,12 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "calc_J ... \n";
+        cout << "calc_J ... \n" << std::flush;
 #endif
         cs *J; this->calc_J(J);
 #ifdef DEBUG_PRIMARY
         cout << "J is " << J->m << " by " << J->n << 
-            " with " << J->nzmax << " entries\n";
+            " with " << J->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(J,tspath+"J.csv");
@@ -814,10 +827,10 @@ class SELoopConsumer : public SEConsumer {
         // --------------------------------------------------------------------
         // -- compute x_predict = F*x | F=I (to improve performance, skip this)
         cs *xpre = cs_multiply(F,x);
-        if (!xpre) cout << "ERROR: null xpre\n";
+        if (!xpre) cout << "ERROR: null xpre\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "xpre is " << xpre->m << " by " << xpre->n << 
-            " with " << xpre->nzmax << " entries\n";
+            " with " << xpre->nzmax << " entries\n" << std::flush;
 #endif
 
 #ifdef DEBUG_FILES
@@ -827,10 +840,10 @@ class SELoopConsumer : public SEConsumer {
         // -- compute p_predict = F*P*F' + Q | F=I (can be simplified)
 
         cs *P1 = cs_transpose(F,1);
-        if (!P1) cout << "ERROR: null P1\n";
+        if (!P1) cout << "ERROR: null P1\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "P1 is " << P1->m << " by " << P1->n << 
-            " with " << P1->nzmax << " entries\n";
+            " with " << P1->nzmax << " entries\n" << std::flush;
 #endif
 
 #ifdef DEBUG_FILES
@@ -839,11 +852,11 @@ class SELoopConsumer : public SEConsumer {
 
         cs *P2 = cs_multiply(P,P1);
         cs_spfree(P1);
-        if (!P2) cout << "ERROR: null P2\n";
+        if (!P2) cout << "ERROR: null P2\n" << std::flush;
 
 #ifdef DEBUG_PRIMARY
         else cout << "P2 is " << P2->m << " by " << P2->n << 
-            " with " << P2->nzmax << " entries\n";
+            " with " << P2->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(P2,tspath+"P2.csv");
@@ -851,10 +864,10 @@ class SELoopConsumer : public SEConsumer {
 
         cs *P3 = cs_multiply(F,P2); 
         cs_spfree(P2);
-        if (!P3) cout << "ERROR: null P3\n";
+        if (!P3) cout << "ERROR: null P3\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "P3 is " << P3->m << " by " << P3->n << 
-            " with " << P3->nzmax << " entries\n";
+            " with " << P3->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(P3,tspath+"P3.csv");
@@ -862,17 +875,17 @@ class SELoopConsumer : public SEConsumer {
 
         cs *Ppre = cs_add(P3,Q,1,1);
         cs_spfree(P3);
-        if (!Ppre) cout << "ERROR: null Ppre\n";
+        if (!Ppre) cout << "ERROR: null Ppre\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "Ppre is " << Ppre->m << " by " << Ppre->n << 
-            " with " << Ppre->nzmax << " entries\n";
+            " with " << Ppre->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(Ppre,tspath+"Ppre.csv");
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "Predict step complete.\n";
+        cout << "Predict step complete.\n" << std::flush;
 #endif
         
         // --------------------------------------------------------------------
@@ -881,32 +894,32 @@ class SELoopConsumer : public SEConsumer {
         // -- compute y = z - h
 
 //      cs *y1 = cs_multiply(J,xpre);
-//      if (!y1) cout << "ERROR: null y1\n";
+//      if (!y1) cout << "ERROR: null y1\n" << std::flush;
 //      else cout << "y1 is " << y1->m << " by " << y1->n << 
-//          " with " << y1->nzmax << " entries\n";
+//          " with " << y1->nzmax << " entries\n" << std::flush;
 //      print_cs_compress(y1,tspath+"y1.csv");
 
         cs *yupd = cs_add(z,h,1,-1); //cs_spfree(y1);
-        if (!yupd) cout << "ERROR: null yupd\n";
+        if (!yupd) cout << "ERROR: null yupd\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "yupd is " << yupd->m << " by " << yupd->n << 
-            " with " << yupd->nzmax << " entries\n";
+            " with " << yupd->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(yupd,tspath+"yupd.csv");
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "y updated\n";
+        cout << "y updated\n" << std::flush;
 #endif
 
         // -- compute S = J*P_predict*J' + R
 
         cs *S1 = cs_transpose(J,1);
-        if (!S1) cout << "ERROR: null S1\n";
+        if (!S1) cout << "ERROR: null S1\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "S1 is " << S1->m << " by " << S1->n << 
-            " with " << S1->nzmax << " entries\n";
+            " with " << S1->nzmax << " entries\n" << std::flush;
 #endif
 
 #ifdef DEBUG_FILES
@@ -915,10 +928,10 @@ class SELoopConsumer : public SEConsumer {
 
         cs *S2 = cs_multiply(Ppre,S1);
         cs_spfree(S1);
-        if (!S2) cout << "ERROR: null S2\n";
+        if (!S2) cout << "ERROR: null S2\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "S2 is " << S2->m << " by " << S2->n << 
-            " with " << S2->nzmax << " entries\n";
+            " with " << S2->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(S2,tspath+"S2.csv");
@@ -926,10 +939,10 @@ class SELoopConsumer : public SEConsumer {
 
         cs *S3 = cs_multiply(J,S2);
         cs_spfree(S2);
-        if (!S3) cout << "ERROR: null S3\n";
+        if (!S3) cout << "ERROR: null S3\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "S3 is " << S3->m << " by " << S3->n << 
-            " with " << S3->nzmax << " entries\n";
+            " with " << S3->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(S3,tspath+"S3.csv");
@@ -937,38 +950,38 @@ class SELoopConsumer : public SEConsumer {
 
         cs *Supd = cs_add(R,S3,1,1);
         cs_spfree(S3);
-        if (!Supd) cout << "ERROR: null Supd\n";
+        if (!Supd) cout << "ERROR: null Supd\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "Supd is " << Supd->m << " by " << Supd->n << 
-            " with " << Supd->nzmax << " entries\n";
+            " with " << Supd->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(Supd,tspath+"Supd.csv");
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "S updated\n";
+        cout << "S updated\n" << std::flush;
         cout << "Supd is " << Supd->m << " by " << Supd->n << 
-            " with " << Supd->nzmax << " entries\n";
-//      cout << "Supd->nzmax is: " << Supd->nzmax << '\n';
-//      cout << "Supd->p is: " << Supd->p << '\n';
+            " with " << Supd->nzmax << " entries\n" << std::flush;
+//      cout << "Supd->nzmax is: " << Supd->nzmax << "\n";
+//      cout << "Supd->p is: " << Supd->p << "\n";
 //      for ( int ii = 0 ; ii < Supd->m + 1 ; ii++ )
-//          cout << '\t' << Supd->p[ii] << '\n';
-//      cout << "Supd->i is: " << Supd->i << '\n';
+//          cout << "\t" << Supd->p[ii] << "\n";
+//      cout << "Supd->i is: " << Supd->i << "\n";
 //      for ( int ii = 0 ; ii < Supd->nzmax ; ii++ )
-//          cout << '\t' << Supd->i[ii] << ", ";
-//      cout << '\n';
+//          cout << "\t" << Supd->i[ii] << ", ";
+//      cout << "\n";
 //      for ( int ii = 0 ; ii < Supd->nzmax ; ii++ )
-//          cout << '\t' << Supd->x[ii] << ", ";
-//      cout << '\n';
+//          cout << "\t" << Supd->x[ii] << ", ";
+//      cout << "\n";
 #endif
 
         // -- compute K = P_predict*J'*S^-1
         cs *K1 = cs_transpose(J,1);
-        if (!K1) cout << "ERROR: null K1\n";
+        if (!K1) cout << "ERROR: null K1\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "K1 is " << K1->m << " by " << K1->n << 
-            " with " << K1->nzmax << " entries\n";
+            " with " << K1->nzmax << " entries\n" << std::flush;
 #endif
 
 #ifdef DEBUG_FILES
@@ -977,20 +990,20 @@ class SELoopConsumer : public SEConsumer {
 
         cs *K2 = cs_multiply(Ppre,K1);
         cs_spfree(K1);
-        if (!K2) cout << "ERROR: null K2\n";
+        if (!K2) cout << "ERROR: null K2\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "K2 is " << K2->m << " by " 
-            << K2->n << " with " << K2->nzmax << " entries\n";
+            << K2->n << " with " << K2->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(K2,tspath+"K2.csv");
 #endif
 
         cs *K3raw = cs_spalloc(0,0,zqty*zqty,1,1);
-        if (!K3raw) cout << "ERROR: null K3raw\n";
+        if (!K3raw) cout << "ERROR: null K3raw\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "K3raw is " << K3raw->m << " by " 
-            << K3raw->n << " with " << K3raw->nzmax << " entries\n";
+            << K3raw->n << " with " << K3raw->nzmax << " entries\n" << std::flush;
 #endif
 
 #ifdef DEBUG_FILES
@@ -1000,7 +1013,7 @@ class SELoopConsumer : public SEConsumer {
         try {
         
 #ifdef DEBUG_PRIMARY
-            cout << "in KLU block\n";
+            cout << "in KLU block\n" << std::flush;
 #endif
 
             // Initialize klusolve variables
@@ -1010,26 +1023,28 @@ class SELoopConsumer : public SEConsumer {
             if (!klu_defaults(&klucom)) throw "klu_defaults failed";
 
 #ifdef DEBUG_PRIMARY
-            cout << "klucom initialized.\n";
+            cout << "klucom initialized.\n" << std::flush;
             
-            cout << Supd->m << '\t' << Supd->p << '\t' << Supd->i << '\n';
+            cout << Supd->m << "\t" << Supd->p << "\t" << Supd->i << "\n" << std::flush;
 #endif
             klusym = klu_analyze(Supd->m,Supd->p,Supd->i,&klucom);
             if (!klusym) throw "klu_analyze failed";
 
 #ifdef DEBUG_PRIMARY
-            cout << "klusym initialized.\n";
+            cout << "klusym initialized.\n" << std::flush;
 #endif
 
             klunum = klu_factor(Supd->p,Supd->i,Supd->x,klusym,&klucom);
             if (!klunum) {
-                cout << "Common->status is: " << klucom.status << '\n';
-                if ( klucom.status == 1 ) cout << "\tKLU_SINGULAR\n";
+#ifdef DEBUG_PRIMARY
+                cout << "Common->status is: " << klucom.status << "\n" << std::flush;
+                if ( klucom.status == 1 ) cout << "\tKLU_SINGULAR\n" << std::flush;
+#endif
                 throw "klu_factor failed";
             }
 
 #ifdef DEBUG_PRIMARY
-            cout << "klunum initialized.\n";
+            cout << "klunum initialized.\n" << std::flush;
 #endif
 
             // initialize an identiy right-hand side
@@ -1038,17 +1053,19 @@ class SELoopConsumer : public SEConsumer {
                 rhs[ii] = ii/zqty == ii%zqty ? 1 : 0;
             
 #ifdef DEBUG_PRIMARY
-            cout << "identity rhs created\n";
+            cout << "identity rhs created\n" << std::flush;
 #endif
 
             klu_solve(klusym,klunum,Supd->m,Supd->n,rhs,&klucom);
             if (klucom.status) {
-                cout << "Common->status is: " << klucom.status << '\n';
+#ifdef DEBUG_PRIMARY
+                cout << "Common->status is: " << klucom.status << "\n" << std::flush;
+#endif
                 throw "klu_solve failed";
             }
 
 #ifdef DEBUG_PRIMARY
-            cout << "klu_solve complete\n";
+            cout << "klu_solve complete\n" << std::flush;
 #endif
 
             // convert the result to cs*
@@ -1058,25 +1075,25 @@ class SELoopConsumer : public SEConsumer {
                         cs_entry(K3raw,ii,jj,rhs[ii+zqty*jj]);
 
 #ifdef DEBUG_PRIMARY
-            cout << "rhs coppied to K3raw\n";
+            cout << "rhs coppied to K3raw\n" << std::flush;
 #endif
 
             delete rhs;
         } catch (const char *msg) {
-            cout << "ERROR: " << msg << '\n';
+            cout << "ERROR: " << msg << "\n" << std::flush;
             return;
         }
 
 #ifdef DEBUG_PRIMARY
-        cout << "left KLU block\n";
+        cout << "left KLU block\n" << std::flush;
 #endif
 
         cs *K3 = cs_compress(K3raw);
         cs_spfree(K3raw);
-        if ( !K3 ) cout << "ERROR: K3 null\n";
+        if ( !K3 ) cout << "ERROR: K3 null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "K3 is " << K3->m << " by " << K3->n << 
-                " with " << K3->nzmax << " entries\n";
+                " with " << K3->nzmax << " entries\n" << std::flush;
 #endif
 
 #ifdef DEBUG_FILES
@@ -1085,10 +1102,10 @@ class SELoopConsumer : public SEConsumer {
 
         cs *Kupd = cs_multiply(K2,K3); cs_spfree(K2);
         cs_spfree(K3);
-        if ( !Kupd ) cout << "ERROR: Kupd null\n";
+        if ( !Kupd ) cout << "ERROR: Kupd null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "Kupd is " << Kupd->m << " by " << Kupd->n << 
-                " with " << Kupd->nzmax << " entries\n";
+                " with " << Kupd->nzmax << " entries\n" << std::flush;
 #endif
 
 #ifdef DEBUG_FILES
@@ -1096,16 +1113,16 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "K updated\n";
+        cout << "K updated\n" << std::flush;
 #endif
 
         // -- compute x_update = x_predict + K * y
 
         cs *x1 = cs_multiply(Kupd,yupd);
-        if ( !x1 ) cout << "ERROR: x1 null\n";
+        if ( !x1 ) cout << "ERROR: x1 null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "x1 is " << x1->m << " by " << x1->n << 
-                " with " << x1->nzmax << " entries\n";
+                " with " << x1->nzmax << " entries\n" << std::flush;
 #endif
 
 #ifdef DEBUG_FILES
@@ -1114,10 +1131,10 @@ class SELoopConsumer : public SEConsumer {
         
         cs *xupd = cs_add(xpre,x1,1,1);
         cs_spfree(x1);
-        if ( !xupd ) cout << "ERROR: xupd null\n";
+        if ( !xupd ) cout << "ERROR: xupd null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "xupd is " << xupd->m << " by " << xupd->n << 
-                " with " << xupd->nzmax << " entries\n";
+                " with " << xupd->nzmax << " entries\n" << std::flush;
 #endif
 
 #ifdef DEBUG_FILES
@@ -1125,15 +1142,15 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "x updated\n";
+        cout << "x updated\n" << std::flush;
 #endif
 
         // -- compute P_update = (I-K_update*J)*P_predict
         cs *P4 = cs_multiply(Kupd,J);
-        if ( !P4 ) cout << "ERROR: P4 null\n";
+        if ( !P4 ) cout << "ERROR: P4 null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "P4 is " << P4->m << " by " << P4->n << 
-                " with " << P4->nzmax << " entries\n";
+                " with " << P4->nzmax << " entries\n" << std::flush;
 #endif
 
 #ifdef DEBUG_FILES
@@ -1142,10 +1159,10 @@ class SELoopConsumer : public SEConsumer {
 
         cs *P5 = cs_add(eyex,P4,1,-1);
         cs_spfree(P4);
-        if ( !P5 ) cout << "ERROR: P5 null\n";
+        if ( !P5 ) cout << "ERROR: P5 null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "P5 is " << P5->m << " by " << P5->n << 
-                " with " << P5->nzmax << " entries\n";
+                " with " << P5->nzmax << " entries\n" << std::flush;
 #endif
 
 #ifdef DEBUG_FILES
@@ -1154,10 +1171,10 @@ class SELoopConsumer : public SEConsumer {
 
         cs *Pupd = cs_multiply(P5,Ppre);
         cs_spfree(P5);
-        if ( !Pupd ) cout << "ERROR: Pupd null\n";
+        if ( !Pupd ) cout << "ERROR: Pupd null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "Pupd is " << Pupd->m << " by " << Pupd->n << 
-                " with " << P->nzmax << " entries\n";
+                " with " << P->nzmax << " entries\n" << std::flush;
 #endif
 
 #ifdef DEBUG_FILES
@@ -1165,16 +1182,16 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "P updated\n";
+        cout << "P updated\n" << std::flush;
 
-        cout << "Update step complete.\n";
+        cout << "Update step complete.\n" << std::flush;
 #endif
 
         // --------------------------------------------------------------------
         // Update persistant state (Vpu and A)
         // --------------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-        cout << "calling decompress_state_xupd\n";
+        cout << "calling decompress_state_xupd\n" << std::flush;
 #endif
         if (xupd) decompress_state(xupd);
 
@@ -1183,16 +1200,16 @@ class SELoopConsumer : public SEConsumer {
         // --------------------------------------------------------------------
         // update system state
 #ifdef DEBUG_PRIMARY
-        cout << "freeing xpre and Ppre...\n";
+        cout << "freeing xpre and Ppre...\n" << std::flush;
 #endif
         cs_spfree(xpre);
         cs_spfree(Ppre);
 
         // X HAS BEEN DECOMPRESSED INTO VPU AND A
-//      cout << "freeing x and setting xupd to NULL...\n";
+//      cout << "freeing x and setting xupd to NULL...\n" << std::flush;
 //      cs_spfree(x); x = xupd; xupd = NULL;
 #ifdef DEBUG_PRIMARY
-        cout << "freeing P and setting Pupd to NULL...\n";
+        cout << "freeing P and setting Pupd to NULL...\n" << std::flush;
 #endif
         cs_spfree(P);
         P = Pupd;
@@ -1200,19 +1217,19 @@ class SELoopConsumer : public SEConsumer {
 
         // free residual
 #ifdef DEBUG_PRIMARY
-        cout << "freeing ypud and Supd...\n";
+        cout << "freeing ypud and Supd...\n" << std::flush;
 #endif
         cs_spfree(yupd);
         cs_spfree(Supd);
         
         // free gain matrix
 #ifdef DEBUG_PRIMARY
-        cout << "freeing Kupd...\n";
+        cout << "freeing Kupd...\n" << std::flush;
 #endif
         cs_spfree(Kupd);
         // free measurement variableas
 #ifdef DEBUG_PRIMARY
-        cout << "freeing x, z, h, and J\n";
+        cout << "freeing x, z, h, and J\n" << std::flush;
 #endif
         cs_spfree(x);
         cs_spfree(z);
@@ -1263,17 +1280,17 @@ class SELoopConsumer : public SEConsumer {
     void sample_z(cs *&z) {
         // measurements have been loaded from the sim output message to zary
         cs *zraw = cs_spalloc(zqty,1,zqty,1,1);
-        if ( !zraw ) cout << "ERROR: Failed to cs_spalloc zraw\n";
+        if ( !zraw ) cout << "ERROR: Failed to cs_spalloc zraw\n" << std::flush;
         for ( auto& zid : zary.zids ) {
 #ifdef DEBUG_SECONDARY
-            cout << '\n' << zid << '[' << zary.zidxs[zid] << 
-                    ']' << '\t' << zary.zvals[zid];
+            cout << "\n" << zid << '[' << zary.zidxs[zid] << 
+                    ']' << "\t" << zary.zvals[zid] << std::flush;
 #endif
             if ( zary.zvals[zid] > NEGL || -zary.zvals[zid] > NEGL )
                 cs_entry(zraw,zary.zidxs[zid],0,zary.zvals[zid]);
         }
 #ifdef DEBUG_SECONDARY
-        cout << '\n';
+        cout << "\n" << std::flush;
 #endif
         z = cs_compress(zraw); 
         cs_spfree(zraw);
@@ -1292,7 +1309,7 @@ class SELoopConsumer : public SEConsumer {
     private:
     void set_n(uint i, uint j) {
         if ( !i ) {
-            cout << "ERROR: Unexpected call to set_n with i=0\n";
+            cout << "ERROR: Unexpected call to set_n with i=0\n" << std::flush;
             return;
         }
         if ( !j ) {
@@ -1303,7 +1320,7 @@ class SELoopConsumer : public SEConsumer {
             ai = 1;
             aj = 1;
 #ifdef DEBUG_DETAILS
-            //cerr << "\t\t***SEDBG:set_n j==0 sets ai and aj to 0" << endl;
+            //cerr << "\t\t***SEDBG:set_n j==0 sets ai and aj to 0\n" << std::flush;
             // for per-unit Ybus, shunt admittance is the sum of row admittances
 #endif
             complex<double> Yi0;
@@ -1324,32 +1341,32 @@ class SELoopConsumer : public SEConsumer {
             ai = 0;
             aj = 0;
 #ifdef DEBUG_DETAILS
-            //cerr << "\t\t***SEDBG:set_n i: " << i << ", j: " << j << ", ai and aj initialized to 0" << endl;
+            //cerr << "\t\t***SEDBG:set_n i: " << i << ", j: " << j << ", ai and aj initialized to 0\n" << std::flush;
 #endif
             try {
                 auto& Yrow = Ypu.at(i);
 #ifdef DEBUG_DETAILS
                 //for ( auto& rowpair : Yrow ) {
-                //    cerr << "***SEDBG:set_n check Yrow: " << rowpair.first << ", " << rowpair.second << endl;
+                //    cerr << "***SEDBG:set_n check Yrow: " << rowpair.first << ", " << rowpair.second << "\n" << std::flush;
                 //}
 #endif
                 try {
 #ifdef DEBUG_DETAILS
-                    //cerr << "\t\t***SEDBG:set_n Yrow: " << Yrow << endl;
+                    //cerr << "\t\t***SEDBG:set_n Yrow: " << Yrow << "\n" << std::flush;
 #endif
                     Yij = Yrow.at(j);
                     // We know the nodes are coupled; check for Aij
                     // NOTE: A is never iterated over - we don't need at()
                     ai = 1;
 #ifdef DEBUG_DETAILS
-                    //cerr << "\t\t***SEDBG:set_n ai set to 1" << endl;
+                    //cerr << "\t\t***SEDBG:set_n ai set to 1\n" << std::flush;
 #endif
                     try {
                         auto Arow = A.at(i);
                         try {
                             ai = real(Arow.at(j));
 #ifdef DEBUG_DETAILS
-                            //cerr << "\t\t***SEDBG:set_n ai finalized to: " << ai << endl;
+                            //cerr << "\t\t***SEDBG:set_n ai finalized to: " << ai << "\n" << std::flush;
 #endif
                         } catch(...) {}
                     } catch(...) {}
@@ -1357,23 +1374,23 @@ class SELoopConsumer : public SEConsumer {
                     // NOTE: A is never iterated over - we don't need at()
                     aj = 1;
 #ifdef DEBUG_DETAILS
-                    //cerr << "\t\t***SEDBG:set_n aj set to 1" << endl;
+                    //cerr << "\t\t***SEDBG:set_n aj set to 1\n" << std::flush;
 #endif
                     try {
                         auto Arow = A.at(j);
                         try {
                             aj = real(Arow.at(i));
 #ifdef DEBUG_DETAILS
-                            //cerr << "\t\t***SEDBG:set_n aj finalized to: " << aj << endl;
+                            //cerr << "\t\t***SEDBG:set_n aj finalized to: " << aj << "\n" << std::flush;
 #endif
                         } catch (...) {}
                     } catch(...) {}
                 } catch(...) {
-                    cout << "ERROR: set_n catch on Yrow.at(j) lookup" << endl;
+                    cout << "ERROR: set_n catch on Yrow.at(j) lookup\n" << std::flush;
                     exit(1);
                 }
             } catch(...) {
-                cout << "ERROR: set_n catch on Ypu.at(i) lookup" << endl;
+                cout << "ERROR: set_n catch on Ypu.at(i) lookup\n" << std::flush;
                 exit(1);
             }
             g = real(-1.0*Yij);
@@ -1388,7 +1405,7 @@ class SELoopConsumer : public SEConsumer {
         cs *hraw = cs_spalloc(zqty,1,zqty,1,1);
         for ( auto& zid : zary.zids ) {
 #ifdef DEBUG_DETAILS
-            cerr << "***SEDBG:calc_h zid: " << zid << endl;
+            cerr << "***SEDBG:calc_h zid: " << zid << "\n" << std::flush;
 #endif
             uint zidx = zary.zidxs[zid];
             string ztype = zary.ztypes[zid];
@@ -1397,7 +1414,7 @@ class SELoopConsumer : public SEConsumer {
                 // Real power injection into node i
                 uint i = node_idxs[zary.znode1s[zid]];
 #ifdef DEBUG_DETAILS
-                cerr << "***SEDBG:calc_h Pi i: " << i << endl;
+                cerr << "***SEDBG:calc_h Pi i: " << i << "\n" << std::flush;
 #endif
                 double Pi = 0;
                 try {
@@ -1410,7 +1427,7 @@ class SELoopConsumer : public SEConsumer {
                             Pi = Pi + vi*vi/ai/ai * g - 
                                 vi*vj/ai/aj * (g*cos(T) + b*sin(T));
 #ifdef DEBUG_DETAILS
-                            cerr << "\t***SEDBG:calc_h Pi j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", Pi: " << Pi << endl;
+                            cerr << "\t***SEDBG:calc_h Pi j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", Pi: " << Pi << "\n" << std::flush;
 #endif
                         }
                     }
@@ -1418,7 +1435,7 @@ class SELoopConsumer : public SEConsumer {
                     set_n(i,0);
                     Pi += vi*vi * g; // times cos(T) ????
 #ifdef DEBUG_DETAILS
-                    cerr << "***SEDBG:calc_h Pi post summation vi: " << vi << ", g: " << g << ", Pi: " << Pi << endl;
+                    cerr << "***SEDBG:calc_h Pi post summation vi: " << vi << ", g: " << g << ", Pi: " << Pi << "\n" << std::flush;
 #endif
                 } catch(...) {}
                 // Insert the measurement component
@@ -1453,7 +1470,7 @@ class SELoopConsumer : public SEConsumer {
                 uint i = node_idxs[zary.znode1s[zid]];
                 if ( abs(Vpu[i]) > NEGL ) cs_entry(hraw,zidx,0,abs(Vpu[i]));
 #ifdef DEBUG_DETAILS
-                cerr << "***SEDBG:calc_h vi i: " << i << ", abs(Vpu[i]): " << abs(Vpu[i]) << endl;
+                cerr << "***SEDBG:calc_h vi i: " << i << ", abs(Vpu[i]): " << abs(Vpu[i]) << "\n" << std::flush;
 #endif
             }
             else if ( !zary.ztypes[zid].compare("Ti") ) {
@@ -1462,7 +1479,7 @@ class SELoopConsumer : public SEConsumer {
                 if ( arg(Vpu[i]) > NEGL ) cs_entry(hraw,zidx,0,arg(Vpu[i]));
             }
             else { 
-                cout << "WARNING: Undefined measurement type " + ztype + '\n';
+                cout << "WARNING: Undefined measurement type " + ztype + "\n" << std::flush;
             }
         }
         h = cs_compress(hraw); cs_spfree(hraw);
@@ -1471,19 +1488,24 @@ class SELoopConsumer : public SEConsumer {
 
     private:
     void calc_J(cs *&J) {
+#ifdef DEBUG_PRIMARY
+        double startTime = getWallTime();
+#endif
         // each z component has a Jacobian component for each state
         cs *Jraw = cs_spalloc(zqty,xqty,zqty*xqty,1,1);
 #ifdef DEBUG_PRIMARY
         uint beat_ctr = 0;
+        uint total_ctr = zary.zids.size();
 #endif
         // loop over z
         for ( auto& zid : zary.zids ) {
 #ifdef DEBUG_PRIMARY
-            if ( ++beat_ctr % 250 == 0 ) 
-                cout << "--- calc_J heartbeat - " << beat_ctr << " ---\n";
+            if ( ++beat_ctr % 100 == 0 ) 
+                cout << "--- calc_J heartbeat - " << beat_ctr << ", " << getMinSec(getWallTime()-startTime) << " ---\n" << std::flush;
+                cout << "--- calc_J heartbeat - " << beat_ctr << ", " << getPerComp(beat_ctr, total_ctr) << ", " << getMinSec(getWallTime()-startTime) << " ---\n" << std::flush;
 #endif
 #ifdef DEBUG_DETAILS
-            cerr << "***SEDBG:calc_J zid: " << zid << '\n';
+            cerr << "***SEDBG:calc_J zid: " << zid << "\n" << std::flush;
 #endif
             uint zidx = zary.zidxs[zid];
             string ztype = zary.ztypes[zid];
@@ -1497,7 +1519,7 @@ class SELoopConsumer : public SEConsumer {
                 if ( !ztype.compare("Pi" ) ) {
                     if ( vidx == i ) {
 #ifdef DEBUG_DETAILS
-                        cerr << "***SEDBG:calc_J Pi magnitude vidx==i, i: " << i << endl;
+                        cerr << "***SEDBG:calc_J Pi magnitude vidx==i, i: " << i << "\n" << std::flush;
 #endif
                         // --- compute dPi/dvi
                         double dP = 0;
@@ -1511,7 +1533,7 @@ class SELoopConsumer : public SEConsumer {
                                     dP = dP + 2*vi/ai/ai * g - 
                                         vj/ai/aj * (g*cos(T) + b*sin(T));
 #ifdef DEBUG_DETAILS
-                                    cerr << "\t***SEDBG:calc_J Pi magnitude j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << endl;
+                                    cerr << "\t***SEDBG:calc_J Pi magnitude j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << "\n" << std::flush;
 #endif
                                 }
                             }
@@ -1519,13 +1541,13 @@ class SELoopConsumer : public SEConsumer {
                             set_n(i,0);
                             dP = dP + 2*vi * g;
 #ifdef DEBUG_DETAILS
-                            cerr << "***SEDBG:calc_J Pi magnitude post summation vi: " << vi << ", g: " << g << ", dP: " << dP <<endl;
+                            cerr << "***SEDBG:calc_J Pi magnitude post summation vi: " << vi << ", g: " << g << ", dP: " << dP << "\n" << std::flush;
 #endif
                         } catch(...) {}
                         if ( abs(dP > NEGL ) ) cs_entry(Jraw,zidx,xidx,dP);
                     } else {
 #ifdef DEBUG_DETAILS
-                        cerr << "***SEDBG:calc_J Pi magnitude vidx!=i, i: " << i << ", vidx: " << vidx << endl;
+                        cerr << "***SEDBG:calc_J Pi magnitude vidx!=i, i: " << i << ", vidx: " << vidx << "\n" << std::flush;
 #endif
                         // --- compute dPi/dvj
                         double dP = 0;
@@ -1538,7 +1560,7 @@ class SELoopConsumer : public SEConsumer {
                             dP = -1.0 * vi/ai/aj * (g*cos(T) + b*sin(T));
                         } catch(...) {}
 #ifdef DEBUG_DETAILS
-                        cerr << "\t***SEDBG:calc_J Pi magnitude j: " << j << ", vi: " << vi << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << endl;
+                        cerr << "\t***SEDBG:calc_J Pi magnitude j: " << j << ", vi: " << vi << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << "\n" << std::flush;
 #endif
                         if ( abs(dP) > NEGL ) cs_entry(Jraw,zidx,xidx,dP);
                     }
@@ -1585,7 +1607,7 @@ class SELoopConsumer : public SEConsumer {
                         // --- compute dvi/dvi
                         cs_entry(Jraw,zidx,xidx,1.0);
 #ifdef DEBUG_DETAILS
-                        cerr << "***SEDBG:calc_J vi i: " << i << ", J entry set to 1.0" << endl;
+                        cerr << "***SEDBG:calc_J vi i: " << i << ", J entry set to 1.0\n" << std::flush;
 #endif
                     }
                 }
@@ -1594,7 +1616,7 @@ class SELoopConsumer : public SEConsumer {
                 }
 
                 else {
-                    cout << "WARNING: Undefined measurement type " + ztype + '\n';
+                    cout << "WARNING: Undefined measurement type " + ztype + "\n" << std::flush;
                 }
             }
 
@@ -1606,7 +1628,7 @@ class SELoopConsumer : public SEConsumer {
                 if ( !ztype.compare("Pi") ) {
                     if ( vidx == i ) {
 #ifdef DEBUG_DETAILS
-                        cerr << "***SEDBG:calc_J Pi phase vidx==i, i: " << i << endl;
+                        cerr << "***SEDBG:calc_J Pi phase vidx==i, i: " << i << "\n" << std::flush;
 #endif
                         // --- compute dPi/dTi
                         double dP = 0;
@@ -1619,7 +1641,7 @@ class SELoopConsumer : public SEConsumer {
                                     set_n(i,j);
                                     dP = dP + vi*vj/ai/aj * (g*sin(T) - b*cos(T));
 #ifdef DEBUG_DETAILS
-                                    cerr << "\t***SEDBG:calc_J Pi phase j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << endl;
+                                    cerr << "\t***SEDBG:calc_J Pi phase j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << "\n" << std::flush;
 #endif
                                 }
                             }
@@ -1628,7 +1650,7 @@ class SELoopConsumer : public SEConsumer {
                         if ( abs(dP) > NEGL ) cs_entry(Jraw,zidx,xidx,dP);
                     } else {
 #ifdef DEBUG_DETAILS
-                        cerr << "***SEDBG:calc_J Pi phase vidx!=i, i: " << i << endl;
+                        cerr << "***SEDBG:calc_J Pi phase vidx!=i, i: " << i << "\n" << std::flush;
 #endif
                         // --- compute dP/dTj
                         double dP = 0;
@@ -1641,7 +1663,7 @@ class SELoopConsumer : public SEConsumer {
                             dP = -1.0 * vi*vj/ai/aj * (g*sin(T) - b*cos(T));
                         } catch(...) {}
 #ifdef DEBUG_DETAILS
-                        cerr << "\t***SEDBG:calc_J Pi phase j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << endl;
+                        cerr << "\t***SEDBG:calc_J Pi phase j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << "\n" << std::flush;
 #endif
                         if ( abs(dP) > NEGL ) cs_entry(Jraw,zidx,xidx,dP);
                     }
@@ -1690,7 +1712,7 @@ class SELoopConsumer : public SEConsumer {
                     }
                 }
                 else {
-                    cout << "WARNING: Undefined measurement type " + ztype + '\n';
+                    cout << "WARNING: Undefined measurement type " + ztype + "\n" << std::flush;
                 }
             }
 
@@ -1700,6 +1722,11 @@ class SELoopConsumer : public SEConsumer {
 
         }
         J = cs_compress(Jraw); cs_spfree(Jraw);
+
+#ifdef DEBUG_PRIMARY
+        double endTime = getWallTime();
+        cout << "calc_J wall clock execution time: " << getMinSec(endTime-startTime) << "\n\n" << std::flush;
+#endif
     }
     
 #ifdef DEBUG_FILES
@@ -1709,7 +1736,7 @@ class SELoopConsumer : public SEConsumer {
         unordered_map<int,unordered_map<int,double>> mat;
         for ( int i = 0 ; i < a->n ; i++ ) {
 //          cout << "in column " << i << " idx from " << a->p[i] << 
-//                  " to " << a->p[i+1] << '\n';
+//                  " to " << a->p[i+1] << "\n" << std::flush;
             for ( int j = a->p[i] ; j < a->p[i+1] ; j++ ) {
                 mat[a->i[j]][i] = a->x[j];
             }
@@ -1718,13 +1745,38 @@ class SELoopConsumer : public SEConsumer {
         ofstream ofh;
         ofh << std::setprecision(16);
         ofh.open(filename,ofstream::out);
-        cout << "writing " + filename + "\n\n"; 
+        cout << "writing " + filename + "\n\n"; << std::flush 
         for ( int i = 0 ; i < a->m ; i++ )
             for ( int j = 0 ; j < a->n ; j++ )
-                ofh << mat[i][j] << ( j == a->n-1 ? '\n' : ',' );
+                ofh << mat[i][j] << ( j == a->n-1 ? "\n" : "," );
         ofh.close();
     }
 #endif
+
+#ifdef DEBUG_PRIMARY
+    private:
+    double getWallTime() {
+        struct timeval time;
+
+        if (gettimeofday(&time, NULL))
+            return 0;
+
+        return (double)time.tv_sec + (double)time.tv_usec*0.000001;
+    }
+
+    private:
+    string getMinSec(double seconds) {
+        int sec = (int)seconds % 60;
+        string secstr = (sec<10)? "0"+std::to_string(sec): std::to_string(sec);
+        return (std::to_string((int)seconds/60) + ":" + secstr);
+    }
+
+    private:
+    string getPerComp(uint current, uint total) {
+        return std::to_string((int)(100.0 * current/total)) + "%";
+    }
+
 };
+#endif
 
 #endif

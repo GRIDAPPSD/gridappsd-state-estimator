@@ -53,7 +53,7 @@ namespace state_estimator_gridappsd {
 
 			// Check for extraneous inputs
 			if ( argc > 7 ) {
-				std::cerr << "Unrecognized input: " << argv[7] << '\n';
+				std::cerr << "Unrecognized input: " << argv[7] << '\n' << std::flush;
 				usage(argv); return 0;
 			}
 
@@ -64,7 +64,7 @@ namespace state_estimator_gridappsd {
 		private:
 		void usage(char** argv) {
 			cerr << "Usage: " << *argv
-				<< " simid simreq ipaddr port username password\n";
+				<< " simid simreq ipaddr port username password\n" << std::flush;
 		}
 
 		public:

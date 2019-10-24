@@ -109,14 +109,14 @@ class SEConsumer : public ExceptionListener,
 				destination = session->createTopic(target);
 				cms::Topic *tmpTopic = session->createTopic(target);
 #ifdef DEBUG_PRIMARY
-				cout << "topic: " << (tmpTopic)->getTopicName() << "\n\n";
+				cout << "topic: " << (tmpTopic)->getTopicName() << "\n\n" << std::flush;
 #endif
 			}
 			else if ( mode == "queue" ){
 				destination = session->createQueue(target);
 #ifdef DEBUG_PRIMARY
 //				cout << "queue: " <<
-//					((activemq::commands::ActiveMQQueue)(destination))->getQueueName() << '\n';
+//					((activemq::commands::ActiveMQQueue)(destination))->getQueueName() << '\n' << std::flush;
 #endif
 			}
 			else
@@ -156,18 +156,14 @@ class SEConsumer : public ExceptionListener,
 		// What to do when a message is recieved
 		try {
             // wait for init() to finish -- otherwise messages interrupt this thread
-#ifdef DEBUG_PRIMARY
-            cout << "SEConsumer onMessage waiting ...\n\n" << std::flush;
-#endif
             latch.await();
-#ifdef DEBUG_PRIMARY
-            cout << "SEConsumer onMessage done wating.\n\n" << std::flush;
-#endif
 
 			const BytesMessage* bytesMessage = 
 					dynamic_cast<const BytesMessage*> (message);
 			text = "";
-			text.reserve(50000000);
+            // 10M characters is enough for the 9500 node model and nothing
+            // will break if more space is needed
+			text.reserve(10000000);
 			if (bytesMessage != NULL) {
 				for ( int idx = 0 ; idx < bytesMessage->getBodyLength() ; idx++ )
 					text.push_back(bytesMessage->readChar());
@@ -185,7 +181,7 @@ class SEConsumer : public ExceptionListener,
 	public:
 	virtual void process() {
 		// implementation-specific actions - default is to print the message
-		//cout << "Received message:\n\t" << text << '\n';
+		//cout << "Received message:\n\t" << text << '\n' << std::flush;
 		this->doneLatch.countDown();
 	}
 

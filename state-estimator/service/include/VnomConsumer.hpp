@@ -75,7 +75,7 @@ class VnomConsumer: public SEConsumer {
 //
 //		text = jtext.dump();
 //
-//		cout << text + '\n';
+//		cout << text + "\n" << std::flush;
 //
 //		process();
 //	}
@@ -88,14 +88,14 @@ class VnomConsumer: public SEConsumer {
 		// PARSE THE MESSAGE AND PROCESS THE TOPOLOGY
 		// --------------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-		cout << "Received vnom message of " << text.length() << " bytes...\n\n";
+		cout << "Received vnom message of " << text.length() << " bytes...\n\n" << std::flush;
 #endif
 
 		json jtext = json::parse(text);
 
 #ifdef DEBUG_SECONDARY
 		// This is actually a list of lines from a dss voltage export file
-		cout << "Vnom Message:\n" + jtext.dump(2) + "\n\n";
+		cout << "Vnom Message:\n" + jtext.dump(2) + "\n\n" << std::flush;
 #endif
 
 		bool firstline = true;
@@ -104,13 +104,13 @@ class VnomConsumer: public SEConsumer {
 			else {
 				string s = jline;
 #ifdef DEBUG_SECONDARY
-				cout << s + '\n';
+				cout << s + "\n" << std::flush;
 #endif
 				
 				// strip out white space
 				s.erase( remove( s.begin(), s.end(), ' ' ), s.end() );
 #ifdef DEBUG_SECONDARY
-				cout<< s + '\n';
+				cout<< s + "\n" << std::flush;
 #endif
 
 				// split the line {Bus, BasekV,
@@ -152,10 +152,10 @@ class VnomConsumer: public SEConsumer {
 					s.erase(0,pos+1); pos = s.find(",");
 
 #ifdef DEBUG_SECONDARY
-				cout <<'\t'<< bus << '\t' << basekv << "\n\t"
-					<< node1 << '\t' << mag1 << '\t' << arg1 << '\t' << vpu1 << "\n\t"
-					<< node2 << '\t' << mag2 << '\t' << arg2 << '\t' << vpu2 << "\n\t"
-					<< node3 << '\t' << mag3 << '\t' << arg3 << '\t' << vpu3 << "\n";
+				cout <<"\t"<< bus << "\t" << basekv << "\n\t"
+					<< node1 << "\t" << mag1 << "\t" << arg1 << "\t" << vpu1 << "\n\t"
+					<< node2 << "\t" << mag2 << "\t" << arg2 << "\t" << vpu2 << "\n\t"
+					<< node3 << "\t" << mag3 << "\t" << arg3 << "\t" << vpu3 << "\n" << std::flush;
 #endif
 			
 				// Each of the the three nodes is a potential entry
@@ -170,7 +170,7 @@ class VnomConsumer: public SEConsumer {
 					vim = mag1 * sin( arg1 * PI/180);
 					vnom = complex<double>(vre,vim);
 #ifdef DEBUG_SECONDARY
-					cout << vnom << endl;
+					cout << vnom << "\n" << std::flush;
 #endif
 					node_vnoms[node] = vnom;
 				}
@@ -182,7 +182,7 @@ class VnomConsumer: public SEConsumer {
 					vim = mag2 * sin( arg2 * PI/180 );
 					vnom = complex<double>(vre,vim);
 #ifdef DEBUG_SECONDARY
-					cout << vnom << endl;
+					cout << vnom << "\n" << std::flush;
 #endif
 					node_vnoms[node] = vnom;
 				}
@@ -194,7 +194,7 @@ class VnomConsumer: public SEConsumer {
 					vim = mag3 * sin( arg3 * PI/180 );
 					vnom = complex<double>(vre,vim);
 #ifdef DEBUG_SECONDARY
-					cout << vnom << endl;
+					cout << vnom << "\n" << std::flush;
 #endif
 					node_vnoms[node] = vnom;
 				}

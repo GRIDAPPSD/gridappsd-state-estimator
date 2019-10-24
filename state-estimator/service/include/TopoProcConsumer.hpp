@@ -83,11 +83,11 @@ class TopoProcConsumer : public SEConsumer {
 		// PARSE THE MESSAGE AND PROCESS THE TOPOLOGY
 		// --------------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-		cout << "Received ybus message of " << text.length() << " bytes...\n\n";
+		cout << "Received ybus message of " << text.length() << " bytes...\n\n" << std::flush;
 #endif
 
 #ifdef DEBUG_SECONDARY
-        cout << "Ybus message:\n" + text.substr(0,2000) + '\n';
+        cout << "Ybus message:\n" + text.substr(0,2000) + "\n" << std::flush;
 #endif
 
 		json jtext = json::parse(text);
@@ -113,7 +113,7 @@ class TopoProcConsumer : public SEConsumer {
 				double B = stod( tmpline.substr(0,pos) );
 
 #ifdef DEBUG_SECONDARY
-//				cout <<'\t'<< i << '\t' << j << '\t' << G << '\t' << B << '\n';
+//				cout <<"\t"<< i << "\t" << j << "\t" << G << "\t" << B << "\n" << std::flush;
 #endif
 
 				Y[i][j] = complex<double>(G,B);
@@ -122,7 +122,7 @@ class TopoProcConsumer : public SEConsumer {
 			}
 		}
 #ifdef DEBUG_PRIMARY
-        cout << "complete.\n\n";
+        cout << "complete.\n\n" << std::flush;
         cout << "Parsing nodelist ... " << std::flush;
 #endif
 		// This is actually the list of nodes from nodelist
@@ -138,7 +138,7 @@ class TopoProcConsumer : public SEConsumer {
 			nodem[node_name] = ++idx;
 		}
 #ifdef DEBUG_PRIMARY
-        cout << "complete.\n\n";
+        cout << "complete.\n\n" << std::flush;
 #endif
 //		// print
 //		for ( auto& inode : nodens ) {
@@ -149,7 +149,7 @@ class TopoProcConsumer : public SEConsumer {
 //					auto j = nodem[jnode];
 //					try {
 //						complex<double> ycomp = row.at(j);
-//						cout << "Y(" << i << "," << j << ") -> " << ycomp << '\n';
+//						cout << "Y(" << i << "," << j << ") -> " << ycomp << "\n" << std::flush;
 //					} catch(...) {}
 //				}
 //			} catch(...) {}
