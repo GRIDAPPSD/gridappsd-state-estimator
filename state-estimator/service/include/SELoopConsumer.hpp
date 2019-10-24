@@ -248,7 +248,7 @@ class SELoopConsumer : public SEConsumer {
         for ( auto& inode : node_names ) {
 #ifdef DEBUG_PRIMARY
             if ( ++beat_ctr % 100 == 0 ) 
-                cout << "--- Ypu heartbeat - " << beat_ctr << " ---\n" << std::flush;
+                cout << "--- Ypu heartbeat - " << beat_ctr << ", " << getMinSec(getWallTime()-startTime) << " ---\n" << std::flush;
 #endif
 #ifdef DEBUG_SECONDARY
             cout << inode << "\n" << std::flush;
@@ -810,12 +810,9 @@ class SELoopConsumer : public SEConsumer {
 
 #ifdef DEBUG_PRIMARY
         cout << "calc_J ... \n" << std::flush;
-        double startTime = getWallTime();
 #endif
         cs *J; this->calc_J(J);
 #ifdef DEBUG_PRIMARY
-        double endTime = getWallTime();
-        cout << "calc_J wall clock execution time: " << getMinSec(endTime-startTime) << "\n\n" << std::flush;
         cout << "J is " << J->m << " by " << J->n << 
             " with " << J->nzmax << " entries\n" << std::flush;
 #endif
@@ -1490,6 +1487,9 @@ class SELoopConsumer : public SEConsumer {
 
     private:
     void calc_J(cs *&J) {
+#ifdef DEBUG_PRIMARY
+        double startTime = getWallTime();
+#endif
         // each z component has a Jacobian component for each state
         cs *Jraw = cs_spalloc(zqty,xqty,zqty*xqty,1,1);
 #ifdef DEBUG_PRIMARY
@@ -1499,7 +1499,7 @@ class SELoopConsumer : public SEConsumer {
         for ( auto& zid : zary.zids ) {
 #ifdef DEBUG_PRIMARY
             if ( ++beat_ctr % 100 == 0 ) 
-                cout << "--- calc_J heartbeat - " << beat_ctr << " ---\n" << std::flush;
+                cout << "--- calc_J heartbeat - " << beat_ctr << ", " << getMinSec(getWallTime()-startTime) << " ---\n" << std::flush;
 #endif
 #ifdef DEBUG_DETAILS
             cerr << "***SEDBG:calc_J zid: " << zid << "\n" << std::flush;
@@ -1719,6 +1719,11 @@ class SELoopConsumer : public SEConsumer {
 
         }
         J = cs_compress(Jraw); cs_spfree(Jraw);
+
+#ifdef DEBUG_PRIMARY
+        double endTime = getWallTime();
+        cout << "calc_J wall clock execution time: " << getMinSec(endTime-startTime) << "\n\n" << std::flush;
+#endif
     }
     
 #ifdef DEBUG_FILES
