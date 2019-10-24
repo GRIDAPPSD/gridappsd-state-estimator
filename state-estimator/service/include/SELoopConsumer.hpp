@@ -244,11 +244,12 @@ class SELoopConsumer : public SEConsumer {
 #ifdef DEBUG_PRIMARY
         uint beat_ctr = 0;
         double startTime = getWallTime();
+        uint total_ctr = node_names.size();
 #endif
         for ( auto& inode : node_names ) {
 #ifdef DEBUG_PRIMARY
             if ( ++beat_ctr % 100 == 0 ) 
-                cout << "--- Ypu heartbeat - " << beat_ctr << ", " << getMinSec(getWallTime()-startTime) << " ---\n" << std::flush;
+                cout << "--- Ypu heartbeat - " << beat_ctr << ", " << getPerComp(beat_ctr, total_ctr) << ", " << getMinSec(getWallTime()-startTime) << " ---\n" << std::flush;
 #endif
 #ifdef DEBUG_SECONDARY
             cout << inode << "\n" << std::flush;
@@ -1494,12 +1495,14 @@ class SELoopConsumer : public SEConsumer {
         cs *Jraw = cs_spalloc(zqty,xqty,zqty*xqty,1,1);
 #ifdef DEBUG_PRIMARY
         uint beat_ctr = 0;
+        uint total_ctr = zary.zids.size();
 #endif
         // loop over z
         for ( auto& zid : zary.zids ) {
 #ifdef DEBUG_PRIMARY
             if ( ++beat_ctr % 100 == 0 ) 
                 cout << "--- calc_J heartbeat - " << beat_ctr << ", " << getMinSec(getWallTime()-startTime) << " ---\n" << std::flush;
+                cout << "--- calc_J heartbeat - " << beat_ctr << ", " << getPerComp(beat_ctr, total_ctr) << ", " << getMinSec(getWallTime()-startTime) << " ---\n" << std::flush;
 #endif
 #ifdef DEBUG_DETAILS
             cerr << "***SEDBG:calc_J zid: " << zid << "\n" << std::flush;
@@ -1763,10 +1766,14 @@ class SELoopConsumer : public SEConsumer {
 
     private:
     string getMinSec(double seconds) {
-        uint min = seconds/60;
-        uint sec = (int)seconds % 60;
-        string minsec = std::to_string(min) + ":" + std::to_string(sec);
-        return minsec;
+        int sec = (int)seconds % 60;
+        string secstr = (sec<10)? "0"+std::to_string(sec): std::to_string(sec);
+        return (std::to_string((int)seconds/60) + ":" + secstr);
+    }
+
+    private:
+    string getPerComp(uint current, uint total) {
+        return std::to_string((int)(100.0 * current/total)) + "%";
     }
 
 };
