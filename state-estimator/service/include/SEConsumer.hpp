@@ -194,7 +194,8 @@ class SEConsumer : public ExceptionListener,
 	// If something bad happens you see it here as this class is also been
 	// registered as an ExceptionListener with the connection.
 	virtual void onException(const CMSException& ex AMQCPP_UNUSED) {
-		printf("CMS Exception occurred.  Shutting down client.\n");
+		cout << "ActiveMQ CMS Exception occurred.  Shutting down client.\n" <<
+            std::flush;
 		ex.printStackTrace();
 		exit(1);
 	}

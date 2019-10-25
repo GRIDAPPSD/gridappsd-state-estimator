@@ -217,6 +217,11 @@ class SELoopConsumer : public SEConsumer {
         double span_varg = 1.0/3.0*PI;
         double span_taps = 0.2;
         cs *Praw = cs_spalloc(0,0,xqty,1,1);
+        if (!Praw) cout << "ERROR: null Praw\n" << std::flush;
+#ifdef DEBUG_PRIMARY
+        else cout << "Praw is " << Praw->m << " by " 
+            << Praw->n << " with " << Praw->nzmax << " entries\n" << std::flush;
+#endif
         for ( int idx = 0 ; idx < node_qty ; idx++ ) {
             // Add variance for the voltage magnitude state
             cs_entry(Praw,idx,idx,0.002*span_vmag);
@@ -442,6 +447,11 @@ class SELoopConsumer : public SEConsumer {
         // --------------------------------------------------------------------
         // state transition matrix (constant)
         cs *Fraw = cs_spalloc(0,0,xqty,1,1);
+        if (!Fraw) cout << "ERROR: null Fraw\n" << std::flush;
+#ifdef DEBUG_PRIMARY
+        else cout << "Fraw is " << Fraw->m << " by " 
+            << Fraw->n << " with " << Fraw->nzmax << " entries\n" << std::flush;
+#endif
 #ifdef DEBUG_PRIMARY
         cout << "Initializing F\n" << std::flush;
 #endif
@@ -460,6 +470,11 @@ class SELoopConsumer : public SEConsumer {
         cout << "Initializing Q\n" << std::flush;
 #endif
         cs *Qraw = cs_spalloc(0,0,xqty,1,1);
+        if (!Qraw) cout << "ERROR: null Qraw\n" << std::flush;
+#ifdef DEBUG_PRIMARY
+        else cout << "Qraw is " << Qraw->m << " by " 
+            << Qraw->n << " with " << Qraw->nzmax << " entries\n" << std::flush;
+#endif
         //for ( int ii = 0 ; ii < xqty ; ii++ )
         //    cs_entry(Qraw,ii,ii,0.04*sqrt(1.0/4));      // TUNABLE
         for ( int idx = 0 ; idx < node_qty ; idx++ ) {
@@ -479,6 +494,11 @@ class SELoopConsumer : public SEConsumer {
         cout << "Initializing eye\n\n" << std::flush;
 #endif
         cs *eyexraw = cs_spalloc(0,0,xqty,1,1);
+        if (!eyexraw) cout << "ERROR: null eyexraw\n" << std::flush;
+#ifdef DEBUG_PRIMARY
+        else cout << "eyexraw is " << eyexraw->m << " by " 
+            << eyexraw->n << " with " << eyexraw->nzmax << " entries\n" << std::flush;
+#endif
         for ( int ii = 0 ; ii < xqty ; ii++ )
             cs_entry(eyexraw,ii,ii,1.0);
         eyex = cs_compress(eyexraw); cs_spfree(eyexraw);
@@ -491,6 +511,11 @@ class SELoopConsumer : public SEConsumer {
         cout << "Initializing R\n\n" << std::flush;
 #endif
         cs *Rraw = cs_spalloc(0,0,zqty,1,1);
+        if (!Rraw) cout << "ERROR: null Rraw\n" << std::flush;
+#ifdef DEBUG_PRIMARY
+        else cout << "Rraw is " << Rraw->m << " by " 
+            << Rraw->n << " with " << Rraw->nzmax << " entries\n" << std::flush;
+#endif
         for ( auto& zid : zary.zids )
             cs_entry(Rraw,zary.zidxs[zid],zary.zidxs[zid],zary.zsigs[zid]/1000000.0);
         R = cs_compress(Rraw); cs_spfree(Rraw);
@@ -954,15 +979,6 @@ class SELoopConsumer : public SEConsumer {
 #ifdef DEBUG_PRIMARY
         else cout << "Supd is " << Supd->m << " by " << Supd->n << 
             " with " << Supd->nzmax << " entries\n" << std::flush;
-#endif
-#ifdef DEBUG_FILES
-        print_cs_compress(Supd,tspath+"Supd.csv");
-#endif
-
-#ifdef DEBUG_PRIMARY
-        cout << "S updated\n" << std::flush;
-        cout << "Supd is " << Supd->m << " by " << Supd->n << 
-            " with " << Supd->nzmax << " entries\n" << std::flush;
 //      cout << "Supd->nzmax is: " << Supd->nzmax << "\n";
 //      cout << "Supd->p is: " << Supd->p << "\n";
 //      for ( int ii = 0 ; ii < Supd->m + 1 ; ii++ )
@@ -974,6 +990,9 @@ class SELoopConsumer : public SEConsumer {
 //      for ( int ii = 0 ; ii < Supd->nzmax ; ii++ )
 //          cout << "\t" << Supd->x[ii] << ", ";
 //      cout << "\n";
+#endif
+#ifdef DEBUG_FILES
+        print_cs_compress(Supd,tspath+"Supd.csv");
 #endif
 
         // -- compute K = P_predict*J'*S^-1
@@ -1000,7 +1019,11 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
         cs *K3raw = cs_spalloc(0,0,zqty*zqty,1,1);
-        if (!K3raw) cout << "ERROR: null K3raw\n" << std::flush;
+        if (!K3raw) {
+            //TODO: debugging spalloc issue
+            cout << "ERROR: null K3raw\n" << std::flush;
+            cout << "****zqty for spalloc: " << zqty << "\n" << std::flush;
+        }
 #ifdef DEBUG_PRIMARY
         else cout << "K3raw is " << K3raw->m << " by " 
             << K3raw->n << " with " << K3raw->nzmax << " entries\n" << std::flush;
@@ -1024,8 +1047,6 @@ class SELoopConsumer : public SEConsumer {
 
 #ifdef DEBUG_PRIMARY
             cout << "klucom initialized.\n" << std::flush;
-            
-            cout << Supd->m << "\t" << Supd->p << "\t" << Supd->i << "\n" << std::flush;
 #endif
             klusym = klu_analyze(Supd->m,Supd->p,Supd->i,&klucom);
             if (!klusym) throw "klu_analyze failed";
@@ -1075,7 +1096,7 @@ class SELoopConsumer : public SEConsumer {
                         cs_entry(K3raw,ii,jj,rhs[ii+zqty*jj]);
 
 #ifdef DEBUG_PRIMARY
-            cout << "rhs coppied to K3raw\n" << std::flush;
+            cout << "rhs copied to K3raw\n" << std::flush;
 #endif
 
             delete rhs;
@@ -1261,6 +1282,11 @@ class SELoopConsumer : public SEConsumer {
     void prep_x(cs *&x) {
         // Prepare x
         cs *xraw = cs_spalloc(xqty,1,xqty,1,1);
+        if (!xraw) cout << "ERROR: null xraw\n" << std::flush;
+#ifdef DEBUG_PRIMARY
+        else cout << "xraw is " << xraw->m << " by " 
+            << xraw->n << " with " << xraw->nzmax << " entries\n" << std::flush;
+#endif
         for ( auto& node_name : node_names ) {
             // Find the per-unit voltage of active node
             uint idx = node_idxs[node_name];
@@ -1280,7 +1306,11 @@ class SELoopConsumer : public SEConsumer {
     void sample_z(cs *&z) {
         // measurements have been loaded from the sim output message to zary
         cs *zraw = cs_spalloc(zqty,1,zqty,1,1);
-        if ( !zraw ) cout << "ERROR: Failed to cs_spalloc zraw\n" << std::flush;
+        if (!zraw) cout << "ERROR: null zraw\n" << std::flush;
+#ifdef DEBUG_PRIMARY
+        else cout << "zraw is " << zraw->m << " by " 
+            << zraw->n << " with " << zraw->nzmax << " entries\n" << std::flush;
+#endif
         for ( auto& zid : zary.zids ) {
 #ifdef DEBUG_SECONDARY
             cout << "\n" << zid << '[' << zary.zidxs[zid] << 
@@ -1403,6 +1433,11 @@ class SELoopConsumer : public SEConsumer {
     void calc_h(cs *&h) {
         // each z component has a measurement function component
         cs *hraw = cs_spalloc(zqty,1,zqty,1,1);
+        if (!hraw) cout << "ERROR: null hraw\n" << std::flush;
+#ifdef DEBUG_PRIMARY
+        else cout << "hraw is " << hraw->m << " by " 
+            << hraw->n << " with " << hraw->nzmax << " entries\n" << std::flush;
+#endif
         for ( auto& zid : zary.zids ) {
 #ifdef DEBUG_DETAILS
             cerr << "***SEDBG:calc_h zid: " << zid << "\n" << std::flush;
@@ -1493,6 +1528,11 @@ class SELoopConsumer : public SEConsumer {
 #endif
         // each z component has a Jacobian component for each state
         cs *Jraw = cs_spalloc(zqty,xqty,zqty*xqty,1,1);
+        if (!Jraw) cout << "ERROR: null Jraw\n" << std::flush;
+#ifdef DEBUG_PRIMARY
+        else cout << "Jraw is " << Jraw->m << " by " 
+            << Jraw->n << " with " << Jraw->nzmax << " entries\n" << std::flush;
+#endif
 #ifdef DEBUG_PRIMARY
         uint beat_ctr = 0;
         uint total_ctr = zary.zids.size();
