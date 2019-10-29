@@ -54,6 +54,9 @@ using gridappsd_requests::sparql_query;
 #define SCMAP std::unordered_map<std::string,std::complex<double>>
 #define SSMAP std::unordered_map<std::string,std::string>
 
+// reverse lookup of nodenames by index
+#define ISMAP std::unordered_map<unsigned int,std::string>
+
 // Hash address (i,j) to the index of a sparse matrix vector
 #define ICMAP std::unordered_map<unsigned int,std::complex<double>>
 #define IMMAP std::unordered_map<unsigned int,ICMAP>
@@ -132,6 +135,7 @@ int main(int argc, char** argv){
 		uint node_qty;		// number of nodes
 		SLIST node_names;	// list of node names
 		SIMAP node_idxs;	// map from node name to unit-indexed position
+        ISMAP node_name_lookup;
 		IMMAP Y;			// double map from indices to complex admittance
 		// G, B, g, and b are derived from Y:
 		//	-- Gij = std::real(Y[i][j]);
@@ -141,7 +145,7 @@ int main(int argc, char** argv){
 		
 		// Wait for topological processor and retrieve topology
 		ybusConsumerThread.join();
-		ybusConsumer.fillTopo(node_qty,node_names,node_idxs,Y);
+		ybusConsumer.fillTopo(node_qty,node_names,node_idxs,node_name_lookup,Y);
 		ybusConsumer.close();
 
 		// Initialize nominal voltages
@@ -234,7 +238,7 @@ int main(int argc, char** argv){
 		SELoopConsumer loopConsumer(gad.brokerURI,gad.username,gad.password,
 			simoutTopic,"topic",gad.simid,zary,
 			node_qty,node_names,node_idxs,node_vnoms,node_bmrids,node_phs,
-			sbase,Y,A);
+			node_name_lookup,sbase,Y,A);
 		Thread loopConsumerThread(&loopConsumer);
 		loopConsumerThread.start();	// execute loopConsumer.run()
 		loopConsumer.waitUntilReady();	// wait for the startup latch release

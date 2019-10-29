@@ -25,6 +25,8 @@ using json = nlohmann::json;
 #define SLIST std::list<std::string>
 #define SIMAP std::unordered_map<std::string,unsigned int>
 
+#define ISMAP std::unordered_map<unsigned int,std::string>
+
 // Hash address (i,j) to the index of a sparse matrix vector
 #define ICMAP std::unordered_map<unsigned int,std::complex<double>>
 #define IMMAP std::unordered_map<unsigned int,ICMAP>
@@ -39,6 +41,7 @@ class TopoProcConsumer : public SEConsumer {
 	private:
 	SLIST nodens;
 	SIMAP nodem;
+    ISMAP node_name_lookup;
 	uint numns = 0;
 	// to add a node:
 	//	-- nodens.push_back(noden);
@@ -69,10 +72,12 @@ class TopoProcConsumer : public SEConsumer {
 	}
 
 	public:
-	void fillTopo(uint& numns, SLIST& nodens, SIMAP& nodem, IMMAP& Y) {
+	void fillTopo(uint& numns, SLIST& nodens, SIMAP& nodem, 
+            ISMAP& node_name_lookup, IMMAP& Y) {
 		numns = this->numns;
 		nodens = this->nodens;
 		nodem = this->nodem;
+        node_name_lookup = this->node_name_lookup;
 		Y = this->Y;
 	}
 	
@@ -136,6 +141,7 @@ class TopoProcConsumer : public SEConsumer {
 			numns++;
 			nodens.push_back(node_name);
 			nodem[node_name] = ++idx;
+            node_name_lookup[idx] = node_name;
 		}
 #ifdef DEBUG_PRIMARY
         cout << "complete.\n\n" << std::flush;

@@ -54,6 +54,10 @@ using json = nlohmann::json;
 #define ICMAP std::unordered_map<unisgned int,std::complex<double>>
 #endif
 
+#ifndef ISMAP
+#define ISMAP std::unordered_map<unsigned int,std::string>
+#endif
+
 // negligable
 #define NEGL 0.00000001
 
@@ -93,6 +97,7 @@ class SELoopConsumer : public SEConsumer {
     SSMAP node_bmrids;  // string mRIDs of the associated buses
     SSMAP node_phs;     // string phases
     IMMAP Yphys;        // Ybus [node->[row->col]] [physical units]
+    ISMAP node_name_lookup;
 
     // system state
     private:
@@ -127,6 +132,7 @@ class SELoopConsumer : public SEConsumer {
                 const SCMAP& node_vnoms,
                 const SSMAP& node_bmrids,
                 const SSMAP& node_phs,
+                const ISMAP& node_name_lookup,
                 const double sbase,
                 const IMMAP& Yphys,
                 const IMMAP& A) {
@@ -146,6 +152,7 @@ class SELoopConsumer : public SEConsumer {
         this->node_vnoms = node_vnoms;
         this->node_bmrids = node_bmrids;
         this->node_phs = node_phs;
+        this->node_name_lookup = node_name_lookup;
         this->sbase = sbase;
         this->Yphys = Yphys; 
         this->A = A;
@@ -254,29 +261,29 @@ class SELoopConsumer : public SEConsumer {
         for ( auto& inode : node_names ) {
 #ifdef DEBUG_PRIMARY
             if ( ++beat_ctr % 100 == 0 ) 
-                cout << "--- Ypu heartbeat - " << beat_ctr << ", " << getPerComp(beat_ctr, total_ctr) << ", " << getMinSec(getWallTime()-startTime) << " ---\n" << std::flush;
+                cout << "--- Ypu heartbeat - " << beat_ctr << ", " << 
+                    getPerComp(beat_ctr, total_ctr) << ", " << 
+                    getMinSec(getWallTime()-startTime) << " ---\n" << std::flush;
 #endif
 #ifdef DEBUG_SECONDARY
             cout << inode << "\n" << std::flush;
 #endif
             uint i = node_idxs[inode];
             complex<double> conjterm = conj(node_vnoms[inode]/sbase);
-            try {
-                auto& row = Yphys.at(i);
-                for ( auto& jnode : node_names ) {
-                    uint j = node_idxs[jnode];
-                    try {
-                        //yij = row.at(j);
-                        //Ypu[i][j] = conjterm * yij * node_vnoms[jnode];
-                        Ypu[i][j] = conjterm * row.at(j) * node_vnoms[jnode];
-                    } catch(...) {}
-                }
-            } catch(...) {}
+            auto& row = Yphys.at(i);
+            for ( auto& jpair : row ) {
+                // jpair consists of <j><yij>
+                uint j = jpair.first;
+                complex<double> yij = jpair.second;
+                string jnode = node_name_lookup[jpair.first];
+                Ypu[i][j] = conjterm * yij * node_vnoms[jnode];
+            }
         }
 #ifdef DEBUG_PRIMARY
         cout << "Ypu computation complete.\n\n" << std::flush;
         double endTime = getWallTime();
-        cout << "Ypu wall clock execution time: " << getMinSec(endTime-startTime) << "\n\n" << std::flush;
+        cout << "Ypu wall clock execution time: " << 
+            getMinSec(endTime-startTime) << "\n\n" << std::flush;
 #endif
 
 //      // print
@@ -1438,9 +1445,17 @@ class SELoopConsumer : public SEConsumer {
         else cout << "hraw is " << hraw->m << " by " 
             << hraw->n << " with " << hraw->nzmax << " entries\n" << std::flush;
 #endif
+#ifdef DEBUG_PRIMARY
+        double startTime = getWallTime();
+        int beat_ctr = 0, total_ctr = zary.zids.size();
+#endif
         for ( auto& zid : zary.zids ) {
 #ifdef DEBUG_DETAILS
             cerr << "***SEDBG:calc_h zid: " << zid << "\n" << std::flush;
+#endif
+#ifdef DEBUG_PRIMARY
+            if ( ++beat_ctr % 100 == 0 ) 
+                cout << "--- calc_h heartbeat - " << beat_ctr << ", " << getPerComp(beat_ctr, total_ctr) << ", " << getMinSec(getWallTime()-startTime) << " ---\n" << std::flush;
 #endif
             uint zidx = zary.zidxs[zid];
             string ztype = zary.ztypes[zid];
