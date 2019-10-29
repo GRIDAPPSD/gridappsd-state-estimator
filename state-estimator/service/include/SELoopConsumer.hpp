@@ -275,7 +275,7 @@ class SELoopConsumer : public SEConsumer {
                 // jpair consists of <j><yij>
                 uint j = jpair.first;
                 complex<double> yij = jpair.second;
-                string jnode = node_name_lookup[jpair.first];
+                string jnode = node_name_lookup[j];
                 Ypu[i][j] = conjterm * yij * node_vnoms[jnode];
             }
         }
