@@ -1064,8 +1064,8 @@ class SELoopConsumer : public SEConsumer {
             cout << "klu_solve complete\n" << std::flush;
 #endif
 #ifdef DEBUG_PRIMARY
-            cout << "klusym size to free: " << sizeof(klusym) << "\n" << std::flush;
-            cout << "klunum size to free: " << sizeof(klunum) << "\n" << std::flush;
+            cout << "klusym size to free: " << sizeof(*klusym) << "\n" << std::flush;
+            cout << "klunum size to free: " << sizeof(*klunum) << "\n" << std::flush;
 #endif
             // free klusym and klunum or major memory leak results
             klu_free_symbolic(&klusym, &klucom);
