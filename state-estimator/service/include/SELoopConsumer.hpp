@@ -1065,6 +1065,14 @@ class SELoopConsumer : public SEConsumer {
 #ifdef DEBUG_PRIMARY
             cout << "klu_solve complete\n" << std::flush;
 #endif
+#ifdef DEBUG_PRIMARY
+            cout << "klusym size to free: " << sizeof(klusym) << "\n" << std::flush;
+            cout << "klunum size to free: " << sizeof(klunum) << "\n" << std::flush;
+#endif
+            // free klusym and klunum or major memory leak results
+            klu_free_symbolic(&klusym, &klucom);
+            klu_free_numeric(&klunum, &klucom);
+
         } catch (const char *msg) {
             cout << "KLU ERROR: " << msg << "\n" << std::flush;
             return;
