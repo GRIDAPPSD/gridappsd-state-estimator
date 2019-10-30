@@ -987,9 +987,8 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
 #ifdef DEBUG_PRIMARY
-            cout << "in KLU block\n" << std::flush;
+        cout << "in KLU block\n" << std::flush;
 #endif
-
         double *rhs;
 
         try {
@@ -1002,21 +1001,21 @@ class SELoopConsumer : public SEConsumer {
 #ifdef DEBUG_PRIMARY
             cout << "klucom initialized.\n" << std::flush;
 #endif
+#ifdef DEBUG_PRIMARY
+            double startTime = getWallTime();
+#endif
             klusym = klu_analyze(Supd->m,Supd->p,Supd->i,&klucom);
             if (!klusym) throw "klu_analyze failed";
 
 #ifdef DEBUG_PRIMARY
-            cout << "klusym initialized.\n" << std::flush;
+            cout << "klu_analyze time: " << getMinSec(getWallTime()-startTime)
+                << "\n" << std::flush;
 #endif
 
 #ifdef DEBUG_PRIMARY
-            double startTime = getWallTime();
+            startTime = getWallTime();
 #endif
             klunum = klu_factor(Supd->p,Supd->i,Supd->x,klusym,&klucom);
-#ifdef DEBUG_PRIMARY
-            cout << "klu_factor time: " << getMinSec(getWallTime()-startTime)
-                << "\n" << std::flush;
-#endif
             if (!klunum) {
 #ifdef DEBUG_PRIMARY
                 cout << "Common->status is: " << klucom.status << "\n" << std::flush;
@@ -1026,7 +1025,8 @@ class SELoopConsumer : public SEConsumer {
             }
 
 #ifdef DEBUG_PRIMARY
-            cout << "klunum initialized.\n" << std::flush;
+            cout << "klu_factor time: " << getMinSec(getWallTime()-startTime)
+                << "\n" << std::flush;
 #endif
 
 #ifdef DEBUG_PRIMARY
@@ -1038,21 +1038,14 @@ class SELoopConsumer : public SEConsumer {
                 rhs[ii] = ii/zqty == ii%zqty ? 1 : 0;
             
 #ifdef DEBUG_PRIMARY
-            cout << "identity rhs time: " << getMinSec(getWallTime()-startTime)
+            cout << "identity rhs creation time: " << getMinSec(getWallTime()-startTime)
                 << "\n" << std::flush;
-#endif
-#ifdef DEBUG_PRIMARY
-            cout << "identity rhs created\n" << std::flush;
 #endif
 
 #ifdef DEBUG_PRIMARY
             startTime = getWallTime();
 #endif
             klu_solve(klusym,klunum,Supd->m,Supd->n,rhs,&klucom);
-#ifdef DEBUG_PRIMARY
-            cout << "klu_solve time: " << getMinSec(getWallTime()-startTime)
-                << "\n" << std::flush;
-#endif
             if (klucom.status) {
 #ifdef DEBUG_PRIMARY
                 cout << "Common->status is: " << klucom.status << "\n" << std::flush;
@@ -1061,7 +1054,8 @@ class SELoopConsumer : public SEConsumer {
             }
 
 #ifdef DEBUG_PRIMARY
-            cout << "klu_solve complete\n" << std::flush;
+            cout << "klu_solve completion time: " << getMinSec(getWallTime()-startTime)
+                << "\n" << std::flush;
 #endif
 #ifdef DEBUG_PRIMARY
             cout << "klusym size to free: " << sizeof(*klusym) << "\n" << std::flush;
