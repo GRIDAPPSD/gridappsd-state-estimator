@@ -254,12 +254,14 @@ class SELoopConsumer : public SEConsumer {
         cout << "Computing Ypu ...\n" << std::flush;
 #endif
 #ifdef DEBUG_PRIMARY
-        uint beat_ctr = 0;
         double startTime = getWallTime();
+#endif
+#ifdef DEBUG_SECONDARY
+        uint beat_ctr = 0;
         uint total_ctr = node_names.size();
 #endif
         for ( auto& inode : node_names ) {
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
             if ( ++beat_ctr % 100 == 0 ) 
                 cout << "--- Ypu heartbeat - " << beat_ctr << ", " <<
                     getPerComp(beat_ctr, total_ctr) << ", " << 
@@ -280,10 +282,8 @@ class SELoopConsumer : public SEConsumer {
             }
         }
 #ifdef DEBUG_PRIMARY
-        cout << "Ypu computation complete.\n\n" << std::flush;
-        double endTime = getWallTime();
-        cout << "Ypu wall clock execution time: " <<
-            getMinSec(endTime-startTime) << "\n\n" << std::flush;
+        cout << "Ypu completion time: " <<
+            getMinSec(getWallTime()-startTime) << "\n\n" << std::flush;
 #endif
 
 //      // print
@@ -749,8 +749,7 @@ class SELoopConsumer : public SEConsumer {
         cout << "Q is " << Q->m << " by " << Q->n << " with " << Q->nzmax << " entries\n" << std::flush;
 #endif
 
-
-        // WE NEED TO HANDLE R-MASK IN HERE SOMEWHERE; ZARY NEEDS TO BE PERSISTANT
+        // TODO: WE NEED TO HANDLE R-MASK IN HERE SOMEWHERE; ZARY NEEDS TO BE PERSISTENT
 
 #ifdef DEBUG_FILES
         // set filename path based on timestamp
@@ -762,7 +761,6 @@ class SELoopConsumer : public SEConsumer {
         // create timestamp directory
         mkdir(tspath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 #endif
-
 
         // x, z, h, and J will be maintained here
         
@@ -1416,13 +1414,15 @@ class SELoopConsumer : public SEConsumer {
 #endif
 #ifdef DEBUG_PRIMARY
         double startTime = getWallTime();
+#endif
+#ifdef DEBUG_SECONDARY
         uint beat_ctr = 0, total_ctr = zary.zids.size();
 #endif
         for ( auto& zid : zary.zids ) {
 #ifdef DEBUG_DETAILS
             cerr << "***SEDBG:calc_h zid: " << zid << "\n" << std::flush;
 #endif
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_SECONDARY
             if ( ++beat_ctr % 100 == 0 )
                 cout << "--- calc_h heartbeat - " << beat_ctr << ", " <<
                     getPerComp(beat_ctr, total_ctr) << ", " <<
@@ -1505,7 +1505,10 @@ class SELoopConsumer : public SEConsumer {
             }
         }
         h = cs_compress(hraw); cs_spfree(hraw);
-
+#ifdef DEBUG_PRIMARY
+            cout << "calc_h time: " << getMinSec(getWallTime()-startTime)
+                << "\n" << std::flush;
+#endif
     }
 
     private:
