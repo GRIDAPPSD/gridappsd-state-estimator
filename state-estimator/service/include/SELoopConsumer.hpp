@@ -31,7 +31,7 @@ using json = nlohmann::json;
 
 // SIMAP holds the one-indexed positions of nodes
 #ifndef SIMAP
-#define SIMAP std::unordered_map<std::string,unsigned int>
+#define SIMAP std::unordered_map<std::string,uint>
 #endif
 
 // SDMAP holds x, z, and the set of regulator taps
@@ -51,11 +51,11 @@ using json = nlohmann::json;
 
 // this holds the voltage state
 #ifndef ICMAP
-#define ICMAP std::unordered_map<unisgned int,std::complex<double>>
+#define ICMAP std::unordered_map<uint,std::complex<double>>
 #endif
 
 #ifndef ISMAP
-#define ISMAP std::unordered_map<unsigned int,std::string>
+#define ISMAP std::unordered_map<uint,std::string>
 #endif
 
 // negligable
@@ -69,16 +69,14 @@ class SELoopConsumer : public SEConsumer {
     // system state
     private:
 //  cs *x, *P;      // state model
-    cs *P=0;          // x comes from V and A but P is persistent 
-    // GDB 10/29/19 Declare Pupd as a state variable instead of local
-    cs *Pupd;
+    cs *P;          // x comes from V and A but P is persistent 
     cs *F, *Q;      // process model
     cs *R;
 //  cs *z, *R;      // measurement model
 //  cs *h, *J;
     cs *eyex;       // identity matrix of dimension x
-    int xqty;       // number of states
-    int zqty;       // number of measurements
+    uint xqty;       // number of states
+    uint zqty;       // number of measurements
 
 //  cs *x, *xpre, *x1, *xupd;                       // state vector
 //  cs *P, *Ppre, *P1, *P2, *P3, *P4, *P, *Pupd;    // state covariance
@@ -231,7 +229,7 @@ class SELoopConsumer : public SEConsumer {
         else cout << "Praw is " << Praw->m << " by " 
             << Praw->n << " with " << Praw->nzmax << " entries\n" << std::flush;
 #endif
-        for ( int idx = 0 ; idx < node_qty ; idx++ ) {
+        for ( uint idx = 0 ; idx < node_qty ; idx++ ) {
             // Add variance for the voltage magnitude state
             cs_entry(Praw,idx,idx,0.002*span_vmag);
             // Add variance for the voltage phase state
@@ -322,7 +320,7 @@ class SELoopConsumer : public SEConsumer {
 #endif
             try {
                 auto& row = Ypu.at(i);
-                int jctr = 0;
+                uint jctr = 0;
                 for ( auto& jnode : node_names ) {
                     uint j = node_idxs[jnode];
                     try {
@@ -338,7 +336,7 @@ class SELoopConsumer : public SEConsumer {
                     }
                 }
             } catch ( const std::out_of_range& oor ) {
-                int jctr = 0;
+                uint jctr = 0;
                 for ( auto& jnode : node_names )
                     ofh << "0+0i" << ( ++jctr < node_qty ? ',' : "\n" );
             }
@@ -464,7 +462,7 @@ class SELoopConsumer : public SEConsumer {
 #ifdef DEBUG_PRIMARY
         cout << "Initializing F\n" << std::flush;
 #endif
-        for ( int ii = 0 ; ii < xqty ; ii++ )
+        for ( uint ii = 0 ; ii < xqty ; ii++ )
             cs_entry(Fraw,ii,ii,1);
         F = cs_compress(Fraw); cs_spfree(Fraw);
 #ifdef DEBUG_FILES
@@ -484,9 +482,9 @@ class SELoopConsumer : public SEConsumer {
         else cout << "Qraw is " << Qraw->m << " by " 
             << Qraw->n << " with " << Qraw->nzmax << " entries\n" << std::flush;
 #endif
-        //for ( int ii = 0 ; ii < xqty ; ii++ )
+        //for ( uint ii = 0 ; ii < xqty ; ii++ )
         //    cs_entry(Qraw,ii,ii,0.04*sqrt(1.0/4));      // TUNABLE
-        for ( int idx = 0 ; idx < node_qty ; idx++ ) {
+        for ( uint idx = 0 ; idx < node_qty ; idx++ ) {
             cs_entry(Qraw,idx,idx,0.001);
             cs_entry(Qraw,node_qty+idx,node_qty+idx,0.001*PI);
         }
@@ -508,7 +506,7 @@ class SELoopConsumer : public SEConsumer {
         else cout << "eyexraw is " << eyexraw->m << " by " 
             << eyexraw->n << " with " << eyexraw->nzmax << " entries\n" << std::flush;
 #endif
-        for ( int ii = 0 ; ii < xqty ; ii++ )
+        for ( uint ii = 0 ; ii < xqty ; ii++ )
             cs_entry(eyexraw,ii,ii,1.0);
         eyex = cs_compress(eyexraw); cs_spfree(eyexraw);
 #ifdef DEBUG_FILES
@@ -578,7 +576,7 @@ class SELoopConsumer : public SEConsumer {
         // --------------------------------------------------------------------
         state_fh.open(simpath+"vmag_per-unit.csv",ofstream::out);
         state_fh << "timestamp,";
-        int ctr = 0;
+        uint ctr = 0;
         for ( auto& node_name : node_names )
             state_fh << "\'"+node_name+"\'" << ( ++ctr < node_qty ? ',' : "\n" );
         state_fh.close();
@@ -597,7 +595,7 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
         jtext = json::parse(text);
-        int timestamp = jtext["message"]["timestamp"];
+        uint timestamp = jtext["message"]["timestamp"];
 #ifdef DEBUG_PRIMARY
         cout << "\ttimestamp: " << timestamp << "\n" << std::flush;
 #endif
@@ -723,7 +721,7 @@ class SELoopConsumer : public SEConsumer {
         std::string simpath = "output/sim_" + simid + "/";
         state_fh.open(simpath+"vmag_per-unit.csv",ofstream::app);
         state_fh << timestamp << ',';
-        int ctr = 0;
+        uint ctr = 0;
         for ( auto& node_name : node_names ) {
             double vmag_pu = abs( Vpu[ node_idxs[node_name] ] );
             state_fh << vmag_pu << ( ++ctr < node_qty ? ',' : "\n" );
@@ -743,7 +741,7 @@ class SELoopConsumer : public SEConsumer {
     }
 
     private:
-    void estimate(const int& timestamp) {
+    void estimate(const uint& timestamp) {
 #ifdef DEBUG_PRIMARY
         cout << "xqty is " << xqty << "\n" << std::flush;
         cout << "zqty is " << zqty << "\n" << std::flush;
@@ -855,7 +853,6 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(J,tspath+"J.csv");
 #endif
 
-
         // --------------------------------------------------------------------
         // Predict Step
         // --------------------------------------------------------------------
@@ -884,8 +881,7 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(P1,tspath+"P1.csv");
 #endif
 
-        cs *P2 = cs_multiply(P,P1);
-        cs_spfree(P1);
+        cs *P2 = cs_multiply(P,P1); cs_spfree(P); cs_spfree(P1);
         if (!P2) cout << "ERROR: null P2\n" << std::flush;
 
 #ifdef DEBUG_PRIMARY
@@ -896,8 +892,7 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(P2,tspath+"P2.csv");
 #endif
 
-        cs *P3 = cs_multiply(F,P2); 
-        cs_spfree(P2);
+        cs *P3 = cs_multiply(F,P2); cs_spfree(P2);
         if (!P3) cout << "ERROR: null P3\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "P3 is " << P3->m << " by " << P3->n << 
@@ -907,8 +902,7 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(P3,tspath+"P3.csv");
 #endif
 
-        cs *Ppre = cs_add(P3,Q,1,1);
-        cs_spfree(P3);
+        cs *Ppre = cs_add(P3,Q,1,1); cs_spfree(P3);
         if (!Ppre) cout << "ERROR: null Ppre\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "Ppre is " << Ppre->m << " by " << Ppre->n << 
@@ -953,8 +947,7 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(S1,tspath+"S1.csv");
 #endif
 
-        cs *S2 = cs_multiply(Ppre,S1);
-        cs_spfree(S1);
+        cs *S2 = cs_multiply(Ppre,S1); cs_spfree(S1);
         if (!S2) cout << "ERROR: null S2\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "S2 is " << S2->m << " by " << S2->n << 
@@ -964,8 +957,7 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(S2,tspath+"S2.csv");
 #endif
 
-        cs *S3 = cs_multiply(J,S2);
-        cs_spfree(S2);
+        cs *S3 = cs_multiply(J,S2); cs_spfree(S2);
         if (!S3) cout << "ERROR: null S3\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "S3 is " << S3->m << " by " << S3->n << 
@@ -975,21 +967,20 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(S3,tspath+"S3.csv");
 #endif
 
-        cs *Supd = cs_add(R,S3,1,1);
-        cs_spfree(S3);
+        cs *Supd = cs_add(R,S3,1,1); cs_spfree(S3);
         if (!Supd) cout << "ERROR: null Supd\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "Supd is " << Supd->m << " by " << Supd->n << 
             " with " << Supd->nzmax << " entries\n" << std::flush;
 //      cout << "Supd->nzmax is: " << Supd->nzmax << "\n";
 //      cout << "Supd->p is: " << Supd->p << "\n";
-//      for ( int ii = 0 ; ii < Supd->m + 1 ; ii++ )
+//      for ( uint ii = 0 ; ii < Supd->m + 1 ; ii++ )
 //          cout << "\t" << Supd->p[ii] << "\n";
 //      cout << "Supd->i is: " << Supd->i << "\n";
-//      for ( int ii = 0 ; ii < Supd->nzmax ; ii++ )
+//      for ( uint ii = 0 ; ii < Supd->nzmax ; ii++ )
 //          cout << "\t" << Supd->i[ii] << ", ";
 //      cout << "\n";
-//      for ( int ii = 0 ; ii < Supd->nzmax ; ii++ )
+//      for ( uint ii = 0 ; ii < Supd->nzmax ; ii++ )
 //          cout << "\t" << Supd->x[ii] << ", ";
 //      cout << "\n";
 #endif
@@ -997,14 +988,13 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(Supd,tspath+"Supd.csv");
 #endif
 
-        double *rhs;
-
-        try {
-        
 #ifdef DEBUG_PRIMARY
             cout << "in KLU block\n" << std::flush;
 #endif
 
+        double *rhs;
+
+        try {
             // Initialize klusolve variables
             klu_symbolic *klusym;
             klu_numeric *klunum;
@@ -1021,7 +1011,14 @@ class SELoopConsumer : public SEConsumer {
             cout << "klusym initialized.\n" << std::flush;
 #endif
 
+#ifdef DEBUG_PRIMARY
+            double startTime = getWallTime();
+#endif
             klunum = klu_factor(Supd->p,Supd->i,Supd->x,klusym,&klucom);
+#ifdef DEBUG_PRIMARY
+            cout << "klu_factor time: " << getMinSec(getWallTime()-startTime)
+                << "\n" << std::flush;
+#endif
             if (!klunum) {
 #ifdef DEBUG_PRIMARY
                 cout << "Common->status is: " << klucom.status << "\n" << std::flush;
@@ -1034,16 +1031,30 @@ class SELoopConsumer : public SEConsumer {
             cout << "klunum initialized.\n" << std::flush;
 #endif
 
+#ifdef DEBUG_PRIMARY
+            startTime = getWallTime();
+#endif
             // initialize an identiy right-hand side
             rhs = new double[zqty*zqty];
-            for ( int ii = 0 ; ii < zqty*zqty ; ii++ )
+            for ( uint ii = 0 ; ii < zqty*zqty ; ii++ )
                 rhs[ii] = ii/zqty == ii%zqty ? 1 : 0;
             
+#ifdef DEBUG_PRIMARY
+            cout << "identity rhs time: " << getMinSec(getWallTime()-startTime)
+                << "\n" << std::flush;
+#endif
 #ifdef DEBUG_PRIMARY
             cout << "identity rhs created\n" << std::flush;
 #endif
 
+#ifdef DEBUG_PRIMARY
+            startTime = getWallTime();
+#endif
             klu_solve(klusym,klunum,Supd->m,Supd->n,rhs,&klucom);
+#ifdef DEBUG_PRIMARY
+            cout << "klu_solve time: " << getMinSec(getWallTime()-startTime)
+                << "\n" << std::flush;
+#endif
             if (klucom.status) {
 #ifdef DEBUG_PRIMARY
                 cout << "Common->status is: " << klucom.status << "\n" << std::flush;
@@ -1055,13 +1066,12 @@ class SELoopConsumer : public SEConsumer {
             cout << "klu_solve complete\n" << std::flush;
 #endif
         } catch (const char *msg) {
-            cout << "ERROR: " << msg << "\n" << std::flush;
+            cout << "KLU ERROR: " << msg << "\n" << std::flush;
             return;
         }
 #ifdef DEBUG_PRIMARY
         cout << "left KLU block\n" << std::flush;
 #endif
-
         cs_spfree(Supd);
 
         cs *K3raw = cs_spalloc(0,0,zqty*zqty,1,1);
@@ -1072,8 +1082,8 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
         // convert the result to cs*
-        for ( int ii = 0 ; ii < zqty ; ii++ )
-            for ( int jj = 0 ; jj < zqty ; jj++ )
+        for ( uint ii = 0 ; ii < zqty ; ii++ )
+            for ( uint jj = 0 ; jj < zqty ; jj++ )
                 if (rhs[ii+zqty*jj])
                     cs_entry(K3raw,ii,jj,rhs[ii+zqty*jj]);
 
@@ -1094,8 +1104,7 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(K1,tspath+"K1.csv");
 #endif
 
-        cs *K2 = cs_multiply(Ppre,K1);
-        cs_spfree(K1);
+        cs *K2 = cs_multiply(Ppre,K1); cs_spfree(K1);
         if (!K2) cout << "ERROR: null K2\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "K2 is " << K2->m << " by " 
@@ -1186,15 +1195,16 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(P5,tspath+"P5.csv");
 #endif
 
-        Pupd = cs_multiply(P5,Ppre); cs_spfree(P5); cs_spfree(Ppre);
-        if ( !Pupd ) cout << "ERROR: Pupd null\n" << std::flush;
+        // re-allocate P for the updated state
+        P = cs_multiply(P5,Ppre); cs_spfree(P5); cs_spfree(Ppre);
+        if ( !P ) cout << "ERROR: P updated null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "Pupd is " << Pupd->m << " by " << Pupd->n << 
+        else cout << "P updated is " << P->m << " by " << P->n << 
                 " with " << P->nzmax << " entries\n" << std::flush;
 #endif
 
 #ifdef DEBUG_FILES
-        print_cs_compress(Pupd,tspath+"Pupd.csv");
+        print_cs_compress(P,tspath+"Pupd.csv");
 #endif
 
 #ifdef DEBUG_PRIMARY
@@ -1214,20 +1224,13 @@ class SELoopConsumer : public SEConsumer {
             // GDB 10/29/19 free xupd after last use
             cs_spfree(xupd);
         }
-
-#ifdef DEBUG_PRIMARY
-        cout << "freeing P and setting Pupd to 0...\n" << std::flush;
-#endif
-        if (P) cs_spfree(P);
-        P = Pupd;
-        Pupd = 0;
     }
 
     private:
     void decompress_state(cs *&x) {
         // copy state into vector (states, especially phase, can be 0)
         vector<double> xvec(x->m,0.0);
-        for ( int idx = 0 ; idx < x->nzmax ; idx++ )
+        for ( uint idx = 0 ; idx < x->nzmax ; idx++ )
             xvec[x->i[idx]] = x->x[idx];
         // update Vpu
         //  - NOTE: THIS WILL CHANGE IF SOURCE BUS STATES ARE NOT IN X
@@ -1405,7 +1408,7 @@ class SELoopConsumer : public SEConsumer {
 #endif
 #ifdef DEBUG_PRIMARY
         double startTime = getWallTime();
-        int beat_ctr = 0, total_ctr = zary.zids.size();
+        uint beat_ctr = 0, total_ctr = zary.zids.size();
 #endif
         for ( auto& zid : zary.zids ) {
 #ifdef DEBUG_DETAILS
@@ -1750,11 +1753,11 @@ class SELoopConsumer : public SEConsumer {
     private:
     void print_cs_compress(cs *&a, const string &filename="cs.csv") {
         // First copy into a map
-        unordered_map<int,unordered_map<int,double>> mat;
-        for ( int i = 0 ; i < a->n ; i++ ) {
+        unordered_map<uint,unordered_map<uint,double>> mat;
+        for ( uint i = 0 ; i < a->n ; i++ ) {
 //          cout << "in column " << i << " idx from " << a->p[i] << 
 //                  " to " << a->p[i+1] << "\n" << std::flush;
-            for ( int j = a->p[i] ; j < a->p[i+1] ; j++ ) {
+            for ( uint j = a->p[i] ; j < a->p[i+1] ; j++ ) {
                 mat[a->i[j]][i] = a->x[j];
             }
         }
@@ -1763,8 +1766,8 @@ class SELoopConsumer : public SEConsumer {
         ofh << std::setprecision(16);
         ofh.open(filename,ofstream::out);
         cout << "writing " + filename + "\n\n"; << std::flush 
-        for ( int i = 0 ; i < a->m ; i++ )
-            for ( int j = 0 ; j < a->n ; j++ )
+        for ( uint i = 0 ; i < a->m ; i++ )
+            for ( uint j = 0 ; j < a->n ; j++ )
                 ofh << mat[i][j] << ( j == a->n-1 ? "\n" : "," );
         ofh.close();
     }
@@ -1783,14 +1786,14 @@ class SELoopConsumer : public SEConsumer {
 
     private:
     string getMinSec(double seconds) {
-        int sec = (int)seconds % 60;
+        uint sec = (uint)seconds % 60;
         string secstr = (sec<10)? "0"+std::to_string(sec): std::to_string(sec);
-        return (std::to_string((int)seconds/60) + ":" + secstr);
+        return (std::to_string((uint)seconds/60) + ":" + secstr);
     }
 
     private:
     string getPerComp(uint current, uint total) {
-        return std::to_string((int)(100.0 * current/total)) + "%";
+        return std::to_string((uint)(100.0 * current/total)) + "%";
     }
 
 };
