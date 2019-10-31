@@ -1,3 +1,4 @@
+#define DIAGONAL_P
 #define DEBUG_PRIMARY
 //#define DEBUG_SECONDARY
 //#define DEBUG_DETAILS
@@ -169,6 +170,7 @@ int main(int argc, char** argv){
 		state_estimator_util::build_A_matrix(gad,A,node_idxs);
 
 
+/*
 		// INITIALIZE THE STATE VECTOR
 		IDMAP xV;	// container for voltage magnitude states
 		IDMAP xT;	// container for voltage angle states
@@ -178,7 +180,8 @@ int main(int argc, char** argv){
 		}
 		int xqty = xV.size() + xT.size();
 		if ( xqty != 2*node_qty) throw "x initialization failed";
-	
+*/
+
 		// --------------------------------------------------------------------
 		// SENSOR INITILIZER
 		// --------------------------------------------------------------------

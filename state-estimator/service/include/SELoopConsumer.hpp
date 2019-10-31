@@ -32,7 +32,7 @@ using json = nlohmann::json;
 
 // SIMAP holds the one-indexed positions of nodes
 #ifndef SIMAP
-#define SIMAP std::unordered_map<std::string,uint>
+#define SIMAP std::unordered_map<std::string,unsigned int>
 #endif
 
 // SDMAP holds x, z, and the set of regulator taps
@@ -50,13 +50,19 @@ using json = nlohmann::json;
 #define SSMAP std::unordered_map<std::string,std::string>
 #endif
 
-// this holds the voltage state
+// ICMAP holds the voltage state
 #ifndef ICMAP
-#define ICMAP std::unordered_map<uint,std::complex<double>>
+#define ICMAP std::unordered_map<unsigned int,std::complex<double>>
 #endif
 
+// IDMAP holds the state variances
+#ifndef IDMAP
+#define IDMAP std::unordered_map<unsigned int,double>
+#endif
+
+// ISMAP holds the node name lookup table
 #ifndef ISMAP
-#define ISMAP std::unordered_map<uint,std::string>
+#define ISMAP std::unordered_map<unsigned int,std::string>
 #endif
 
 // negligable
@@ -70,7 +76,9 @@ class SELoopConsumer : public SEConsumer {
     // system state
     private:
 //  cs *x, *P;      // state model
+#ifndef DIAGONAL_P
     cs *P;          // x comes from V and A but P is persistent 
+#endif
     cs *F, *Q;      // process model
     cs *R;
 //  cs *z, *R;      // measurement model
@@ -104,7 +112,10 @@ class SELoopConsumer : public SEConsumer {
     private:
     ICMAP Vpu;          // voltage state in per-unit
     IMMAP A;            // regulator tap ratios <- we need reg information
-//  cs *State_Cov;      // state covariance matrix;
+#ifdef DIAGONAL_P
+    IDMAP Uvmag;        // variance of voltage magnitudes (per-unit)
+    IDMAP Uvarg;        // variance of voltage angles (per-unit)
+#endif
 
     private:
     double sbase;
@@ -230,6 +241,8 @@ class SELoopConsumer : public SEConsumer {
         double span_vmag = 1.0;
         double span_varg = 1.0/3.0*PI;
         double span_taps = 0.2;
+
+#ifndef DIAGONAL_P
         cs *Praw = cs_spalloc(0,0,xqty,1,1);
         if (!Praw) cout << "ERROR: null Praw\n" << std::flush;
 #ifdef DEBUG_PRIMARY
@@ -246,6 +259,15 @@ class SELoopConsumer : public SEConsumer {
 
 #ifdef DEBUG_FILES
         print_cs_compress(P,initpath+"Pinit.csv");
+#endif
+#endif
+
+#ifdef DIAGONAL_P
+        for ( auto& node_name : node_names ) {
+            uint idx = node_idxs[node_name];
+            Uvmag[idx] = 0.002*span_vmag;
+            Uvarg[idx] = 0.002*span_varg;
+        }
 #endif
 
 
@@ -591,8 +613,10 @@ class SELoopConsumer : public SEConsumer {
 
 #ifdef DEBUG_PRIMARY
         cout << "\ninit call sizes...\n" << std::flush;
+#ifndef DIAGONAL_P
         uint Psize = cs_size(P);
         print_sizeof(Psize, "P");
+#endif
         uint Fsize = cs_size(F);
         print_sizeof(Fsize, "F");
         uint Qsize = cs_size(Q);
@@ -603,7 +627,16 @@ class SELoopConsumer : public SEConsumer {
         print_sizeof(eyexsize, "eyex");
         uint Vpusize = Vpu.size()*16;
         print_sizeof(Vpusize, "Vpu");
+#ifndef DIAGONAL_P
         print_sizeof(Psize+Fsize+Qsize+Rsize+eyexsize+Vpusize, "Total");
+#endif
+#ifdef DIAGONAL_P
+        uint Uvmagsize = Uvmag.size()*8;
+        print_sizeof(Uvmagsize, "Uvmag");
+        uint Uvargsize = Uvarg.size()*8;
+        print_sizeof(Uvargsize, "Uvarg");
+        print_sizeof(Fsize+Qsize+Rsize+eyexsize+Vpusize+Uvmagsize+Uvargsize, "Total");
+#endif
 
         string vm_used, res_used;
         process_mem_usage(vm_used, res_used);
@@ -778,7 +811,7 @@ class SELoopConsumer : public SEConsumer {
         cout << "Q is " << Q->m << " by " << Q->n << " with " << Q->nzmax << " entries\n" << std::flush;
 #endif
 
-        // TODO: WE NEED TO HANDLE R-MASK IN HERE SOMEWHERE; ZARY NEEDS TO BE PERSISTENT
+        // TODO: WE NEED TO HANDLE R-MASK IN HERE SOMEWHERE
 
 #ifdef DEBUG_FILES
         // set filename path based on timestamp
@@ -805,6 +838,13 @@ class SELoopConsumer : public SEConsumer {
 
 #ifdef DEBUG_FILES
         print_cs_compress(x,tspath+"x.csv");
+#endif
+
+#ifdef DIAGONAL_P
+#ifdef DEBUG_PRIMARY
+        cout << "prep_P ... " << std::flush;
+#endif
+        cs *P; this->prep_P(P);
 #endif
 
 #ifdef DEBUG_PRIMARY
@@ -910,6 +950,7 @@ class SELoopConsumer : public SEConsumer {
 
         cs *P2 = cs_multiply(P,P1); cs_spfree(P); cs_spfree(P1);
         if (!P2) cout << "ERROR: null P2\n" << std::flush;
+
 
 #ifdef DEBUG_PRIMARY
         else cout << "P2 is " << P2->m << " by " << P2->n << 
@@ -1224,8 +1265,14 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(P5,tspath+"P5.csv");
 #endif
 
+
+#ifdef DIAGONAL_P
+        cs *Pupd = cs_multiply(P5,Ppre); cs_spfree(P5); cs_spfree(Ppre);
+#endif
+#ifndef DIAGONAL_P
         // re-allocate P for the updated state
         P = cs_multiply(P5,Ppre); cs_spfree(P5); cs_spfree(Ppre);
+#endif
         if ( !P ) cout << "ERROR: P updated null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "P updated is " << P->m << " by " << P->n << 
@@ -1253,6 +1300,14 @@ class SELoopConsumer : public SEConsumer {
             // GDB 10/29/19 free xupd after last use
             cs_spfree(xupd);
         }
+
+#ifdef DIAGONAL_P
+        // extract the diagonal of P
+        if (Pupd) {
+            decompress_variance(Pupd);
+            cs_spfree(Pupd);
+        }
+#endif
 
 #ifdef DEBUG_PRIMARY
         if (firstEstimateFlag) {
@@ -1288,7 +1343,6 @@ class SELoopConsumer : public SEConsumer {
         for ( uint idx = 0 ; idx < x->nzmax ; idx++ )
             xvec[x->i[idx]] = x->x[idx];
         // update Vpu
-        //  - NOTE: THIS WILL CHANGE IF SOURCE BUS STATES ARE NOT IN X
         for ( auto& node_name : node_names ) {
             uint idx = node_idxs[node_name];
             uint vidx = idx-1;
@@ -1300,6 +1354,39 @@ class SELoopConsumer : public SEConsumer {
         // update A
 //      for ( auto& reg_name : SLIST reg_names ) {}
     }
+
+#ifdef DIAGONAL_P
+    private:
+    void decompress_variance(cs *&Pmat) {
+        // vector to store the state variance (diagonal of Pmat)
+        vector<double> uvec(Pmat->n);
+        // Pmat is in compressed-column form; iterate over columns
+        for ( uint j = 0; j < Pmat->n ; j++ ) {
+            // iterate over existing data in column j
+            for ( uint p = Pmat->p[j] ; p > Pmat->p[j+1] ; p++ ) {
+                // get the row index for existing data
+                uint i = Pmat->i[p];
+                if ( i == j ) {
+                    // if this is a diagonal entry, extract it
+                    uvec[j] = Pmat->x[p];
+                    break;
+                }
+                else if ( i > j ) {
+                    // if we get past the diagonal, it doesn't exist
+                    break;
+                }
+            }
+        }
+        // update Umag and Uarg
+        for ( auto& node_name: node_names ) {
+            uint idx = node_idxs[node_name];
+            uint vidx = idx-1;
+            uint Tidx = node_qty + idx-1;
+            Uvmag[idx] = uvec[vidx];
+            Uvarg[idx] = uvec[Tidx];
+        }
+    }
+#endif
 
     private:
     void prep_x(cs *&x) {
@@ -1324,6 +1411,31 @@ class SELoopConsumer : public SEConsumer {
         x = cs_compress(xraw);
         cs_spfree(xraw);
     }
+
+#ifdef DIAGONAL_P
+    private:
+    void prep_P(cs *&Pmat) {
+        // Prepare P as a diagonal matrix from state uncertanty
+        cs *Praw = cs_spalloc(xqty,xqty,xqty,1,1);
+        if (!Praw) cout << "ERROR: nul Praw in prep_P\n" << std::flush;
+#ifdef DEBUG_PRIMARY
+        else cout << "Praw is " << Praw->m << " by "
+            << Praw->n << " with " << Praw->nzmax << " entries\n" << std::flush;
+#endif
+        for ( auto& node_name : node_names ) {
+            uint idx = node_idxs[node_name];
+            // insert the voltage magnitude variance
+            uint vidx = idx - 1;
+            if ( Uvmag[idx] ) cs_entry(Praw,vidx,0,Uvmag[idx]);
+            // insert the voltage phase variance
+            uint Tidx = node_qty + idx - 1;
+            if ( Uvarg[idx] ) cs_entry(Praw,Tidx,0,Uvarg[idx]);
+        }
+        Pmat = cs_compress(Praw);
+        cs_spfree(Praw);
+    }
+#endif
+
 
     private:
     void sample_z(cs *&z) {
