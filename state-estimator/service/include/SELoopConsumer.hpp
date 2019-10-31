@@ -20,6 +20,7 @@ using json = nlohmann::json;
 #include <dirent.h>
 
 #ifdef DEBUG_PRIMARY
+#include <unistd.h>
 #include <sys/time.h>
 #include <time.h>
 #endif
@@ -117,6 +118,12 @@ class SELoopConsumer : public SEConsumer {
 
     private:
     SEProducer *statePublisher = 0;
+
+#ifdef DEBUG_PRIMARY
+    private:
+    bool firstEstimateFlag = true;
+    uint timezero;
+#endif
 
     public:
     SELoopConsumer(const string& brokerURI, 
@@ -580,6 +587,28 @@ class SELoopConsumer : public SEConsumer {
         for ( auto& node_name : node_names )
             state_fh << "\'"+node_name+"\'" << ( ++ctr < node_qty ? ',' : "\n" );
         state_fh.close();
+#endif
+
+#ifdef DEBUG_PRIMARY
+        cout << "\ninit call sizes...\n" << std::flush;
+        uint Psize = cs_size(P);
+        print_sizeof(Psize, "P");
+        uint Fsize = cs_size(F);
+        print_sizeof(Fsize, "F");
+        uint Qsize = cs_size(Q);
+        print_sizeof(Qsize, "Q");
+        uint Rsize = cs_size(R);
+        print_sizeof(Rsize, "R");
+        uint eyexsize = cs_size(eyex);
+        print_sizeof(eyexsize, "eyex");
+        uint Vpusize = Vpu.size()*16;
+        print_sizeof(Vpusize, "Vpu");
+        print_sizeof(Psize+Fsize+Qsize+Rsize+eyexsize+Vpusize, "Total");
+
+        string vm_used, res_used;
+        process_mem_usage(vm_used, res_used);
+        cout << "Virtual memory: " << vm_used << "\n" << std::flush;
+        cout << "Resident memory: " << res_used << "\n\n" << std::flush;
 #endif
 
     }
@@ -1224,6 +1253,32 @@ class SELoopConsumer : public SEConsumer {
             // GDB 10/29/19 free xupd after last use
             cs_spfree(xupd);
         }
+
+#ifdef DEBUG_PRIMARY
+        if (firstEstimateFlag) {
+            timezero = timestamp;
+            firstEstimateFlag = false;
+        }
+        cout << "\nTimestep: " << timestamp - timezero << "\n" << std::flush;
+        uint Psize = cs_size(P);
+        print_sizeof(Psize, "P");
+        uint Fsize = cs_size(F);
+        print_sizeof(Fsize, "F");
+        uint Qsize = cs_size(Q);
+        print_sizeof(Qsize, "Q");
+        uint Rsize = cs_size(R);
+        print_sizeof(Rsize, "R");
+        uint eyexsize = cs_size(eyex);
+        print_sizeof(eyexsize, "eyex");
+        uint Vpusize = Vpu.size()*16;
+        print_sizeof(Vpusize, "Vpu");
+        print_sizeof(Psize+Fsize+Qsize+Rsize+eyexsize+Vpusize, "Total");
+
+        string vm_used, res_used;
+        process_mem_usage(vm_used, res_used);
+        cout << "Virtual memory: " << vm_used << "\n" << std::flush;
+        cout << "Resident memory: " << res_used << "\n\n" << std::flush;
+#endif
     }
 
     private:
@@ -1801,6 +1856,100 @@ class SELoopConsumer : public SEConsumer {
         return std::to_string((uint)(100.0 * current/total)) + "%";
     }
 
+    private:
+    uint cs_size(cs *sparse) {
+        // this works for compressed matrices.  For uncompressed (raw), use
+        //return 16*sparse->nzmax + 28;
+        return 12*sparse->nzmax + 4*(sparse->n+1) + 28;
+    }
+
+    private:
+    uint map_size(ICMAP& map) {
+        // this assumes each element is 16 bytes, a complex double
+        if (map.max_load_factor() > 1.0) {
+            return map.bucket_count()*map.max_load_factor()*16;
+        } else {
+            return map.bucket_count()*16;
+        }
+    }
+
+    private:
+    void print_sizeof(uint size, string msg) {
+        if (size > 1024) {
+            uint kbsize = size/1024;
+            if (kbsize > 1024) {
+                uint mbsize = kbsize/1024;
+                if (mbsize > 1024) {
+                    uint gbsize = mbsize/1024;
+                    cout << msg << " size: " << gbsize << " GB\n" << std::flush;
+                } else {
+                    cout << msg << " size: " << mbsize << " MB\n" << std::flush;
+                }
+            } else {
+                cout << msg << " size: " << kbsize << " KB\n" << std::flush;
+            }
+        } else {
+            cout << msg << " size: " << size << " bytes\n" << std::flush;
+        }
+    }
+
+#include <ios>
+#include <iostream>
+#include <fstream>
+    private:
+    void process_mem_usage(string& vm_used, string& res_used) {
+        using std::ios_base;
+        using std::ifstream;
+        using std::string;
+
+        double vm_usage     = 0.0;
+        double resident_set = 0.0;
+
+        // 'file' stat seems to give the most reliable results
+        ifstream stat_stream("/proc/self/stat",ios_base::in);
+
+        // dummy vars for leading entries in stat that we don't care about
+        string pid, comm, state, ppid, pgrp, session, tty_nr;
+        string tpgid, flags, minflt, cminflt, majflt, cmajflt;
+        string utime, stime, cutime, cstime, priority, nice;
+        string O, itrealvalue, starttime;
+
+        // the two fields we want
+        unsigned long vsize;
+        long rss;
+
+        stat_stream >> pid >> comm >> state >> ppid >> pgrp >> session >> tty_nr
+                    >> tpgid >> flags >> minflt >> cminflt >> majflt >> cmajflt
+                    >> utime >> stime >> cutime >> cstime >> priority >> nice
+                    >> O >> itrealvalue >> starttime >> vsize >> rss; // don't care about the rest
+        stat_stream.close();
+
+        long page_size_kb = sysconf(_SC_PAGE_SIZE) / 1024; // in case x86-64 is configured to use 2MB pages
+        vm_usage     = vsize / 1024.0;
+        resident_set = rss * page_size_kb;
+
+        string units = " KB";
+        if (vm_usage > 1024.0) {
+            vm_usage = vm_usage/1024.0;
+            units = " MB";
+            if (vm_usage > 1024.0) {
+                vm_usage = vm_usage/1024.0;
+                units = " GB";
+            }
+        }
+        vm_used = std::to_string(vm_usage) + units;
+
+        units = " KB";
+        if (resident_set > 1024.0) {
+            resident_set = resident_set/1024.0;
+            units = " MB";
+            if (resident_set > 1024.0) {
+                resident_set = resident_set/1024.0;
+                units = " GB";
+            }
+        }
+        res_used = std::to_string(resident_set) + units;
+    }
 };
 #endif
 
