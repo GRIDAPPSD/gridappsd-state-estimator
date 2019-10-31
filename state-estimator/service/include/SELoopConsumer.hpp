@@ -1987,12 +1987,15 @@ class SELoopConsumer : public SEConsumer {
 
     private:
     void print_sizeof(uint size, string msg) {
+        // limit precision for nicer output
+        cout.precision(2);
+
         if (size > 1024) {
-            uint kbsize = size/1024;
-            if (kbsize > 1024) {
-                uint mbsize = kbsize/1024;
-                if (mbsize > 1024) {
-                    uint gbsize = mbsize/1024;
+            double kbsize = size/1024.0;
+            if (kbsize > 1024.0) {
+                double mbsize = kbsize/1024.0;
+                if (mbsize > 1024.0) {
+                    double gbsize = mbsize/1024.0;
                     cout << msg << " size: " << gbsize << " GB\n" << std::flush;
                 } else {
                     cout << msg << " size: " << mbsize << " MB\n" << std::flush;
@@ -2003,6 +2006,9 @@ class SELoopConsumer : public SEConsumer {
         } else {
             cout << msg << " size: " << size << " bytes\n" << std::flush;
         }
+
+        // restore default precision
+        cout.precision(6);
     }
 
 #include <ios>
