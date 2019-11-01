@@ -359,15 +359,15 @@ class SELoopConsumer : public SEConsumer {
                         ofh << tmpre 
                             << ( tmpim >= 0 ? "+" : "-" )
                             << std::abs(tmpim) << "i" 
-                            << ( ++jctr < node_qty ? ',' : "\n" );
+                            << ( ++jctr < node_qty ? "," : "\n" );
                     } catch ( const std::out_of_range& oor) {
-                        ofh << "0+0i" << ( ++jctr < node_qty ? ',' : "\n" );
+                        ofh << "0+0i" << ( ++jctr < node_qty ? "," : "\n" );
                     }
                 }
             } catch ( const std::out_of_range& oor ) {
                 uint jctr = 0;
                 for ( auto& jnode : node_names )
-                    ofh << "0+0i" << ( ++jctr < node_qty ? ',' : "\n" );
+                    ofh << "0+0i" << ( ++jctr < node_qty ? "," : "\n" );
             }
         } ofh.close();
 #endif
@@ -389,14 +389,14 @@ class SELoopConsumer : public SEConsumer {
                         ofh << tmpre
                             << ( tmpim >= 0 ? "+" : "-" )
                             << std::abs(tmpim) << "i"
-                            << ( j < node_qty ? ',' : "\n" );
+                            << ( j < node_qty ? "," : "\n" );
                     } catch ( const std::out_of_range& oor ) {
-                        ofh << "0+0i" << ( j < node_qty ? ',' : "\n" );
+                        ofh << "0+0i" << ( j < node_qty ? "," : "\n" );
                     }
                 }
             } catch ( const std::out_of_range& oor ) {
                 for ( uint j = 0 ; j < node_qty ; j++ )
-                    ofh << "0+0i" << ( j < node_qty ? ',' : "\n" );
+                    ofh << "0+0i" << ( j < node_qty ? "," : "\n" );
             }
         } ofh.close();
 #endif
@@ -607,7 +607,7 @@ class SELoopConsumer : public SEConsumer {
         state_fh << "timestamp,";
         uint ctr = 0;
         for ( auto& node_name : node_names )
-            state_fh << "\'"+node_name+"\'" << ( ++ctr < node_qty ? ',' : "\n" );
+            state_fh << "\'"+node_name+"\'" << ( ++ctr < node_qty ? "," : "\n" );
         state_fh.close();
 #endif
     }
@@ -752,7 +752,7 @@ class SELoopConsumer : public SEConsumer {
         uint ctr = 0;
         for ( auto& node_name : node_names ) {
             double vmag_pu = abs( Vpu[ node_idxs[node_name] ] );
-            state_fh << vmag_pu << ( ++ctr < node_qty ? ',' : "\n" );
+            state_fh << vmag_pu << ( ++ctr < node_qty ? "," : "\n" );
         }
         state_fh.close();
 #endif
@@ -1223,14 +1223,20 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(P5,tspath+"P5.csv");
 #endif
 
-
 #ifdef DIAGONAL_P
         cs *Pupd = cs_multiply(P5,Ppre); cs_spfree(P5); cs_spfree(Ppre);
+        if ( !Pupd ) cout << "ERROR: P updated null\n" << std::flush;
+#ifdef DEBUG_PRIMARY
+        else cout << "P updated is " << Pupd->m << " by " << Pupd->n << 
+                " with " << Pupd->nzmax << " entries\n" << std::flush;
+#endif
+#ifdef DEBUG_FILES
+        print_cs_compress(Pupd,tspath+"Pupd.csv");
+#endif
 #endif
 #ifndef DIAGONAL_P
         // re-allocate P for the updated state
         P = cs_multiply(P5,Ppre); cs_spfree(P5); cs_spfree(Ppre);
-#endif
         if ( !P ) cout << "ERROR: P updated null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "P updated is " << P->m << " by " << P->n << 
@@ -1238,6 +1244,7 @@ class SELoopConsumer : public SEConsumer {
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(P,tspath+"Pupd.csv");
+#endif
 #endif
 
 #ifdef DEBUG_PRIMARY
@@ -1899,7 +1906,7 @@ class SELoopConsumer : public SEConsumer {
         ofstream ofh;
         ofh << std::setprecision(16);
         ofh.open(filename,ofstream::out);
-        cout << "writing " + filename + "\n\n"; << std::flush 
+        cout << "writing " + filename + "\n\n" << std::flush;
         for ( uint i = 0 ; i < a->m ; i++ )
             for ( uint j = 0 ; j < a->n ; j++ )
                 ofh << mat[i][j] << ( j == a->n-1 ? "\n" : "," );
