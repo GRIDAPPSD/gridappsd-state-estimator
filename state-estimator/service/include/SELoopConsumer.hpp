@@ -13,11 +13,14 @@ using json = nlohmann::json;
 #include <complex>
 #include <list>
 #include <unordered_map>
+#include <array>
 
 // for mkdir and opendir
+#ifdef DEBUG_FILES
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
+#endif
 
 #ifdef DEBUG_PRIMARY
 #include <unistd.h>
@@ -65,6 +68,11 @@ using json = nlohmann::json;
 #define ISMAP std::unordered_map<unsigned int,std::string>
 #endif
 
+// holds the 
+#ifndef A5LIST
+#define A5LIST std::list<std::array<unsigned int, 5>>
+#endif
+
 // negligable
 #define NEGL 0.00000001
 
@@ -80,18 +88,20 @@ class SELoopConsumer : public SEConsumer {
     cs *P;          // x comes from V and A but P is persistent 
 #endif
     cs *F, *Q;      // process model
-    cs *R;
-//  cs *z, *R;      // measurement model
-//  cs *h, *J;
+    cs *R;          // measurement covariance (diagonal)
     cs *eyex;       // identity matrix of dimension x
-    uint xqty;       // number of states
-    uint zqty;       // number of measurements
+    uint xqty;      // number of states
+    uint zqty;      // number of measurements
 
-//  cs *x, *xpre, *x1, *xupd;                       // state vector
-//  cs *P, *Ppre, *P1, *P2, *P3, *P4, *P, *Pupd;    // state covariance
-//  cs *y1, *yupd;                                  // residual vector
-//  cs *S1, *S2, *S3, *Supd;                        // residual covariance
-//  cs *K1, *K2, *K3, *Kupd;                        // gain matrix
+    
+    // establish jacobian entry types
+    enum dydx_type : uint {
+        dPi_dvi, dPi_dvj, dQi_dvi, dQi_dvj, dvi_dvi,
+        dPi_dTi, dPi_dTj, dQi_dTi, dQi_dTj, dTi_dTi,
+    };
+
+    A5LIST Jshape;  // list of J entries: {zidx,xidx,i,j,dydx_type}
+    uint Jqty;      // number of non-zero Jacobian elements
 
     private:
     json jtext;     // object holding the input message
@@ -275,6 +285,73 @@ class SELoopConsumer : public SEConsumer {
         cout << "State Covariance Matrix Initialized.\n\n" << std::flush;
 #endif
 
+        // --------------------------------------------------------------------
+        // Determine possible non-zero Jacobian elements
+        // --------------------------------------------------------------------
+
+        for ( auto& zid: zary.zids ) {
+            uint zidx = zary.zidxs[zid];            // row index of J
+            string ztype = zary.ztypes[zid];        // measurement type
+            uint i = node_idxs[zary.znode1s[zid]];  // one-indexed
+
+            // Real Power Injection Measurements
+            if ( !ztype.compare("Pi") ){
+                for ( auto& row_pair : Yphys[i] ) {
+                    uint j = row_pair.first;
+                    if ( j == i ) {
+                        // dPi/dvi and dPi/dTi exist for node i
+                        Jshape.push_back({zidx,j-1,i,i,dPi_dvi}); Jqty++;
+                        Jshape.push_back({zidx,node_qty+j-1,i,i,dPi_dTi}); Jqty++;
+                    } else {
+                        // dPi/dvj and dPi/dTj exist for nodes adjacent to i
+                        Jshape.push_back({zidx,j-1,i,j,dPi_dvj}); Jqty++;
+                        Jshape.push_back({zidx,node_qty+j-1,i,j,dPi_dTj}); Jqty++;
+                    }
+                }
+            }
+
+            else
+            if ( !ztype.compare("Qi") ) {
+                for ( auto& row_pair : Yphys[i] ) {
+                    uint j = row_pair.first;
+                    if ( j == i ) {
+                        // dPi/dvi and dPi/dTi exist for node i
+                        Jshape.push_back({zidx,j-1,i,i,dQi_dvi}); Jqty++;
+                        Jshape.push_back({zidx,node_qty+j-1,i,i,dQi_dTi}); Jqty++;
+                    } else {
+                        // dPi/dvj and dPi/dTj exists for nodes adjacent to i
+                        Jshape.push_back({zidx,j-1,i,j,dQi_dvj}); Jqty++;
+                        Jshape.push_back({zidx,node_qty+j-1,i,j,dQi_dTj}); Jqty++;
+                    }
+                }
+            }
+
+            else
+            if ( !ztype.compare("aji") ) {
+                // Later
+            }
+
+            else
+            if
+            ( !ztype.compare("vi") ) {
+                // dvi/dvi is the only partial that exists
+                Jshape.push_back({zidx,i-1,i,i,dvi_dvi}); Jqty++;
+            }
+
+            else
+            if ( !ztype.compare("Ti") ) {
+                // dTi/dTi is the only partial that exists
+                Jshape.push_back({zidx,node_qty+i-1,i,i,dTi_dTi}); Jqty++;
+            }
+
+            else { 
+                cout << "ERROR: Unrecognized measurement type " << 
+                    ztype << std::flush;
+            }
+        }
+
+
+
 
         // --------------------------------------------------------------------
         // Compute Ypu
@@ -315,23 +392,6 @@ class SELoopConsumer : public SEConsumer {
             getMinSec(getWallTime()-startTime) << "\n\n" << std::flush;
 #endif
 
-//      // print
-//      for ( auto& inode : node_names ) {
-//          uint i = node_idxs[inode];
-//          try {
-//              auto& row = Ypu.at(i);
-//              for ( auto& jnode: node_names ) {
-//                  uint j = node_idxs[jnode];
-//                  try {
-//                      complex<double> yij = row.at(j);
-//                      complex<double> vnomi = node_vnoms[inode];
-//                      complex<double> vnomj = node_vnoms[jnode];
-//                      cout << "Y(" << i << "," << j << ") -> " << yij << "\n" << std::flush;
-//                  } catch(...) {}
-//              }
-//          } catch(...) {}
-//      }
-
 #ifdef DEBUG_FILES
         // write to file
         ofstream ofh;
@@ -359,15 +419,15 @@ class SELoopConsumer : public SEConsumer {
                         ofh << tmpre 
                             << ( tmpim >= 0 ? "+" : "-" )
                             << std::abs(tmpim) << "i" 
-                            << ( ++jctr < node_qty ? ',' : "\n" );
+                            << ( ++jctr < node_qty ? "," : "\n" );
                     } catch ( const std::out_of_range& oor) {
-                        ofh << "0+0i" << ( ++jctr < node_qty ? ',' : "\n" );
+                        ofh << "0+0i" << ( ++jctr < node_qty ? "," : "\n" );
                     }
                 }
             } catch ( const std::out_of_range& oor ) {
                 uint jctr = 0;
                 for ( auto& jnode : node_names )
-                    ofh << "0+0i" << ( ++jctr < node_qty ? ',' : "\n" );
+                    ofh << "0+0i" << ( ++jctr < node_qty ? "," : "\n" );
             }
         } ofh.close();
 #endif
@@ -389,14 +449,14 @@ class SELoopConsumer : public SEConsumer {
                         ofh << tmpre
                             << ( tmpim >= 0 ? "+" : "-" )
                             << std::abs(tmpim) << "i"
-                            << ( j < node_qty ? ',' : "\n" );
+                            << ( j < node_qty ? "," : "\n" );
                     } catch ( const std::out_of_range& oor ) {
-                        ofh << "0+0i" << ( j < node_qty ? ',' : "\n" );
+                        ofh << "0+0i" << ( j < node_qty ? "," : "\n" );
                     }
                 }
             } catch ( const std::out_of_range& oor ) {
                 for ( uint j = 0 ; j < node_qty ; j++ )
-                    ofh << "0+0i" << ( j < node_qty ? ',' : "\n" );
+                    ofh << "0+0i" << ( j < node_qty ? "," : "\n" );
             }
         } ofh.close();
 #endif
@@ -607,7 +667,7 @@ class SELoopConsumer : public SEConsumer {
         state_fh << "timestamp,";
         uint ctr = 0;
         for ( auto& node_name : node_names )
-            state_fh << "\'"+node_name+"\'" << ( ++ctr < node_qty ? ',' : "\n" );
+            state_fh << "\'"+node_name+"\'" << ( ++ctr < node_qty ? "," : "\n" );
         state_fh.close();
 #endif
 
@@ -786,7 +846,7 @@ class SELoopConsumer : public SEConsumer {
         uint ctr = 0;
         for ( auto& node_name : node_names ) {
             double vmag_pu = abs( Vpu[ node_idxs[node_name] ] );
-            state_fh << vmag_pu << ( ++ctr < node_qty ? ',' : "\n" );
+            state_fh << vmag_pu << ( ++ctr < node_qty ? "," : "\n" );
         }
         state_fh.close();
 #endif
@@ -1678,7 +1738,8 @@ class SELoopConsumer : public SEConsumer {
         double startTime = getWallTime();
 #endif
         // each z component has a Jacobian component for each state
-        cs *Jraw = cs_spalloc(zqty,xqty,zqty*xqty,1,1);
+//        cs *Jraw = cs_spalloc(zqty,xqty,zqty*xqty,1,1);
+        cs *Jraw = cs_spalloc(zqty,xqty,Jqty,1,1);
         if (!Jraw) cout << "ERROR: null Jraw\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "Jraw is " << Jraw->m << " by " 
@@ -1686,226 +1747,165 @@ class SELoopConsumer : public SEConsumer {
 #endif
 #ifdef DEBUG_PRIMARY
         uint beat_ctr = 0;
-        uint total_ctr = zary.zids.size();
+//        uint total_ctr = zary.zids.size();
+        uint total_ctr = Jqty;
 #endif
-        // loop over z
-        for ( auto& zid : zary.zids ) {
+//        // loop over z
+//        for ( auto& zid : zary.zids ) {
+        // loop over existing Jacobian entries
+        for ( std::array<unsigned int, 5>& Jpartial : Jshape ) {
 #ifdef DEBUG_PRIMARY
             if ( ++beat_ctr % 100 == 0 ) 
                 cout << "--- calc_J heartbeat - " << beat_ctr << ", " <<
                     getPerComp(beat_ctr, total_ctr) << ", " <<
                     getMinSec(getWallTime()-startTime) << " ---\n" << std::flush;
 #endif
-#ifdef DEBUG_DETAILS
-            cerr << "***SEDBG:calc_J zid: " << zid << "\n" << std::flush;
-#endif
-            uint zidx = zary.zidxs[zid];
-            string ztype = zary.ztypes[zid];
-            uint i = node_idxs[zary.znode1s[zid]];
+            
+//            uint zidx = zary.zidxs[zid];
+//            string ztype = zary.ztypes[zid];
+//            uint i = node_idxs[zary.znode1s[zid]];
+            // Unpack entry data
+            uint zidx = Jpartial[0];
+            uint xidx = Jpartial[1];
+            uint i = Jpartial[2];
+            uint j = Jpartial[3];
+            uint entry_type = Jpartial[4];
 
-            // loop over voltage magnitude states
-            for ( auto& node_name : node_names ) {
-                uint vidx = node_idxs[node_name];
-                uint xidx = vidx-1;
-                // Computation of d/dv depends on the measurement type
-                if ( !ztype.compare("Pi" ) ) {
-                    if ( vidx == i ) {
-#ifdef DEBUG_DETAILS
-                        cerr << "***SEDBG:calc_J Pi magnitude vidx==i, i: " << i << "\n" << std::flush;
-#endif
-                        // --- compute dPi/dvi
-                        double dP = 0;
-                        // loop over adjacent nodes
-                        try {
-                            auto& Yrow = Ypu.at(i);
-                            for ( auto& rowpair : Yrow ) {
-                                uint j = rowpair.first;
-                                if (j != vidx) {
-                                    set_n(i,j);
-                                    dP = dP + 2*vi/ai/ai * g - 
-                                        vj/ai/aj * (g*cos(T) + b*sin(T));
-#ifdef DEBUG_DETAILS
-                                    cerr << "\t***SEDBG:calc_J Pi magnitude j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << "\n" << std::flush;
-#endif
-                                }
-                            }
-                            // consider the reference node
-                            set_n(i,0);
-                            dP = dP + 2*vi * g;
-#ifdef DEBUG_DETAILS
-                            cerr << "***SEDBG:calc_J Pi magnitude post summation vi: " << vi << ", g: " << g << ", dP: " << dP << "\n" << std::flush;
-#endif
-                        } catch(...) {}
-                        if ( abs(dP > NEGL ) ) cs_entry(Jraw,zidx,xidx,dP);
-                    } else {
-#ifdef DEBUG_DETAILS
-                        cerr << "***SEDBG:calc_J Pi magnitude vidx!=i, i: " << i << ", vidx: " << vidx << "\n" << std::flush;
-#endif
-                        // --- compute dPi/dvj
-                        double dP = 0;
-                        uint j = vidx;
-                        try {
-                            auto& Yrow = Ypu.at(i);
-                            complex<double> Yij = Yrow.at(j);
-
-                            set_n(i,j);
-                            dP = -1.0 * vi/ai/aj * (g*cos(T) + b*sin(T));
-                        } catch(...) {}
-#ifdef DEBUG_DETAILS
-                        cerr << "\t***SEDBG:calc_J Pi magnitude j: " << j << ", vi: " << vi << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << "\n" << std::flush;
-#endif
-                        if ( abs(dP) > NEGL ) cs_entry(Jraw,zidx,xidx,dP);
+            if ( entry_type == dPi_dvi ) {
+                // --- compute dPi/dvi
+                double dP = 0;
+                // loop over adjacent nodes
+                auto& Yrow = Ypu.at(i);
+                for ( auto& rowpair : Yrow ) {
+                    j = rowpair.first;
+                    if (j != i) {
+                        set_n(i,j);
+                        dP = dP + 2*vi/ai/ai * g - 
+                            vj/ai/aj * (g*cos(T) + b*sin(T));
                     }
                 }
-                else if ( !ztype.compare("Qi") ) {
-                    if ( vidx == i ) {
-                        // --- compute dQ/dvi
-                        double dQ = 0;
-                        // loop over adjacent nodes
-                        try {
-                            auto& Yrow = Ypu.at(i);
-                            for ( auto& rowpair : Yrow ) {
-                                uint j = rowpair.first;
-                                if (j != vidx) {
-                                    set_n(i,j);
-                                    dQ = dQ - 2*vi/ai/ai * b - 
-                                        vj/ai/aj * (g*sin(T) - b*cos(T));
-                                }
-                            }
-                            // consider the reference node
-                            set_n(i,0);
-                            dQ = dQ - 2*vi*b;
-                        } catch (...) {}
-                        if ( abs(dQ) > NEGL ) cs_entry(Jraw,zidx,xidx,dQ);
-                    } else {
-                        // --- compute dQ/dvj
-                        double dQ = 0;
-                        uint j = vidx;
-                        try {
-                            auto& Yrow = Ypu.at(i);
-                            complex<double> Yij = Yrow.at(j);
-
-                            set_n(i,j);
-                            dQ = -1.0 * vi/ai/aj * (g*sin(T) - b*cos(T));
-                        } catch(...) {}
-                        if ( abs(dQ) > NEGL ) cs_entry(Jraw,zidx,xidx,dQ);
-                    }
-                }
-                else if ( !ztype.compare("aji") ) {
-                    // daji/dv = 0
-                }
-                else if ( !ztype.compare("vi") ) {
-                    if ( vidx == i ) {
-                        // --- compute dvi/dvi
-                        cs_entry(Jraw,zidx,xidx,1.0);
-#ifdef DEBUG_DETAILS
-                        cerr << "***SEDBG:calc_J vi i: " << i << ", J entry set to 1.0\n" << std::flush;
-#endif
-                    }
-                }
-                else if ( !ztype.compare("Ti") ) {
-                    // dT/dv = 0
-                }
-
-                else {
-                    cout << "WARNING: Undefined measurement type " + ztype + "\n" << std::flush;
-                }
+                // consider the reference node
+                set_n(i,0);
+                dP = dP + 2*vi * g;
+                if ( abs(dP > NEGL ) ) cs_entry(Jraw,zidx,xidx,dP);
             }
 
-            // loop over voltage phase states
-            for ( auto& node_name : node_names ) {
-                // IF ( NOT SOURCE NODE ) ???
-                uint vidx = node_idxs[node_name];
-                uint xidx = vidx-1 + node_qty; // THIS WOULD CHANGE IF SOURCES KNOWN
-                if ( !ztype.compare("Pi") ) {
-                    if ( vidx == i ) {
-#ifdef DEBUG_DETAILS
-                        cerr << "***SEDBG:calc_J Pi phase vidx==i, i: " << i << "\n" << std::flush;
-#endif
-                        // --- compute dPi/dTi
-                        double dP = 0;
-                        // loop over adjacent nodes
-                        try {
-                            auto &Yrow = Ypu.at(i);
-                            for ( auto& rowpair : Yrow ) {
-                                uint j = rowpair.first;
-                                if (j != vidx) {
-                                    set_n(i,j);
-                                    dP = dP + vi*vj/ai/aj * (g*sin(T) - b*cos(T));
-#ifdef DEBUG_DETAILS
-                                    cerr << "\t***SEDBG:calc_J Pi phase j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << "\n" << std::flush;
-#endif
-                                }
-                            }
-                            // reference node component is 0
-                        } catch(...) {}
-                        if ( abs(dP) > NEGL ) cs_entry(Jraw,zidx,xidx,dP);
-                    } else {
-#ifdef DEBUG_DETAILS
-                        cerr << "***SEDBG:calc_J Pi phase vidx!=i, i: " << i << "\n" << std::flush;
-#endif
-                        // --- compute dP/dTj
-                        double dP = 0;
-                        uint j = vidx;
-                        try {
-                            auto& Yrow = Ypu.at(i);
-                            complex<double> Yij = Yrow.at(j);
+            else
+            if ( entry_type == dPi_dvj ) {
+                // --- compute dPi/dvj
+                double dP = 0;
+                auto& Yrow = Ypu.at(i);
+                complex<double> Yij = Yrow.at(j);
 
-                            set_n(i,j);
-                            dP = -1.0 * vi*vj/ai/aj * (g*sin(T) - b*cos(T));
-                        } catch(...) {}
-#ifdef DEBUG_DETAILS
-                        cerr << "\t***SEDBG:calc_J Pi phase j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", dP: " << dP << "\n" << std::flush;
-#endif
-                        if ( abs(dP) > NEGL ) cs_entry(Jraw,zidx,xidx,dP);
-                    }
-                }
-                else if ( !ztype.compare("Qi") ) {
-                    if ( vidx == i ) {
-                        // compute dQi/dTi
-                        double dQ = 0;
-                        // loop over adjacent nodes
-                        try {
-                            auto& Yrow = Ypu.at(i);
-                            for ( auto& rowpair : Yrow ) {
-                                uint j = rowpair.first;
-                                if (j != vidx) {
-                                    set_n(i,j);
-                                    dQ = dQ - vi*vj/ai/aj * (g*cos(T) + b*sin(T));
-                                }
-                            }
-                            // reference component is 0
-                        } catch(...) {}
-                        if (abs(dQ) > NEGL ) cs_entry(Jraw,zidx,xidx,dQ);
-                    } else {
-                        // --- compute dQ/dTj
-                        double dQ = 0;
-                        uint j = vidx;
-                        try {
-                            auto& Yrow = Ypu.at(i);
-                            complex<double> Yij = Yrow.at(j);
+                set_n(i,j);
+                dP = -1.0 * vi/ai/aj * (g*cos(T) + b*sin(T));
+                if ( abs(dP) > NEGL ) cs_entry(Jraw,zidx,xidx,dP);
+            }
 
-                            set_n(i,j);
-                            dQ = vi*vj/ai/aj * (g*cos(T) + b*sin(T));
-                        } catch(...) {}
-                        if ( abs(dQ) > NEGL ) cs_entry(Jraw,zidx,xidx,dQ);
+            else
+            if ( entry_type == dQi_dvi ) {
+                // --- compute dQi/dvi
+                double dQ = 0;
+                // loop over adjacent nodes
+                auto& Yrow = Ypu.at(i);
+                for ( auto& rowpair : Yrow ) {
+                    uint j = rowpair.first;
+                    if (j != i ) {
+                        set_n(i,j);
+                        dQ = dQ - 2*vi/ai/ai * b - 
+                            vj/ai/aj * (g*sin(T) - b*cos(T));
                     }
                 }
-                else if ( !ztype.compare("ajj") ) {
-                    // dajj/dT = 0
-                }
-                else if ( !ztype.compare("vi") ) {
-                    // dvi/dT = 0
-                }
-                else if ( !ztype.compare("Ti") ) {
-                    if ( vidx == i ) {
-                        // --- compute dTi/dTi
-                        cs_entry(Jraw,zidx,xidx,1.0);
+                // consider the reference node
+                set_n(i,0);
+                dQ = dQ - 2*vi*b;
+                if ( abs(dQ) > NEGL ) cs_entry(Jraw,zidx,xidx,dQ);
+            }
+
+            else
+            if ( entry_type == dQi_dvj ) {
+                // --- compute dQi/dvj
+                double dQ = 0;
+                auto& Yrow = Ypu.at(i);
+                complex<double> Yij = Yrow.at(j);
+
+                set_n(i,j);
+                dQ = -1.0 * vi/ai/aj * (g*sin(T) - b*cos(T));
+                if ( abs(dQ) > NEGL ) cs_entry(Jraw,zidx,xidx,dQ);
+            }
+
+            else
+            if ( entry_type == dvi_dvi ) {
+                 // --- compute dvi/dvi
+                 cs_entry(Jraw,zidx,xidx,1.0);
+            }
+            
+            else
+            if ( entry_type == dPi_dTi ) {
+                // --- compute dPi/dTi
+                double dP = 0;
+                // loop over adjacent nodes
+                auto &Yrow = Ypu.at(i);
+                for ( auto& rowpair : Yrow ) {
+                    uint j = rowpair.first;
+                    if (j != i) {
+                        set_n(i,j);
+                        dP = dP + vi*vj/ai/aj * (g*sin(T) - b*cos(T));
                     }
                 }
-                else {
-                    cout << "WARNING: Undefined measurement type " + ztype + "\n" << std::flush;
+                // reference node component is 0
+                if ( abs(dP) > NEGL ) cs_entry(Jraw,zidx,xidx,dP);
+            }
+
+            else
+            if ( entry_type == dPi_dTj ) {
+                 // --- compute dP/dTj
+                 double dP = 0;
+                 auto& Yrow = Ypu.at(i);
+                 complex<double> Yij = Yrow.at(j);
+ 
+                 set_n(i,j);
+                 dP = -1.0 * vi*vj/ai/aj * (g*sin(T) - b*cos(T));
+                 if ( abs(dP) > NEGL ) cs_entry(Jraw,zidx,xidx,dP);
+            }
+
+            else
+            if ( entry_type == dQi_dTi ) {
+                // compute dQi/dTi
+                double dQ = 0;
+                // loop over adjacent nodes
+                auto& Yrow = Ypu.at(i);
+                for ( auto& rowpair : Yrow ) {
+                    uint j = rowpair.first;
+                    if (j != i) {
+                        set_n(i,j);
+                        dQ = dQ - vi*vj/ai/aj * (g*cos(T) + b*sin(T));
+                    }
                 }
+                // reference component is 0
+                if (abs(dQ) > NEGL ) cs_entry(Jraw,zidx,xidx,dQ);
+            }
+
+            else
+            if ( entry_type == dQi_dTj ) {
+                // --- compute dQ/dTj
+                double dQ = 0;
+                auto& Yrow = Ypu.at(i);
+                complex<double> Yij = Yrow.at(j);
+
+                set_n(i,j);
+                dQ = vi*vj/ai/aj * (g*cos(T) + b*sin(T));
+                if ( abs(dQ) > NEGL ) cs_entry(Jraw,zidx,xidx,dQ);
+            }
+
+            else
+            if ( entry_type == dTi_dTi ) {
+                cs_entry(Jraw,zidx,xidx,1.0);
+            }
+
+            else {
+                cout << "WARNING: Undefined jacobian element type type " + 
+                    entry_type << "\n" << std::flush;
             }
 
             // loop over regulator tap ratio states
@@ -1917,7 +1917,8 @@ class SELoopConsumer : public SEConsumer {
 
 #ifdef DEBUG_PRIMARY
         double endTime = getWallTime();
-        cout << "calc_J wall clock execution time: " << getMinSec(endTime-startTime) << "\n\n" << std::flush;
+        cout << "calc_J wall clock execution time: " << 
+            getMinSec(endTime-startTime) << "\n\n" << std::flush;
 #endif
     }
     
@@ -1927,8 +1928,6 @@ class SELoopConsumer : public SEConsumer {
         // First copy into a map
         unordered_map<uint,unordered_map<uint,double>> mat;
         for ( uint i = 0 ; i < a->n ; i++ ) {
-//          cout << "in column " << i << " idx from " << a->p[i] << 
-//                  " to " << a->p[i+1] << "\n" << std::flush;
             for ( uint j = a->p[i] ; j < a->p[i+1] ; j++ ) {
                 mat[a->i[j]][i] = a->x[j];
             }
@@ -1937,7 +1936,7 @@ class SELoopConsumer : public SEConsumer {
         ofstream ofh;
         ofh << std::setprecision(16);
         ofh.open(filename,ofstream::out);
-        cout << "writing " + filename + "\n\n"; << std::flush 
+        cout << "writing " + filename + "\n\n" << std::flush;
         for ( uint i = 0 ; i < a->m ; i++ )
             for ( uint j = 0 ; j < a->n ; j++ )
                 ofh << mat[i][j] << ( j == a->n-1 ? "\n" : "," );
