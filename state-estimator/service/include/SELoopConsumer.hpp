@@ -610,40 +610,6 @@ class SELoopConsumer : public SEConsumer {
             state_fh << "\'"+node_name+"\'" << ( ++ctr < node_qty ? ',' : "\n" );
         state_fh.close();
 #endif
-
-#ifdef DEBUG_PRIMARY
-        cout << "\ninit call sizes...\n" << std::flush;
-#ifndef DIAGONAL_P
-        uint Psize = cs_size(P);
-        print_sizeof(Psize, "P");
-#endif
-        uint Fsize = cs_size(F);
-        print_sizeof(Fsize, "F");
-        uint Qsize = cs_size(Q);
-        print_sizeof(Qsize, "Q");
-        uint Rsize = cs_size(R);
-        print_sizeof(Rsize, "R");
-        uint eyexsize = cs_size(eyex);
-        print_sizeof(eyexsize, "eyex");
-        uint Vpusize = Vpu.size()*16;
-        print_sizeof(Vpusize, "Vpu");
-#ifndef DIAGONAL_P
-        print_sizeof(Psize+Fsize+Qsize+Rsize+eyexsize+Vpusize, "Total");
-#endif
-#ifdef DIAGONAL_P
-        uint Uvmagsize = Uvmag.size()*8;
-        print_sizeof(Uvmagsize, "Uvmag");
-        uint Uvargsize = Uvarg.size()*8;
-        print_sizeof(Uvargsize, "Uvarg");
-        print_sizeof(Fsize+Qsize+Rsize+eyexsize+Vpusize+Uvmagsize+Uvargsize, "Total");
-#endif
-
-        string vm_used, res_used;
-        process_mem_usage(vm_used, res_used);
-        cout << "Virtual init memory: " << vm_used << "\n" << std::flush;
-        cout << "Resident init memory: " << res_used << "\n\n" << std::flush;
-#endif
-
     }
 
     // ------------------------------------------------------------------------
@@ -908,9 +874,6 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(h,tspath+"h.csv");
 #endif
 
-#ifdef DEBUG_PRIMARY
-        cout << "calc_J ... \n" << std::flush;
-#endif
         cs *J; this->calc_J(J);
 #ifdef DEBUG_PRIMARY
         cout << "J is " << J->m << " by " << J->n << 
@@ -930,7 +893,6 @@ class SELoopConsumer : public SEConsumer {
         else cout << "xpre is " << xpre->m << " by " << xpre->n << 
             " with " << xpre->nzmax << " entries\n" << std::flush;
 #endif
-
 #ifdef DEBUG_FILES
         print_cs_compress(xpre,tspath+"xpre.csv");
 #endif
@@ -943,7 +905,6 @@ class SELoopConsumer : public SEConsumer {
         else cout << "P1 is " << P1->m << " by " << P1->n << 
             " with " << P1->nzmax << " entries\n" << std::flush;
 #endif
-
 #ifdef DEBUG_FILES
         print_cs_compress(P1,tspath+"P1.csv");
 #endif
@@ -984,17 +945,6 @@ class SELoopConsumer : public SEConsumer {
         cout << "Predict step complete.\n" << std::flush;
 #endif
 
-#ifdef DEBUG_PRIMARY
-        if (firstEstimateFlag) {
-            timezero = timestamp;
-            firstEstimateFlag = false;
-        }
-        string vm_used, res_used;
-        process_mem_usage(vm_used, res_used);
-        cout << "Virtual post-predict memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
-        cout << "Resident post-predict memory: " << res_used << ", timestep: " << timestamp-timezero << "\n\n" << std::flush;
-#endif
-        
         // --------------------------------------------------------------------
         // Update Step
         // --------------------------------------------------------------------
@@ -1021,7 +971,6 @@ class SELoopConsumer : public SEConsumer {
         else cout << "S1 is " << S1->m << " by " << S1->n << 
             " with " << S1->nzmax << " entries\n" << std::flush;
 #endif
-
 #ifdef DEBUG_FILES
         print_cs_compress(S1,tspath+"S1.csv");
 #endif
@@ -1068,14 +1017,9 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        process_mem_usage(vm_used, res_used);
-        cout << "Virtual pre-KLU memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
-        cout << "Resident pre-KLU memory: " << res_used << ", timestep: " << timestamp-timezero << "\n\n" << std::flush;
-#endif
-
-#ifdef DEBUG_PRIMARY
         cout << "in KLU block\n" << std::flush;
         double startTime;
+        string vm_used, res_used;
 #endif
         double *rhs;
 
@@ -1110,12 +1054,6 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        process_mem_usage(vm_used, res_used);
-        cout << "Virtual post-klu_factor memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
-        cout << "Resident post-klu_factor memory: " << res_used << ", timestep: " << timestamp-timezero << "\n\n" << std::flush;
-#endif
-
-#ifdef DEBUG_PRIMARY
             startTime = getWallTime();
 #endif
             // initialize an identiy right-hand side
@@ -1145,9 +1083,13 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        process_mem_usage(vm_used, res_used);
-        cout << "Virtual post-klu_solve memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
-        cout << "Resident post-klu_solve memory: " << res_used << ", timestep: " << timestamp-timezero << "\n\n" << std::flush;
+            if (firstEstimateFlag) {
+                timezero = timestamp;
+                firstEstimateFlag = false;
+            }
+            process_mem_usage(vm_used, res_used);
+            cout << "Virtual post-klu_solve memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
+            cout << "Resident post-klu_solve memory: " << res_used << ", timestep: " << timestamp-timezero << "\n\n" << std::flush;
 #endif
 
             // free klusym and klunum or major memory leak results
@@ -1181,8 +1123,8 @@ class SELoopConsumer : public SEConsumer {
 #endif
 #ifdef DEBUG_PRIMARY
         process_mem_usage(vm_used, res_used);
-        cout << "Virtual rhs-copy memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
-        cout << "Resident rhs-copy memory: " << res_used << ", timestep: " << timestamp-timezero << "\n\n" << std::flush;
+        cout << "Virtual post-rhs-copy memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
+        cout << "Resident post-rhs-copy memory: " << res_used << ", timestep: " << timestamp-timezero << "\n\n" << std::flush;
 #endif
         delete rhs;
 
@@ -1193,14 +1135,8 @@ class SELoopConsumer : public SEConsumer {
         else cout << "K1 is " << K1->m << " by " << K1->n << 
             " with " << K1->nzmax << " entries\n" << std::flush;
 #endif
-
 #ifdef DEBUG_FILES
         print_cs_compress(K1,tspath+"K1.csv");
-#endif
-#ifdef DEBUG_PRIMARY
-        process_mem_usage(vm_used, res_used);
-        cout << "Virtual J-transpose memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
-        cout << "Resident J-transpose memory: " << res_used << ", timestep: " << timestamp-timezero << "\n\n" << std::flush;
 #endif
 
         cs *K2 = cs_multiply(Ppre,K1); cs_spfree(K1);
@@ -1212,7 +1148,6 @@ class SELoopConsumer : public SEConsumer {
 #ifdef DEBUG_FILES
         print_cs_compress(K2,tspath+"K2.csv");
 #endif
-
 #ifdef DEBUG_FILES
 //      print_cs_compress(K3raw,tspath+"K3raw.csv");
 #endif
@@ -1223,7 +1158,6 @@ class SELoopConsumer : public SEConsumer {
         else cout << "K3 is " << K3->m << " by " << K3->n << 
                 " with " << K3->nzmax << " entries\n" << std::flush;
 #endif
-
 #ifdef DEBUG_FILES
         print_cs_compress(K3,tspath+"K3.csv");
 #endif
@@ -1234,18 +1168,12 @@ class SELoopConsumer : public SEConsumer {
         else cout << "Kupd is " << Kupd->m << " by " << Kupd->n << 
                 " with " << Kupd->nzmax << " entries\n" << std::flush;
 #endif
-
 #ifdef DEBUG_FILES
         print_cs_compress(Kupd,tspath+"Kupd.csv");
 #endif
 
 #ifdef DEBUG_PRIMARY
         cout << "K updated\n" << std::flush;
-#endif
-#ifdef DEBUG_PRIMARY
-        process_mem_usage(vm_used, res_used);
-        cout << "Virtual K-updated memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
-        cout << "Resident K-updated memory: " << res_used << ", timestep: " << timestamp-timezero << "\n\n" << std::flush;
 #endif
 
         // -- compute x_update = x_predict + K * y
@@ -1256,7 +1184,6 @@ class SELoopConsumer : public SEConsumer {
         else cout << "x1 is " << x1->m << " by " << x1->n << 
                 " with " << x1->nzmax << " entries\n" << std::flush;
 #endif
-
 #ifdef DEBUG_FILES
         print_cs_compress(x1,tspath+"x1.csv");
 #endif
@@ -1267,18 +1194,12 @@ class SELoopConsumer : public SEConsumer {
         else cout << "xupd is " << xupd->m << " by " << xupd->n << 
                 " with " << xupd->nzmax << " entries\n" << std::flush;
 #endif
-
 #ifdef DEBUG_FILES
         print_cs_compress(xupd,tspath+"xupd.csv");
 #endif
 
 #ifdef DEBUG_PRIMARY
         cout << "x updated\n" << std::flush;
-#endif
-#ifdef DEBUG_PRIMARY
-        process_mem_usage(vm_used, res_used);
-        cout << "Virtual x-updated memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
-        cout << "Resident x-updated memory: " << res_used << ", timestep: " << timestamp-timezero << "\n\n" << std::flush;
 #endif
 
         // -- compute P_update = (I-K_update*J)*P_predict
@@ -1288,7 +1209,6 @@ class SELoopConsumer : public SEConsumer {
         else cout << "P4 is " << P4->m << " by " << P4->n << 
                 " with " << P4->nzmax << " entries\n" << std::flush;
 #endif
-
 #ifdef DEBUG_FILES
         print_cs_compress(P4,tspath+"P4.csv");
 #endif
@@ -1299,7 +1219,6 @@ class SELoopConsumer : public SEConsumer {
         else cout << "P5 is " << P5->m << " by " << P5->n << 
                 " with " << P5->nzmax << " entries\n" << std::flush;
 #endif
-
 #ifdef DEBUG_FILES
         print_cs_compress(P5,tspath+"P5.csv");
 #endif
@@ -1317,7 +1236,6 @@ class SELoopConsumer : public SEConsumer {
         else cout << "P updated is " << P->m << " by " << P->n << 
                 " with " << P->nzmax << " entries\n" << std::flush;
 #endif
-
 #ifdef DEBUG_FILES
         print_cs_compress(P,tspath+"Pupd.csv");
 #endif
@@ -1326,11 +1244,6 @@ class SELoopConsumer : public SEConsumer {
         cout << "P updated\n" << std::flush;
 
         cout << "Update step complete.\n" << std::flush;
-#endif
-#ifdef DEBUG_PRIMARY
-        process_mem_usage(vm_used, res_used);
-        cout << "Virtual post-update memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
-        cout << "Resident post-update memory: " << res_used << ", timestep: " << timestamp-timezero << "\n\n" << std::flush;
 #endif
 
         // --------------------------------------------------------------------
@@ -1355,8 +1268,10 @@ class SELoopConsumer : public SEConsumer {
 
 #ifdef DEBUG_PRIMARY
         cout << "\nTimestep: " << timestamp-timezero << "\n" << std::flush;
+#ifndef DIAGONAL_P
         uint Psize = cs_size(P);
         print_sizeof(Psize, "P");
+#endif
         uint Fsize = cs_size(F);
         print_sizeof(Fsize, "F");
         uint Qsize = cs_size(Q);
@@ -1367,8 +1282,16 @@ class SELoopConsumer : public SEConsumer {
         print_sizeof(eyexsize, "eyex");
         uint Vpusize = Vpu.size()*16;
         print_sizeof(Vpusize, "Vpu");
+#ifndef DIAGONAL_P
         print_sizeof(Psize+Fsize+Qsize+Rsize+eyexsize+Vpusize, "Total");
-
+#endif
+#ifdef DIAGONAL_P
+        uint Uvmagsize = Uvmag.size()*8;
+        print_sizeof(Uvmagsize, "Uvmag");
+        uint Uvargsize = Uvarg.size()*8;
+        print_sizeof(Uvargsize, "Uvarg");
+        print_sizeof(Fsize+Qsize+Rsize+eyexsize+Vpusize+Uvmagsize+Uvargsize, "Total");
+#endif
         process_mem_usage(vm_used, res_used);
         cout << "Virtual end-estimate memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
         cout << "Resident end-estimate memory: " << res_used << ", timestep: " << timestamp-timezero << "\n\n" << std::flush;
