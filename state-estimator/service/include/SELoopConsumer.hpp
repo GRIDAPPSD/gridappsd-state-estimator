@@ -164,9 +164,6 @@ class SELoopConsumer : public SEConsumer {
                 const double sbase,
                 const IMMAP& Yphys,
                 const IMMAP& A) {
-#ifdef DEBUG_SECONDARY
-        for ( auto& node : node_names ) cout << node+"\n" << std::flush;
-#endif
         this->brokerURI = brokerURI;
         this->username = username;
         this->password = password;
@@ -184,15 +181,6 @@ class SELoopConsumer : public SEConsumer {
         this->sbase = sbase;
         this->Yphys = Yphys; 
         this->A = A;
-#ifdef DEBUG_SECONDARY
-        cout << "------\n" << std::flush;
-        for ( auto& node : this->node_names ) cout << node+"\n" << std::flush;
-        cout << "------\n" << std::flush;
-        for ( auto& zid : this->zary.zids ) {
-            cout << "\t" << zid << "\t" << this->zary.zvals[zid] << "\n" << std::flush;
-        }
-        cout << "------\n" << std::flush;
-#endif
     }
 
     private:
@@ -256,8 +244,7 @@ class SELoopConsumer : public SEConsumer {
         cs *Praw = cs_spalloc(0,0,xqty,1,1);
         if (!Praw) cout << "ERROR: null Praw\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "Praw is " << Praw->m << " by " 
-            << Praw->n << " with " << Praw->nzmax << " entries\n" << std::flush;
+        else cout << "Praw has " << Praw->nzmax << " entries\n" << std::flush;
 #endif
         for ( uint idx = 0 ; idx < node_qty ; idx++ ) {
             // Add variance for the voltage magnitude state
@@ -279,7 +266,6 @@ class SELoopConsumer : public SEConsumer {
             Uvarg[idx] = 0.002*span_varg;
         }
 #endif
-
 
 #ifdef DEBUG_PRIMARY
         cout << "State Covariance Matrix Initialized.\n\n" << std::flush;
@@ -362,20 +348,7 @@ class SELoopConsumer : public SEConsumer {
 #ifdef DEBUG_PRIMARY
         double startTime = getWallTime();
 #endif
-#ifdef DEBUG_SECONDARY
-        uint beat_ctr = 0;
-        uint total_ctr = node_names.size();
-#endif
         for ( auto& inode : node_names ) {
-#ifdef DEBUG_SECONDARY
-            if ( ++beat_ctr % 100 == 0 ) 
-                cout << "--- Ypu heartbeat - " << beat_ctr << ", " <<
-                    getPerComp(beat_ctr, total_ctr) << ", " << 
-                    getMinSec(getWallTime()-startTime) << " ---\n" << std::flush;
-#endif
-#ifdef DEBUG_SECONDARY
-            cout << inode << "\n" << std::flush;
-#endif
             uint i = node_idxs[inode];
             complex<double> conjterm = conj(node_vnoms[inode]/sbase);
             auto& row = Yphys.at(i);
@@ -391,22 +364,14 @@ class SELoopConsumer : public SEConsumer {
         cout << "Ypu completion time: " <<
             getMinSec(getWallTime()-startTime) << "\n\n" << std::flush;
 #endif
-
 #ifdef DEBUG_FILES
         // write to file
         ofstream ofh;
         ofh.open(initpath+"Ypu.csv",ofstream::out);
         ofh << std::setprecision(16);
-#ifdef DEBUG_SECONDARY
-        cout << "writing " << initpath+"Ypu.csv\n\n" << std::flush;
-        cout << "node_qty is " << node_qty << "\n" << std::flush;
-#endif
 
         for ( auto& inode : node_names ) {
             uint i = node_idxs[inode];
-#ifdef DEBUG_SECONDARY
-            cout << inode << " idx is " << i << "\n" << std::flush;
-#endif
             try {
                 auto& row = Ypu.at(i);
                 uint jctr = 0;
@@ -528,7 +493,6 @@ class SELoopConsumer : public SEConsumer {
         ofh.close();
 #endif
 
-
 #ifdef DEBUG_FILES
         // write sensor node 2s
         ofh.open(initpath+"znode2s.csv");
@@ -537,7 +501,6 @@ class SELoopConsumer : public SEConsumer {
         ofh.close();
 #endif
 
-
         // --------------------------------------------------------------------
         // Initialize cs variables for state estimation
         // --------------------------------------------------------------------
@@ -545,8 +508,7 @@ class SELoopConsumer : public SEConsumer {
         cs *Fraw = cs_spalloc(0,0,xqty,1,1);
         if (!Fraw) cout << "ERROR: null Fraw\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "Fraw is " << Fraw->m << " by " 
-            << Fraw->n << " with " << Fraw->nzmax << " entries\n" << std::flush;
+        else cout << "Fraw has " << Fraw->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_PRIMARY
         cout << "Initializing F\n" << std::flush;
@@ -568,8 +530,7 @@ class SELoopConsumer : public SEConsumer {
         cs *Qraw = cs_spalloc(0,0,xqty,1,1);
         if (!Qraw) cout << "ERROR: null Qraw\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "Qraw is " << Qraw->m << " by " 
-            << Qraw->n << " with " << Qraw->nzmax << " entries\n" << std::flush;
+        else cout << "Qraw has " << Qraw->nzmax << " entries\n" << std::flush;
 #endif
         //for ( uint ii = 0 ; ii < xqty ; ii++ )
         //    cs_entry(Qraw,ii,ii,0.04*sqrt(1.0/4));      // TUNABLE
@@ -587,7 +548,7 @@ class SELoopConsumer : public SEConsumer {
 
         // identity matrix of dimension x (constant)
 #ifdef DEBUG_PRIMARY
-        cout << "Initializing eye\n\n" << std::flush;
+        cout << "Initializing eyex\n\n" << std::flush;
 #endif
         cs *eyexraw = cs_spalloc(0,0,xqty,1,1);
         if (!eyexraw) cout << "ERROR: null eyexraw\n" << std::flush;
@@ -609,8 +570,7 @@ class SELoopConsumer : public SEConsumer {
         cs *Rraw = cs_spalloc(0,0,zqty,1,1);
         if (!Rraw) cout << "ERROR: null Rraw\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "Rraw is " << Rraw->m << " by " 
-            << Rraw->n << " with " << Rraw->nzmax << " entries\n" << std::flush;
+        else cout << "Rraw has " << Rraw->nzmax << " entries\n" << std::flush;
 #endif
         for ( auto& zid : zary.zids )
             cs_entry(Rraw,zary.zidxs[zid],zary.zidxs[zid],zary.zsigs[zid]/1000000.0);
@@ -658,7 +618,6 @@ class SELoopConsumer : public SEConsumer {
         cs_spfree(J);
 #endif
 
-
 #ifdef DEBUG_FILES
         // --------------------------------------------------------------------
         // Initialize the state recorder file
@@ -688,16 +647,6 @@ class SELoopConsumer : public SEConsumer {
         cout << "\ttimestamp: " << timestamp << "\n" << std::flush;
 #endif
 
-#ifdef DEBUG_SECONDARY
-        cout << text << "\n\n" << std::flush;
-#endif
-
-#ifdef DEBUG_SECONDARY
-        for ( auto& mobj : zary.mmrids ) {
-            cout << mobj << " -> " << zary.mtypes[mobj] << "\n" << std::flush;
-        }
-#endif
-
         // --------------------------------------------------------------------
         // Reset the new measurement indicator
         // --------------------------------------------------------------------
@@ -716,11 +665,6 @@ class SELoopConsumer : public SEConsumer {
             // link back to information about the measurement using its mRID
             string mmrid = m["measurement_mrid"];
             string m_type = zary.mtypes[mmrid];
-#ifdef DEBUG_SECONDARY
-//          cout << m.dump(2)+"\n" << std::flush;
-//          cout << mmrid+"\n" << std::flush;
-//          cout << "\t" + m_type + "\n" << std::flush;
-#endif
 
             // Check for "PNV" measurement
             if ( !m_type.compare("PNV") ) {
@@ -733,10 +677,6 @@ class SELoopConsumer : public SEConsumer {
                 zary.zvals[mmrid+"_Vmag"] = 
                     vmag_phys / abs(node_vnoms[zary.znode1s[zid]]);
                 zary.znew[mmrid+"_Vmag"] = true;
-
-#ifdef DEBUG_SECONDARY
-                cout << mmrid+"_Vmag" << " -> " << zary.zvals[mmrid+"_Vmag"] << "\n" << std::flush;
-#endif
 
                 // update the voltage phase
                 // --- LATER ---
@@ -799,9 +739,6 @@ class SELoopConsumer : public SEConsumer {
 //      for ( auto& reg_name : reg_names ) {}
 
         // Publish the message
-#ifdef DEBUG_SECONDARY
-        cout << jstate.dump(4).substr(200)+"\n" << std::flush;
-#endif
         statePublisher->send(jstate.dump());
 
 #ifdef DEBUG_FILES
@@ -817,7 +754,6 @@ class SELoopConsumer : public SEConsumer {
         state_fh.close();
 #endif
 
-
         // --------------------------------------------------------------------
         // Check whether to stop
         // --------------------------------------------------------------------
@@ -831,6 +767,7 @@ class SELoopConsumer : public SEConsumer {
     private:
     void estimate(const uint& timestamp) {
 #ifdef DEBUG_PRIMARY
+        double estimateStartTime = getWallTime();
         cout << "xqty is " << xqty << "\n" << std::flush;
         cout << "zqty is " << zqty << "\n" << std::flush;
         cout << "F is " << F->m << " by " << F->n << " with " << F->nzmax << " entries\n" << std::flush;
@@ -861,7 +798,6 @@ class SELoopConsumer : public SEConsumer {
         cout << "x is " << x->m << " by " << x->n << 
             " with " << x->nzmax << " entries\n" << std::flush;
 #endif
-
 #ifdef DEBUG_FILES
         print_cs_compress(x,tspath+"x.csv");
 #endif
@@ -872,12 +808,10 @@ class SELoopConsumer : public SEConsumer {
 #endif
         cs *P; this->prep_P(P);
 #endif
-
 #ifdef DEBUG_PRIMARY
         cout << "P is " << P->m << " by " << P->n << 
             " with " << P->nzmax << " entries\n" << std::flush;
 #endif
-
 #ifdef DEBUG_FILES
         print_cs_compress(P,tspath+"P.csv");
 #endif
@@ -910,12 +844,10 @@ class SELoopConsumer : public SEConsumer {
         cout << "sample_z ... " << std::flush;
 #endif
         cs *z; this->sample_z(z);
-
 #ifdef DEBUG_PRIMARY
         cout << "z is " << z->m << " by " << z->n << 
             " with " << z->nzmax << " entries\n" << std::flush;
 #endif
-
 #ifdef DEBUG_FILES
         print_cs_compress(z,tspath+"z.csv");
 #endif
@@ -924,12 +856,10 @@ class SELoopConsumer : public SEConsumer {
         cout << "calc_h ... " << std::flush;
 #endif
         cs *h; this->calc_h(h);
-
 #ifdef DEBUG_PRIMARY
         cout << "h is " << h->m << " by " << h->n << 
             " with " << h->nzmax << " entries\n" << std::flush;
 #endif
-
 #ifdef DEBUG_FILES
         print_cs_compress(h,tspath+"h.csv");
 #endif
@@ -1168,8 +1098,7 @@ class SELoopConsumer : public SEConsumer {
         cs *K3raw = cs_spalloc(0,0,zqty*zqty,1,1);
         if (!K3raw) cout << "ERROR: null K3raw\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "K3raw is " << K3raw->m << " by " 
-            << K3raw->n << " with " << K3raw->nzmax << " entries\n" << std::flush;
+        else cout << "K3raw has " << K3raw->nzmax << " entries\n" << std::flush;
 #endif
 
         // convert the result to cs*
@@ -1334,7 +1263,10 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "\nTimestep: " << timestamp-timezero << "\n" << std::flush;
+        cout << "\nTotal estimate time: " << 
+            getMinSec(getWallTime()-estimateStartTime) << ", timestep: " <<
+            timestamp-timezero << "\n" << std::flush;
+#ifdef DEBUG_SIZES
 #ifndef DIAGONAL_P
         uint Psize = cs_size(P);
         print_sizeof(Psize, "P");
@@ -1358,6 +1290,7 @@ class SELoopConsumer : public SEConsumer {
         uint Uvargsize = Uvarg.size()*8;
         print_sizeof(Uvargsize, "Uvarg");
         print_sizeof(Fsize+Qsize+Rsize+eyexsize+Vpusize+Uvmagsize+Uvargsize, "Total");
+#endif
 #endif
         process_mem_usage(vm_used, res_used);
         cout << "Virtual end-estimate memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
@@ -1446,7 +1379,7 @@ class SELoopConsumer : public SEConsumer {
     void prep_P(cs *&Pmat) {
         // Prepare P as a diagonal matrix from state uncertanty
         cs *Praw = cs_spalloc(xqty,xqty,xqty,1,1);
-        if (!Praw) cout << "ERROR: nul Praw in prep_P\n" << std::flush;
+        if (!Praw) cout << "ERROR: null Praw in prep_P\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "Praw is " << Praw->m << " by "
             << Praw->n << " with " << Praw->nzmax << " entries\n" << std::flush;
@@ -1476,16 +1409,9 @@ class SELoopConsumer : public SEConsumer {
             << zraw->n << " with " << zraw->nzmax << " entries\n" << std::flush;
 #endif
         for ( auto& zid : zary.zids ) {
-#ifdef DEBUG_SECONDARY
-            cout << "\n" << zid << '[' << zary.zidxs[zid] << 
-                    ']' << "\t" << zary.zvals[zid] << std::flush;
-#endif
             if ( zary.zvals[zid] > NEGL || -zary.zvals[zid] > NEGL )
                 cs_entry(zraw,zary.zidxs[zid],0,zary.zvals[zid]);
         }
-#ifdef DEBUG_SECONDARY
-        cout << "\n" << std::flush;
-#endif
         z = cs_compress(zraw); 
         cs_spfree(zraw);
     }
@@ -1513,10 +1439,6 @@ class SELoopConsumer : public SEConsumer {
             T = arg(Vpu[i]);
             ai = 1;
             aj = 1;
-#ifdef DEBUG_DETAILS
-            //cerr << "\t\t***SEDBG:set_n j==0 sets ai and aj to 0\n" << std::flush;
-            // for per-unit Ybus, shunt admittance is the sum of row admittances
-#endif
             complex<double> Yi0;
             try {
                 auto& Yrow = Ypu.at(i);
@@ -1534,49 +1456,26 @@ class SELoopConsumer : public SEConsumer {
             complex<double> Yij;
             ai = 0;
             aj = 0;
-#ifdef DEBUG_DETAILS
-            //cerr << "\t\t***SEDBG:set_n i: " << i << ", j: " << j << ", ai and aj initialized to 0\n" << std::flush;
-#endif
             try {
                 auto& Yrow = Ypu.at(i);
-#ifdef DEBUG_DETAILS
-                //for ( auto& rowpair : Yrow ) {
-                //    cerr << "***SEDBG:set_n check Yrow: " << rowpair.first << ", " << rowpair.second << "\n" << std::flush;
-                //}
-#endif
                 try {
-#ifdef DEBUG_DETAILS
-                    //cerr << "\t\t***SEDBG:set_n Yrow: " << Yrow << "\n" << std::flush;
-#endif
                     Yij = Yrow.at(j);
                     // We know the nodes are coupled; check for Aij
                     // NOTE: A is never iterated over - we don't need at()
                     ai = 1;
-#ifdef DEBUG_DETAILS
-                    //cerr << "\t\t***SEDBG:set_n ai set to 1\n" << std::flush;
-#endif
                     try {
                         auto Arow = A.at(i);
                         try {
                             ai = real(Arow.at(j));
-#ifdef DEBUG_DETAILS
-                            //cerr << "\t\t***SEDBG:set_n ai finalized to: " << ai << "\n" << std::flush;
-#endif
                         } catch(...) {}
                     } catch(...) {}
                     // We know the nodes are coupled; check for Aji
                     // NOTE: A is never iterated over - we don't need at()
                     aj = 1;
-#ifdef DEBUG_DETAILS
-                    //cerr << "\t\t***SEDBG:set_n aj set to 1\n" << std::flush;
-#endif
                     try {
                         auto Arow = A.at(j);
                         try {
                             aj = real(Arow.at(i));
-#ifdef DEBUG_DETAILS
-                            //cerr << "\t\t***SEDBG:set_n aj finalized to: " << aj << "\n" << std::flush;
-#endif
                         } catch (...) {}
                     } catch(...) {}
                 } catch(...) {
@@ -1605,29 +1504,13 @@ class SELoopConsumer : public SEConsumer {
 #ifdef DEBUG_PRIMARY
         double startTime = getWallTime();
 #endif
-#ifdef DEBUG_SECONDARY
-        uint beat_ctr = 0, total_ctr = zary.zids.size();
-#endif
         for ( auto& zid : zary.zids ) {
-#ifdef DEBUG_DETAILS
-            cerr << "***SEDBG:calc_h zid: " << zid << "\n" << std::flush;
-#endif
-#ifdef DEBUG_SECONDARY
-            if ( ++beat_ctr % 100 == 0 )
-                cout << "--- calc_h heartbeat - " << beat_ctr << ", " <<
-                    getPerComp(beat_ctr, total_ctr) << ", " <<
-                    getMinSec(getWallTime()-startTime) << " ---\n" << std::flush;
-#endif
-
             uint zidx = zary.zidxs[zid];
             string ztype = zary.ztypes[zid];
             // Determine the type of z component
             if ( !ztype.compare("Pi") ) {
                 // Real power injection into node i
                 uint i = node_idxs[zary.znode1s[zid]];
-#ifdef DEBUG_DETAILS
-                cerr << "***SEDBG:calc_h Pi i: " << i << "\n" << std::flush;
-#endif
                 double Pi = 0;
                 try {
                     auto& Yrow = Ypu.at(i);
@@ -1638,17 +1521,11 @@ class SELoopConsumer : public SEConsumer {
                             // Add the real power component flowing from i to j
                             Pi = Pi + vi*vi/ai/ai * g - 
                                 vi*vj/ai/aj * (g*cos(T) + b*sin(T));
-#ifdef DEBUG_DETAILS
-                            cerr << "\t***SEDBG:calc_h Pi j: " << j << ", vi: " << vi << ", vj: " << vj << ", ai: " << ai << ", aj: " << aj << ", g: " << g << ", b: " << b << ", T: " << T << ", Pi: " << Pi << "\n" << std::flush;
-#endif
                         }
                     }
                     // Add the real power component flowing from i to 0
                     set_n(i,0);
                     Pi += vi*vi * g; // times cos(T) ????
-#ifdef DEBUG_DETAILS
-                    cerr << "***SEDBG:calc_h Pi post summation vi: " << vi << ", g: " << g << ", Pi: " << Pi << "\n" << std::flush;
-#endif
                 } catch(...) {}
                 // Insert the measurement component
                 if ( abs(Pi) > NEGL ) cs_entry(hraw,zidx,0,Pi);
@@ -1681,9 +1558,6 @@ class SELoopConsumer : public SEConsumer {
                 // vi is a direct state measurement
                 uint i = node_idxs[zary.znode1s[zid]];
                 if ( abs(Vpu[i]) > NEGL ) cs_entry(hraw,zidx,0,abs(Vpu[i]));
-#ifdef DEBUG_DETAILS
-                cerr << "***SEDBG:calc_h vi i: " << i << ", abs(Vpu[i]): " << abs(Vpu[i]) << "\n" << std::flush;
-#endif
             }
             else if ( !zary.ztypes[zid].compare("Ti") ) {
                 // Ti is a direct state measurement
@@ -1707,32 +1581,25 @@ class SELoopConsumer : public SEConsumer {
         double startTime = getWallTime();
 #endif
         // each z component has a Jacobian component for each state
-//        cs *Jraw = cs_spalloc(zqty,xqty,zqty*xqty,1,1);
         cs *Jraw = cs_spalloc(zqty,xqty,Jqty,1,1);
         if (!Jraw) cout << "ERROR: null Jraw\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "Jraw is " << Jraw->m << " by " 
             << Jraw->n << " with " << Jraw->nzmax << " entries\n" << std::flush;
 #endif
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_HEARTBEAT
         uint beat_ctr = 0;
-//        uint total_ctr = zary.zids.size();
         uint total_ctr = Jqty;
 #endif
-//        // loop over z
-//        for ( auto& zid : zary.zids ) {
         // loop over existing Jacobian entries
         for ( std::array<unsigned int, 5>& Jpartial : Jshape ) {
-#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_HEARTBEAT
             if ( ++beat_ctr % 100 == 0 ) 
                 cout << "--- calc_J heartbeat - " << beat_ctr << ", " <<
                     getPerComp(beat_ctr, total_ctr) << ", " <<
                     getMinSec(getWallTime()-startTime) << " ---\n" << std::flush;
 #endif
             
-//            uint zidx = zary.zidxs[zid];
-//            string ztype = zary.ztypes[zid];
-//            uint i = node_idxs[zary.znode1s[zid]];
             // Unpack entry data
             uint zidx = Jpartial[0];
             uint xidx = Jpartial[1];
@@ -1931,26 +1798,19 @@ class SELoopConsumer : public SEConsumer {
         return (std::to_string((uint)seconds/60) + ":" + secstr);
     }
 
+#ifdef DEBUG_HEARTBEAT
     private:
     string getPerComp(uint current, uint total) {
         return std::to_string((uint)(100.0 * current/total)) + "%";
     }
+#endif
 
+#ifdef DEBUG_SIZES
     private:
     uint cs_size(cs *sparse) {
         // this works for compressed matrices.  For uncompressed (raw), use
         //return 16*sparse->nzmax + 28;
         return 12*sparse->nzmax + 4*(sparse->n+1) + 28;
-    }
-
-    private:
-    uint map_size(ICMAP& map) {
-        // this assumes each element is 16 bytes, a complex double
-        if (map.max_load_factor() > 1.0) {
-            return map.bucket_count()*map.max_load_factor()*16;
-        } else {
-            return map.bucket_count()*16;
-        }
     }
 
     private:
@@ -1972,6 +1832,7 @@ class SELoopConsumer : public SEConsumer {
             cout << msg << " size: " << size << " bytes\n" << std::flush;
         }
     }
+#endif
 
 #include <ios>
 #include <iostream>

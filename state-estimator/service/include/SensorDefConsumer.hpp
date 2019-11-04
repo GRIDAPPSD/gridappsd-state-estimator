@@ -76,49 +76,6 @@ class SensorDefConsumer : public SEConsumer {
 #endif
 
 		json jtext = json::parse(text);
-#ifdef DEBUG_SECONDARY
-		cout << jtext.dump().substr(0,2000) << " ...\n\n" << std::flush;
-//		cout << jtext.dump(2);
-#endif
-
-#ifdef DEBUG_SECONDARY
-		for ( auto& feeder : jtext["data"]["feeders"] ) {
-			cout << "\nFeeder name: " << feeder["name"] << '\n' << std::flush;
-//			cout << "\tmRID: " << feeder["mRID"] << '\n';
-//			cout << "\tsubstation: " << feeder["substation"] << '\n';
-//			cout << "\tsubstationID: " << feeder["substationID"] << '\n';
-//			cout << "\tsubregion: " << feeder["subregion"] << '\n';
-//			cout << "\tsubregionID: " << feeder["subregionID"] << '\n';
-//			cout << "\tregion: " << feeder["region"] << '\n';
-//			cout << "\tregionID: " << feeder["regionID"] << '\n';
-
-			vector<string> objs = {"capacitors","switches"};
-			for ( string& type : objs ) {
-				cout << '\t' << type << ": \n";
-				json objs = feeder[type];
-				unsigned int ctr = 0;
-				for ( auto& obj : objs ) {
-					cout << "\t\t" << obj["name"] << '\n' << std::flush;
-				}
-			}
-			
-
-			for ( auto& reg : feeder["regulators"] ) {
-				cout << reg.dump() + '\n' << std::flush;
-			}
-
-//			cout << "\nPress ENTER to list non-PNV measurements:";
-//			while ( cin.get()!='\n' );
-			
-		}
-
-	    for ( auto& f : jtext["data"]["feeders"] ) {
-			for (auto& m : f["measurements"] ) {
-				cout << m.dump(2) + '\n' << std::flush;
-			}
-		}
-#endif
-        
 
 		// --------------------------------------------------------------------
 		// LOAD THE SENSORS -- sensors will deliver measurements
@@ -128,17 +85,11 @@ class SensorDefConsumer : public SEConsumer {
         
 		for ( auto& f : jtext["data"]["feeders"] ) {
 			for ( auto& m : f["measurements"] ) {
-#ifdef DEBUG_SECONDARY
-				cout << m.dump()+'\n' << std::flush;
-#endif
 				// store the necessary measurement information
 				string mmrid = m["mRID"];
 				string tmeas = m["measurementType"];
 				zary.mmrids.push_back( mmrid );
 				zary.mtypes[mmrid] = tmeas;
-#ifdef DEBUG_SECONDARY
-                cout << mmrid << " -> " << tmeas << '\n' << std::flush;
-#endif                
 
 				// build z and supporting structures
 				if ( !tmeas.compare("PNV") ) {

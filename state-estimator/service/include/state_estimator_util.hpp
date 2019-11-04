@@ -84,18 +84,9 @@ namespace state_estimator_util{
 
 		// Add nominal load injections
 		for ( auto& load : jpsm["data"]["results"]["bindings"] ) {
-#ifdef DEBUG_SECONDARY
-			cout << load.dump() + "\n" << std::flush;
-#endif
 		 	string bus = load["busname"]["value"]; for ( char& c : bus ) c = toupper(c);
-#ifdef DEBUG_SECONDARY
-			cout << "bus: " + bus + '\n' << std::flush;
-#endif
 
 			if ( !load.count("phase") ) {
-#ifdef DEBUG_SECONDARY
-				cout << "balanced 3-phase load\n" << std::flush;
-#endif
 				// This is a 3-phase balanced load (handle D and Y the same)
 				string sptot = load["p_3p"]["value"]; double ptot = stod(sptot);
 				string sqtot = load["q_3p"]["value"]; double qtot = stod(sqtot);
@@ -109,15 +100,9 @@ namespace state_estimator_util{
 				pseudoP[bus+".3"] -= ptot/3.0/2.0;
 				pseudoQ[bus+".3"] -= qtot/3.0/2.0;
 			} else {
-#ifdef DEBUG_SECONDARY
-				cout << "single-phase load\n" << std::flush;
-#endif
 				// This is a 1-phase load
 				string spph = load["p_phase"]["value"]; double pph = stod(spph);
 				string sqph = load["q_phase"]["value"]; double qph = stod(sqph);
-#ifdef DEBUG_SECONDARY
-				cout << "pph: " << pph << "\t\t" << "qph: " << qph << "\n" << std::flush;
-#endif
 				string phase = load["phase"]["value"];
 				// determine the node
 				string node = bus;
@@ -129,17 +114,11 @@ namespace state_estimator_util{
 				// Handle Wye or Delta load
 				string conn = load["conn"]["value"];
 				if ( !conn.compare("Y") ) {
-#ifdef DEBUG_SECONDARY
-					cout << "\tY load\n" << std::flush;
-#endif
 					// Wye-connected load - injections are 
 					pseudoP[node] -= pph/2.0;
 					pseudoQ[node] -= qph/2.0;
 				}
 				if ( !conn.compare("D") ) {
-#ifdef DEBUG_SECONDARY
-					cout << "\tD load\n" << std::flush;
-#endif
 					// Delta-connected load - injections depend on load current
 					complex<double> sload = complex<double>(pph,qph);
 					// Find the nominal voltage across the load
@@ -230,57 +209,34 @@ namespace state_estimator_util{
 				zary.znew	[qinj_zid] = false;
 			}
 		}
-        
-#ifdef DEBUG_SECONDARY
-		for ( auto& zid : zary.zids ) {
-			cout << zid << '\t' << zary.zvals[zid] << ", sigma " 
-				<< zary.zsigs[zid] << "\n" << std::flush;
-		}
-#endif
-
 	}
 
 
 	void build_A_matrix(gridappsd_session& gad, IMMAP& A, SIMAP& node_idxs) {
 		json jregs = sparql_query(gad,"regs",sparq_ratio_tap_changer_nodes(gad.modelID));
-#ifdef DEBUG_SECONDARY
-		cout << jregs.dump() + "\n" << std::flush;
-#endif
 		for ( auto& reg : jregs["data"]["results"]["bindings"] ) {
 
 			// Get the primary node
 			string primbus = reg["primbus"]["value"];
 			string primph = reg["primphs"]["value"];
 			string primnode = primbus; for ( auto& c : primnode ) c = toupper(c);
-#ifdef DEBUG_SECONDARY
-			cout << primbus + '\t' + primph + "\n" << std::flush;
-#endif
 			if (!primph.compare("A")) primnode += ".1";
 			if (!primph.compare("B")) primnode += ".2";
 			if (!primph.compare("C")) primnode += ".3";
 			if (!primph.compare("s1")) primnode += ".1";
 			if (!primph.compare("s2")) primnode += ".2";
 			uint primidx = node_idxs[primnode];
-#ifdef DEBUG_SECONDARY
-			cout << primnode + " index: " << primidx << "\n" << std::flush;
-#endif
 
 			// get the regulation node
 			string regbus = reg["regbus"]["value"];
 			string regph = reg["regphs"]["value"];
 			string regnode = regbus; for ( auto& c : regnode ) c = toupper(c);
-#ifdef DEBUG_SECONDARY
-			cout << regbus + '\t' + regph + "\n" << std::flush;
-#endif
 			if (!regph.compare("A")) regnode += ".1";
 			if (!regph.compare("B")) regnode += ".2";
 			if (!regph.compare("C")) regnode += ".3";
 			if (!regph.compare("s1")) regnode += ".1";
 			if (!regph.compare("s2")) regnode += ".2";
 			uint regidx = node_idxs[regnode];
-#ifdef DEBUG_SECONDARY
-			cout << regnode + " index: " << regidx << "\n" << std::flush;
-#endif
 
 			// initialize the A matrix
 			A[primidx][regidx] = 1;		// this will change

@@ -1,7 +1,5 @@
 #define DIAGONAL_P
 #define DEBUG_PRIMARY
-//#define DEBUG_SECONDARY
-//#define DEBUG_DETAILS
 //#define DEBUG_FILES
 
 #define PI 3.1415926535
@@ -156,14 +154,6 @@ int main(int argc, char** argv){
         vnomConsumerThread.join();
 		vnomConsumer.fillVnom(node_vnoms);
         vnomConsumer.close();
-#ifdef DEBUG_SECONDARY
-		int ctr = 0;
-		for ( auto& node : node_names) {
-			ctr ++;
-			cout << node << " vnom: " << node_vnoms[node] << '\n' << std::flush;
-		} cout << ctr << " total nodes\n" << std::flush;
-#endif
-	
         
 		// BUILD THE A-MATRIX
 		IMMAP A;
@@ -230,11 +220,6 @@ int main(int argc, char** argv){
 
 		// ideally we want to compute an estimate on a thread at intervals and
 		//   collect measurements in the meantime
-
-
-#ifdef DEBUG_SECONDARY
-		for ( auto& node: node_names ) cout << node+'\n' << std::flush;
-#endif
 
 		// measurements come from the simulation output
 		string simoutTopic = "goss.gridappsd.simulation.output."+gad.simid;

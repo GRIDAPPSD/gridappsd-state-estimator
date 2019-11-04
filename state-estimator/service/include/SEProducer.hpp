@@ -133,11 +133,6 @@ class SEProducer {
             cout << "Publishing to "+target+"\n\n" << std::flush;
 #endif
 
-#ifdef DEBUG_SECONDARY
-			// Report
-			cout << "Publishing to "+target+":\n\t"+text+"\n\n" << std::flush;
-//			cout << "Publishing to "+target+"\n\n" << std::flush;
-#endif
 			// Send the message
 			producer->send(msg.get());
 		} catch (CMSException& e) {
