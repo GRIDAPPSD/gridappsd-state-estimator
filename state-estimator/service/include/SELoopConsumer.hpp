@@ -343,9 +343,7 @@ class SELoopConsumer : public SEConsumer {
         // Compute Ypu
         // --------------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-        cout << "Computing Ypu ...\n" << std::flush;
-#endif
-#ifdef DEBUG_PRIMARY
+        cout << "Computing Ypu time ... " << std::flush;
         double startTime = getWallTime();
 #endif
         for ( auto& inode : node_names ) {
@@ -361,8 +359,7 @@ class SELoopConsumer : public SEConsumer {
             }
         }
 #ifdef DEBUG_PRIMARY
-        cout << "Ypu completion time: " <<
-            getMinSec(getWallTime()-startTime) << "\n\n" << std::flush;
+        cout << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
         // write to file
@@ -520,7 +517,7 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(F,initpath+"F.csv");
 #endif
 #ifdef DEBUG_PRIMARY
-        cout << "F is " << F->m << " by " << F->n << " with " << F->nzmax << " entries\n\n" << std::flush;
+        cout << "F is " << F->m << " by " << F->n << " with " << F->nzmax << " entries\n" << std::flush;
 #endif
 
         // process covariance matrix (constant)
@@ -543,12 +540,12 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(Q,initpath+"Q.csv");
 #endif
 #ifdef DEBUG_PRIMARY
-        cout << "Q is " << Q->m << " by " << Q->n << " with " << Q->nzmax << " entries\n\n" << std::flush;
+        cout << "Q is " << Q->m << " by " << Q->n << " with " << Q->nzmax << " entries\n" << std::flush;
 #endif
 
         // identity matrix of dimension x (constant)
 #ifdef DEBUG_PRIMARY
-        cout << "Initializing eyex\n\n" << std::flush;
+        cout << "Initializing eyex\n" << std::flush;
 #endif
         cs *eyexraw = cs_spalloc(0,0,xqty,1,1);
         if (!eyexraw) cout << "ERROR: null eyexraw\n" << std::flush;
@@ -565,7 +562,7 @@ class SELoopConsumer : public SEConsumer {
 
         // measurement covariance matrix (constant)
 #ifdef DEBUG_PRIMARY
-        cout << "Initializing R\n\n" << std::flush;
+        cout << "Initializing R\n" << std::flush;
 #endif
         cs *Rraw = cs_spalloc(0,0,zqty,1,1);
         if (!Rraw) cout << "ERROR: null Rraw\n" << std::flush;
@@ -692,7 +689,7 @@ class SELoopConsumer : public SEConsumer {
         // Estimate the state
         // --------------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-        cout << "Estimating state ... \n" << std::flush;
+        cout << "\nEstimating state ... \n" << std::flush;
 #endif
         this->estimate(timestamp);
 
@@ -932,7 +929,7 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "Predict step complete.\n" << std::flush;
+        cout << "Predict step complete\n" << std::flush;
 #endif
 
         // --------------------------------------------------------------------
@@ -1007,11 +1004,15 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "in KLU block\n" << std::flush;
+        cout << "\nin KLU block\n" << std::flush;
         double startTime;
         string vm_used, res_used;
 #endif
+#if 000
         double *rhs;
+#else
+        double *rhs = (double *)calloc(zqty*zqty, sizeof(double));
+#endif
 
         try {
             // Initialize klusolve variables
@@ -1020,13 +1021,11 @@ class SELoopConsumer : public SEConsumer {
             klu_common klucom;
             if (!klu_defaults(&klucom)) throw "klu_defaults failed";
 
-#ifdef DEBUG_PRIMARY
-            cout << "klucom initialized.\n" << std::flush;
-#endif
             klusym = klu_analyze(Supd->m,Supd->p,Supd->i,&klucom);
             if (!klusym) throw "klu_analyze failed";
 
 #ifdef DEBUG_PRIMARY
+            cout << "klu_factor time ... " << std::flush;
             startTime = getWallTime();
 #endif
             klunum = klu_factor(Supd->p,Supd->i,Supd->x,klusym,&klucom);
@@ -1039,24 +1038,30 @@ class SELoopConsumer : public SEConsumer {
             }
 
 #ifdef DEBUG_PRIMARY
-            cout << "klu_factor time: " << getMinSec(getWallTime()-startTime)
-                << "\n" << std::flush;
+            cout << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
 #endif
 
 #ifdef DEBUG_PRIMARY
+            cout << "identity rhs creation time ... " << std::flush;
             startTime = getWallTime();
 #endif
-            // initialize an identiy right-hand side
+            // initialize an identity right-hand side
+#if 000
             rhs = new double[zqty*zqty];
             for ( uint ii = 0 ; ii < zqty*zqty ; ii++ )
                 rhs[ii] = ii/zqty == ii%zqty ? 1 : 0;
+#else
+            for ( uint ii = 0 ; ii < zqty ; ii++ )
+                rhs[ii*zqty + ii] = 1.0;
+#endif
             
 #ifdef DEBUG_PRIMARY
-            cout << "identity rhs creation time: " << getMinSec(getWallTime()-startTime)
-                << "\n" << std::flush;
+            cout << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
 #endif
 
 #ifdef DEBUG_PRIMARY
+            // TODO: TIME SINK!!
+            cout << "TOO SLOW: klu_solve completion time ... " << std::flush;
             startTime = getWallTime();
 #endif
             klu_solve(klusym,klunum,Supd->m,Supd->n,rhs,&klucom);
@@ -1068,8 +1073,7 @@ class SELoopConsumer : public SEConsumer {
             }
 
 #ifdef DEBUG_PRIMARY
-            cout << "klu_solve completion time: " << getMinSec(getWallTime()-startTime)
-                << "\n" << std::flush;
+            cout << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
 #endif
 
 #ifdef DEBUG_PRIMARY
@@ -1078,8 +1082,8 @@ class SELoopConsumer : public SEConsumer {
                 firstEstimateFlag = false;
             }
             process_mem_usage(vm_used, res_used);
-            cout << "Virtual post-klu_solve memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
-            cout << "Resident post-klu_solve memory: " << res_used << ", timestep: " << timestamp-timezero << "\n\n" << std::flush;
+            //cout << "Post-klu_solve virtual memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
+            cout << "Post-klu_solve resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
 #endif
 
             // free klusym and klunum or major memory leak results
@@ -1091,7 +1095,7 @@ class SELoopConsumer : public SEConsumer {
             return;
         }
 #ifdef DEBUG_PRIMARY
-        cout << "left KLU block\n" << std::flush;
+        cout << "left KLU block\n\n" << std::flush;
 #endif
         cs_spfree(Supd);
 
@@ -1101,21 +1105,42 @@ class SELoopConsumer : public SEConsumer {
         else cout << "K3raw has " << K3raw->nzmax << " entries\n" << std::flush;
 #endif
 
+#ifdef DEBUG_PRIMARY
+        cout << "rhs copied to K3raw time ... " << std::flush;
+        startTime = getWallTime();
+#endif
         // convert the result to cs*
+#if 000
         for ( uint ii = 0 ; ii < zqty ; ii++ )
             for ( uint jj = 0 ; jj < zqty ; jj++ )
                 if (rhs[ii+zqty*jj])
                     cs_entry(K3raw,ii,jj,rhs[ii+zqty*jj]);
+#else
+        uint ii, jj, jjoffset;
+        double rhsval;
+        for ( jj = 0 ; jj < zqty ; jj++ ) {
+            jjoffset = jj*zqty;
+            for ( ii = 0 ; ii < zqty ; ii++ ) {
+                rhsval = rhs[jjoffset + ii];
+                if (rhsval)
+                    cs_entry(K3raw,ii,jj,rhsval);
+            }
+        }
+#endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "rhs copied to K3raw\n" << std::flush;
+        cout << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
 #endif
 #ifdef DEBUG_PRIMARY
         process_mem_usage(vm_used, res_used);
-        cout << "Virtual post-rhs-copy memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
-        cout << "Resident post-rhs-copy memory: " << res_used << ", timestep: " << timestamp-timezero << "\n\n" << std::flush;
+        //cout << "Post-rhs-copy virtual memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
+        cout << "Post-rhs-copy resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
 #endif
+#if 000
         delete rhs;
+#else
+        free(rhs);
+#endif
 
         // -- compute K = P_predict*J'*S^-1
         cs *K1 = cs_transpose(J,1);
@@ -1141,28 +1166,39 @@ class SELoopConsumer : public SEConsumer {
 //      print_cs_compress(K3raw,tspath+"K3raw.csv");
 #endif
 
+#ifdef DEBUG_PRIMARY
+        cout << "K3 compress time ... " << std::flush;
+        startTime = getWallTime();
+#endif
         cs *K3 = cs_compress(K3raw); cs_spfree(K3raw);
         if ( !K3 ) cout << "ERROR: K3 null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "K3 is " << K3->m << " by " << K3->n << 
+        cout << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
+#endif
+#ifdef DEBUG_PRIMARY
+        if ( K3 ) cout << "K3 is " << K3->m << " by " << K3->n <<
                 " with " << K3->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(K3,tspath+"K3.csv");
 #endif
 
+#ifdef DEBUG_PRIMARY
+        // TODO: TIME SINK!!
+        cout << "TOO SLOW: K updated time ... " << std::flush;
+        startTime = getWallTime();
+#endif
         cs *Kupd = cs_multiply(K2,K3); cs_spfree(K2); cs_spfree(K3);
         if ( !Kupd ) cout << "ERROR: Kupd null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "Kupd is " << Kupd->m << " by " << Kupd->n << 
+        cout << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
+#endif
+#ifdef DEBUG_PRIMARY
+        if ( Kupd ) cout << "Kupd is " << Kupd->m << " by " << Kupd->n <<
                 " with " << Kupd->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(Kupd,tspath+"Kupd.csv");
-#endif
-
-#ifdef DEBUG_PRIMARY
-        cout << "K updated\n" << std::flush;
 #endif
 
         // -- compute x_update = x_predict + K * y
@@ -1170,7 +1206,7 @@ class SELoopConsumer : public SEConsumer {
         cs *x1 = cs_multiply(Kupd,yupd); cs_spfree(yupd);
         if ( !x1 ) cout << "ERROR: x1 null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "x1 is " << x1->m << " by " << x1->n << 
+        else cout << "x1 is " << x1->m << " by " << x1->n <<
                 " with " << x1->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1180,7 +1216,7 @@ class SELoopConsumer : public SEConsumer {
         cs *xupd = cs_add(xpre,x1,1,1); cs_spfree(x1); cs_spfree(xpre);
         if ( !xupd ) cout << "ERROR: xupd null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "xupd is " << xupd->m << " by " << xupd->n << 
+        else cout << "xupd is " << xupd->m << " by " << xupd->n <<
                 " with " << xupd->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1188,14 +1224,17 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "x updated\n" << std::flush;
+        cout << "P4 time ... " << std::flush;
+        startTime = getWallTime();
 #endif
-
         // -- compute P_update = (I-K_update*J)*P_predict
         cs *P4 = cs_multiply(Kupd,J); cs_spfree(Kupd); cs_spfree(J);
         if ( !P4 ) cout << "ERROR: P4 null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "P4 is " << P4->m << " by " << P4->n << 
+        cout << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
+#endif
+#ifdef DEBUG_PRIMARY
+        if ( P4 ) cout << "P4 is " << P4->m << " by " << P4->n <<
                 " with " << P4->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1250,7 +1289,6 @@ class SELoopConsumer : public SEConsumer {
 #endif
         if (xupd) {
             decompress_state(xupd);
-            // GDB 10/29/19 free xupd after last use
             cs_spfree(xupd);
         }
 
@@ -1293,8 +1331,8 @@ class SELoopConsumer : public SEConsumer {
 #endif
 #endif
         process_mem_usage(vm_used, res_used);
-        cout << "Virtual end-estimate memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
-        cout << "Resident end-estimate memory: " << res_used << ", timestep: " << timestamp-timezero << "\n\n" << std::flush;
+        //cout << "End-estimate virtual memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
+        cout << "End-estimate resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n\n" << std::flush;
 #endif
     }
 
@@ -1753,8 +1791,8 @@ class SELoopConsumer : public SEConsumer {
 
 #ifdef DEBUG_PRIMARY
         double endTime = getWallTime();
-        cout << "calc_J wall clock execution time: " << 
-            getMinSec(endTime-startTime) << "\n\n" << std::flush;
+        cout << "calc_J time: " <<
+            getMinSec(endTime-startTime) << "\n" << std::flush;
 #endif
     }
     
