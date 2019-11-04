@@ -1060,8 +1060,8 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
 #ifdef DEBUG_PRIMARY
-            // TODO: TIME SINK!!
-            cout << "TOO SLOW: klu_solve completion time ... " << std::flush;
+            // TODO: BOTTLENECK
+            cout << "BOTTLENECK: klu_solve completion time ... " << std::flush;
             startTime = getWallTime();
 #endif
             klu_solve(klusym,klunum,Supd->m,Supd->n,rhs,&klucom);
@@ -1184,8 +1184,8 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        // TODO: TIME SINK!!
-        cout << "TOO SLOW: K updated time ... " << std::flush;
+        // TODO: BOTTLENECK
+        cout << "BOTTLENECK: K updated time ... " << std::flush;
         startTime = getWallTime();
 #endif
         cs *Kupd = cs_multiply(K2,K3); cs_spfree(K2); cs_spfree(K3);
