@@ -946,10 +946,6 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(yupd,tspath+"yupd.csv");
 #endif
 
-#ifdef DEBUG_PRIMARY
-        cout << "y updated\n" << std::flush;
-#endif
-
         // -- compute S = J*P_predict*J' + R
 
         cs *S1 = cs_transpose(J,1);
@@ -1061,7 +1057,7 @@ class SELoopConsumer : public SEConsumer {
 
 #ifdef DEBUG_PRIMARY
             // TODO: BOTTLENECK
-            cout << "BOTTLENECK: klu_solve completion time ... " << std::flush;
+            cout << "*** BOTTLENECK: klu_solve completion time ... " << std::flush;
             startTime = getWallTime();
 #endif
             klu_solve(klusym,klunum,Supd->m,Supd->n,rhs,&klucom);
@@ -1134,7 +1130,7 @@ class SELoopConsumer : public SEConsumer {
 #ifdef DEBUG_PRIMARY
         process_mem_usage(vm_used, res_used);
         //cout << "Post-rhs-copy virtual memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
-        cout << "Post-rhs-copy resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
+        cout << "*** Post-rhs-copy resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
 #endif
 #if 000
         delete rhs;
@@ -1185,7 +1181,7 @@ class SELoopConsumer : public SEConsumer {
 
 #ifdef DEBUG_PRIMARY
         // TODO: BOTTLENECK
-        cout << "BOTTLENECK: K updated time ... " << std::flush;
+        cout << "*** BOTTLENECK: K updated time ... " << std::flush;
         startTime = getWallTime();
 #endif
         cs *Kupd = cs_multiply(K2,K3); cs_spfree(K2); cs_spfree(K3);
@@ -1276,9 +1272,7 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "P updated\n" << std::flush;
-
-        cout << "Update step complete.\n" << std::flush;
+        cout << "Update step complete\n" << std::flush;
 #endif
 
         // --------------------------------------------------------------------
@@ -1301,7 +1295,7 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "\nTotal estimate time: " << 
+        cout << "\n*** Total estimate time: " << 
             getMinSec(getWallTime()-estimateStartTime) << ", timestep: " <<
             timestamp-timezero << "\n" << std::flush;
 #ifdef DEBUG_SIZES
