@@ -1,6 +1,8 @@
 #ifndef SELOOPCONSUMER_HPP
 #define SELOOPCONSUMER_HPP
 
+#define NORAW
+
 #include "json.hpp"
 using json = nlohmann::json;
 
@@ -39,9 +41,9 @@ using json = nlohmann::json;
 #endif
 
 // SDMAP holds x, z, and the set of regulator taps
-#ifndef SDMAP
-#define SDMAP std::unordered_map<std::string,double>
-#endif
+//#ifndef SDMAP
+//#define SDMAP std::unordered_map<std::string,double>
+//#endif
 
 // SCMAP holds the complex node voltages
 #ifndef SCMAP
@@ -68,7 +70,6 @@ using json = nlohmann::json;
 #define ISMAP std::unordered_map<unsigned int,std::string>
 #endif
 
-// holds the 
 #ifndef A5LIST
 #define A5LIST std::list<std::array<unsigned int, 5>>
 #endif
@@ -183,6 +184,142 @@ class SELoopConsumer : public SEConsumer {
         this->A = A;
     }
 
+#ifdef NORAW
+    private:
+    cs *gs_singleval_diagonal(uint mn, double single) {
+        cs *A = cs_spalloc (mn, mn, mn, 1, 0);
+
+        for (uint j = 0; j < mn; j++) {
+            A->p[j] = A->i[j] = j;
+            A->x[j] = single;
+        }
+        A->p[mn] = mn;
+
+        return (A);
+    }
+
+    private:
+    cs *gs_doubleval_diagonal(uint halfmn, double upper, double lower) {
+        cs *A = cs_spalloc (2*halfmn, 2*halfmn, 2*halfmn, 1, 0);
+
+        uint j;
+        for (j = 0; j < halfmn; j++) {
+            A->p[j] = A->i[j] = j;
+            A->x[j] = upper;
+        }
+        for (j = halfmn; j < 2*halfmn; j++) {
+            A->p[j] = A->i[j] = j;
+            A->x[j] = lower;
+        }
+        A->p[2*halfmn] = 2*halfmn;
+
+        return (A);
+    }
+
+    private:
+    cs *gs_spalloc_diagonal(uint mn) {
+        cs *A = cs_spalloc (mn, mn, mn, 1, 0);
+        A->p[mn] = mn;
+        return (A);
+    }
+
+    private:
+    void gs_entry_diagonal(cs *A, uint ij, double value) {
+        A->p[ij] = A->i[ij] = ij;
+        A->x[ij] = value;
+    }
+
+    private:
+    cs *gs_spalloc_firstcol(uint m, uint n=1) {
+        cs *A = cs_spalloc (m, n, m, 1, 0);
+        A->nzmax = 0;
+        A->p[0] = 0;
+        for (uint jj=1; jj<=n; jj++) A->p[jj] = n;
+        return (A);
+    }
+
+    private:
+    void gs_entry_firstcol(cs *A, uint ii, double value) {
+        A->i[A->nzmax] = ii;
+        A->x[A->nzmax] = value;
+        A->nzmax++;
+        A->p[1] = A->nzmax;
+    }
+
+    private:
+    cs *gs_spalloc_fullsquare(uint mn) {
+        //cs *A = cs_spalloc (mn, mn, mn*mn, 1, 0);
+        cs *A = (cs*)cs_calloc (1, sizeof (cs)) ;
+        if (!A) return (NULL) ;
+        A->m = A->n = mn ;
+        A->nzmax = mn*mn ;
+        A->nz = -1 ;
+        A->p = (int*)cs_malloc (mn+1, sizeof (int)) ;
+        A->i = (int*)cs_malloc (A->nzmax, sizeof (int)) ;
+        // make sure A->x starts zero'd out vs. regular cs_spalloc
+        A->x = (double*)cs_calloc (A->nzmax, sizeof (double)) ;
+
+        A->p[mn] = A->nzmax;
+        for (uint jj=0; jj<mn; jj++) {
+            A->p[jj] = jj*mn;
+            for (uint ii=0; ii<mn; ii++)
+                A->i[jj*mn + ii] = ii;
+        }
+        return (A);
+    }
+
+    private:
+    void gs_entry_fullsquare(cs *A, uint ii, uint jj, double value) {
+        A->x[jj*A->n + ii] = value;
+    }
+
+#if 000
+    // this isn't correctly implemented so compile it out for now
+
+    private:
+    cs *gs_spalloc_generic(uint m, uint n, uint nzmax) {
+        //cs *A = cs_spalloc (mn, mn, mn*mn, 1, 0);
+        cs *A = (cs*)cs_calloc (1, sizeof (cs)) ;
+        if (!A) return (NULL) ;
+        A->m = m; A->n = n ;
+        A->nzmax = nzmax ;
+        A->nz = -1 ;
+        A->p = (int*)cs_malloc (n+1, sizeof (int)) ;
+        A->i = (int*)cs_malloc (nzmax, sizeof (int)) ;
+        // make sure A->x starts zero'd out vs. regular cs_spalloc
+        A->x = (double*)cs_calloc (A->nzmax, sizeof (double)) ;
+
+        // TODO: this code assumes all entries and ordered, which is not
+        // the case for a generic mxn sparse matrix
+        A->p[n] = A->nzmax;
+        for (uint jj=0; jj<n; jj++) {
+            A->p[jj] = jj*n;
+            for (uint ii=0; ii<m; ii++)
+                A->i[jj*n + ii] = ii;
+        }
+        return (A);
+    }
+
+    private:
+    void gs_entry_generic(cs *A, uint ii, uint jj, double value) {
+#if 1000000
+        cout << "$$$ gs_entry_generic row: " << ii << ", col: " << jj << ", val: " << value << "\n" << std::flush;
+#else
+        // TODO: this needs to be coded if actually used
+        // the "square" method implementation
+        A->x[jj*A->n + ii] = value;
+
+        // stolen from the "firstcol" method as a template
+        A->i[A->nzmax] = ii;
+        A->x[A->nzmax] = value;
+        A->nzmax++;
+        A->p[1] = A->nzmax;
+#endif
+    }
+#endif
+#endif
+
+
     private:
     virtual void init() {
         // set up the output message json object
@@ -241,6 +378,9 @@ class SELoopConsumer : public SEConsumer {
         double span_taps = 0.2;
 
 #ifndef DIAGONAL_P
+#ifdef NORAW
+        cs *P = gs_doubleval_diagonal(node_qty, 0.002*span_vmag, 0.002*span_varg);
+#else
         cs *Praw = cs_spalloc(0,0,xqty,1,1);
         if (!Praw) cout << "ERROR: null Praw\n" << std::flush;
 #ifdef DEBUG_PRIMARY
@@ -253,6 +393,7 @@ class SELoopConsumer : public SEConsumer {
             cs_entry(Praw,node_qty+idx,node_qty+idx,0.002*span_varg);
         }
         P = cs_compress(Praw); cs_spfree(Praw);
+#endif
 
 #ifdef DEBUG_FILES
         print_cs_compress(P,initpath+"Pinit.csv");
@@ -281,7 +422,7 @@ class SELoopConsumer : public SEConsumer {
             uint i = node_idxs[zary.znode1s[zid]];  // one-indexed
 
             // Real Power Injection Measurements
-            if ( !ztype.compare("Pi") ){
+            if ( !ztype.compare("Pi") ) {
                 for ( auto& row_pair : Yphys[i] ) {
                     uint j = row_pair.first;
                     if ( j == i ) {
@@ -502,17 +643,24 @@ class SELoopConsumer : public SEConsumer {
         // Initialize cs variables for state estimation
         // --------------------------------------------------------------------
         // state transition matrix (constant)
+#ifdef DEBUG_PRIMARY
+        cout << "Initializing F ... " << std::flush;
+#endif
+#ifdef NORAW
+        F = gs_singleval_diagonal(xqty, 1.0);
+        //cout << "F PRINT\n" << std::flush;
+        //cs_print(F, 0);
+        //cout << "======================================\n" << std::flush;
+#else
         cs *Fraw = cs_spalloc(0,0,xqty,1,1);
         if (!Fraw) cout << "ERROR: null Fraw\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "Fraw has " << Fraw->nzmax << " entries\n" << std::flush;
 #endif
-#ifdef DEBUG_PRIMARY
-        cout << "Initializing F\n" << std::flush;
-#endif
         for ( uint ii = 0 ; ii < xqty ; ii++ )
             cs_entry(Fraw,ii,ii,1);
         F = cs_compress(Fraw); cs_spfree(Fraw);
+#endif
 #ifdef DEBUG_FILES
         print_cs_compress(F,initpath+"F.csv");
 #endif
@@ -522,8 +670,11 @@ class SELoopConsumer : public SEConsumer {
 
         // process covariance matrix (constant)
 #ifdef DEBUG_PRIMARY
-        cout << "Initializing Q\n" << std::flush;
+        cout << "Initializing Q ... " << std::flush;
 #endif
+#ifdef NORAW
+        Q = gs_doubleval_diagonal(node_qty, 0.001, 0.001*PI);
+#else
         cs *Qraw = cs_spalloc(0,0,xqty,1,1);
         if (!Qraw) cout << "ERROR: null Qraw\n" << std::flush;
 #ifdef DEBUG_PRIMARY
@@ -536,6 +687,7 @@ class SELoopConsumer : public SEConsumer {
             cs_entry(Qraw,node_qty+idx,node_qty+idx,0.001*PI);
         }
         Q = cs_compress(Qraw); cs_spfree(Qraw);
+#endif
 #ifdef DEBUG_FILES
         print_cs_compress(Q,initpath+"Q.csv");
 #endif
@@ -545,8 +697,11 @@ class SELoopConsumer : public SEConsumer {
 
         // identity matrix of dimension x (constant)
 #ifdef DEBUG_PRIMARY
-        cout << "Initializing eyex\n" << std::flush;
+        cout << "Initializing eyex ... " << std::flush;
 #endif
+#ifdef NORAW
+        eyex = gs_singleval_diagonal(xqty, 1.0);
+#else
         cs *eyexraw = cs_spalloc(0,0,xqty,1,1);
         if (!eyexraw) cout << "ERROR: null eyexraw\n" << std::flush;
 #ifdef DEBUG_PRIMARY
@@ -556,14 +711,23 @@ class SELoopConsumer : public SEConsumer {
         for ( uint ii = 0 ; ii < xqty ; ii++ )
             cs_entry(eyexraw,ii,ii,1.0);
         eyex = cs_compress(eyexraw); cs_spfree(eyexraw);
+#endif
 #ifdef DEBUG_FILES
         print_cs_compress(eyex,initpath+"eyex.csv");
+#endif
+#ifdef DEBUG_PRIMARY
+        cout << "eyex is " << eyex->m << " by " << eyex->n << " with " << eyex->nzmax << " entries\n" << std::flush;
 #endif
 
         // measurement covariance matrix (constant)
 #ifdef DEBUG_PRIMARY
-        cout << "Initializing R\n" << std::flush;
+        cout << "Initializing R ... " << std::flush;
 #endif
+#ifdef NORAW
+        R = gs_spalloc_diagonal(zqty);
+        for ( auto& zid : zary.zids )
+            gs_entry_diagonal(R,zary.zidxs[zid],zary.zsigs[zid]/1000000.0);
+#else
         cs *Rraw = cs_spalloc(0,0,zqty,1,1);
         if (!Rraw) cout << "ERROR: null Rraw\n" << std::flush;
 #ifdef DEBUG_PRIMARY
@@ -572,8 +736,12 @@ class SELoopConsumer : public SEConsumer {
         for ( auto& zid : zary.zids )
             cs_entry(Rraw,zary.zidxs[zid],zary.zidxs[zid],zary.zsigs[zid]/1000000.0);
         R = cs_compress(Rraw); cs_spfree(Rraw);
+#endif
 #ifdef DEBUG_FILES
         print_cs_compress(R,initpath+"R.csv");
+#endif
+#ifdef DEBUG_PRIMARY
+        cout << "R is " << R->m << " by " << R->n << " with " << R->nzmax << " entries\n" << std::flush;
 #endif
         
 #ifdef DEBUG_FILES
@@ -669,8 +837,8 @@ class SELoopConsumer : public SEConsumer {
                 // update the voltage magnitude (in per-unit)
                 string zid = mmrid+"_Vmag";
                 double vmag_phys = m["magnitude"];
-                // TODO: This uses vnom filled from OpenDSS values, but needs to use
-                // GridLAB-D values
+                // TODO: This uses vnom filled from OpenDSS values, but needs
+                // to use GridLAB-D values
                 zary.zvals[mmrid+"_Vmag"] = 
                     vmag_phys / abs(node_vnoms[zary.znode1s[zid]]);
                 zary.znew[mmrid+"_Vmag"] = true;
@@ -787,7 +955,7 @@ class SELoopConsumer : public SEConsumer {
         // x, z, h, and J will be maintained here
         
 #ifdef DEBUG_PRIMARY
-        cout << "prepx ... " << std::flush;
+        cout << "prep_x ... " << std::flush;
 #endif
         cs *x; this->prep_x(x);
 
@@ -861,6 +1029,9 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(h,tspath+"h.csv");
 #endif
 
+#ifdef DEBUG_PRIMARY
+        cout << "calc_J ... " << std::flush;
+#endif
         cs *J; this->calc_J(J);
 #ifdef DEBUG_PRIMARY
         cout << "J is " << J->m << " by " << J->n << 
@@ -898,8 +1069,6 @@ class SELoopConsumer : public SEConsumer {
 
         cs *P2 = cs_multiply(P,P1); cs_spfree(P); cs_spfree(P1);
         if (!P2) cout << "ERROR: null P2\n" << std::flush;
-
-
 #ifdef DEBUG_PRIMARY
         else cout << "P2 is " << P2->m << " by " << P2->n << 
             " with " << P2->nzmax << " entries\n" << std::flush;
@@ -928,9 +1097,6 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(Ppre,tspath+"Ppre.csv");
 #endif
 
-#ifdef DEBUG_PRIMARY
-        cout << "Predict step complete\n" << std::flush;
-#endif
 
         // --------------------------------------------------------------------
         // Update Step
@@ -1000,14 +1166,15 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "\nin KLU block\n" << std::flush;
         double startTime;
         string vm_used, res_used;
 #endif
 #if 000
         double *rhs;
 #else
-        double *rhs = (double *)calloc(zqty*zqty, sizeof(double));
+        cs *K3 = gs_spalloc_fullsquare(zqty);
+        double *rhs = K3->x;
+        //double *rhs = (double *)calloc(zqty*zqty, sizeof(double));
 #endif
 
         try {
@@ -1037,10 +1204,6 @@ class SELoopConsumer : public SEConsumer {
             cout << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
 #endif
 
-#ifdef DEBUG_PRIMARY
-            cout << "identity rhs creation time ... " << std::flush;
-            startTime = getWallTime();
-#endif
             // initialize an identity right-hand side
 #if 000
             rhs = new double[zqty*zqty];
@@ -1051,10 +1214,6 @@ class SELoopConsumer : public SEConsumer {
                 rhs[ii*zqty + ii] = 1.0;
 #endif
             
-#ifdef DEBUG_PRIMARY
-            cout << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
-#endif
-
 #ifdef DEBUG_PRIMARY
             // TODO: BOTTLENECK
             cout << "*** BOTTLENECK: klu_solve completion time ... " << std::flush;
@@ -1078,33 +1237,29 @@ class SELoopConsumer : public SEConsumer {
                 firstEstimateFlag = false;
             }
             process_mem_usage(vm_used, res_used);
-            //cout << "Post-klu_solve virtual memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
-            cout << "Post-klu_solve resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
+            //cout << "*** Post-klu_solve virtual memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
+            cout << "*** Post-klu_solve resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
 #endif
 
-            // free klusym and klunum or major memory leak results
+            // free klusym and klunum or memory leak results
             klu_free_symbolic(&klusym, &klucom);
             klu_free_numeric(&klunum, &klucom);
-
         } catch (const char *msg) {
             cout << "KLU ERROR: " << msg << "\n" << std::flush;
             return;
         }
-#ifdef DEBUG_PRIMARY
-        cout << "left KLU block\n\n" << std::flush;
-#endif
         cs_spfree(Supd);
 
+#ifndef NORAW
         cs *K3raw = cs_spalloc(0,0,zqty*zqty,1,1);
         if (!K3raw) cout << "ERROR: null K3raw\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "K3raw has " << K3raw->nzmax << " entries\n" << std::flush;
-#endif
 
-#ifdef DEBUG_PRIMARY
         cout << "rhs copied to K3raw time ... " << std::flush;
         startTime = getWallTime();
 #endif
+
         // convert the result to cs*
 #if 000
         for ( uint ii = 0 ; ii < zqty ; ii++ )
@@ -1112,30 +1267,47 @@ class SELoopConsumer : public SEConsumer {
                 if (rhs[ii+zqty*jj])
                     cs_entry(K3raw,ii,jj,rhs[ii+zqty*jj]);
 #else
-        uint ii, jj, jjoffset;
-        double rhsval;
+        uint ii, jj;
+        double *rhsoff;
         for ( jj = 0 ; jj < zqty ; jj++ ) {
-            jjoffset = jj*zqty;
-            for ( ii = 0 ; ii < zqty ; ii++ ) {
-                rhsval = rhs[jjoffset + ii];
-                if (rhsval)
-                    cs_entry(K3raw,ii,jj,rhsval);
-            }
+            rhsoff = &rhs[jj*zqty];
+            for ( ii = 0 ; ii < zqty ; ii++ )
+#ifdef NORAW
+                if (rhsoff[ii]) gs_entry_fullsquare(K3,ii,jj,rhsoff[ii]);
+#else
+                if (rhsoff[ii]) cs_entry(K3raw,ii,jj,rhsoff[ii]);
+#endif
         }
 #endif
 
 #ifdef DEBUG_PRIMARY
         cout << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
 #endif
-#ifdef DEBUG_PRIMARY
-        process_mem_usage(vm_used, res_used);
-        //cout << "Post-rhs-copy virtual memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
-        cout << "*** Post-rhs-copy resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
 #endif
-#if 000
-        delete rhs;
-#else
-        free(rhs);
+
+#ifndef NORAW
+        // don't free because it's just a pointer to K3->x
+        //free(rhs);
+#endif
+
+#ifndef NORAW
+#ifdef DEBUG_PRIMARY
+        cout << "K3 compress time ... " << std::flush;
+        startTime = getWallTime();
+#endif
+        cs *K3 = cs_compress(K3raw); cs_spfree(K3raw);
+        if ( !K3 ) cout << "ERROR: K3 null\n" << std::flush;
+#ifdef DEBUG_PRIMARY
+        cout << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
+#endif
+#endif
+
+#ifdef DEBUG_PRIMARY
+        if ( K3 ) cout << "K3 is " << K3->m << " by " << K3->n <<
+                " with " << K3->nzmax << " entries\n" << std::flush;
+#endif
+#ifdef DEBUG_FILES
+        print_cs_compress(K3,tspath+"K3.csv");
 #endif
 
         // -- compute K = P_predict*J'*S^-1
@@ -1157,26 +1329,6 @@ class SELoopConsumer : public SEConsumer {
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(K2,tspath+"K2.csv");
-#endif
-#ifdef DEBUG_FILES
-//      print_cs_compress(K3raw,tspath+"K3raw.csv");
-#endif
-
-#ifdef DEBUG_PRIMARY
-        cout << "K3 compress time ... " << std::flush;
-        startTime = getWallTime();
-#endif
-        cs *K3 = cs_compress(K3raw); cs_spfree(K3raw);
-        if ( !K3 ) cout << "ERROR: K3 null\n" << std::flush;
-#ifdef DEBUG_PRIMARY
-        cout << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
-#endif
-#ifdef DEBUG_PRIMARY
-        if ( K3 ) cout << "K3 is " << K3->m << " by " << K3->n <<
-                " with " << K3->nzmax << " entries\n" << std::flush;
-#endif
-#ifdef DEBUG_FILES
-        print_cs_compress(K3,tspath+"K3.csv");
 #endif
 
 #ifdef DEBUG_PRIMARY
@@ -1257,8 +1409,8 @@ class SELoopConsumer : public SEConsumer {
 #ifdef DEBUG_FILES
         print_cs_compress(Pupd,tspath+"Pupd.csv");
 #endif
-#endif
-#ifndef DIAGONAL_P
+
+#else
         // re-allocate P for the updated state
         P = cs_multiply(P5,Ppre); cs_spfree(P5); cs_spfree(Ppre);
         if ( !P ) cout << "ERROR: P updated null\n" << std::flush;
@@ -1271,9 +1423,6 @@ class SELoopConsumer : public SEConsumer {
 #endif
 #endif
 
-#ifdef DEBUG_PRIMARY
-        cout << "Update step complete\n" << std::flush;
-#endif
 
         // --------------------------------------------------------------------
         // Update persistant state (Vpu and A)
@@ -1288,6 +1437,9 @@ class SELoopConsumer : public SEConsumer {
 
 #ifdef DIAGONAL_P
         // extract the diagonal of P
+#ifdef DEBUG_PRIMARY
+        cout << "calling decompress_variance_Pupd\n" << std::flush;
+#endif
         if (Pupd) {
             decompress_variance(Pupd);
             cs_spfree(Pupd);
@@ -1356,10 +1508,26 @@ class SELoopConsumer : public SEConsumer {
         vector<double> uvec(Pmat->n);
         // Pmat is in compressed-column form; iterate over columns
         for ( uint j = 0; j < Pmat->n ; j++ ) {
+#if 1111
+            // for P, the first entry for each column is always the diagonal
+            uint p = Pmat->p[j];
+            uvec[j] = Pmat->x[p];
+#else
             // iterate over existing data in column j
+            // test whether the first entry is always teh diagonal
+            if (j == Pmat->i[Pmat->p[j]]) cout << "GARY Test: PASS!!!!!\n" << std::flush;
+            else cout << "GARY Test: fail\n" << std::flush;
+
+#if 111111
+            for ( uint p = Pmat->p[j] ; p < Pmat->p[j+1] ; p++ ) {
+#else
             for ( uint p = Pmat->p[j] ; p > Pmat->p[j+1] ; p++ ) {
+#endif
                 // get the row index for existing data
                 uint i = Pmat->i[p];
+                // GDB: it looks like the first item in each row may
+                // be the diagonal so test this theory and no need to iterate
+                // if so
                 if ( i == j ) {
                     // if this is a diagonal entry, extract it
                     uvec[j] = Pmat->x[p];
@@ -1370,14 +1538,14 @@ class SELoopConsumer : public SEConsumer {
                     break;
                 }
             }
+#endif
         }
+
         // update Umag and Uarg
         for ( auto& node_name: node_names ) {
             uint idx = node_idxs[node_name];
-            uint vidx = idx-1;
-            uint Tidx = node_qty + idx-1;
-            Uvmag[idx] = uvec[vidx];
-            Uvarg[idx] = uvec[Tidx];
+            Uvmag[idx] = uvec[idx-1];
+            Uvarg[idx] = uvec[node_qty + idx-1];
         }
     }
 #endif
@@ -1385,48 +1553,76 @@ class SELoopConsumer : public SEConsumer {
     private:
     void prep_x(cs *&x) {
         // Prepare x
+#ifdef NORAW
+        x = gs_spalloc_firstcol(xqty);
+        if (!x) cout << "ERROR: null x\n" << std::flush;
+#else
         cs *xraw = cs_spalloc(xqty,1,xqty,1,1);
         if (!xraw) cout << "ERROR: null xraw\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "xraw is " << xraw->m << " by " 
             << xraw->n << " with " << xraw->nzmax << " entries\n" << std::flush;
 #endif
+#endif
         for ( auto& node_name : node_names ) {
             // Find the per-unit voltage of active node
             uint idx = node_idxs[node_name];
             complex<double> Vi = Vpu[idx];
             // Add the voltage magnitude to x
-            uint vidx = idx - 1;
+#ifdef NORAW
+            if ( abs(Vi) > NEGL ) gs_entry_firstcol(x,idx-1,abs(Vi));
+#else
+            uint vidx = idx-1;
             if ( abs(Vi) > NEGL ) cs_entry(xraw,vidx,0,abs(Vi));
+#endif
             // Add the voltage angle to x
-            uint Tidx = node_qty + idx - 1;
+#ifdef NORAW
+            if ( arg(Vi) ) gs_entry_firstcol(x,node_qty + idx-1,arg(Vi));
+#else
+            uint Tidx = node_qty + idx-1;
             if ( arg(Vi) ) cs_entry(xraw,Tidx,0,arg(Vi));
+#endif
         }
-        x = cs_compress(xraw);
-        cs_spfree(xraw);
+#ifndef NORAW
+        x = cs_compress(xraw); cout << "xraw PRINT\n" << std::flush;
+#endif
     }
 
 #ifdef DIAGONAL_P
     private:
     void prep_P(cs *&Pmat) {
         // Prepare P as a diagonal matrix from state uncertanty
+#ifdef NORAW
+        Pmat = gs_spalloc_firstcol(xqty, xqty);
+        if (!Pmat) cout << "ERROR: null Pmat in prep_P\n" << std::flush;
+#else
         cs *Praw = cs_spalloc(xqty,xqty,xqty,1,1);
         if (!Praw) cout << "ERROR: null Praw in prep_P\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "Praw is " << Praw->m << " by "
             << Praw->n << " with " << Praw->nzmax << " entries\n" << std::flush;
 #endif
+#endif
         for ( auto& node_name : node_names ) {
             uint idx = node_idxs[node_name];
             // insert the voltage magnitude variance
-            uint vidx = idx - 1;
+#ifdef NORAW
+            if ( Uvmag[idx] ) gs_entry_firstcol(Pmat,idx-1,Uvmag[idx]);
+#else
+            uint vidx = idx-1;
             if ( Uvmag[idx] ) cs_entry(Praw,vidx,0,Uvmag[idx]);
+#endif
             // insert the voltage phase variance
-            uint Tidx = node_qty + idx - 1;
+#ifdef NORAW
+            if ( Uvarg[idx] ) gs_entry_firstcol(Pmat,node_qty + idx-1,Uvarg[idx]);
+#else
+            uint Tidx = node_qty + idx-1;
             if ( Uvarg[idx] ) cs_entry(Praw,Tidx,0,Uvarg[idx]);
+#endif
         }
-        Pmat = cs_compress(Praw);
-        cs_spfree(Praw);
+#ifndef NORAW
+        Pmat = cs_compress(Praw); cs_spfree(Praw);
+#endif
     }
 #endif
 
@@ -1434,18 +1630,29 @@ class SELoopConsumer : public SEConsumer {
     private:
     void sample_z(cs *&z) {
         // measurements have been loaded from the sim output message to zary
+#ifdef NORAW
+        z = gs_spalloc_firstcol(zqty);
+        if (!z) cout << "ERROR: null z\n" << std::flush;
+#else
         cs *zraw = cs_spalloc(zqty,1,zqty,1,1);
         if (!zraw) cout << "ERROR: null zraw\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "zraw is " << zraw->m << " by " 
             << zraw->n << " with " << zraw->nzmax << " entries\n" << std::flush;
 #endif
+#endif
+
         for ( auto& zid : zary.zids ) {
             if ( zary.zvals[zid] > NEGL || -zary.zvals[zid] > NEGL )
+#ifdef NORAW
+                gs_entry_firstcol(z,zary.zidxs[zid],zary.zvals[zid]);
+#else
                 cs_entry(zraw,zary.zidxs[zid],0,zary.zvals[zid]);
+#endif
         }
-        z = cs_compress(zraw); 
-        cs_spfree(zraw);
+#ifndef NORAW
+        z = cs_compress(zraw); cs_spfree(zraw);
+#endif
     }
 
     private:
@@ -1527,12 +1734,18 @@ class SELoopConsumer : public SEConsumer {
     private:
     void calc_h(cs *&h) {
         // each z component has a measurement function component
+#ifdef NORAW
+        h = gs_spalloc_firstcol(zqty);
+        if (!h) cout << "ERROR: null h\n" << std::flush;
+#else
         cs *hraw = cs_spalloc(zqty,1,zqty,1,1);
         if (!hraw) cout << "ERROR: null hraw\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "hraw is " << hraw->m << " by " 
             << hraw->n << " with " << hraw->nzmax << " entries\n" << std::flush;
 #endif
+#endif
+
 #ifdef DEBUG_PRIMARY
         double startTime = getWallTime();
 #endif
@@ -1560,7 +1773,11 @@ class SELoopConsumer : public SEConsumer {
                     Pi += vi*vi * g; // times cos(T) ????
                 } catch(...) {}
                 // Insert the measurement component
+#ifdef NORAW
+                if ( abs(Pi) > NEGL ) gs_entry_firstcol(h,zidx,Pi);
+#else
                 if ( abs(Pi) > NEGL ) cs_entry(hraw,zidx,0,Pi);
+#endif
             }
             else if ( !zary.ztypes[zid].compare("Qi") ) {
                 // Reactive power injection into node i
@@ -1581,7 +1798,11 @@ class SELoopConsumer : public SEConsumer {
                     set_n(i,0);
                     Qi -= vi*vi * b;
                 } catch(...) {}
+#ifdef NORAW
+                if ( abs(Qi) > NEGL ) gs_entry_firstcol(h,zidx,Qi);
+#else
                 if ( abs(Qi) > NEGL ) cs_entry(hraw,zidx,0,Qi);
+#endif
             }
             else if ( !zary.ztypes[zid].compare("aji" ) ) {
                 // aji is a direct state measurement
@@ -1589,21 +1810,31 @@ class SELoopConsumer : public SEConsumer {
             else if ( !zary.ztypes[zid].compare("vi") ) {
                 // vi is a direct state measurement
                 uint i = node_idxs[zary.znode1s[zid]];
+#ifdef NORAW
+                if ( abs(Vpu[i]) > NEGL ) gs_entry_firstcol(h,zidx,abs(Vpu[i]));
+#else
                 if ( abs(Vpu[i]) > NEGL ) cs_entry(hraw,zidx,0,abs(Vpu[i]));
+#endif
             }
             else if ( !zary.ztypes[zid].compare("Ti") ) {
                 // Ti is a direct state measurement
                 uint i = node_idxs[zary.znode1s[zid]];
+#ifdef NORAW
+                if ( arg(Vpu[i]) > NEGL ) gs_entry_firstcol(h,zidx,arg(Vpu[i]));
+#else
                 if ( arg(Vpu[i]) > NEGL ) cs_entry(hraw,zidx,0,arg(Vpu[i]));
+#endif
             }
             else { 
                 cout << "WARNING: Undefined measurement type " + ztype + "\n" << std::flush;
             }
         }
+#ifndef NORAW
         h = cs_compress(hraw); cs_spfree(hraw);
+#endif
 #ifdef DEBUG_PRIMARY
-            cout << "calc_h time: " << getMinSec(getWallTime()-startTime)
-                << "\n" << std::flush;
+        cout << "calc_h time: " << getMinSec(getWallTime()-startTime)
+            << "\n" << std::flush;
 #endif
     }
 
@@ -1613,11 +1844,22 @@ class SELoopConsumer : public SEConsumer {
         double startTime = getWallTime();
 #endif
         // each z component has a Jacobian component for each state
+        // RAW, funky full populate
+        // BOOT
+#ifdef XNORAW
+        J = gs_spalloc_generic(zqty,xqty,Jqty);
+        if (!J) cout << "ERROR: null J\n" << std::flush;
+#ifdef DEBUG_PRIMARY
+        else cout << "J is " << J->m << " by " 
+            << J->n << " with " << J->nzmax << " entries\n" << std::flush;
+#endif
+#else
         cs *Jraw = cs_spalloc(zqty,xqty,Jqty,1,1);
         if (!Jraw) cout << "ERROR: null Jraw\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "Jraw is " << Jraw->m << " by " 
             << Jraw->n << " with " << Jraw->nzmax << " entries\n" << std::flush;
+#endif
 #endif
 #ifdef DEBUG_HEARTBEAT
         uint beat_ctr = 0;
@@ -1655,7 +1897,11 @@ class SELoopConsumer : public SEConsumer {
                 // consider the reference node
                 set_n(i,0);
                 dP = dP + 2*vi * g;
+#ifdef XNORAW
+                if ( abs(dP > NEGL ) ) gs_entry_generic(J,zidx,xidx,dP);
+#else
                 if ( abs(dP > NEGL ) ) cs_entry(Jraw,zidx,xidx,dP);
+#endif
             }
 
             else
@@ -1667,7 +1913,11 @@ class SELoopConsumer : public SEConsumer {
 
                 set_n(i,j);
                 dP = -1.0 * vi/ai/aj * (g*cos(T) + b*sin(T));
+#ifdef XNORAW
+                if ( abs(dP) > NEGL ) gs_entry_generic(J,zidx,xidx,dP);
+#else
                 if ( abs(dP) > NEGL ) cs_entry(Jraw,zidx,xidx,dP);
+#endif
             }
 
             else
@@ -1687,7 +1937,11 @@ class SELoopConsumer : public SEConsumer {
                 // consider the reference node
                 set_n(i,0);
                 dQ = dQ - 2*vi*b;
+#ifdef XNORAW
+                if ( abs(dQ) > NEGL ) gs_entry_generic(J,zidx,xidx,dQ);
+#else
                 if ( abs(dQ) > NEGL ) cs_entry(Jraw,zidx,xidx,dQ);
+#endif
             }
 
             else
@@ -1699,13 +1953,21 @@ class SELoopConsumer : public SEConsumer {
 
                 set_n(i,j);
                 dQ = -1.0 * vi/ai/aj * (g*sin(T) - b*cos(T));
+#ifdef XNORAW
+                if ( abs(dQ) > NEGL ) gs_entry_generic(J,zidx,xidx,dQ);
+#else
                 if ( abs(dQ) > NEGL ) cs_entry(Jraw,zidx,xidx,dQ);
+#endif
             }
 
             else
             if ( entry_type == dvi_dvi ) {
                  // --- compute dvi/dvi
+#ifdef XNORAW
+                 gs_entry_generic(J,zidx,xidx,1.0);
+#else
                  cs_entry(Jraw,zidx,xidx,1.0);
+#endif
             }
             
             else
@@ -1722,7 +1984,11 @@ class SELoopConsumer : public SEConsumer {
                     }
                 }
                 // reference node component is 0
+#ifdef XNORAW
+                if ( abs(dP) > NEGL ) gs_entry_generic(J,zidx,xidx,dP);
+#else
                 if ( abs(dP) > NEGL ) cs_entry(Jraw,zidx,xidx,dP);
+#endif
             }
 
             else
@@ -1734,7 +2000,11 @@ class SELoopConsumer : public SEConsumer {
  
                  set_n(i,j);
                  dP = -1.0 * vi*vj/ai/aj * (g*sin(T) - b*cos(T));
+#ifdef XNORAW
+                 if ( abs(dP) > NEGL ) gs_entry_generic(J,zidx,xidx,dP);
+#else
                  if ( abs(dP) > NEGL ) cs_entry(Jraw,zidx,xidx,dP);
+#endif
             }
 
             else
@@ -1751,7 +2021,11 @@ class SELoopConsumer : public SEConsumer {
                     }
                 }
                 // reference component is 0
+#ifdef XNORAW
+                if (abs(dQ) > NEGL ) gs_entry_generic(J,zidx,xidx,dQ);
+#else
                 if (abs(dQ) > NEGL ) cs_entry(Jraw,zidx,xidx,dQ);
+#endif
             }
 
             else
@@ -1763,12 +2037,20 @@ class SELoopConsumer : public SEConsumer {
 
                 set_n(i,j);
                 dQ = vi*vj/ai/aj * (g*cos(T) + b*sin(T));
+#ifdef XNORAW
+                if ( abs(dQ) > NEGL ) gs_entry_generic(J,zidx,xidx,dQ);
+#else
                 if ( abs(dQ) > NEGL ) cs_entry(Jraw,zidx,xidx,dQ);
+#endif
             }
 
             else
             if ( entry_type == dTi_dTi ) {
+#ifdef XNORAW
+                gs_entry_generic(J,zidx,xidx,1.0);
+#else
                 cs_entry(Jraw,zidx,xidx,1.0);
+#endif
             }
 
             else {
@@ -1781,7 +2063,21 @@ class SELoopConsumer : public SEConsumer {
             // -------------
 
         }
-        J = cs_compress(Jraw); cs_spfree(Jraw);
+#ifndef XNORAW
+        J = cs_compress(Jraw);
+        //cout << "Jraw PRINT\n" << std::flush;
+        //cs_print(Jraw, 0);
+        //cout << "======================================\n" << std::flush;
+        //cout << "J PRINT\n" << std::flush;
+        //cs_print(J, 0);
+        //cout << "======================================\n" << std::flush;
+        cs_spfree(Jraw);
+#else
+        exit(0);
+        cout << "J PRINT\n" << std::flush;
+        cs_print(J, 0);
+        cout << "======================================\n" << std::flush;
+#endif
 
 #ifdef DEBUG_PRIMARY
         double endTime = getWallTime();
