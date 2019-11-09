@@ -561,7 +561,7 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
 #ifdef DEBUG_FILES
-        // initial measurement vector [these actually don't need to be done here]
+        // initial measurement vector (these actually don't need to be done here)
         cs* z; this->sample_z(z);
         print_cs_compress(z,initpath+"z.csv"); 
         cs_spfree(z);
@@ -746,33 +746,6 @@ class SELoopConsumer : public SEConsumer {
 
         // x, z, h, and J will be maintained here
         
-#ifdef DEBUG_PRIMARY
-        cout << "prep_x ... " << std::flush;
-#endif
-        cs *x; this->prep_x(x);
-
-#ifdef DEBUG_PRIMARY
-        cout << "x is " << x->m << " by " << x->n << 
-            " with " << x->nzmax << " entries\n" << std::flush;
-#endif
-#ifdef DEBUG_FILES
-        print_cs_compress(x,tspath+"x.csv");
-#endif
-
-#ifdef DIAGONAL_P
-#ifdef DEBUG_PRIMARY
-        cout << "prep_P ... " << std::flush;
-#endif
-        cs *P; this->prep_P(P);
-#endif
-#ifdef DEBUG_PRIMARY
-        cout << "P is " << P->m << " by " << P->n << 
-            " with " << P->nzmax << " entries\n" << std::flush;
-#endif
-#ifdef DEBUG_FILES
-        print_cs_compress(P,tspath+"P.csv");
-#endif
-
 #ifdef DEBUG_FILES
         ofstream ofh;
         ofh.open(tspath+"Vpu.csv",ofstream::out);
@@ -797,57 +770,23 @@ class SELoopConsumer : public SEConsumer {
         } ofh.close();
 #endif
 
-#ifdef DEBUG_PRIMARY
-        cout << "sample_z ... " << std::flush;
-#endif
-        cs *z; this->sample_z(z);
-#ifdef DEBUG_PRIMARY
-        cout << "z is " << z->m << " by " << z->n << 
-            " with " << z->nzmax << " entries\n" << std::flush;
-#endif
-#ifdef DEBUG_FILES
-        print_cs_compress(z,tspath+"z.csv");
-#endif
-
-#ifdef DEBUG_PRIMARY
-        cout << "calc_h ... " << std::flush;
-#endif
-        cs *h; this->calc_h(h);
-#ifdef DEBUG_PRIMARY
-        cout << "h is " << h->m << " by " << h->n << 
-            " with " << h->nzmax << " entries\n" << std::flush;
-#endif
-#ifdef DEBUG_FILES
-        print_cs_compress(h,tspath+"h.csv");
-#endif
-
-#ifdef DEBUG_PRIMARY
-        cout << "calc_J ... " << std::flush;
-#endif
-        cs *J; this->calc_J(J);
-#ifdef DEBUG_PRIMARY
-        cout << "J is " << J->m << " by " << J->n << 
-            " with " << J->nzmax << " entries\n" << std::flush;
-#endif
-#ifdef DEBUG_FILES
-        print_cs_compress(J,tspath+"J.csv");
-#endif
-
         // --------------------------------------------------------------------
         // Predict Step
         // --------------------------------------------------------------------
-        // -- compute x_predict = F*x | F=I (to improve performance, skip this)
-        cs *xpre = cs_multiply(F,x); cs_spfree(x);
-        if (!xpre) cout << "ERROR: null xpre\n" << std::flush;
+        // -- compute p_predict = F*P*F' + Q | F=I (can be simplified)
+#ifdef DIAGONAL_P
 #ifdef DEBUG_PRIMARY
-        else cout << "xpre is " << xpre->m << " by " << xpre->n << 
-            " with " << xpre->nzmax << " entries\n" << std::flush;
+        cout << "prep_P ... " << std::flush;
+#endif
+        cs *P; this->prep_P(P);
+#endif
+#ifdef DEBUG_PRIMARY
+        cout << "P is " << P->m << " by " << P->n << 
+            " with " << P->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
-        print_cs_compress(xpre,tspath+"xpre.csv");
+        print_cs_compress(P,tspath+"P.csv");
 #endif
-
-        // -- compute p_predict = F*P*F' + Q | F=I (can be simplified)
 
         cs *P1 = cs_transpose(F,1);
         if (!P1) cout << "ERROR: null P1\n" << std::flush;
@@ -879,6 +818,11 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(P3,tspath+"P3.csv");
 #endif
 
+        // --------------------------------------------------------------------
+        // Update Step
+        // --------------------------------------------------------------------
+        // -- compute S = J*P_predict*J' + R
+
         cs *Ppre = cs_add(P3,Q,1,1); cs_spfree(P3);
         if (!Ppre) cout << "ERROR: null Ppre\n" << std::flush;
 #ifdef DEBUG_PRIMARY
@@ -889,22 +833,17 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(Ppre,tspath+"Ppre.csv");
 #endif
 
-
-        // --------------------------------------------------------------------
-        // Update Step
-        // --------------------------------------------------------------------
-        // -- compute y = z - h
-        cs *yupd = cs_add(z,h,1,-1); cs_spfree(z); cs_spfree(h);
-        if (!yupd) cout << "ERROR: null yupd\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "yupd is " << yupd->m << " by " << yupd->n << 
-            " with " << yupd->nzmax << " entries\n" << std::flush;
+        cout << "calc_J ... " << std::flush;
+#endif
+        cs *J; this->calc_J(J);
+#ifdef DEBUG_PRIMARY
+        cout << "J is " << J->m << " by " << J->n << 
+            " with " << J->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
-        print_cs_compress(yupd,tspath+"yupd.csv");
+        print_cs_compress(J,tspath+"J.csv");
 #endif
-
-        // -- compute S = J*P_predict*J' + R
 
         cs *S1 = cs_transpose(J,1);
         if (!S1) cout << "ERROR: null S1\n" << std::flush;
@@ -916,7 +855,7 @@ class SELoopConsumer : public SEConsumer {
         print_cs_compress(S1,tspath+"S1.csv");
 #endif
 
-        cs *S2 = cs_multiply(Ppre,S1); cs_spfree(S1);
+        cs *S2 = cs_multiply(Ppre,S1);
         if (!S2) cout << "ERROR: null S2\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "S2 is " << S2->m << " by " << S2->n << 
@@ -1040,17 +979,8 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
         // -- compute K = P_predict*J'*S^-1
-        cs *K1 = cs_transpose(J,1);
-        if (!K1) cout << "ERROR: null K1\n" << std::flush;
-#ifdef DEBUG_PRIMARY
-        else cout << "K1 is " << K1->m << " by " << K1->n << 
-            " with " << K1->nzmax << " entries\n" << std::flush;
-#endif
-#ifdef DEBUG_FILES
-        print_cs_compress(K1,tspath+"K1.csv");
-#endif
-
-        cs *K2 = cs_multiply(Ppre,K1); cs_spfree(K1);
+        // GDB S1 and K1 are both J transpose so use S1 here
+        cs *K2 = cs_multiply(Ppre,S1); cs_spfree(S1);
         if (!K2) cout << "ERROR: null K2\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "K2 is " << K2->m << " by " 
@@ -1079,7 +1009,40 @@ class SELoopConsumer : public SEConsumer {
 #endif
 
         // -- compute x_update = x_predict + K * y
+        // -- compute y = z - h
+#ifdef DEBUG_PRIMARY
+        cout << "sample_z ... " << std::flush;
+#endif
+        cs *z; this->sample_z(z);
+#ifdef DEBUG_PRIMARY
+        cout << "z is " << z->m << " by " << z->n << 
+            " with " << z->nzmax << " entries\n" << std::flush;
+#endif
+#ifdef DEBUG_FILES
+        print_cs_compress(z,tspath+"z.csv");
+#endif
 
+#ifdef DEBUG_PRIMARY
+        cout << "calc_h ... " << std::flush;
+#endif
+        cs *h; this->calc_h(h);
+#ifdef DEBUG_PRIMARY
+        cout << "h is " << h->m << " by " << h->n << 
+            " with " << h->nzmax << " entries\n" << std::flush;
+#endif
+#ifdef DEBUG_FILES
+        print_cs_compress(h,tspath+"h.csv");
+#endif
+
+        cs *yupd = cs_add(z,h,1,-1); cs_spfree(z); cs_spfree(h);
+        if (!yupd) cout << "ERROR: null yupd\n" << std::flush;
+#ifdef DEBUG_PRIMARY
+        else cout << "yupd is " << yupd->m << " by " << yupd->n << 
+            " with " << yupd->nzmax << " entries\n" << std::flush;
+#endif
+#ifdef DEBUG_FILES
+        print_cs_compress(yupd,tspath+"yupd.csv");
+#endif
         cs *x1 = cs_multiply(Kupd,yupd); cs_spfree(yupd);
         if ( !x1 ) cout << "ERROR: x1 null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
@@ -1089,7 +1052,30 @@ class SELoopConsumer : public SEConsumer {
 #ifdef DEBUG_FILES
         print_cs_compress(x1,tspath+"x1.csv");
 #endif
-        
+
+        // -- compute x_predict = F*x | F=I (to improve performance, skip this)
+#ifdef DEBUG_PRIMARY
+        cout << "prep_x ... " << std::flush;
+#endif
+        cs *x; this->prep_x(x);
+#ifdef DEBUG_PRIMARY
+        cout << "x is " << x->m << " by " << x->n << 
+            " with " << x->nzmax << " entries\n" << std::flush;
+#endif
+#ifdef DEBUG_FILES
+        print_cs_compress(x,tspath+"x.csv");
+#endif
+
+        cs *xpre = cs_multiply(F,x); cs_spfree(x);
+        if (!xpre) cout << "ERROR: null xpre\n" << std::flush;
+#ifdef DEBUG_PRIMARY
+        else cout << "xpre is " << xpre->m << " by " << xpre->n << 
+            " with " << xpre->nzmax << " entries\n" << std::flush;
+#endif
+#ifdef DEBUG_FILES
+        print_cs_compress(xpre,tspath+"xpre.csv");
+#endif
+
         cs *xupd = cs_add(xpre,x1,1,1); cs_spfree(x1); cs_spfree(xpre);
         if ( !xupd ) cout << "ERROR: xupd null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
@@ -1799,13 +1785,13 @@ class SELoopConsumer : public SEConsumer {
     private:
     cs *gs_spalloc_fullsquare(uint mn) {
         //cs *A = cs_spalloc (mn, mn, mn*mn, 1, 0);
-        cs *A = (cs*)cs_calloc (1, sizeof (cs)) ;
+        cs *A = (cs *)cs_calloc (1, sizeof (cs)) ;
         if (!A) return (NULL) ;
         A->m = A->n = mn ;
         A->nzmax = mn*mn ;
         A->nz = -1 ;
-        A->p = (int*)cs_malloc (mn+1, sizeof (int)) ;
-        A->i = (int*)cs_malloc (A->nzmax, sizeof (int)) ;
+        A->p = (int *)cs_malloc (mn+1, sizeof (int)) ;
+        A->i = (int *)cs_malloc (A->nzmax, sizeof (int)) ;
         // make sure A->x starts zero'd out vs. regular cs_spalloc
         A->x = (double*)cs_calloc (A->nzmax, sizeof (double)) ;
 
