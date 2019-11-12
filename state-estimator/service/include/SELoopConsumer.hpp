@@ -1225,21 +1225,16 @@ class SELoopConsumer : public SEConsumer {
         vector<double> uvec(Pmat->n);
         // Pmat is in compressed-column form; iterate over columns
         for ( uint j = 0; j < Pmat->n ; j++ ) {
-#if 1111
+#if 0000
             // for P, the first entry for each column is always the diagonal
             uint p = Pmat->p[j];
             uvec[j] = Pmat->x[p];
-#else
             // iterate over existing data in column j
             // test whether the first entry is always teh diagonal
             if (j == Pmat->i[Pmat->p[j]]) cout << "GARY Test: PASS!!!!!\n" << std::flush;
             else cout << "GARY Test: fail\n" << std::flush;
-
-#if 111111
-            for ( uint p = Pmat->p[j] ; p < Pmat->p[j+1] ; p++ ) {
 #else
-            for ( uint p = Pmat->p[j] ; p > Pmat->p[j+1] ; p++ ) {
-#endif
+            for ( uint p = Pmat->p[j] ; p < Pmat->p[j+1] ; p++ ) {
                 // get the row index for existing data
                 uint i = Pmat->i[p];
                 // GDB: it looks like the first item in each row may
@@ -1290,15 +1285,15 @@ class SELoopConsumer : public SEConsumer {
     private:
     void prep_P(cs *&Pmat) {
         // Prepare P as a diagonal matrix from state uncertanty
-        Pmat = gs_spalloc_firstcol(xqty, xqty);
+        Pmat = gs_spalloc_diagonal(xqty, xqty);
         if (!Pmat) cout << "ERROR: null Pmat in prep_P\n" << std::flush;
 
         for ( auto& node_name : node_names ) {
             uint idx = node_idxs[node_name];
             // insert the voltage magnitude variance
-            if ( Uvmag[idx] ) gs_entry_firstcol(Pmat,idx-1,Uvmag[idx]);
+            if ( Uvmag[idx] ) gs_entry_diagonal(Pmat,idx-1,Uvmag[idx]);
             // insert the voltage phase variance
-            if ( Uvarg[idx] ) gs_entry_firstcol(Pmat,node_qty + idx-1,Uvarg[idx]);
+            if ( Uvarg[idx] ) gs_entry_diagonal(Pmat,node_qty + idx-1,Uvarg[idx]);
         }
     }
 #endif
