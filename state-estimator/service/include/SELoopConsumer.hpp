@@ -100,7 +100,6 @@ class SELoopConsumer : public SEConsumer {
     };
 
     A5LIST Jshape;  // list of J entries: {zidx,xidx,i,j,dydx_type}
-    uint Jqty;      // number of non-zero Jacobian elements
 
     private:
     json jtext;     // object holding the input message
@@ -273,12 +272,12 @@ class SELoopConsumer : public SEConsumer {
                     uint j = row_pair.first;
                     if ( j == i ) {
                         // dPi/dvi and dPi/dTi exist for node i
-                        Jshape.push_back({zidx,j-1,i,i,dPi_dvi}); Jqty++;
-                        Jshape.push_back({zidx,node_qty+j-1,i,i,dPi_dTi}); Jqty++;
+                        Jshape.push_back({zidx,j-1,i,i,dPi_dvi});
+                        Jshape.push_back({zidx,node_qty+j-1,i,i,dPi_dTi});
                     } else {
                         // dPi/dvj and dPi/dTj exist for nodes adjacent to i
-                        Jshape.push_back({zidx,j-1,i,j,dPi_dvj}); Jqty++;
-                        Jshape.push_back({zidx,node_qty+j-1,i,j,dPi_dTj}); Jqty++;
+                        Jshape.push_back({zidx,j-1,i,j,dPi_dvj});
+                        Jshape.push_back({zidx,node_qty+j-1,i,j,dPi_dTj});
                     }
                 }
             }
@@ -289,12 +288,12 @@ class SELoopConsumer : public SEConsumer {
                     uint j = row_pair.first;
                     if ( j == i ) {
                         // dPi/dvi and dPi/dTi exist for node i
-                        Jshape.push_back({zidx,j-1,i,i,dQi_dvi}); Jqty++;
-                        Jshape.push_back({zidx,node_qty+j-1,i,i,dQi_dTi}); Jqty++;
+                        Jshape.push_back({zidx,j-1,i,i,dQi_dvi});
+                        Jshape.push_back({zidx,node_qty+j-1,i,i,dQi_dTi});
                     } else {
                         // dPi/dvj and dPi/dTj exists for nodes adjacent to i
-                        Jshape.push_back({zidx,j-1,i,j,dQi_dvj}); Jqty++;
-                        Jshape.push_back({zidx,node_qty+j-1,i,j,dQi_dTj}); Jqty++;
+                        Jshape.push_back({zidx,j-1,i,j,dQi_dvj});
+                        Jshape.push_back({zidx,node_qty+j-1,i,j,dQi_dTj});
                     }
                 }
             }
@@ -308,13 +307,13 @@ class SELoopConsumer : public SEConsumer {
             if
             ( !ztype.compare("vi") ) {
                 // dvi/dvi is the only partial that exists
-                Jshape.push_back({zidx,i-1,i,i,dvi_dvi}); Jqty++;
+                Jshape.push_back({zidx,i-1,i,i,dvi_dvi});
             }
 
             else
             if ( !ztype.compare("Ti") ) {
                 // dTi/dTi is the only partial that exists
-                Jshape.push_back({zidx,node_qty+i-1,i,i,dTi_dTi}); Jqty++;
+                Jshape.push_back({zidx,node_qty+i-1,i,i,dTi_dTi});
             }
 
             else { 
@@ -322,6 +321,9 @@ class SELoopConsumer : public SEConsumer {
                     ztype << std::flush;
             }
         }
+#ifdef DEBUG_PRIMARY
+        cout << "Jshape Jacobian elements: " << Jshape.size() << "\n" << std::flush;
+#endif
 
 
         // --------------------------------------------------------------------
@@ -1217,6 +1219,7 @@ class SELoopConsumer : public SEConsumer {
 //      for ( auto& reg_name : SLIST reg_names ) {}
     }
 
+#include <float.h>
 
 #ifdef DIAGONAL_P
     private:
@@ -1229,36 +1232,47 @@ class SELoopConsumer : public SEConsumer {
             // for P, the first entry for each column is always the diagonal
             uint p = Pmat->p[j];
             uvec[j] = Pmat->x[p];
-            // iterate over existing data in column j
-            // test whether the first entry is always teh diagonal
-            if (j == Pmat->i[Pmat->p[j]]) cout << "GARY Test: PASS!!!!!\n" << std::flush;
-            else cout << "GARY Test: fail\n" << std::flush;
+            //for ( uint p = Pmat->p[j] ; p < Pmat->p[j+1] ; p++ )
+            //    test whether the first entry is always the diagonal
+            //    if (j == Pmat->i[Pmat->p[j]]) cout << "Diagonal First Test: PASS!!!!!\n" << std::flush;
+            //    else cout << "Diagonal First Test: fail\n" << std::flush;
 #else
+            // iterate over existing data in column j
             for ( uint p = Pmat->p[j] ; p < Pmat->p[j+1] ; p++ ) {
                 // get the row index for existing data
-                uint i = Pmat->i[p];
-                // GDB: it looks like the first item in each row may
-                // be the diagonal so test this theory and no need to iterate
-                // if so
-                if ( i == j ) {
+                if ( Pmat->i[p] == j ) {
                     // if this is a diagonal entry, extract it
                     uvec[j] = Pmat->x[p];
-                    break;
-                }
-                else if ( i > j ) {
-                    // if we get past the diagonal, it doesn't exist
                     break;
                 }
             }
 #endif
         }
 
+#ifdef DEBUG_PRIMARY
+        double minMag = DBL_MAX;
+        double maxMag = DBL_MIN;
+        double minArg = DBL_MAX;
+        double maxArg = DBL_MIN;
+#endif
+
         // update Umag and Uarg
         for ( auto& node_name: node_names ) {
             uint idx = node_idxs[node_name];
             Uvmag[idx] = uvec[idx-1];
             Uvarg[idx] = uvec[node_qty + idx-1];
+
+#ifdef DEBUG_PRIMARY
+            minMag = fmin(minMag, fabs(Uvmag[idx]));
+            maxMag = fmax(maxMag, fabs(Uvmag[idx]));
+            minArg = fmin(minArg, fabs(Uvarg[idx]));
+            maxArg = fmax(maxArg, fabs(Uvarg[idx]));
+#endif
         }
+#ifdef DEBUG_PRIMARY
+        cout << "Uvmag min: " << minMag << ", max: " << maxMag << "\n" << std::flush;
+        cout << "Uvarg min: " << minArg << ", max: " << maxArg << "\n" << std::flush;
+#endif
     }
 #endif
 
@@ -1285,7 +1299,7 @@ class SELoopConsumer : public SEConsumer {
     private:
     void prep_P(cs *&Pmat) {
         // Prepare P as a diagonal matrix from state uncertanty
-        Pmat = gs_spalloc_diagonal(xqty, xqty);
+        Pmat = gs_spalloc_diagonal(xqty);
         if (!Pmat) cout << "ERROR: null Pmat in prep_P\n" << std::flush;
 
         for ( auto& node_name : node_names ) {
@@ -1474,17 +1488,15 @@ class SELoopConsumer : public SEConsumer {
         double startTime = getWallTime();
 #endif
         // each z component has a Jacobian component for each state
-        // RAW, funky full populate
-        // BOOT
 #ifdef XNORAW
-        J = gs_spalloc_generic(zqty,xqty,Jqty);
+        J = gs_spalloc_generic(zqty,xqty,Jshape.size());
         if (!J) cout << "ERROR: null J\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "J is " << J->m << " by " 
             << J->n << " with " << J->nzmax << " entries\n" << std::flush;
 #endif
 #else
-        cs *Jraw = cs_spalloc(zqty,xqty,Jqty,1,1);
+        cs *Jraw = cs_spalloc(zqty,xqty,Jshape.size(),1,1);
         if (!Jraw) cout << "ERROR: null Jraw\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "Jraw is " << Jraw->m << " by " 
@@ -1493,7 +1505,7 @@ class SELoopConsumer : public SEConsumer {
 #endif
 #ifdef DEBUG_HEARTBEAT
         uint beat_ctr = 0;
-        uint total_ctr = Jqty;
+        uint total_ctr = Jshape.size();
 #endif
         // loop over existing Jacobian entries
         for ( std::array<unsigned int, 5>& Jpartial : Jshape ) {
