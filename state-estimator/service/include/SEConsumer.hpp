@@ -107,9 +107,9 @@ class SEConsumer : public ExceptionListener,
 			// Check the mode and create the destination Topic or Queue
 			if ( mode == "topic" ){
 				destination = session->createTopic(target);
-				cms::Topic *tmpTopic = session->createTopic(target);
+				Topic *tmpTopic = session->createTopic(target);
 #ifdef DEBUG_PRIMARY
-				cout << "topic: " << (tmpTopic)->getTopicName() << "\n\n" << std::flush;
+				cout << "topic: " << tmpTopic->getTopicName() << "\n\n" << std::flush;
 #endif
 			}
 			else if ( mode == "queue" ){
@@ -205,7 +205,7 @@ class SEConsumer : public ExceptionListener,
 		if (connection != NULL) {
 			try {
 				connection->close();
-			} catch (cms::CMSException& ex) {
+			} catch (CMSException& ex) {
 				ex.printStackTrace();
 			}
 		}
