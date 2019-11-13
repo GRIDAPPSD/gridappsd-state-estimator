@@ -957,7 +957,7 @@ class SELoopConsumer : public SEConsumer {
                 firstEstimateFlag = false;
             }
             process_mem_usage(vm_used, res_used);
-            //cout << "*** Post-klu_solve virtual memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
+            cout << "*** Post-klu_solve virtual memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
             cout << "*** Post-klu_solve resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
 #endif
 
@@ -1192,7 +1192,7 @@ class SELoopConsumer : public SEConsumer {
 #endif
 #endif
         process_mem_usage(vm_used, res_used);
-        //cout << "End-estimate virtual memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
+        cout << "End-estimate virtual memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
         cout << "End-estimate resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n\n" << std::flush;
 #endif
     }
@@ -1285,7 +1285,7 @@ class SELoopConsumer : public SEConsumer {
     private:
     void prep_P(cs *&Pmat) {
         // Prepare P as a diagonal matrix from state uncertanty
-        Pmat = gs_spalloc_diagonal(xqty, xqty);
+        Pmat = gs_spalloc_diagonal(xqty);
         if (!Pmat) cout << "ERROR: null Pmat in prep_P\n" << std::flush;
 
         for ( auto& node_name : node_names ) {
