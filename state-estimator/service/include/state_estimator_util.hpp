@@ -191,22 +191,24 @@ namespace state_estimator_util{
 				zary.zids.push_back(pinj_zid);
 				zary.zidxs  [pinj_zid] = zary.zqty++;
 				zary.ztypes	[pinj_zid] = "Pi";
-				zary.zsigs	[pinj_zid] = 5.0;
 				zary.znode1s[pinj_zid] = node;
 				zary.znode2s[pinj_zid] = node;
-				zary.zvals	[pinj_zid] = pseudoP[node]/sbase;
 				zary.znew	[pinj_zid] = false;
+				zary.zvals	[pinj_zid] = pseudoP[node]/sbase;
+                zary.zsigs  [pinj_zid] = std::abs(pseudoP[node]/sbase) + 
+                    5.0/100/node_names.size(); // load + leakage
 	
 				// Add the Q injection
 				string qinj_zid = "pseudo_Q_"+node;
 				zary.zids.push_back(qinj_zid);
 				zary.zidxs  [qinj_zid] = zary.zqty++;
 				zary.ztypes	[qinj_zid] = "Qi";
-				zary.zsigs	[qinj_zid] = 2.0;
 				zary.znode1s[qinj_zid] = node;
 				zary.znode2s[qinj_zid] = node;
-				zary.zvals	[qinj_zid] = pseudoQ[node]/sbase;
 				zary.znew	[qinj_zid] = false;
+				zary.zvals	[qinj_zid] = pseudoQ[node]/sbase;
+                zary.zsigs  [qinj_zid] = std::abs(pseudoQ[node]/sbase) + 
+                    5.0/100/node_names.size(); // load + leakage
 			}
 		}
 	}
