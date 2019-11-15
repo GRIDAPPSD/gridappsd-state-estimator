@@ -8,7 +8,6 @@ using json = nlohmann::json;
 
 // standard data types
 #include <string>
-//#include <complex>
 #include <list>
 #include <unordered_map>
 
@@ -17,18 +16,16 @@ using json = nlohmann::json;
 
 
 #include "SensorArray.hpp"
-//// Store node names in a linked list and hash node name to their position
-//// Iterate over the linked list to access all nodes or states
-//// Note that positions are one-indexed
-//// Store sensor names in a linked list and hash node names to various params
-//#define SLIST std::list<std::string>
-////#define SIMAP std::unordered_map<std::string,unsigned int>
-//#define SBMAP std::unordered_map<std::string,bool>
-//#define SDMAP std::unordered_map<std::string,double>
-//#define SSMAP std::unordered_map<std::string,std::string>
+
+#ifndef SSMAP
+#define SSMAP std::unordered_map<std::string,std::string>
+#endif
 
 // This class listens for sensor definitions and constructs the sensors
 class SensorDefConsumer : public SEConsumer {
+    private:
+    SSMAP term_bus_map; // terminal_mrid -> bus_name
+    
 	private:
 	SensorArray zary;
 //	SLIST mmids;
@@ -52,11 +49,13 @@ class SensorDefConsumer : public SEConsumer {
 	SensorDefConsumer(const string& brokerURI, 
 				const string& username,
 				const string& password,
+                const SSMAP& term_bus_map,
 				const string& target,
 				const string& mode) {
 		this->brokerURI = brokerURI;
 		this->username = username;
 		this->password = password;
+        this->term_bus_map = term_bus_map;
 		this->target = target;
 		this->mode = mode;
 	}
@@ -81,8 +80,6 @@ class SensorDefConsumer : public SEConsumer {
 		// LOAD THE SENSORS -- sensors will deliver measurements
 		// --------------------------------------------------------------------
 		// Iterate over the sensors
-        // TODO: Uncomment the following for loop to support sensor dynamic measurements
-        
 		for ( auto& f : jtext["data"]["feeders"] ) {
 			for ( auto& m : f["measurements"] ) {
 				// store the necessary measurement information
@@ -93,7 +90,6 @@ class SensorDefConsumer : public SEConsumer {
 
 				// build z and supporting structures
 				if ( !tmeas.compare("PNV") ) {
-
 					// The node is [bus].[phase_num];
 					string node = m["ConnectivityNode"];
 					for ( auto& c : node ) c = std::toupper(c);
@@ -112,16 +108,36 @@ class SensorDefConsumer : public SEConsumer {
 					zary.znode1s[zid] = node;
 					zary.znode2s[zid] = node;
 					zary.zsigs[zid] = 0.01;		// WHERE DOES THIS COME FROM ??
-					// these don't necessarily need to be initialized
-					// - they will be initialized on access
-//					zary.zvals[zid] = 0;		// initialize to 0
-//					zary.znew[zid] = false;		// initial measurement is not "new"
+                    // uncertanty should come from the sensor service -- in that case
+                    // it won't need to be initialized
 
 					// add the voltage phase measurement
 					// --- LATER ---
 					// -------------
 
-				} else {
+				} else if ( !tmeas.compare("Pos") ) {
+                    string ce_type = m["ConductingEquipment_type"];
+                    if ( !ce_type.compare("PowerTransformer") ) {
+                        // regulator tap measurement
+                        string node = term_bus_map[m["Terminal_mRID"]];
+                        for ( auto& c : node ) c = std::toupper(c);
+                        string phase = m["phases"];
+                        if ( !phase.compare("A") ) node += ".1";
+                        if ( !phase.compare("B") ) node += ".2";
+                        if ( !phase.compare("C") ) node += ".3";
+                        if ( !phase.compare("s1") ) node += ".1";	// secondary
+                        if ( !phase.compare("s2") ) node += ".2";	// secondary
+
+                        // add the position measurement 
+//                        string zid = mmrid + "_tap";
+//                        zary.zids.push_back( zid );
+//                        zary.zidxs[zid] = zary.zqty++;
+//                        zary.ztypes[zid] = "aji";
+//                        zary.znode1s[zid] = node;
+//                        zary.znode2s[zid] = node;
+//                        zary.zsigs[zid] = 0.0000625;
+                    }
+                } else {
 					// we only care about PNV measurements for now
 				}
 			}

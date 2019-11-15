@@ -62,6 +62,7 @@ using gridappsd_requests::sparql_query;
 
 // Store x and z in a list one-indexed by position
 #define IDMAP std::unordered_map<unsigned int,double>
+#define IMDMAP std::unordered_map<unsigned int,IDMAP>
 
 int main(int argc, char** argv){
 	
@@ -156,7 +157,7 @@ int main(int argc, char** argv){
         vnomConsumer.close();
         
 		// BUILD THE A-MATRIX
-		IMMAP A;
+		IMDMAP A;
 		state_estimator_util::build_A_matrix(gad,A,node_idxs);
 
 
@@ -175,10 +176,14 @@ int main(int argc, char** argv){
 		// --------------------------------------------------------------------
 		// SENSOR INITILIZER
 		// --------------------------------------------------------------------
-		
+	    // map conducting equipment terminals to bus names	
+        SSMAP term_bus_map;
+        state_estimator_util::build_term_bus_map(gad, term_bus_map);
+
 		// Set up the sensors consumer
 		string sensTopic = "goss.gridappsd.se.response."+gad.simid+".cimdict";
-		SensorDefConsumer sensConsumer(gad.brokerURI,gad.username,gad.password,sensTopic,"queue");
+		SensorDefConsumer sensConsumer(gad.brokerURI,gad.username,gad.password, 
+            term_bus_map,sensTopic,"queue");
 		Thread sensConsumerThread(&sensConsumer);
 		sensConsumerThread.start();		// execute sensConsumer.run()
 		sensConsumer.waitUntilReady();	// wait for latch release

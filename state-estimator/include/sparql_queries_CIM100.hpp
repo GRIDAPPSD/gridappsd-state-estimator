@@ -199,6 +199,28 @@ namespace sparql_queries {
             "ORDER by ?name\n";
         return sparq;
     }
-}
 
+    string sparq_term_bus(string fdrid) {
+        string sparq = 
+            "PREFIX r:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
+            "PREFIX c:  <http://iec.ch/TC57/CIM100#> "
+            "SELECT ?termid ?busname "
+            "WHERE { "
+            "?term c:Terminal.ConnectivityNode ?bus. "
+            "?term c:IdentifiedObject.mRID ?termid. "
+            "?bus c:IdentifiedObject.name ?busname. "
+            "?bus c:IdentifiedObject.mRID ?busid. "
+            "VALUES ?fdrid {\\\"" + fdrid + "\\\"} "
+            "?term c:Terminal.ConductingEquipment ?ce. "
+            "?ce c:Equipment.EquipmentContainer ?fdr. "
+            "?fdr c:IdentifiedObject.mRID ?fdrid. "
+            "?ce c:IdentifiedObject.name ?cename. "
+            "?ce c:IdentifiedObject.mRID ?cemrid. "
+            " } "
+            "GROUP BY ?termid ?busname "
+            "ORDER BY ?termid";
+        return sparq;
+    }
+
+}
 #endif

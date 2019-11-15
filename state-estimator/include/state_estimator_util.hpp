@@ -14,6 +14,7 @@ using sparql_queries::sparq_transformer_end_vbase;
 using sparql_queries::sparq_energy_consumer_pq;
 using sparql_queries::sparq_ratio_tap_changer_nodes;
 using sparql_queries::sparq_energy_source_buses;
+using sparql_queries::sparq_term_bus;
 
 #include <string>
 #define SLIST std::list<std::string>
@@ -21,7 +22,8 @@ using sparql_queries::sparq_energy_source_buses;
 #define SDMAP std::unordered_map<std::string,double>
 #define SCMAP std::unordered_map<std::string,std::complex<double>>
 #define SSMAP std::unordered_map<std::string,std::string>
-#define IMMAP std::unordered_map<unsigned int,ICMAP>
+#define IDMAP std::unordered_map<unsigned int,double>
+#define IMDMAP std::unordered_map<unsigned int,IDMAP>
 
 namespace state_estimator_util{
 
@@ -214,7 +216,7 @@ namespace state_estimator_util{
 	}
 
 
-	void build_A_matrix(gridappsd_session& gad, IMMAP& A, SIMAP& node_idxs) {
+	void build_A_matrix(gridappsd_session& gad, IMDMAP& A, SIMAP& node_idxs) {
 		json jregs = sparql_query(gad,"regs",sparq_ratio_tap_changer_nodes(gad.modelID));
 		for ( auto& reg : jregs["data"]["results"]["bindings"] ) {
 
@@ -240,13 +242,26 @@ namespace state_estimator_util{
 			if (!regph.compare("s2")) regnode += ".2";
 			uint regidx = node_idxs[regnode];
 
+            // print
+            cout << "reg: " << reg << "\n" << std::flush;
+            cout << "\tprimnode: " << primnode <<
+                "\tregnode: " << regnode << "\n" << std::flush;
+
 			// initialize the A matrix
 			A[primidx][regidx] = 1;		// this will change
 			A[regidx][primidx] = 1;		// this stays unity and may not be required
 		}
-
 	}
 
-} // end namespace state_estimator_init
+    void build_term_bus_map(gridappsd_session& gad, SSMAP& term_bus_map) {
+        json j_term_bus = sparql_query(gad,"terms", sparq_term_bus(gad.modelID));
+        for ( auto& item : j_term_bus["data"]["results"]["bindings"] ) {
+            string termid = item["termid"]["value"];
+            string busname = item["busname"]["value"];
+            term_bus_map[termid] = busname;
+        }
+    }
+
+} // end namespace state_estimator_util
 
 #endif // SE_INIT_HPP

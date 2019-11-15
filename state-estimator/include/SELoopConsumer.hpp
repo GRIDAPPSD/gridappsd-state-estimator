@@ -70,6 +70,10 @@ using json = nlohmann::json;
 #define ISMAP std::unordered_map<unsigned int,std::string>
 #endif
 
+#ifndef IMDMAP
+#define IMDMAP std::unordered_map<unsigned int,IDMAP>
+#endif
+
 #ifdef JNORAW
 #ifndef A5MAP
 #define A5MAP std::multimap<unsigned int,std::array<unsigned int, 5>>
@@ -132,7 +136,7 @@ class SELoopConsumer : public SEConsumer {
     // system state
     private:
     ICMAP Vpu;          // voltage state in per-unit
-    IMMAP A;            // regulator tap ratios <- we need reg information
+    IMDMAP A;           // regulator tap ratios <- we need reg information
 #ifdef DIAGONAL_P
     IDMAP Uvmag;        // variance of voltage magnitudes (per-unit)
     IDMAP Uvarg;        // variance of voltage angles (per-unit)
@@ -175,7 +179,7 @@ class SELoopConsumer : public SEConsumer {
                 const ISMAP& node_name_lookup,
                 const double sbase,
                 const IMMAP& Yphys,
-                const IMMAP& A) {
+                const IMDMAP& A) {
         this->brokerURI = brokerURI;
         this->username = username;
         this->password = password;
