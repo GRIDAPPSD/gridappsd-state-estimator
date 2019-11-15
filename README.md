@@ -20,6 +20,7 @@ The following is the structure of the state estimator:
     ├── state-estimator.cpp
     ├── Makefile
     └── state-estimator.config
+└───(Prerequisite libraries--SuiteSparse, ActiveMQ-CPP, Json)
 ````
 
 ## Requirements 
@@ -92,7 +93,7 @@ sudo make install
 cd ../SuiteSparse
 make static LAPACK=-llapack BLAS=-lblas
 
-cd ..
+cd ../state-estimator
 make
 ````
 
