@@ -29,3 +29,6 @@ obj/state-estimator.o: src/state-estimator.cpp include/GenericConsumer.hpp inclu
 	mkdir -p obj
 	g++ $(CXXFLAGS) -Wno-deprecated-declarations -c $(INCLUDES) $< -o $@
 
+clean:
+	rm -f obj/*
+	rm -f bin/*

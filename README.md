@@ -13,13 +13,12 @@ The following is the structure of the state estimator:
 ├── README.md
 ├── LICENSE
 └── state-estimator
-    ├── service
-    │   ├── bin
-    │   │   └── state-estimator.out
-    │   ├── include
-    │   ├── src
-    │   ├── state-estimator.cpp
-    │   └── build.sh
+    ├── include
+    ├── src
+    ├── bin
+    ├── obj
+    ├── state-estimator.cpp
+    ├── Makefile
     └── state-estimator.config
 ````
 
@@ -37,7 +36,7 @@ The following is the structure of the state estimator:
 
 ## Adding the state estimator
 
-In order to add the state estimator to the container you will need to modify the docker-compose.yml file included in the gridappsd-docker repository.  Under the gridappsd service there is an example volumes leaf that is commented out.  Uncomment and modify these lines to add the path for the state estimator and conf file.  Adding these lines will mount the stat estimator on the container's filesystem when the container is started.
+In order to add the state estimator to the container you will need to modify the docker-compose.yml file included in the gridappsd-docker repository.  Under the gridappsd service there is an example volumes leaf that is commented out.  Uncomment and modify these lines to add the path for the state estimator and conf file.  Adding these lines will mount the state estimator on the container's filesystem when the container is started.
 
 ````
 #    volumes:
@@ -52,18 +51,50 @@ In order to add the state estimator to the container you will need to modify the
 
 ## Building the state estimator
 
-To build the state estimator, the following repositories should be cloned into ~/git
+To build the state estimator, the following repositories should be cloned into the ~/git directory
 
 ````
 	- https://github.com/GRIDAPPSD/gridappsd-state-estimator
-	- https://github.com/GRIDAPPSD/suitesparse-metis-for-windows
+
+````
+
+Then the following two repositories should be cloned into the state-estimator directory under the git repository cloned above
+
+````
+	- https://github.com/GRIDAPPSD/SuiteSparse
 	- https://github.com/GRIDAPPSD/json
 
 ````
-Navigate to the service directory and execute build.sh:
+
+Then ActiveMQ C++ client library, ActiveMQ-CPP, should be downloaded from the URL below as a Unix source code distrubtion.  This distribution should be extracted under the state-estimator directory, the same location as the SuiteSparse and json repositories.
+
+````
+    - https://activemq.apache.org/components/cms/download
+
+````
+
+Building prerequisite libraries requires some other packages to be installed first.  Specifically, SuiteSparse requires cmake, m4, liblapack-dev, and libblas-dev.  The following apt-get install commands should install those packages if they are not already installed:
 
 ```` bash
-cd gridasspd-state-estimator/state-estimator/service
-./build.sh
+sudo apt-get install cmake
+sudo apt-get install m4
+sudo apt-get install liblapack-dev libblas-dev
 ````
-The executable application will be placed in bin/state-estimator.out
+
+From the state-estimator directory, run the following commands to build the prerequisite libraries and then the state-estimator executable:
+
+```` bash
+cd activemq-cpp-library-*
+./configure
+make
+sudo make install
+
+cd ../SuiteSparse
+make static LAPACK=-llapack BLAS=-lblas
+
+cd ..
+make
+````
+
+The executable application will be placed in bin/state-estimator. Note that state-estimator has been run with ActiveMQ-CPP 3.9.4 and 3.9.5.  The Json distribution consists entirely of include files and therefore is not compiled separately from the application using it.
+
