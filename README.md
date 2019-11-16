@@ -74,12 +74,13 @@ Then ActiveMQ C++ client library, ActiveMQ-CPP, should be downloaded from the UR
 
 ````
 
-Building prerequisite libraries requires some other packages to be installed first.  Specifically, SuiteSparse requires cmake, m4, liblapack-dev, and libblas-dev.  The following apt-get install commands should install those packages if they are not already installed:
+Building prerequisite libraries requires some other packages to be installed first.  The following apt-get install commands should install those packages if they are not already installed:
 
 ```` bash
 sudo apt-get install cmake
 sudo apt-get install m4
 sudo apt-get install liblapack-dev libblas-dev
+sudo apt-get install libapr1 libapr1-dev
 ````
 
 From the state-estimator directory, run the following commands to build the prerequisite libraries and then the state-estimator executable:
