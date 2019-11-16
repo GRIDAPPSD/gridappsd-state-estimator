@@ -3,15 +3,13 @@ SSPATH=../SuiteSparse
 
 JSONINCPATH=../json/single_include/nlohmann
 SSINCPATH=$(SSPATH)/include
-
-# Need to do a configure/make/make install for ActiveMQ CMS distribution
 AMQINCPATH=/usr/local/include/activemq-cpp-3.9.5
-# APR is part of the Linux distro by default, or at least Ubuntu
+# APR is part of the Linux distro by default, hopefully here
 APRINCPATH=/usr/include/apr-1.0
-
 INCLUDES=-I$(JSONINCPATH) -I$(SSINCPATH) -I$(AMQINCPATH) -I$(APRINCPATH) -I./include
 
-# Assumes static library linking or otherwise shared libs are in $(SSPATH)/lib
+# Assumes static library linking or otherwise shared libs are all
+# in $(SSPATH)/lib
 SSCONFLIBPATH=$(SSPATH)/SuiteSparse_config
 CSLIBPATH=$(SSPATH)/CXSparse/Lib
 AMDLIBPATH=$(SSPATH)/AMD/Lib

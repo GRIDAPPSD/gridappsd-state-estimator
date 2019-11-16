@@ -91,7 +91,7 @@ make
 sudo make install
 
 cd ../SuiteSparse
-make -C SuiteSparse_config static LAPACK=-llapack BLAS=-lblas
+make -C SuiteSparse_config LAPACK=-llapack BLAS=-lblas
 make static LAPACK=-llapack BLAS=-lblas
 
 cd ../state-estimator
