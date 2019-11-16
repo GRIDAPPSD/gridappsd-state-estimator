@@ -21,11 +21,11 @@ CXXFLAGS=-Ofast
 
 bin/state-estimator: obj/state-estimator.o
 	mkdir -p bin
-	g++ $(CXXFLAGS) $? -L$(SSCONFLIBPATH) -L$(CSLIBPATH) -L$(AMDLIBPATH) -L$(BTFLIBPATH) -L$(COLAMDLIBPATH) -L$(KLULIBPATH) -lklu -lamd -lbtf -lcolamd -lcxsparse -lsuitesparseconfig -lactivemq-cpp -lssl -o $@
+	g++ $(CXXFLAGS) $? -L$(SSCONFLIBPATH) -L$(CSLIBPATH) -L$(AMDLIBPATH) -L$(BTFLIBPATH) -L$(COLAMDLIBPATH) -L$(KLULIBPATH) -lklu -lamd -lbtf -lcolamd -lcxsparse -lsuitesparseconfig -lactivemq-cpp -lstdc++ -lssl -o $@
 
 obj/state-estimator.o: src/state-estimator.cpp include/GenericConsumer.hpp include/gridappsd_requests.hpp include/SEConsumer.hpp include/SELoopConsumer.hpp include/SensorArray.hpp include/SensorDefConsumer.hpp include/SEProducer.hpp include/sparql_queries_CIM100.hpp include/sparql_queries.hpp include/state_estimator_gridappsd.hpp include/state_estimator_util.hpp include/State.hpp include/TopoProcConsumer.hpp include/VnomConsumer.hpp
 	mkdir -p obj
-	g++ $(CXXFLAGS) -Wno-deprecated-declarations -c $(INCLUDES) $< -o $@
+	g++ $(CXXFLAGS) -Wno-deprecated-declarations -std=c++11 -c $(INCLUDES) $< -o $@
 
 clean:
 	rm -f obj/*
