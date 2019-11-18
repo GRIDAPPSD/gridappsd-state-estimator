@@ -8,22 +8,25 @@ AMQINCPATH=/usr/local/include/activemq-cpp-3.9.5
 APRINCPATH=/usr/include/apr-1.0
 INCLUDES=-I$(JSONINCPATH) -I$(SSINCPATH) -I$(AMQINCPATH) -I$(APRINCPATH) -I./include
 
-# Assumes static library linking or otherwise shared libs are all
-# in $(SSPATH)/lib
+# SparseSuite libraries
 SSCONFLIBPATH=$(SSPATH)/SuiteSparse_config
 CSLIBPATH=$(SSPATH)/CXSparse/Lib
 AMDLIBPATH=$(SSPATH)/AMD/Lib
 BTFLIBPATH=$(SSPATH)/BTF/Lib
 COLAMDLIBPATH=$(SSPATH)/COLAMD/Lib
 KLULIBPATH=$(SSPATH)/KLU/Lib
+# use the first definition below for static libs, the second for shared libs
+SSLIBPATHS=-L$(SSCONFLIBPATH) -L$(CSLIBPATH) -L$(AMDLIBPATH) -L$(BTFLIBPATH) -L$(COLAMDLIBPATH) -L$(KLULIBPATH)
+#SSLIBPATHS=-L$(SSPATH)/lib
+SSLIBS=-lklu -lamd -lbtf -lcolamd -lcxsparse -lsuitesparseconfig
 
 CXXFLAGS=-Ofast
 
 bin/state-estimator: obj/state-estimator.o
 	mkdir -p bin
-	g++ $(CXXFLAGS) $? -L$(SSCONFLIBPATH) -L$(CSLIBPATH) -L$(AMDLIBPATH) -L$(BTFLIBPATH) -L$(COLAMDLIBPATH) -L$(KLULIBPATH) -lklu -lamd -lbtf -lcolamd -lcxsparse -lsuitesparseconfig -lactivemq-cpp -lstdc++ -lssl -o $@
+	g++ $(CXXFLAGS) $? $(SSLIBPATHS) $(SSLIBS) -lactivemq-cpp -lstdc++ -lssl -o $@
 
-obj/state-estimator.o: src/state-estimator.cpp include/GenericConsumer.hpp include/gridappsd_requests.hpp include/SEConsumer.hpp include/SELoopConsumer.hpp include/SensorArray.hpp include/SensorDefConsumer.hpp include/SEProducer.hpp include/sparql_queries_CIM100.hpp include/sparql_queries.hpp include/state_estimator_gridappsd.hpp include/state_estimator_util.hpp include/State.hpp include/TopoProcConsumer.hpp include/VnomConsumer.hpp
+obj/state-estimator.o: src/state-estimator.cpp $(wildcard include/*.hpp)
 	mkdir -p obj
 	g++ $(CXXFLAGS) -Wno-deprecated-declarations -std=c++11 -c $(INCLUDES) $< -o $@
 
