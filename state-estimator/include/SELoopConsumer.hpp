@@ -1,7 +1,7 @@
 #ifndef SELOOPCONSUMER_HPP
 #define SELOOPCONSUMER_HPP
 
-//#define JNORAW
+#define JNORAW
 
 #include "json.hpp"
 using json = nlohmann::json;
@@ -1534,7 +1534,7 @@ class SELoopConsumer : public SEConsumer {
 #endif
         // each z component has a Jacobian component for each state
 #ifdef JNORAW
-        J = gs_spalloc_generic(zqty,xqty,Jshapemap.size());
+        J = gs_spalloc_colorder(zqty,xqty,Jshapemap.size());
         if (!J) cout << "ERROR: null J\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "J is " << J->m << " by " 
@@ -1598,7 +1598,7 @@ class SELoopConsumer : public SEConsumer {
                 set_n(i,0);
                 dP = dP + 2*vi * g;
 #ifdef JNORAW
-                if ( abs(dP > NEGL ) ) gs_entry_generic(J,zidx,xidx,dP);
+                if ( abs(dP > NEGL ) ) gs_entry_colorder(J,zidx,xidx,dP);
 #else
                 if ( abs(dP > NEGL ) ) cs_entry(Jraw,zidx,xidx,dP);
 #endif
@@ -1614,7 +1614,7 @@ class SELoopConsumer : public SEConsumer {
                 set_n(i,j);
                 dP = -1.0 * vi/ai/aj * (g*cos(T) + b*sin(T));
 #ifdef JNORAW
-                if ( abs(dP) > NEGL ) gs_entry_generic(J,zidx,xidx,dP);
+                if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
 #else
                 if ( abs(dP) > NEGL ) cs_entry(Jraw,zidx,xidx,dP);
 #endif
@@ -1638,7 +1638,7 @@ class SELoopConsumer : public SEConsumer {
                 set_n(i,0);
                 dQ = dQ - 2*vi*b;
 #ifdef JNORAW
-                if ( abs(dQ) > NEGL ) gs_entry_generic(J,zidx,xidx,dQ);
+                if ( abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
 #else
                 if ( abs(dQ) > NEGL ) cs_entry(Jraw,zidx,xidx,dQ);
 #endif
@@ -1654,7 +1654,7 @@ class SELoopConsumer : public SEConsumer {
                 set_n(i,j);
                 dQ = -1.0 * vi/ai/aj * (g*sin(T) - b*cos(T));
 #ifdef JNORAW
-                if ( abs(dQ) > NEGL ) gs_entry_generic(J,zidx,xidx,dQ);
+                if ( abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
 #else
                 if ( abs(dQ) > NEGL ) cs_entry(Jraw,zidx,xidx,dQ);
 #endif
@@ -1664,7 +1664,7 @@ class SELoopConsumer : public SEConsumer {
             if ( entry_type == dvi_dvi ) {
                  // --- compute dvi/dvi
 #ifdef JNORAW
-                 gs_entry_generic(J,zidx,xidx,1.0);
+                 gs_entry_colorder(J,zidx,xidx,1.0);
 #else
                  cs_entry(Jraw,zidx,xidx,1.0);
 #endif
@@ -1685,7 +1685,7 @@ class SELoopConsumer : public SEConsumer {
                 }
                 // reference node component is 0
 #ifdef JNORAW
-                if ( abs(dP) > NEGL ) gs_entry_generic(J,zidx,xidx,dP);
+                if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
 #else
                 if ( abs(dP) > NEGL ) cs_entry(Jraw,zidx,xidx,dP);
 #endif
@@ -1701,7 +1701,7 @@ class SELoopConsumer : public SEConsumer {
                  set_n(i,j);
                  dP = -1.0 * vi*vj/ai/aj * (g*sin(T) - b*cos(T));
 #ifdef JNORAW
-                 if ( abs(dP) > NEGL ) gs_entry_generic(J,zidx,xidx,dP);
+                 if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
 #else
                  if ( abs(dP) > NEGL ) cs_entry(Jraw,zidx,xidx,dP);
 #endif
@@ -1722,7 +1722,7 @@ class SELoopConsumer : public SEConsumer {
                 }
                 // reference component is 0
 #ifdef JNORAW
-                if (abs(dQ) > NEGL ) gs_entry_generic(J,zidx,xidx,dQ);
+                if (abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
 #else
                 if (abs(dQ) > NEGL ) cs_entry(Jraw,zidx,xidx,dQ);
 #endif
@@ -1738,7 +1738,7 @@ class SELoopConsumer : public SEConsumer {
                 set_n(i,j);
                 dQ = vi*vj/ai/aj * (g*cos(T) + b*sin(T));
 #ifdef JNORAW
-                if ( abs(dQ) > NEGL ) gs_entry_generic(J,zidx,xidx,dQ);
+                if ( abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
 #else
                 if ( abs(dQ) > NEGL ) cs_entry(Jraw,zidx,xidx,dQ);
 #endif
@@ -1747,7 +1747,7 @@ class SELoopConsumer : public SEConsumer {
             else
             if ( entry_type == dTi_dTi ) {
 #ifdef JNORAW
-                gs_entry_generic(J,zidx,xidx,1.0);
+                gs_entry_colorder(J,zidx,xidx,1.0);
 #else
                 cs_entry(Jraw,zidx,xidx,1.0);
 #endif
@@ -1765,16 +1765,12 @@ class SELoopConsumer : public SEConsumer {
         }
 
 #ifndef JNORAW
-        J = cs_compress(Jraw);
-        //cout << "Jraw PRINT\n" << std::flush;
-        //cs_print(Jraw, 0);
-        //cout << "======================================\n" << std::flush;
-        //cout << "J PRINT\n" << std::flush;
+        J = cs_compress(Jraw); cs_spfree(Jraw);
+        //cout << "J with raw PRINT\n" << std::flush;
         //cs_print(J, 0);
         //cout << "======================================\n" << std::flush;
-        cs_spfree(Jraw);
 #else
-        //cout << "J PRINT\n" << std::flush;
+        //cout << "J without raw PRINT\n" << std::flush;
         //cs_print(J, 0);
         //cout << "======================================\n" << std::flush;
 #endif
@@ -1877,44 +1873,31 @@ class SELoopConsumer : public SEConsumer {
 
 #ifdef JNORAW
     private:
-    cs *gs_spalloc_generic(uint m, uint n, uint nzmax) {
-        //cs *A = cs_spalloc (mn, mn, mn*mn, 1, 0);
+    int gsidx;
+
+    private:
+    cs *gs_spalloc_colorder(uint m, uint n, uint nzmax) {
         cs *A = (cs*)cs_calloc (1, sizeof (cs)) ;
         if (!A) return (NULL) ;
         A->m = m; A->n = n ;
         A->nzmax = nzmax ;
         A->nz = -1 ;
-        A->p = (int*)cs_malloc (n+1, sizeof (int)) ;
+        // make sure A->p starts zero'd out vs. regular cs_spalloc since
+        // zero values are used to determine if A->p has been set
+        A->p = (int*)cs_calloc (n+1, sizeof (int)) ;
         A->i = (int*)cs_malloc (nzmax, sizeof (int)) ;
-        // make sure A->x starts zero'd out vs. regular cs_spalloc
-        A->x = (double*)cs_calloc (A->nzmax, sizeof (double)) ;
+        A->x = (double*)cs_malloc (nzmax, sizeof (double)) ;
 
-        // TODO: this code assumes all entries and ordered, which is not
-        // the case for a generic mxn sparse matrix
-        A->p[n] = A->nzmax;
-        for (uint jj=0; jj<n; jj++) {
-            A->p[jj] = jj*n;
-            for (uint ii=0; ii<m; ii++)
-                A->i[jj*n + ii] = ii;
-        }
+        gsidx = 0;
         return (A);
     }
 
     private:
-    void gs_entry_generic(cs *A, uint ii, uint jj, double value) {
-#if 1000000
-        cout << "$$$ gs_entry_generic row: " << ii << ", col: " << jj << ", val: " << value << "\n" << std::flush;
-#else
-        // TODO: this needs to be coded if actually used
-        // the "square" method implementation
-        A->x[jj*A->n + ii] = value;
-
-        // stolen from the "firstcol" method as a template
-        A->i[A->nzmax] = ii;
-        A->x[A->nzmax] = value;
-        A->nzmax++;
-        A->p[1] = A->nzmax;
-#endif
+    void gs_entry_colorder(cs *A, uint ii, uint jj, double value) {
+        if (jj>0 && A->p[jj]==0) A->p[jj] = gsidx;
+        A->i[gsidx] = ii;
+        A->x[gsidx++] = value;
+        if (jj+1 == A->n) A->p[jj+1] = gsidx;
     }
 #endif
 

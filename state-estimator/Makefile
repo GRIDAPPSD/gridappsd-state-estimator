@@ -21,6 +21,7 @@ SSLIBPATHS=-L$(SSCONFLIBPATH) -L$(CSLIBPATH) -L$(AMDLIBPATH) -L$(BTFLIBPATH) -L$
 SSLIBS=-lklu -lamd -lbtf -lcolamd -lcxsparse -lsuitesparseconfig
 
 CXXFLAGS=-Ofast
+#CXXFLAGS=-g
 
 bin/state-estimator: obj/state-estimator.o
 	mkdir -p bin
