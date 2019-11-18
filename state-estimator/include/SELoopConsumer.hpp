@@ -1,8 +1,6 @@
 #ifndef SELOOPCONSUMER_HPP
 #define SELOOPCONSUMER_HPP
 
-//#define JNORAW
-
 #include "json.hpp"
 using json = nlohmann::json;
 
@@ -74,15 +72,9 @@ using json = nlohmann::json;
 #define IMDMAP std::unordered_map<unsigned int,IDMAP>
 #endif
 
-#ifdef JNORAW
 #ifndef A5MAP
 #define A5MAP std::multimap<unsigned int,std::array<unsigned int, 5>>
 #define A5PAIR std::pair<unsigned int, std::array<unsigned int, 5>>
-#endif
-#else
-#ifndef A5LIST
-#define A5LIST std::list<std::array<unsigned int, 5>>
-#endif
 #endif
 
 // negligable
@@ -112,11 +104,7 @@ class SELoopConsumer : public SEConsumer {
         dPi_dTi, dPi_dTj, dQi_dTi, dQi_dTj, dTi_dTi,
     };
 
-#ifdef JNORAW
     A5MAP Jshapemap;  // column ordered map of J entries: {zidx,xidx,i,j,dydx_type}
-#else
-    A5LIST Jshape;  // list of J entries: {zidx,xidx,i,j,dydx_type}
-#endif
 
     private:
     json jtext;     // object holding the input message
@@ -289,22 +277,12 @@ class SELoopConsumer : public SEConsumer {
                     uint j = row_pair.first;
                     if ( j == i ) {
                         // dPi/dvi and dPi/dTi exist for node i
-#ifdef JNORAW
                         Jshapemap.insert(A5PAIR(j-1, {zidx,j-1,i,i,dPi_dvi}));
                         Jshapemap.insert(A5PAIR(node_qty+j-1, {zidx,node_qty+j-1,i,i,dPi_dTi}));
-#else
-                        Jshape.push_back({zidx,j-1,i,i,dPi_dvi});
-                        Jshape.push_back({zidx,node_qty+j-1,i,i,dPi_dTi});
-#endif
                     } else {
                         // dPi/dvj and dPi/dTj exist for nodes adjacent to i
-#ifdef JNORAW
                         Jshapemap.insert(A5PAIR(j-1, {zidx,j-1,i,j,dPi_dvj}));
                         Jshapemap.insert(A5PAIR(node_qty+j-1, {zidx,node_qty+j-1,i,j,dPi_dTj}));
-#else
-                        Jshape.push_back({zidx,j-1,i,j,dPi_dvj});
-                        Jshape.push_back({zidx,node_qty+j-1,i,j,dPi_dTj});
-#endif
                     }
                 }
             }
@@ -315,22 +293,12 @@ class SELoopConsumer : public SEConsumer {
                     uint j = row_pair.first;
                     if ( j == i ) {
                         // dPi/dvi and dPi/dTi exist for node i
-#ifdef JNORAW
                         Jshapemap.insert(A5PAIR(j-1, {zidx,j-1,i,i,dQi_dvi}));
                         Jshapemap.insert(A5PAIR(node_qty+j-1, {zidx,node_qty+j-1,i,i,dQi_dTi}));
-#else
-                        Jshape.push_back({zidx,j-1,i,i,dQi_dvi});
-                        Jshape.push_back({zidx,node_qty+j-1,i,i,dQi_dTi});
-#endif
                     } else {
                         // dPi/dvj and dPi/dTj exists for nodes adjacent to i
-#ifdef JNORAW
                         Jshapemap.insert(A5PAIR(j-1, {zidx,j-1,i,j,dQi_dvj}));
                         Jshapemap.insert(A5PAIR(node_qty+j-1, {zidx,node_qty+j-1,i,j,dQi_dTj}));
-#else
-                        Jshape.push_back({zidx,j-1,i,j,dQi_dvj});
-                        Jshape.push_back({zidx,node_qty+j-1,i,j,dQi_dTj});
-#endif
                     }
                 }
             }
@@ -344,21 +312,13 @@ class SELoopConsumer : public SEConsumer {
             if
             ( !ztype.compare("vi") ) {
                 // dvi/dvi is the only partial that exists
-#ifdef JNORAW
                 Jshapemap.insert(A5PAIR(i-1, {zidx,i-1,i,i,dvi_dvi}));
-#else
-                Jshape.push_back({zidx,i-1,i,i,dvi_dvi});
-#endif
             }
 
             else
             if ( !ztype.compare("Ti") ) {
                 // dTi/dTi is the only partial that exists
-#ifdef JNORAW
                 Jshapemap.insert(A5PAIR(node_qty+i-1, {zidx,node_qty+i-1,i,i,dTi_dTi}));
-#else
-                Jshape.push_back({zidx,node_qty+i-1,i,i,dTi_dTi});
-#endif
             }
 
             else { 
@@ -367,11 +327,7 @@ class SELoopConsumer : public SEConsumer {
             }
         }
 #ifdef DEBUG_PRIMARY
-#ifdef JNORAW
         cout << "Jshapemap Jacobian elements: " << Jshapemap.size() << "\n" << std::flush;
-#else
-        cout << "Jshape Jacobian elements: " << Jshape.size() << "\n" << std::flush;
-#endif
 #endif
 
 
@@ -1537,32 +1493,18 @@ class SELoopConsumer : public SEConsumer {
         double startTime = getWallTime();
 #endif
         // each z component has a Jacobian component for each state
-#ifdef JNORAW
-        J = gs_spalloc_generic(zqty,xqty,Jshapemap.size());
+        J = gs_spalloc_colorder(zqty,xqty,Jshapemap.size());
         if (!J) cout << "ERROR: null J\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else cout << "J is " << J->m << " by " 
             << J->n << " with " << J->nzmax << " entries\n" << std::flush;
 #endif
-#else
-        cs *Jraw = cs_spalloc(zqty,xqty,Jshape.size(),1,1);
-        if (!Jraw) cout << "ERROR: null Jraw\n" << std::flush;
-#ifdef DEBUG_PRIMARY
-        else cout << "Jraw is " << Jraw->m << " by " 
-            << Jraw->n << " with " << Jraw->nzmax << " entries\n" << std::flush;
-#endif
-#endif
 #ifdef DEBUG_HEARTBEAT
         uint beat_ctr = 0;
         uint total_ctr = Jshape.size();
 #endif
-#ifdef JNORAW
         // loop over existing Jacobian entries
         for (std::pair<unsigned int, std::array<unsigned int, 5>> Jelem : Jshapemap) {
-#else
-        // loop over existing Jacobian entries
-        for ( std::array<unsigned int, 5>& Jpartial : Jshape ) {
-#endif
 #ifdef DEBUG_HEARTBEAT
             if ( ++beat_ctr % 100 == 0 ) 
                 cout << "--- calc_J heartbeat - " << beat_ctr << ", " <<
@@ -1571,19 +1513,11 @@ class SELoopConsumer : public SEConsumer {
 #endif
             
             // Unpack entry data
-#ifdef JNORAW
             uint zidx = Jelem.second[0];
             uint xidx = Jelem.second[1];
             uint i = Jelem.second[2];
             uint j = Jelem.second[3];
             uint entry_type = Jelem.second[4];
-#else
-            uint zidx = Jpartial[0];
-            uint xidx = Jpartial[1];
-            uint i = Jpartial[2];
-            uint j = Jpartial[3];
-            uint entry_type = Jpartial[4];
-#endif
 
             if ( entry_type == dPi_dvi ) {
                 // --- compute dPi/dvi
@@ -1601,11 +1535,7 @@ class SELoopConsumer : public SEConsumer {
                 // consider the reference node
                 set_n(i,0);
                 dP = dP + 2*vi * g;
-#ifdef JNORAW
-                if ( abs(dP > NEGL ) ) gs_entry_generic(J,zidx,xidx,dP);
-#else
-                if ( abs(dP > NEGL ) ) cs_entry(Jraw,zidx,xidx,dP);
-#endif
+                if ( abs(dP > NEGL ) ) gs_entry_colorder(J,zidx,xidx,dP);
             }
 
             else
@@ -1617,11 +1547,7 @@ class SELoopConsumer : public SEConsumer {
 
                 set_n(i,j);
                 dP = -1.0 * vi/ai/aj * (g*cos(T) + b*sin(T));
-#ifdef JNORAW
-                if ( abs(dP) > NEGL ) gs_entry_generic(J,zidx,xidx,dP);
-#else
-                if ( abs(dP) > NEGL ) cs_entry(Jraw,zidx,xidx,dP);
-#endif
+                if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
             }
 
             else
@@ -1641,11 +1567,7 @@ class SELoopConsumer : public SEConsumer {
                 // consider the reference node
                 set_n(i,0);
                 dQ = dQ - 2*vi*b;
-#ifdef JNORAW
-                if ( abs(dQ) > NEGL ) gs_entry_generic(J,zidx,xidx,dQ);
-#else
-                if ( abs(dQ) > NEGL ) cs_entry(Jraw,zidx,xidx,dQ);
-#endif
+                if ( abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
             }
 
             else
@@ -1657,21 +1579,13 @@ class SELoopConsumer : public SEConsumer {
 
                 set_n(i,j);
                 dQ = -1.0 * vi/ai/aj * (g*sin(T) - b*cos(T));
-#ifdef JNORAW
-                if ( abs(dQ) > NEGL ) gs_entry_generic(J,zidx,xidx,dQ);
-#else
-                if ( abs(dQ) > NEGL ) cs_entry(Jraw,zidx,xidx,dQ);
-#endif
+                if ( abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
             }
 
             else
             if ( entry_type == dvi_dvi ) {
                  // --- compute dvi/dvi
-#ifdef JNORAW
-                 gs_entry_generic(J,zidx,xidx,1.0);
-#else
-                 cs_entry(Jraw,zidx,xidx,1.0);
-#endif
+                 gs_entry_colorder(J,zidx,xidx,1.0);
             }
             
             else
@@ -1688,11 +1602,7 @@ class SELoopConsumer : public SEConsumer {
                     }
                 }
                 // reference node component is 0
-#ifdef JNORAW
-                if ( abs(dP) > NEGL ) gs_entry_generic(J,zidx,xidx,dP);
-#else
-                if ( abs(dP) > NEGL ) cs_entry(Jraw,zidx,xidx,dP);
-#endif
+                if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
             }
 
             else
@@ -1704,11 +1614,7 @@ class SELoopConsumer : public SEConsumer {
  
                  set_n(i,j);
                  dP = -1.0 * vi*vj/ai/aj * (g*sin(T) - b*cos(T));
-#ifdef JNORAW
-                 if ( abs(dP) > NEGL ) gs_entry_generic(J,zidx,xidx,dP);
-#else
-                 if ( abs(dP) > NEGL ) cs_entry(Jraw,zidx,xidx,dP);
-#endif
+                 if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
             }
 
             else
@@ -1725,11 +1631,7 @@ class SELoopConsumer : public SEConsumer {
                     }
                 }
                 // reference component is 0
-#ifdef JNORAW
-                if (abs(dQ) > NEGL ) gs_entry_generic(J,zidx,xidx,dQ);
-#else
-                if (abs(dQ) > NEGL ) cs_entry(Jraw,zidx,xidx,dQ);
-#endif
+                if (abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
             }
 
             else
@@ -1741,20 +1643,12 @@ class SELoopConsumer : public SEConsumer {
 
                 set_n(i,j);
                 dQ = vi*vj/ai/aj * (g*cos(T) + b*sin(T));
-#ifdef JNORAW
-                if ( abs(dQ) > NEGL ) gs_entry_generic(J,zidx,xidx,dQ);
-#else
-                if ( abs(dQ) > NEGL ) cs_entry(Jraw,zidx,xidx,dQ);
-#endif
+                if ( abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
             }
 
             else
             if ( entry_type == dTi_dTi ) {
-#ifdef JNORAW
-                gs_entry_generic(J,zidx,xidx,1.0);
-#else
-                cs_entry(Jraw,zidx,xidx,1.0);
-#endif
+                gs_entry_colorder(J,zidx,xidx,1.0);
             }
 
             else {
@@ -1767,21 +1661,6 @@ class SELoopConsumer : public SEConsumer {
             // -------------
 
         }
-
-#ifndef JNORAW
-        J = cs_compress(Jraw);
-        //cout << "Jraw PRINT\n" << std::flush;
-        //cs_print(Jraw, 0);
-        //cout << "======================================\n" << std::flush;
-        //cout << "J PRINT\n" << std::flush;
-        //cs_print(J, 0);
-        //cout << "======================================\n" << std::flush;
-        cs_spfree(Jraw);
-#else
-        //cout << "J PRINT\n" << std::flush;
-        //cs_print(J, 0);
-        //cout << "======================================\n" << std::flush;
-#endif
 
 #ifdef DEBUG_PRIMARY
         double endTime = getWallTime();
@@ -1879,49 +1758,33 @@ class SELoopConsumer : public SEConsumer {
         A->x[jj*A->n + ii] = value;
     }
 
-#ifdef JNORAW
     private:
-    cs *gs_spalloc_generic(uint m, uint n, uint nzmax) {
-        //cs *A = cs_spalloc (mn, mn, mn*mn, 1, 0);
+    int gsidx;
+
+    private:
+    cs *gs_spalloc_colorder(uint m, uint n, uint nzmax) {
         cs *A = (cs*)cs_calloc (1, sizeof (cs)) ;
         if (!A) return (NULL) ;
         A->m = m; A->n = n ;
         A->nzmax = nzmax ;
         A->nz = -1 ;
-        A->p = (int*)cs_malloc (n+1, sizeof (int)) ;
+        // make sure A->p starts zero'd out vs. regular cs_spalloc since
+        // zero values are used to determine if A->p has been set
+        A->p = (int*)cs_calloc (n+1, sizeof (int)) ;
         A->i = (int*)cs_malloc (nzmax, sizeof (int)) ;
-        // make sure A->x starts zero'd out vs. regular cs_spalloc
-        A->x = (double*)cs_calloc (A->nzmax, sizeof (double)) ;
+        A->x = (double*)cs_malloc (nzmax, sizeof (double)) ;
 
-        // TODO: this code assumes all entries and ordered, which is not
-        // the case for a generic mxn sparse matrix
-        A->p[n] = A->nzmax;
-        for (uint jj=0; jj<n; jj++) {
-            A->p[jj] = jj*n;
-            for (uint ii=0; ii<m; ii++)
-                A->i[jj*n + ii] = ii;
-        }
+        gsidx = 0;
         return (A);
     }
 
     private:
-    void gs_entry_generic(cs *A, uint ii, uint jj, double value) {
-#if 1000000
-        cout << "$$$ gs_entry_generic row: " << ii << ", col: " << jj << ", val: " << value << "\n" << std::flush;
-#else
-        // TODO: this needs to be coded if actually used
-        // the "square" method implementation
-        A->x[jj*A->n + ii] = value;
-
-        // stolen from the "firstcol" method as a template
-        A->i[A->nzmax] = ii;
-        A->x[A->nzmax] = value;
-        A->nzmax++;
-        A->p[1] = A->nzmax;
-#endif
+    void gs_entry_colorder(cs *A, uint ii, uint jj, double value) {
+        if (jj>0 && A->p[jj]==0) A->p[jj] = gsidx;
+        A->i[gsidx] = ii;
+        A->x[gsidx++] = value;
+        if (jj+1 == A->n) A->p[jj+1] = gsidx;
     }
-#endif
-
 
 #ifdef DEBUG_FILES
     private:
@@ -1962,6 +1825,7 @@ class SELoopConsumer : public SEConsumer {
         string secstr = (sec<10)? "0"+std::to_string(sec): std::to_string(sec);
         return (std::to_string((uint)seconds/60) + ":" + secstr);
     }
+#endif
 
 #ifdef DEBUG_HEARTBEAT
     private:
@@ -2058,7 +1922,6 @@ class SELoopConsumer : public SEConsumer {
         res_used = std::to_string(resident_set) + units;
     }
 };
-#endif
 #endif
 
 #endif
