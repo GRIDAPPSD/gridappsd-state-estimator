@@ -94,12 +94,6 @@ int main(int argc, char** argv){
 		state_estimator_util::get_nodes(gad,node_bmrids,node_phs);
 
 
-
-//		// PSEUDO-MEASUREMENTS
-//		json jpsm = sparql_query(gad,"psm",sparq_energy_consumer_pq(gad.modelID));
-//		cout << jpsm.dump() + '\n' << std::flush;
-
-
 		// --------------------------------------------------------------------
 		// TOPOLOGY PROCESSOR
 		// --------------------------------------------------------------------
@@ -160,18 +154,6 @@ int main(int argc, char** argv){
 		IMDMAP A;
 		state_estimator_util::build_A_matrix(gad,A,node_idxs);
 
-
-/*
-		// INITIALIZE THE STATE VECTOR
-		IDMAP xV;	// container for voltage magnitude states
-		IDMAP xT;	// container for voltage angle states
-		for ( auto& node : node_names ) {
-			xV[node_idxs[node]] = abs(node_vnoms[node]);
-			xT[node_idxs[node]] = 180/PI * arg(node_vnoms[node]);
-		}
-		int xqty = xV.size() + xT.size();
-		if ( xqty != 2*node_qty) throw "x initialization failed";
-*/
 
 		// --------------------------------------------------------------------
 		// SENSOR INITILIZER
