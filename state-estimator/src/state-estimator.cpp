@@ -76,12 +76,33 @@ int main(int argc, char** argv){
 	// ------------------------------------------------------------------------
 	state_estimator_gridappsd::gridappsd_session gad(se);
 
+    // declare the thread-safe queue shared between SELoopConsumer (writer)
+    // and SELoopWorker (reader)
+    SharedQueue<json> workQueue;
+
 	// ------------------------------------------------------------------------
 	// START THE AMQ INTERFACE
 	// ------------------------------------------------------------------------
 
 	try {
 		activemq::library::ActiveMQCPP::initializeLibrary();
+
+		// --------------------------------------------------------------------
+		// LISTEN FOR MEASUREMENTS
+		// --------------------------------------------------------------------
+
+		// measurements come from the simulation output
+		string simoutTopic = "goss.gridappsd.simulation.output."+gad.simid;
+
+		SELoopConsumer loopConsumer(&workQueue, gad.brokerURI, gad.username,
+            gad.password, simoutTopic, "topic");
+		Thread loopConsumerThread(&loopConsumer);
+		loopConsumerThread.start();	// execute loopConsumer.run()
+		loopConsumer.waitUntilReady();	// wait for the startup latch release
+
+#ifdef DEBUG_PRIMARY
+		cout << "\nListening for simulation output on "+simoutTopic+'\n' << std::flush;
+#endif
 
 		// --------------------------------------------------------------------
 		// MAKE SOME SPARQL QUERIES
@@ -216,39 +237,15 @@ int main(int argc, char** argv){
 				node_names,node_vnoms,sbase);
 
 #ifdef DEBUG_PRIMARY
-		cout << "\nStart initializing loop worker...\n" << std::flush;
+		cout << "\nInitializing SE loop worker...\n" << std::flush;
 #endif
-        // declare the thread-safe queue shared between SELoopConsumer (writer)
-        // and SELoopWorker (reader)
-        SharedQueue<json> workQueue;
-
         // Initialize class that does the state estimates
 		SELoopWorker loopWorker(&workQueue, gad.brokerURI, gad.username,
             gad.password, gad.simid, zary, node_qty, node_names, node_idxs,
             node_vnoms, node_bmrids, node_phs, node_name_lookup, sbase, Y, A);
-#ifdef DEBUG_PRIMARY
-		cout << "Done initializing loop worker\n" << std::flush;
-#endif
-
-		// --------------------------------------------------------------------
-		// LISTEN FOR MEASUREMENTS
-		// --------------------------------------------------------------------
-
-		// measurements come from the simulation output
-		string simoutTopic = "goss.gridappsd.simulation.output."+gad.simid;
-
-		SELoopConsumer loopConsumer(&workQueue, gad.brokerURI, gad.username,
-            gad.password, simoutTopic, "topic");
-		Thread loopConsumerThread(&loopConsumer);
-		loopConsumerThread.start();	// execute loopConsumer.run()
-		loopConsumer.waitUntilReady();	// wait for the startup latch release
-		
-#ifdef DEBUG_PRIMARY
-		cout << "\nListening for simulation output on "+simoutTopic+'\n' << std::flush;
-#endif
 
 #ifdef DEBUG_PRIMARY
-		cout << "\nStarting the SE work loop from main\n" << std::flush;
+		cout << "\nStarting the SE work loop ...\n" << std::flush;
 #endif
 		loopWorker.workLoop();
 		
@@ -259,5 +256,4 @@ int main(int argc, char** argv){
 		cerr << "Error: Unhandled Exception\n" << std::flush;
 		throw NULL;
 	}
-
 }
