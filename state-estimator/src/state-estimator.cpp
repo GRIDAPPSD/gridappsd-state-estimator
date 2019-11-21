@@ -11,9 +11,7 @@
 #include "VnomConsumer.hpp"
 #include "SensorDefConsumer.hpp"
 #include "SELoopConsumer.hpp"
-
-#include "json.hpp"
-using json = nlohmann::json;
+#include "SELoopWorker.hpp"
 
 #include "gridappsd_requests.hpp"
 using gridappsd_requests::sparql_query;
@@ -27,7 +25,6 @@ using gridappsd_requests::sparql_query;
 //using sparql_queries::sparq_ratio_tap_changer_nodes;
 
 #include "state_estimator_util.hpp"
-
 
 #include "State.hpp"
 #include "SensorArray.hpp"
@@ -64,6 +61,7 @@ using gridappsd_requests::sparql_query;
 #define IDMAP std::unordered_map<unsigned int,double>
 #define IMDMAP std::unordered_map<unsigned int,IDMAP>
 
+
 int main(int argc, char** argv){
 	
 	// ------------------------------------------------------------------------
@@ -94,11 +92,9 @@ int main(int argc, char** argv){
 		state_estimator_util::get_nodes(gad,node_bmrids,node_phs);
 
 
-
 //		// PSEUDO-MEASUREMENTS
 //		json jpsm = sparql_query(gad,"psm",sparq_energy_consumer_pq(gad.modelID));
 //		cout << jpsm.dump() + '\n' << std::flush;
-
 
 		// --------------------------------------------------------------------
 		// TOPOLOGY PROCESSOR
@@ -160,7 +156,6 @@ int main(int argc, char** argv){
 		IMDMAP A;
 		state_estimator_util::build_A_matrix(gad,A,node_idxs);
 
-
 /*
 		// INITIALIZE THE STATE VECTOR
 		IDMAP xV;	// container for voltage magnitude states
@@ -210,7 +205,7 @@ int main(int argc, char** argv){
 		// Wait for sensor initializer and retrieve sensors
 		sensConsumerThread.join();
 
-        // TODO: Uncomment the following two lines to add sensors
+        // Add Sensors
 		sensConsumer.fillSens(zary);
 		sensConsumer.close();
 
@@ -219,19 +214,26 @@ int main(int argc, char** argv){
 		state_estimator_util::insert_pseudo_measurements(gad,zary,
 				node_names,node_vnoms,sbase);
 
+#ifdef DEBUG_PRIMARY
+		cout << "\nStart initializing loop worker...\n" << std::flush;
+#endif
+        // Initialize class that does the state estimates
+		SELoopWorker loopWorker(gad.brokerURI,gad.username,gad.password,
+			gad.simid,zary,node_qty,node_names,node_idxs,node_vnoms,
+            node_bmrids,node_phs,node_name_lookup,sbase,Y,A);
+#ifdef DEBUG_PRIMARY
+		cout << "Done initializing loop worker\n" << std::flush;
+#endif
+
 		// --------------------------------------------------------------------
 		// LISTEN FOR MEASUREMENTS
 		// --------------------------------------------------------------------
 
-		// ideally we want to compute an estimate on a thread at intervals and
-		//   collect measurements in the meantime
-
 		// measurements come from the simulation output
 		string simoutTopic = "goss.gridappsd.simulation.output."+gad.simid;
+
 		SELoopConsumer loopConsumer(gad.brokerURI,gad.username,gad.password,
-			simoutTopic,"topic",gad.simid,zary,
-			node_qty,node_names,node_idxs,node_vnoms,node_bmrids,node_phs,
-			node_name_lookup,sbase,Y,A);
+			simoutTopic,"topic");
 		Thread loopConsumerThread(&loopConsumer);
 		loopConsumerThread.start();	// execute loopConsumer.run()
 		loopConsumer.waitUntilReady();	// wait for the startup latch release
@@ -239,16 +241,18 @@ int main(int argc, char** argv){
 #ifdef DEBUG_PRIMARY
 		cout << "\nListening for simulation output on "+simoutTopic+'\n' << std::flush;
 #endif
-		
-		// wait for the estimator to exit:
-		loopConsumerThread.join(); loopConsumer.close();
 
-		// now we're done
+#ifdef DEBUG_PRIMARY
+		cout << "\nStarting the SE work loop from main\n" << std::flush;
+#endif
+		loopWorker.workLoop();
+		
+        // we'll never get here
 		return 0;
 
 	} catch (...) {
 		cerr << "Error: Unhandled Exception\n" << std::flush;
 		throw NULL;
 	}
-	
+
 }
