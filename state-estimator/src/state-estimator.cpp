@@ -10,10 +10,9 @@
 #include "TopoProcConsumer.hpp"
 #include "VnomConsumer.hpp"
 #include "SensorDefConsumer.hpp"
+#include "SharedQueue.hpp"
 #include "SELoopConsumer.hpp"
-
-#include "json.hpp"
-using json = nlohmann::json;
+#include "SELoopWorker.hpp"
 
 #include "gridappsd_requests.hpp"
 using gridappsd_requests::sparql_query;
@@ -27,7 +26,6 @@ using gridappsd_requests::sparql_query;
 //using sparql_queries::sparq_ratio_tap_changer_nodes;
 
 #include "state_estimator_util.hpp"
-
 
 #include "State.hpp"
 #include "SensorArray.hpp"
@@ -64,6 +62,7 @@ using gridappsd_requests::sparql_query;
 #define IDMAP std::unordered_map<unsigned int,double>
 #define IMDMAP std::unordered_map<unsigned int,IDMAP>
 
+
 int main(int argc, char** argv){
 	
 	// ------------------------------------------------------------------------
@@ -77,12 +76,33 @@ int main(int argc, char** argv){
 	// ------------------------------------------------------------------------
 	state_estimator_gridappsd::gridappsd_session gad(se);
 
+    // declare the thread-safe queue shared between SELoopConsumer (writer)
+    // and SELoopWorker (reader)
+    SharedQueue<json> workQueue;
+
 	// ------------------------------------------------------------------------
 	// START THE AMQ INTERFACE
 	// ------------------------------------------------------------------------
 
 	try {
 		activemq::library::ActiveMQCPP::initializeLibrary();
+
+		// --------------------------------------------------------------------
+		// LISTEN FOR MEASUREMENTS
+		// --------------------------------------------------------------------
+
+		// measurements come from the simulation output
+		string simoutTopic = "goss.gridappsd.simulation.output."+gad.simid;
+
+		SELoopConsumer loopConsumer(&workQueue, gad.brokerURI, gad.username,
+            gad.password, simoutTopic, "topic");
+		Thread loopConsumerThread(&loopConsumer);
+		loopConsumerThread.start();	// execute loopConsumer.run()
+		loopConsumer.waitUntilReady();	// wait for the startup latch release
+
+#ifdef DEBUG_PRIMARY
+		cout << "\nListening for simulation output on "+simoutTopic+'\n' << std::flush;
+#endif
 
 		// --------------------------------------------------------------------
 		// MAKE SOME SPARQL QUERIES
@@ -154,7 +174,6 @@ int main(int argc, char** argv){
 		IMDMAP A;
 		state_estimator_util::build_A_matrix(gad,A,node_idxs);
 
-
 		// --------------------------------------------------------------------
 		// SENSOR INITILIZER
 		// --------------------------------------------------------------------
@@ -192,7 +211,7 @@ int main(int argc, char** argv){
 		// Wait for sensor initializer and retrieve sensors
 		sensConsumerThread.join();
 
-        // TODO: Uncomment the following two lines to add sensors
+        // Add Sensors
 		sensConsumer.fillSens(zary);
 		sensConsumer.close();
 
@@ -201,36 +220,24 @@ int main(int argc, char** argv){
 		state_estimator_util::insert_pseudo_measurements(gad,zary,
 				node_names,node_vnoms,sbase);
 
-		// --------------------------------------------------------------------
-		// LISTEN FOR MEASUREMENTS
-		// --------------------------------------------------------------------
-
-		// ideally we want to compute an estimate on a thread at intervals and
-		//   collect measurements in the meantime
-
-		// measurements come from the simulation output
-		string simoutTopic = "goss.gridappsd.simulation.output."+gad.simid;
-		SELoopConsumer loopConsumer(gad.brokerURI,gad.username,gad.password,
-			simoutTopic,"topic",gad.simid,zary,
-			node_qty,node_names,node_idxs,node_vnoms,node_bmrids,node_phs,
-			node_name_lookup,sbase,Y,A);
-		Thread loopConsumerThread(&loopConsumer);
-		loopConsumerThread.start();	// execute loopConsumer.run()
-		loopConsumer.waitUntilReady();	// wait for the startup latch release
-		
 #ifdef DEBUG_PRIMARY
-		cout << "\nListening for simulation output on "+simoutTopic+'\n' << std::flush;
+		cout << "\nInitializing SE loop worker...\n" << std::flush;
 #endif
-		
-		// wait for the estimator to exit:
-		loopConsumerThread.join(); loopConsumer.close();
+        // Initialize class that does the state estimates
+		SELoopWorker loopWorker(&workQueue, gad.brokerURI, gad.username,
+            gad.password, gad.simid, zary, node_qty, node_names, node_idxs,
+            node_vnoms, node_bmrids, node_phs, node_name_lookup, sbase, Y, A);
 
-		// now we're done
+#ifdef DEBUG_PRIMARY
+		cout << "\nStarting the SE work loop ...\n" << std::flush;
+#endif
+		loopWorker.workLoop();
+		
+        // we'll never get here
 		return 0;
 
 	} catch (...) {
 		cerr << "Error: Unhandled Exception\n" << std::flush;
 		throw NULL;
 	}
-	
 }
