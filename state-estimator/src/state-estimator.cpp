@@ -10,6 +10,7 @@
 #include "TopoProcConsumer.hpp"
 #include "VnomConsumer.hpp"
 #include "SensorDefConsumer.hpp"
+#include "SharedQueue.hpp"
 #include "SELoopConsumer.hpp"
 #include "SELoopWorker.hpp"
 
@@ -217,10 +218,14 @@ int main(int argc, char** argv){
 #ifdef DEBUG_PRIMARY
 		cout << "\nStart initializing loop worker...\n" << std::flush;
 #endif
+        // declare the thread-safe queue shared between SELoopConsumer (writer)
+        // and SELoopWorker (reader)
+        SharedQueue<json> workQueue;
+
         // Initialize class that does the state estimates
-		SELoopWorker loopWorker(gad.brokerURI,gad.username,gad.password,
-			gad.simid,zary,node_qty,node_names,node_idxs,node_vnoms,
-            node_bmrids,node_phs,node_name_lookup,sbase,Y,A);
+		SELoopWorker loopWorker(&workQueue, gad.brokerURI, gad.username,
+            gad.password, gad.simid, zary, node_qty, node_names, node_idxs,
+            node_vnoms, node_bmrids, node_phs, node_name_lookup, sbase, Y, A);
 #ifdef DEBUG_PRIMARY
 		cout << "Done initializing loop worker\n" << std::flush;
 #endif
@@ -232,8 +237,8 @@ int main(int argc, char** argv){
 		// measurements come from the simulation output
 		string simoutTopic = "goss.gridappsd.simulation.output."+gad.simid;
 
-		SELoopConsumer loopConsumer(gad.brokerURI,gad.username,gad.password,
-			simoutTopic,"topic");
+		SELoopConsumer loopConsumer(&workQueue, gad.brokerURI, gad.username,
+            gad.password, simoutTopic, "topic");
 		Thread loopConsumerThread(&loopConsumer);
 		loopConsumerThread.start();	// execute loopConsumer.run()
 		loopConsumer.waitUntilReady();	// wait for the startup latch release

@@ -81,6 +81,7 @@ using json = nlohmann::json;
 // This class listens for system state messages
 class SELoopWorker {
     protected:
+    SharedQueue<json>* workQueue;
     string brokerURI;
     string username;
     string password;
@@ -151,21 +152,23 @@ class SELoopWorker {
 
 
     public:
-    SELoopWorker(const string& brokerURI, 
-                const string& username,
-                const string& password,
-                const string& simid,
-                const SensorArray& zary,
-                const uint& node_qty,
-                const SLIST& node_names,
-                const SIMAP& node_idxs,
-                const SCMAP& node_vnoms,
-                const SSMAP& node_bmrids,
-                const SSMAP& node_phs,
-                const ISMAP& node_name_lookup,
-                const double sbase,
-                const IMMAP& Yphys,
-                const IMDMAP& A) {
+    SELoopWorker(SharedQueue<json>* workQueue,
+            const string& brokerURI, 
+            const string& username,
+            const string& password,
+            const string& simid,
+            const SensorArray& zary,
+            const uint& node_qty,
+            const SLIST& node_names,
+            const SIMAP& node_idxs,
+            const SCMAP& node_vnoms,
+            const SSMAP& node_bmrids,
+            const SSMAP& node_phs,
+            const ISMAP& node_name_lookup,
+            const double& sbase,
+            const IMMAP& Yphys,
+            const IMDMAP& A) {
+        this->workQueue = workQueue;
         this->brokerURI = brokerURI;
         this->username = username;
         this->password = password;
@@ -604,16 +607,16 @@ class SELoopWorker {
 
             // drain the queue with quick z-averaging
             do {
-                jmessage = workQueue.pop();
+                jmessage = workQueue->pop();
                 // do z summation here keeping track of the # of items summed
                 timestamp = jmessage["timestamp"];
 #ifdef DEBUG_PRIMARY
-                cout << "===========> workQueue draining size: " << workQueue.size() << ", timestamp: " << timestamp << "\n" << std::flush;
+                cout << "===========> workQueue draining size: " << workQueue->size() << ", timestamp: " << timestamp << "\n" << std::flush;
 #endif
                 add_zvals(zcount, jmessage);
                 zcount++;
             //} while (false); // uncomment this to fully process all messages
-            } while (!workQueue.empty()); // uncomment this to drain queue
+            } while (!workQueue->empty()); // uncomment this to drain queue
 
             // do z averaging here by dividing sum by # of items
 #ifdef DEBUG_PRIMARY

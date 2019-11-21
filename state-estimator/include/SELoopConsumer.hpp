@@ -6,22 +6,21 @@ using json = nlohmann::json;
 
 #include "SEConsumer.hpp"
 
-#include "SharedQueue.hpp"
-// Global definition of workQueue to make sharing easy
-SharedQueue<json> workQueue;
-
 // This class listens for system state messages
 class SELoopConsumer : public SEConsumer {
     // system state
     private:
     json jtext;     // object holding the input message
+    SharedQueue<json>* workQueue;
 
     public:
-    SELoopConsumer(const string& brokerURI,
+    SELoopConsumer(SharedQueue<json>* workQueue,
+            const string& brokerURI,
             const string& username,
             const string& password,
             const string& target,
             const string& mode) {
+        this->workQueue = workQueue;
         this->brokerURI = brokerURI;
         this->username = username;
         this->password = password;
@@ -35,13 +34,14 @@ class SELoopConsumer : public SEConsumer {
     public:
     virtual void process() {
         jtext = json::parse(text);
-        uint timestamp = jtext["message"]["timestamp"];
+
 #ifdef DEBUG_PRIMARY
+        uint timestamp = jtext["message"]["timestamp"];
         cout << "\nSELoopConsumer received mesasurement message of " << text.length() 
             << " bytes for timestamp: " << timestamp << "\n" << std::flush;
 #endif
 
-        workQueue.push(jtext["message"]);
+        workQueue->push(jtext["message"]);
     }
 };
 
