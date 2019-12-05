@@ -25,6 +25,8 @@ using json = nlohmann::json;
 #define SLIST std::list<std::string>
 #define SIMAP std::unordered_map<std::string,unsigned int>
 
+#define ISMAP std::unordered_map<unsigned int,std::string>
+
 // Hash address (i,j) to the index of a sparse matrix vector
 #define ICMAP std::unordered_map<unsigned int,std::complex<double>>
 #define IMMAP std::unordered_map<unsigned int,ICMAP>
@@ -39,6 +41,7 @@ class TopoProcConsumer : public SEConsumer {
 	private:
 	SLIST nodens;
 	SIMAP nodem;
+    ISMAP node_name_lookup;
 	uint numns = 0;
 	// to add a node:
 	//	-- nodens.push_back(noden);
@@ -69,10 +72,12 @@ class TopoProcConsumer : public SEConsumer {
 	}
 
 	public:
-	void fillTopo(uint& numns, SLIST& nodens, SIMAP& nodem, IMMAP& Y) {
+	void fillTopo(uint& numns, SLIST& nodens, SIMAP& nodem, 
+            ISMAP& node_name_lookup, IMMAP& Y) {
 		numns = this->numns;
 		nodens = this->nodens;
 		nodem = this->nodem;
+        node_name_lookup = this->node_name_lookup;
 		Y = this->Y;
 	}
 	
@@ -82,15 +87,17 @@ class TopoProcConsumer : public SEConsumer {
 		// --------------------------------------------------------------------
 		// PARSE THE MESSAGE AND PROCESS THE TOPOLOGY
 		// --------------------------------------------------------------------
-		cout << "\nRecieved ybus message of " << text.length() << " bytes...\n\n";
-
+#ifdef DEBUG_PRIMARY
+		cout << "Received ybus message of " << text.length() << " bytes...\n\n" << std::flush;
+#endif
 
 		json jtext = json::parse(text);
 
+#ifdef DEBUG_PRIMARY
+        cout << "Parsing ybus ... " << std::flush;
+#endif
 		// This is actually a list of lines from ysparse
-		json jlines_ysparse = jtext["data"]["yParseFilePath"];
-		cout << "Ysparse:\n\t";
-		cout << jlines_ysparse.dump().substr(0,1000) << " ...\n\n";
+		json jlines_ysparse = jtext["data"]["yParse"];
 		bool firstline = true;
 		for ( auto& jline : jlines_ysparse ) {
 			if (firstline) firstline = false;
@@ -106,18 +113,17 @@ class TopoProcConsumer : public SEConsumer {
 					tmpline.erase(0,pos+1); pos = tmpline.find(",");
 				double B = stod( tmpline.substr(0,pos) );
 
-//				cout <<'\t'<< i << '\t' << j << '\t' << G << '\t' << B << '\n';
-
 				Y[i][j] = complex<double>(G,B);
 				if ( i != j ) Y[j][i] = complex<double>(G,B);
 
 			}
 		}
-
+#ifdef DEBUG_PRIMARY
+        cout << "complete.\n\n" << std::flush;
+        cout << "Parsing nodelist ... " << std::flush;
+#endif
 		// This is actually the list of nodes from nodelist
-		json jlines_nodelist = jtext["data"]["nodeListFilePath"];
-		cout << "nodelist\n\t";
-		cout << jlines_nodelist.dump().substr(0,1000) << " ...\n\n";
+		json jlines_nodelist = jtext["data"]["nodeList"];
 		int idx = 0;
 		for ( auto& jline : jlines_nodelist ) {
 			// Extract the node name
@@ -127,8 +133,11 @@ class TopoProcConsumer : public SEConsumer {
 			numns++;
 			nodens.push_back(node_name);
 			nodem[node_name] = ++idx;
+            node_name_lookup[idx] = node_name;
 		}
-
+#ifdef DEBUG_PRIMARY
+        cout << "complete.\n\n" << std::flush;
+#endif
 //		// print
 //		for ( auto& inode : nodens ) {
 //			auto i = nodem[inode];
@@ -138,7 +147,7 @@ class TopoProcConsumer : public SEConsumer {
 //					auto j = nodem[jnode];
 //					try {
 //						complex<double> ycomp = row.at(j);
-//						cout << "Y(" << i << "," << j << ") -> " << ycomp << '\n';
+//						cout << "Y(" << i << "," << j << ") -> " << ycomp << "\n" << std::flush;
 //					} catch(...) {}
 //				}
 //			} catch(...) {}

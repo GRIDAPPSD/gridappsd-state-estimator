@@ -8,7 +8,6 @@ using json = nlohmann::json;
 
 // standard data types
 #include <string>
-//#include <complex>
 #include <list>
 #include <unordered_map>
 
@@ -17,18 +16,16 @@ using json = nlohmann::json;
 
 
 #include "SensorArray.hpp"
-//// Store node names in a linked list and hash node name to their position
-//// Iterate over the linked list to access all nodes or states
-//// Note that positions are one-indexed
-//// Store sensor names in a linked list and hash node names to various params
-//#define SLIST std::list<std::string>
-////#define SIMAP std::unordered_map<std::string,unsigned int>
-//#define SBMAP std::unordered_map<std::string,bool>
-//#define SDMAP std::unordered_map<std::string,double>
-//#define SSMAP std::unordered_map<std::string,std::string>
+
+#ifndef SSMAP
+#define SSMAP std::unordered_map<std::string,std::string>
+#endif
 
 // This class listens for sensor definitions and constructs the sensors
 class SensorDefConsumer : public SEConsumer {
+    private:
+    SSMAP term_bus_map; // terminal_mrid -> bus_name
+    
 	private:
 	SensorArray zary;
 //	SLIST mmids;
@@ -52,11 +49,13 @@ class SensorDefConsumer : public SEConsumer {
 	SensorDefConsumer(const string& brokerURI, 
 				const string& username,
 				const string& password,
+                const SSMAP& term_bus_map,
 				const string& target,
 				const string& mode) {
 		this->brokerURI = brokerURI;
 		this->username = username;
 		this->password = password;
+        this->term_bus_map = term_bus_map;
 		this->target = target;
 		this->mode = mode;
 	}
@@ -64,13 +63,6 @@ class SensorDefConsumer : public SEConsumer {
 	public:
 	void fillSens(SensorArray &zary) {
 		zary = this->zary;
-//		zqty = this->zqty;
-//		zids = this->zids;
-//		ztypes = this->ztypes;
-//		zsigs = this->zsigs;
-//		znode1s = this->znode1s;
-//		znode2s = this->znode2s;
-//		zvals = this->zvals;
 	}
 	
 	public:
@@ -78,41 +70,11 @@ class SensorDefConsumer : public SEConsumer {
 		// --------------------------------------------------------------------
 		// PARSE THE MESSAGE AND INITIALIZE SENSORS
 		// --------------------------------------------------------------------
-		cout << "Recieved sensor message of " << text.length() << " bytes...\n\t";
+#ifdef DEBUG_PRIMARY
+		cout << "Received sensor message of " << text.length() << " bytes...\n\n" << std::flush;
+#endif
 
 		json jtext = json::parse(text);
-		cout << jtext.dump().substr(0,2000) << " ...\n\n";
-//		cout << jtext.dump() << "\n\n";
-
-		for ( auto& feeder : jtext["data"]["feeders"] ) {
-			cout << "\nFeeder name: " << feeder["name"] << '\n';
-//			cout << "\tmRID: " << feeder["mRID"] << '\n';
-//			cout << "\tsubstation: " << feeder["substation"] << '\n';
-//			cout << "\tsubstationID: " << feeder["substationID"] << '\n';
-//			cout << "\tsubregion: " << feeder["subregion"] << '\n';
-//			cout << "\tsubregionID: " << feeder["subregionID"] << '\n';
-//			cout << "\tregion: " << feeder["region"] << '\n';
-//			cout << "\tregionID: " << feeder["regionID"] << '\n';
-
-			vector<string> objs = {"capacitors","switches"};
-			for ( string& type : objs ) {
-				cout << '\t' << type << ": \n";
-				json objs = feeder[type];
-				unsigned int ctr = 0;
-				for ( auto& obj : objs ) {
-					cout << "\t\t" << obj["name"] << '\n';
-				}
-			}
-			
-
-			for ( auto& reg : feeder["regulators"] ) {
-				cout << reg.dump() + '\n';
-			}
-
-//			cout << "\nPress ENTER to list non-PNV measurements:";
-//			while ( cin.get()!='\n' );
-			
-		}
 
 		// --------------------------------------------------------------------
 		// LOAD THE SENSORS -- sensors will deliver measurements
@@ -120,17 +82,14 @@ class SensorDefConsumer : public SEConsumer {
 		// Iterate over the sensors
 		for ( auto& f : jtext["data"]["feeders"] ) {
 			for ( auto& m : f["measurements"] ) {
-				cout << m.dump()+'\n';
 				// store the necessary measurement information
 				string mmrid = m["mRID"];
 				string tmeas = m["measurementType"];
 				zary.mmrids.push_back( mmrid );
 				zary.mtypes[mmrid] = tmeas;
-				cout << mmrid << " -> " << tmeas << '\n';
 
 				// build z and supporting structures
 				if ( !tmeas.compare("PNV") ) {
-
 					// The node is [bus].[phase_num];
 					string node = m["ConnectivityNode"];
 					for ( auto& c : node ) c = std::toupper(c);
@@ -145,30 +104,52 @@ class SensorDefConsumer : public SEConsumer {
 					string zid = mmrid + "_Vmag";
 					zary.zids.push_back( zid );
 					zary.zidxs[zid] = zary.zqty++;
-					zary.ztypes[zid] = "Vmag";
+					zary.ztypes[zid] = "vi";
 					zary.znode1s[zid] = node;
 					zary.znode2s[zid] = node;
-					zary.zsigs[zid] = 0;		// WHERE DOES THIS COME FROM ??
-					// these don't necessarily need to be initialized
-					// - they will be initialized on access
-//					zary.zvals[zid] = 0;		// initialize to 0
-//					zary.znew[zid] = false;		// initial measurement is not "new"
+					zary.zsigs[zid] = 0.01;		// WHERE DOES THIS COME FROM ??
+                    // uncertanty should come from the sensor service -- in that case
+                    // it won't need to be initialized
 
 					// add the voltage phase measurement
 					// --- LATER ---
 					// -------------
 
-				} else {
+				} else if ( !tmeas.compare("Pos") ) {
+                    string ce_type = m["ConductingEquipment_type"];
+                    if ( !ce_type.compare("PowerTransformer") ) {
+                        // regulator tap measurement
+                        string node = term_bus_map[m["Terminal_mRID"]];
+                        for ( auto& c : node ) c = std::toupper(c);
+                        string phase = m["phases"];
+                        if ( !phase.compare("A") ) node += ".1";
+                        if ( !phase.compare("B") ) node += ".2";
+                        if ( !phase.compare("C") ) node += ".3";
+                        if ( !phase.compare("s1") ) node += ".1";	// secondary
+                        if ( !phase.compare("s2") ) node += ".2";	// secondary
+
+                        // add the position measurement 
+//                        string zid = mmrid + "_tap";
+//                        zary.zids.push_back( zid );
+//                        zary.zidxs[zid] = zary.zqty++;
+//                        zary.ztypes[zid] = "aji";
+//                        zary.znode1s[zid] = node;
+//                        zary.znode2s[zid] = node;
+//                        zary.zsigs[zid] = 0.0000625;
+                    }
+                } else {
 					// we only care about PNV measurements for now
 				}
 			}
 		}
-		
+        
 		
 		// --------------------------------------------------------------------
 		// SENSOR INITIALIZATION COMPLETE
 		// --------------------------------------------------------------------
-		cout << "\nSensor initialization complete.\n";
+#ifdef DEBUG_PRIMARY
+		cout << "Sensor initialization complete.\n\n" << std::flush;
+#endif
 		// release latch
 		doneLatch.countDown();
 	}

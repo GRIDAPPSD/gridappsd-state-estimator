@@ -107,14 +107,17 @@ class SEConsumer : public ExceptionListener,
 			// Check the mode and create the destination Topic or Queue
 			if ( mode == "topic" ){
 				destination = session->createTopic(target);
-				cms::Topic *tmpTopic = session->createTopic(target);
-				cout << "topic: " <<
-					(tmpTopic)->getTopicName() << '\n';
+				Topic *tmpTopic = session->createTopic(target);
+#ifdef DEBUG_PRIMARY
+				cout << "topic: " << tmpTopic->getTopicName() << "\n\n" << std::flush;
+#endif
 			}
 			else if ( mode == "queue" ){
 				destination = session->createQueue(target);
+#ifdef DEBUG_PRIMARY
 //				cout << "queue: " <<
-//					((activemq::commands::ActiveMQQueue)(destination))->getQueueName() << '\n';
+//					((activemq::commands::ActiveMQQueue)(destination))->getQueueName() << '\n' << std::flush;
+#endif
 			}
 			else
 				throw "unrecognized mode \"" + mode + "\"";
@@ -132,8 +135,10 @@ class SEConsumer : public ExceptionListener,
 
 			// Indicate we are ready for messages.
 			this->latch.countDown();
+
 			// Wait for the response
 			this->doneLatch.await();
+
 		} catch (CMSException& e) {
 			// Indicate we are ready for messages.
 			this->latch.countDown();
@@ -150,17 +155,21 @@ class SEConsumer : public ExceptionListener,
 	virtual void onMessage(const Message* message) {
 		// What to do when a message is recieved
 		try {
+            // wait for init() to finish -- otherwise messages interrupt this thread
+            latch.await();
+
 			const BytesMessage* bytesMessage = 
 					dynamic_cast<const BytesMessage*> (message);
 			text = "";
-			text.reserve(5000000);
+            // 10M characters is enough for the 9500 node model and nothing
+            // will break if more space is needed
+			text.reserve(10000000);
 			if (bytesMessage != NULL) {
 				for ( int idx = 0 ; idx < bytesMessage->getBodyLength() ; idx++ )
 					text.push_back(bytesMessage->readChar());
 			} else {
 				text = "NOT A BYTESMESSAGE!";
 			}
-			
 			// implementation-specific actions:
 			process();
 
@@ -172,7 +181,7 @@ class SEConsumer : public ExceptionListener,
 	public:
 	virtual void process() {
 		// implementation-specific actions - default is to print the message
-		// cout << "Recieved message:\n\t" << text << '\n';
+		//cout << "Received message:\n\t" << text << '\n' << std::flush;
 		this->doneLatch.countDown();
 	}
 
@@ -185,7 +194,8 @@ class SEConsumer : public ExceptionListener,
 	// If something bad happens you see it here as this class is also been
 	// registered as an ExceptionListener with the connection.
 	virtual void onException(const CMSException& ex AMQCPP_UNUSED) {
-		printf("CMS Exception occurred.  Shutting down client.\n");
+		cout << "ActiveMQ CMS Exception occurred.  Shutting down client.\n" <<
+            std::flush;
 		ex.printStackTrace();
 		exit(1);
 	}
@@ -195,7 +205,7 @@ class SEConsumer : public ExceptionListener,
 		if (connection != NULL) {
 			try {
 				connection->close();
-			} catch (cms::CMSException& ex) {
+			} catch (CMSException& ex) {
 				ex.printStackTrace();
 			}
 		}

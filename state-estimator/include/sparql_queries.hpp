@@ -6,6 +6,66 @@
 using std::string;
 
 namespace sparql_queries {
+
+	string sparq_nodes(string fdrid) {
+		string sparq = "# Find buses and phases\n"
+			"PREFIX r:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+			"PREFIX c:  <http://iec.ch/TC57/2012/CIM-schema-cim17#>\n"
+			"#SELECT ?fname ?cemrid ?cename ?busid ?busname ?phases WHERE {\n"
+			"SELECT ?busid ?busname ?phases WHERE {\n"
+			"  ?term c:Terminal.ConnectivityNode ?bus.\n"
+			"  ?bus c:IdentifiedObject.name ?busname.\n"
+			"  ?bus c:IdentifiedObject.mRID ?busid.\n"
+			"  OPTIONAL { # Lines\n"
+			"    ?cep c:ACLineSegmentPhase.ACLineSegment ?ce.\n"
+			"    ?cep c:ACLineSegmentPhase.phase ?phsraw.\n"
+			"    bind(strafter(str(?phsraw),\\\"SinglePhaseKind.\\\") as ?phases)\n"
+			"  }\n"
+			"  OPTIONAL { # Loads\n"
+			"    ?cep c:EnergyConsumerPhase.EnergyConsumer ?ce.\n"
+			"    ?cep c:EnergyConsumerPhase.phase ?phsraw.\n"
+			"    bind(strafter(str(?phsraw),\\\"SinglePhaseKind.\\\") as ?phases)\n"
+			"  }\n"
+			"  OPTIONAL { # Switches\n"
+			"    ?cep c:SwitchPhase.Switch ?ce.\n"
+			"    ?cep c:SwitchPhase.phaseSide1 ?phs1raw.\n"
+			"    bind(strafter(str(?phs1raw),\\\"SinglePhaseKind.\\\") as ?swPh1)\n"
+			"    ?cep c:SwitchPhase.phaseSide1 ?phs2raw.\n"
+			"    bind(strafter(str(?phs2raw),\\\"SinglePhaseKind.\\\") as ?swPh2)\n"
+			"    bind(concat(str(?swPh1),str(?swPh2)) as ?phases)\n"
+			"  }\n"
+			"  OPTIONAL { # Capacitors\n"
+			"    ?cep c:ShuntCompensatorPhase.ShuntCompensator ?ce.\n"
+			"    ?cep c:ShuntCompensatorPhase.phase ?phsraw.\n"
+			"    bind(strafter(str(?phsraw),\\\"SinglePhaseKind.\\\") as ?phases)\n"
+			"  }\n"
+			"  OPTIONAL { # Transformers and Tap Changers\n"
+			"    ?tt c:TransformerTank.PowerTransformer ?ce.\n"
+			"    ?tte c:TransformerTankEnd.TransformerTank ?tt.\n"
+			"    ?tte c:TransformerTankEnd.phases ?phasesraw.\n"
+			"    ?tte c:TransformerEnd.Terminal ?term\n"
+			"    bind(strafter(str(?phasesraw),\\\"PhaseCode.\\\") as ?phases)\n"
+			"  }\n"
+			"  OPTIONAL { # Power electronics\n"
+			"    ?cep c:PowerElectronicsConnectionPhase.PowerElectronicsConnection ?ce.\n"
+			"    ?cep c:PowerElectronicsConnectionPhase.phase ?phsraw.\n"
+			"    bind(strafter(str(?phsraw),\\\"SinglePhaseKind.\\\") as ?phases)\n"
+			"  }\n"    
+			"  VALUES ?fdrid {\\\""+fdrid+"\\\"}\n"
+			"  ?term c:Terminal.ConductingEquipment ?ce.\n"
+			"  ?ce c:Equipment.EquipmentContainer ?fdr.\n"
+			"  ?ce c:IdentifiedObject.mRID ?cemrid.\n"
+			"  ?ce c:IdentifiedObject.name ?cename.\n"
+			"  ?fdr c:IdentifiedObject.mRID ?fdrid.\n"
+			"  ?fdr c:IdentifiedObject.name ?fname\n"
+			"}\n"
+			"#GROUP BY ?fname ?cemrid ?cename ?busid ?busname ?phases\n"
+			"GROUP BY ?busid ?busname ?phases\n"
+			"#ORDER by ?fname ?busname\n"
+			"ORDER by ?busname\n";
+		return sparq;
+	}
+
 	string sparq_conducting_equipment_vbase(string fdrid) {
 		string sparq = "# Find the base voltage of each bus\n"
 			"PREFIX r:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
@@ -56,11 +116,11 @@ namespace sparql_queries {
 	}
 
 	string sparq_energy_consumer_pq(string fdrid) {
-		string sparq = "# Find the base voltage of each bus\n"
+		string sparq = 
 			"PREFIX r:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
 			"PREFIX c:  <http://iec.ch/TC57/2012/CIM-schema-cim17#>\n"
-			"SELECT ?loadname ?busname ?conn ?phase ?pfixed ?qfixed "
-				"?pfixedphase ?qfixedphase WHERE {\n"
+			"SELECT ?loadname ?busname ?conn ?phase ?p_3p ?q_3p "
+				"?p_phase ?q_phase WHERE {\n"
 			"  # conducting equipment as an IdentifiedObject (PowerSystemResource)\n"
 			"  ?econsumer c:IdentifiedObject.name ?loadname.\n"
 			"  # terminals attached to conducting equipment\n"
@@ -69,8 +129,8 @@ namespace sparql_queries {
 			"  ?bus c:IdentifiedObject.name ?busname.\n"
 			"  ?bus c:IdentifiedObject.mRID ?busid.\n"
 			"  # p and q\n"
-			"  ?econsumer c:EnergyConsumer.pfixed ?pfixed.\n"
-			"  ?econsumer c:EnergyConsumer.qfixed ?qfixed.  \n"
+			"  ?econsumer c:EnergyConsumer.pfixed ?p_3p.\n"
+			"  ?econsumer c:EnergyConsumer.qfixed ?q_3p.  \n"
 			"  # connection type\n"
 			"  ?econsumer c:EnergyConsumer.phaseConnection ?connraw.\n"
 			"  bind(strafter(str(?connraw),\\\"PhaseShuntConnectionKind.\\\") as ?conn)\n"
@@ -79,17 +139,52 @@ namespace sparql_queries {
 			"    ?ecp c:EnergyConsumerPhase.EnergyConsumer ?econsumer.\n"
 			"    ?ecp c:EnergyConsumerPhase.phase ?phsraw.\n"
 			"    bind(strafter(str(?phsraw),\\\"SinglePhaseKind.\\\") as ?phase)\n"
-			"    ?ecp c:EnergyConsumerPhase.pfixed ?pfixedphase.\n"
-			"    ?ecp c:EnergyConsumerPhase.qfixed ?qfixedphase.\n"
+			"    ?ecp c:EnergyConsumerPhase.pfixed ?p_phase.\n"
+			"    ?ecp c:EnergyConsumerPhase.qfixed ?q_phase.\n"
 			"  }\n"
 			"  VALUES ?fdrid {\\\""+fdrid+"\\\"}  # 13 bus\n"
 			"  ?econsumer c:Equipment.EquipmentContainer ?fdr.\n"
 			"  ?fdr c:IdentifiedObject.mRID ?fdrid.\n"
 			"}\n"
-			"GROUP BY ?loadname ?busname ?conn ?phase ?pfixed ?qfixed ?pfixedphase ?qfixedphase\n"
+			"GROUP BY ?loadname ?busname ?conn ?phase ?p_3p ?q_3p ?p_phase ?q_phase\n"
 			"ORDER by ?loadname\n";
 		return sparq;
 	}
+
+//	string sparq_energy_consumer_pq_CIM100(string fdrid) {
+//		string sparq = 
+//		"PREFIX r:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+//		"PREFIX c: <http://iec.ch/TC57/CIM100#>\n"
+//		"SELECT ?loadname ?busname ?conn ?phase ?p_3p ?q_3p ?p_phase ?q_phase WHERE {\n"
+//		"  # conducting equipment as an IdentifiedObject (PowerSystemResource)\n"
+//		"  ?econsumer c:IdentifiedObject.name ?loadname.\n"
+//		"  # terminals attached to conducting equipment\n"
+//		"  ?term c:Terminal.ConductingEquipment ?econsumer.\n"
+//		"  ?term c:Terminal.ConnectivityNode ?bus.\n"
+//		"  ?bus c:IdentifiedObject.name ?busname.\n"
+//		"  ?bus c:IdentifiedObject.mRID ?busid.\n"
+//		"  # p and q\n"
+//		"  ?econsumer c:EnergyConsumer.p ?p_3p.\n"
+//		"  ?econsumer c:EnergyConsumer.q ?q_3p.\n"
+//		"  # connection type\n"
+//		"  ?econsumer c:EnergyConsumer.phaseConnection ?connraw.\n"
+//		"  bind(strafter(str(?connraw),\\\"PhaseShuntConnectionKind.\\\") as ?conn)\n"
+//		"  # phases of the consumer\n"
+//		"  OPTIONAL {\n"
+//		"    ?ecp c:EnergyConsumerPhase.EnergyConsumer ?econsumer.\n"
+//		"    ?ecp c:EnergyConsumerPhase.phase ?phsraw.\n"
+//		"    bind(strafter(str(?phsraw),\\\"SinglePhaseKind.\\\") as ?phase)\n"
+//		"    ?ecp c:EnergyConsumerPhase.p ?p_phase.\n"
+//		"    ?ecp c:EnergyConsumerPhase.q ?q_phase.\n"
+//		"  }\n"
+//		"  VALUES ?fdrid {\\\""+fdrid+"\\\"} # 13 bus\n"
+//		"  ?econsumer c:Equipment.EquipmentContainer ?fdr.\n"
+//		"  ?fdr c:IdentifiedObject.mRID ?fdrid.\n"
+//		"}\n"
+//		"GROUP BY ?loadname ?busname ?conn ?phase ?p_3p ?q_3p ?p_phase ?q_phase\n"
+//		"ORDER by ?loadname\n";
+//		return sparq;
+//	}
 
 	string sparq_ratio_tap_changer_nodes(string fdrid) { 
 		string sparq = "# Find the nodes of each regulator\n"
