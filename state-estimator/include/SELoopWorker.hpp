@@ -104,6 +104,7 @@ class SELoopWorker {
     enum dydx_type : uint {
         dPi_dvi, dPi_dvj, dQi_dvi, dQi_dvj, dvi_dvi,
         dPi_dTi, dPi_dTj, dQi_dTi, dQi_dTj, dTi_dTi,
+        daji_dvj, daji_dvi,
     };
 
     A5MAP Jshapemap;  // column ordered map of J entries: {zidx,xidx,i,j,dydx_type}
@@ -125,7 +126,7 @@ class SELoopWorker {
     // system state
     private:
     ICMAP Vpu;          // voltage state in per-unit
-    IMDMAP A;           // regulator tap ratios <- we need reg information
+    IMDMAP Amat;           // regulator tap ratios
 #ifdef DIAGONAL_P
     IDMAP Uvmag;        // variance of voltage magnitudes (per-unit)
     IDMAP Uvarg;        // variance of voltage angles (per-unit)
@@ -167,7 +168,7 @@ class SELoopWorker {
             const ISMAP& node_name_lookup,
             const double& sbase,
             const IMMAP& Yphys,
-            const IMDMAP& A) {
+            const IMDMAP& Amat) {
         this->workQueue = workQueue;
         this->brokerURI = brokerURI;
         this->username = username;
@@ -183,7 +184,7 @@ class SELoopWorker {
         this->node_name_lookup = node_name_lookup;
         this->sbase = sbase;
         this->Yphys = Yphys; 
-        this->A = A;
+        this->Amat = Amat;
 
         // do one-time-only processing
         init();
@@ -306,7 +307,16 @@ class SELoopWorker {
 
             else
             if ( !ztype.compare("aji") ) {
-                // Later
+                // note: the regulation node, j, is assigned to znode2s
+                //       the primary node, i, is assigned to znode1s
+                uint j = node_idxs[zary.znode2s[zid]];
+
+                // daji/dvj exists: 1/viV
+                Jshapemap.insert(A5PAIR(j-1, {zidx, j-1, i, j, daji_dvj}));
+
+                // daja/dvi exists: -vj/vi^2
+                Jshapemap.insert(A5PAIR(i-1, {zidx, i-1, i, j, daji_dvi}));
+
             }
 
             else
@@ -1396,7 +1406,7 @@ class SELoopWorker {
                     // NOTE: A is never iterated over - we don't need at()
                     ai = 1;
                     try {
-                        auto Arow = A.at(i);
+                        auto Arow = Amat.at(i);
                         try {
                             ai = real(Arow.at(j));
                         } catch(...) {}
@@ -1405,7 +1415,7 @@ class SELoopWorker {
                     // NOTE: A is never iterated over - we don't need at()
                     aj = 1;
                     try {
-                        auto Arow = A.at(j);
+                        auto Arow = Amat.at(j);
                         try {
                             aj = real(Arow.at(i));
                         } catch (...) {}
@@ -1558,12 +1568,11 @@ class SELoopWorker {
             else
             if ( entry_type == dPi_dvj ) {
                 // --- compute dPi/dvj
-                double dP = 0;
                 auto& Yrow = Ypu.at(i);
                 complex<double> Yij = Yrow.at(j);
 
                 set_n(i,j);
-                dP = -1.0 * vi/ai/aj * (g*cos(T) + b*sin(T));
+                double dP = -1.0 * vi/ai/aj * (g*cos(T) + b*sin(T));
                 if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
             }
 
@@ -1590,12 +1599,11 @@ class SELoopWorker {
             else
             if ( entry_type == dQi_dvj ) {
                 // --- compute dQi/dvj
-                double dQ = 0;
                 auto& Yrow = Ypu.at(i);
                 complex<double> Yij = Yrow.at(j);
 
                 set_n(i,j);
-                dQ = -1.0 * vi/ai/aj * (g*sin(T) - b*cos(T));
+                double dQ = -1.0 * vi/ai/aj * (g*sin(T) - b*cos(T));
                 if ( abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
             }
 
@@ -1625,12 +1633,11 @@ class SELoopWorker {
             else
             if ( entry_type == dPi_dTj ) {
                  // --- compute dP/dTj
-                 double dP = 0;
                  auto& Yrow = Ypu.at(i);
                  complex<double> Yij = Yrow.at(j);
  
                  set_n(i,j);
-                 dP = -1.0 * vi*vj/ai/aj * (g*sin(T) - b*cos(T));
+                 double dP = -1.0 * vi*vj/ai/aj * (g*sin(T) - b*cos(T));
                  if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
             }
 
@@ -1654,18 +1661,33 @@ class SELoopWorker {
             else
             if ( entry_type == dQi_dTj ) {
                 // --- compute dQ/dTj
-                double dQ = 0;
                 auto& Yrow = Ypu.at(i);
                 complex<double> Yij = Yrow.at(j);
 
                 set_n(i,j);
-                dQ = vi*vj/ai/aj * (g*cos(T) + b*sin(T));
+                double dQ = vi*vj/ai/aj * (g*cos(T) + b*sin(T));
                 if ( abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
             }
 
             else
             if ( entry_type == dTi_dTi ) {
                 gs_entry_colorder(J,zidx,xidx,1.0);
+            }
+
+            else
+            if ( entry_type == daji_dvj) {
+                // daji/dvj = 1/vi
+                set_n(i,j);
+                double daji = 1.0/vi;
+                gs_entry_colorder(J, zidx, xidx, daji);
+            }
+
+            else
+            if ( entry_type == daji_dvi) {
+                // daja/dvi -vj/vi^2
+                set_n(i,j);
+                double daji = -vj/(vi*vi);
+                gs_entry_colorder(J, zidx, xidx, daji);
             }
 
             else {

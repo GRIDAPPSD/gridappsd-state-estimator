@@ -21,10 +21,22 @@ using json = nlohmann::json;
 #define SSMAP std::unordered_map<std::string,std::string>
 #endif
 
+//#ifndef IDMAP
+//#define IDMAP std::unordered_map<unsigned int,double>
+//#endif
+
+//#ifndef IMDMAP
+//#define IMDMAP std::unordered_map<unsigned int,IDMAP>
+//#endif
+
 // This class listens for sensor definitions and constructs the sensors
 class SensorDefConsumer : public SEConsumer {
     private:
     SSMAP term_bus_map; // terminal_mrid -> bus_name
+
+    private:
+    SSMAP reg_cemrid_primnode_map;  // for regulator Pos measurement init
+    SSMAP reg_cemrid_regnode_map;   // for regulator Pos measurement init
     
 	private:
 	SensorArray zary;
@@ -50,12 +62,16 @@ class SensorDefConsumer : public SEConsumer {
 				const string& username,
 				const string& password,
                 const SSMAP& term_bus_map,
+                const SSMAP& reg_cemrid_primnode_map,
+                const SSMAP& reg_cemrid_regnode_map,
 				const string& target,
 				const string& mode) {
 		this->brokerURI = brokerURI;
 		this->username = username;
 		this->password = password;
         this->term_bus_map = term_bus_map;
+        this->reg_cemrid_primnode_map = reg_cemrid_primnode_map;
+        this->reg_cemrid_regnode_map = reg_cemrid_regnode_map;
 		this->target = target;
 		this->mode = mode;
 	}
@@ -128,17 +144,28 @@ class SensorDefConsumer : public SEConsumer {
                         if ( !phase.compare("s1") ) node += ".1";	// secondary
                         if ( !phase.compare("s2") ) node += ".2";	// secondary
 
+                        // look up the prim and reg nodes
+                        string cemrid = m["ConductingEquipment_mRID"];
+                        string primnode = reg_cemrid_primnode_map[cemrid];
+                        string regnode = reg_cemrid_regnode_map[cemrid];
+
                         // add the position measurement 
-//                        string zid = mmrid + "_tap";
-//                        zary.zids.push_back( zid );
-//                        zary.zidxs[zid] = zary.zqty++;
-//                        zary.ztypes[zid] = "aji";
-//                        zary.znode1s[zid] = node;
-//                        zary.znode2s[zid] = node;
-//                        zary.zsigs[zid] = 0.0000625;
+                        string zid = mmrid + "_tap";
+                        zary.zids.push_back( zid );
+                        zary.zidxs[zid] = zary.zqty++;
+                        zary.ztypes[zid] = "aji";
+                        zary.znode1s[zid] = primnode;
+                        zary.znode2s[zid] = regnode;
+                        zary.zsigs[zid] = 0.0000625;
+
+//                        cout << m.dump(2);
+//                        cout << "node: " << node << std::endl;
+//                        cout << "primnode: " << primnode << std::endl;
+//                        cout << "regnode: " << regnode << std::endl;
+//                        exit(1);
                     }
                 } else {
-					// we only care about PNV measurements for now
+					// we only care about PNV and Pos measurements for now
 				}
 			}
 		}

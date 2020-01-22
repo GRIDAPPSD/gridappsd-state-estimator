@@ -216,9 +216,14 @@ namespace state_estimator_util{
 	}
 
 
-	void build_A_matrix(gridappsd_session& gad, IMDMAP& A, SIMAP& node_idxs) {
+	void build_A_matrix(gridappsd_session& gad, IMDMAP& A, SIMAP& node_idxs,
+            SSMAP& reg_cemrid_primnode_map, SSMAP& reg_cemrid_regnode_map) {
 		json jregs = sparql_query(gad,"regs",sparq_ratio_tap_changer_nodes(gad.modelID));
+            
+        cout << jregs.dump(2);
+
 		for ( auto& reg : jregs["data"]["results"]["bindings"] ) {
+
 
 			// Get the primary node
 			string primbus = reg["primbus"]["value"];
@@ -250,6 +255,11 @@ namespace state_estimator_util{
 			// initialize the A matrix
 			A[primidx][regidx] = 1;		// this will change
 			A[regidx][primidx] = 1;		// this stays unity and may not be required
+
+            // map the power transformer mrid to prim and reg nodes
+            string cemrid = reg["cemrid"]["value"];
+            reg_cemrid_primnode_map[cemrid] = primnode;
+            reg_cemrid_regnode_map[cemrid] = regnode;
 		}
 	}
 
