@@ -174,20 +174,23 @@ int main(int argc, char** argv){
 		IMDMAP Amat;
         SSMAP reg_cemrid_primnode_map;
         SSMAP reg_cemrid_regnode_map;
+        SSMAP regid_primnode_map;
+        SSMAP regid_regnode_map;
 		state_estimator_util::build_A_matrix(gad,Amat,node_idxs,
-                reg_cemrid_primnode_map,reg_cemrid_regnode_map);
+                reg_cemrid_primnode_map,reg_cemrid_regnode_map,
+                regid_primnode_map,regid_regnode_map);
 
 		// --------------------------------------------------------------------
 		// SENSOR INITILIZER
 		// --------------------------------------------------------------------
 	    // map conducting equipment terminals to bus names	
-        SSMAP term_bus_map;
-        state_estimator_util::build_term_bus_map(gad, term_bus_map);
+//        SSMAP term_bus_map;
+//        state_estimator_util::build_term_bus_map(gad, term_bus_map);
 
 		// Set up the sensors consumer
 		string sensTopic = "goss.gridappsd.se.response."+gad.simid+".cimdict";
 		SensorDefConsumer sensConsumer(gad.brokerURI,gad.username,gad.password, 
-                term_bus_map,reg_cemrid_primnode_map,reg_cemrid_regnode_map,
+                reg_cemrid_primnode_map,reg_cemrid_regnode_map,
                 sensTopic,"queue");
 		Thread sensConsumerThread(&sensConsumer);
 		sensConsumerThread.start();		// execute sensConsumer.run()
@@ -204,6 +207,7 @@ int main(int argc, char** argv){
 
 		// Initialize sensors
 		SensorArray zary;
+        SSMAP mmrid_pos_type_map;
 //		uint numms; 	// number of sensors
 //		SLIST mns;		// sensor name [list of strings]
 //		SSMAP mts;		// sensor type [sn->str]
@@ -216,7 +220,7 @@ int main(int argc, char** argv){
 		sensConsumerThread.join();
 
         // Add Sensors
-		sensConsumer.fillSens(zary);
+		sensConsumer.fillSens(zary, mmrid_pos_type_map);
 		sensConsumer.close();
 
 		// Add Pseudo-Measurements
@@ -230,7 +234,8 @@ int main(int argc, char** argv){
         // Initialize class that does the state estimates
 		SELoopWorker loopWorker(&workQueue, gad.brokerURI, gad.username,
             gad.password, gad.simid, zary, node_qty, node_names, node_idxs,
-            node_vnoms, node_bmrids, node_phs, node_name_lookup, sbase, Y, Amat);
+            node_vnoms, node_bmrids, node_phs, node_name_lookup, sbase, Y, Amat,
+            regid_primnode_map, regid_regnode_map, mmrid_pos_type_map);
 
 #ifdef DEBUG_PRIMARY
 		cout << "\nStarting the SE work loop ...\n" << std::flush;

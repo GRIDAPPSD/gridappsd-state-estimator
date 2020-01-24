@@ -217,7 +217,8 @@ namespace state_estimator_util{
 
 
 	void build_A_matrix(gridappsd_session& gad, IMDMAP& A, SIMAP& node_idxs,
-            SSMAP& reg_cemrid_primnode_map, SSMAP& reg_cemrid_regnode_map) {
+            SSMAP& reg_cemrid_primnode_map, SSMAP& reg_cemrid_regnode_map,
+            SSMAP& regid_primnode_map, SSMAP& regid_regnode_map) {
 		json jregs = sparql_query(gad,"regs",sparq_ratio_tap_changer_nodes(gad.modelID));
             
         cout << jregs.dump(2);
@@ -260,6 +261,11 @@ namespace state_estimator_util{
             string cemrid = reg["cemrid"]["value"];
             reg_cemrid_primnode_map[cemrid] = primnode;
             reg_cemrid_regnode_map[cemrid] = regnode;
+
+            // map the regulator id to prim and reg nodes
+            string regid = reg["rtcid"]["value"];
+            regid_primnode_map[regid] = primnode;
+            regid_regnode_map[regid] = regnode;
 		}
 	}
 

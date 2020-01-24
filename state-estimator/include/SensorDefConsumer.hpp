@@ -40,6 +40,7 @@ class SensorDefConsumer : public SEConsumer {
     
 	private:
 	SensorArray zary;
+    SSMAP mmrid_pos_type_map;
 //	SLIST mmids;
 //	SLIST zids;		// measurement id [mrid_ztype] [list of strings]
 //	SSMAP ztypes;	// measurement types [str->str]
@@ -61,7 +62,7 @@ class SensorDefConsumer : public SEConsumer {
 	SensorDefConsumer(const string& brokerURI, 
 				const string& username,
 				const string& password,
-                const SSMAP& term_bus_map,
+//                const SSMAP& term_bus_map,
                 const SSMAP& reg_cemrid_primnode_map,
                 const SSMAP& reg_cemrid_regnode_map,
 				const string& target,
@@ -69,7 +70,7 @@ class SensorDefConsumer : public SEConsumer {
 		this->brokerURI = brokerURI;
 		this->username = username;
 		this->password = password;
-        this->term_bus_map = term_bus_map;
+//        this->term_bus_map = term_bus_map;
         this->reg_cemrid_primnode_map = reg_cemrid_primnode_map;
         this->reg_cemrid_regnode_map = reg_cemrid_regnode_map;
 		this->target = target;
@@ -77,8 +78,9 @@ class SensorDefConsumer : public SEConsumer {
 	}
 
 	public:
-	void fillSens(SensorArray &zary) {
+	void fillSens(SensorArray &zary, SSMAP& mmrid_pos_type_map) {
 		zary = this->zary;
+        mmrid_pos_type_map = this->mmrid_pos_type_map;
 	}
 	
 	public:
@@ -135,14 +137,7 @@ class SensorDefConsumer : public SEConsumer {
                     string ce_type = m["ConductingEquipment_type"];
                     if ( !ce_type.compare("PowerTransformer") ) {
                         // regulator tap measurement
-                        string node = term_bus_map[m["Terminal_mRID"]];
-                        for ( auto& c : node ) c = std::toupper(c);
-                        string phase = m["phases"];
-                        if ( !phase.compare("A") ) node += ".1";
-                        if ( !phase.compare("B") ) node += ".2";
-                        if ( !phase.compare("C") ) node += ".3";
-                        if ( !phase.compare("s1") ) node += ".1";	// secondary
-                        if ( !phase.compare("s2") ) node += ".2";	// secondary
+                        mmrid_pos_type_map[mmrid] = "regulator_tap";
 
                         // look up the prim and reg nodes
                         string cemrid = m["ConductingEquipment_mRID"];
@@ -156,13 +151,16 @@ class SensorDefConsumer : public SEConsumer {
                         zary.ztypes[zid] = "aji";
                         zary.znode1s[zid] = primnode;
                         zary.znode2s[zid] = regnode;
-                        zary.zsigs[zid] = 0.0000625;
+                        zary.zsigs[zid] = 0.00000625;
 
 //                        cout << m.dump(2);
 //                        cout << "node: " << node << std::endl;
 //                        cout << "primnode: " << primnode << std::endl;
 //                        cout << "regnode: " << regnode << std::endl;
 //                        exit(1);
+                    }
+                    else {
+                        mmrid_pos_type_map[mmrid] = "other";
                     }
                 } else {
 					// we only care about PNV and Pos measurements for now

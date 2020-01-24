@@ -127,6 +127,8 @@ class SELoopWorker {
     private:
     ICMAP Vpu;          // voltage state in per-unit
     IMDMAP Amat;           // regulator tap ratios
+    SSMAP regid_primnode_map;
+    SSMAP regid_regnode_map;
 #ifdef DIAGONAL_P
     IDMAP Uvmag;        // variance of voltage magnitudes (per-unit)
     IDMAP Uvarg;        // variance of voltage angles (per-unit)
@@ -138,6 +140,7 @@ class SELoopWorker {
     
     private:
     SensorArray zary;
+    SSMAP mmrid_pos_type_map;   // type of position measurement
 
     private:
     ofstream state_fh;  // file to record states
@@ -168,7 +171,10 @@ class SELoopWorker {
             const ISMAP& node_name_lookup,
             const double& sbase,
             const IMMAP& Yphys,
-            const IMDMAP& Amat) {
+            const IMDMAP& Amat,
+            const SSMAP& regid_primnode_map,
+            const SSMAP& regid_regnode_map,
+            const SSMAP& mmrid_pos_type_map) {
         this->workQueue = workQueue;
         this->brokerURI = brokerURI;
         this->username = username;
@@ -185,6 +191,9 @@ class SELoopWorker {
         this->sbase = sbase;
         this->Yphys = Yphys; 
         this->Amat = Amat;
+        this->regid_primnode_map = regid_primnode_map;
+        this->regid_regnode_map = regid_regnode_map;
+        this->mmrid_pos_type_map = mmrid_pos_type_map;
 
         // do one-time-only processing
         init();
@@ -689,6 +698,25 @@ class SELoopWorker {
                 // update the voltage phase
                 // --- LATER ---
                 // -------------
+            }
+           
+            // Check for "Pos" measurement
+            if ( !m_type.compare("Pos") ) {
+                if ( !mmrid_pos_type_map[mmrid].compare("regulator_tap") ) {
+                    // update the tap ratio
+                    string zid = mmrid+"_tap";
+                    double tap_position = m["value"];
+                    double tap_ratio = 1.0 + 0.1*tap_position/16.0;
+                    cout << "tap_positon: " << tap_position 
+                        << "\ttap_ratio: " << tap_ratio << std::endl;
+
+                    if (zcount == 0)
+                        zary.zvals[zid] = tap_ratio;
+                    else
+                        zary.zvals[zid] += tap_ratio;
+                    zary.znew[zid] = true;
+                    
+                }
             }
 
             //else if ( !m_type.compare("") ) {
@@ -1248,7 +1276,31 @@ class SELoopWorker {
             Vpu[idx] = complex<double>(vrei,vimi);
         }
         // update A
-//      for ( auto& reg_name : SLIST reg_names ) {}
+        for ( auto& map_pair : regid_primnode_map ) {
+            cout << map_pair.first << std::endl;
+            string regid = map_pair.first;
+            string primnode = regid_primnode_map[regid];
+            string regnode = regid_regnode_map[regid];
+
+            cout << "primnode: " << primnode << 
+                "\tregnode: " << regnode << std::endl;
+
+            // get i and j
+            uint i = node_idxs[primnode];
+            uint j = node_idxs[regnode];
+            
+            // get vi and vj
+            double vi = abs(xvec[i-1]);
+            double vj = abs(xvec[j-1]);
+
+            cout << "vi: " << vi << "\tvj: " << vj << std::endl;
+
+            // assign vj/vi to Amat[j][i]
+            Amat[j][i] = vj/vi;
+
+            cout << "Amat[j][i]: " << Amat[j][i] << std::endl;
+
+        }
     }
 
 #include <float.h>
@@ -1409,6 +1461,7 @@ class SELoopWorker {
                         auto Arow = Amat.at(i);
                         try {
                             ai = real(Arow.at(j));
+                            cout << "|||||||||||||||||| ai assigned to: " << ai << std::endl;
                         } catch(...) {}
                     } catch(...) {}
                     // We know the nodes are coupled; check for Aji
@@ -1418,6 +1471,7 @@ class SELoopWorker {
                         auto Arow = Amat.at(j);
                         try {
                             aj = real(Arow.at(i));
+                            cout << "|||||||||||||||||| aj assigned to: " << aj << std::endl;
                         } catch (...) {}
                     } catch(...) {}
                 } catch(...) {
@@ -1491,7 +1545,12 @@ class SELoopWorker {
                 if ( abs(Qi) > NEGL ) gs_entry_firstcol(h,zidx,Qi);
             }
             else if ( !zary.ztypes[zid].compare("aji" ) ) {
-                // aji is a direct state measurement
+                // aji = vj/vi
+                uint i = node_idxs[zary.znode1s[zid]];
+                uint j = node_idxs[zary.znode2s[zid]];
+                set_n(i,j);
+                double aji = vj/vi;
+                if ( abs(aji) > NEGL ) gs_entry_firstcol(h,zidx,aji);
             }
             else if ( !zary.ztypes[zid].compare("vi") ) {
                 // vi is a direct state measurement

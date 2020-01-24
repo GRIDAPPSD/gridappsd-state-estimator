@@ -154,9 +154,10 @@ namespace sparql_queries {
 		string sparq = "# Find the nodes of each regulator\n"
 			"PREFIX r:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
 			"PREFIX c: <http://iec.ch/TC57/CIM100#>\n"
-			"SELECT ?rtcname ?xtname ?cemrid ?primbus ?primphs ?regbus ?regphs WHERE {\n"
+			"SELECT ?rtcname ?rtcid ?xtname ?cemrid ?primbus ?primphs ?regbus ?regphs WHERE {\n"
 			"  # \n"
 			"  ?rtc c:IdentifiedObject.name ?rtcname.\n"
+            "  ?rtc c:IdentifiedObject.mRID ?rtcid.\n"
 			"  ?rtc c:RatioTapChanger.TransformerEnd ?rte.\n"
 			"  ?rte c:TransformerTankEnd.TransformerTank ?xt.\n"
             "  ?xt c:TransformerTank.PowerTransformer ?ce.\n"
@@ -178,7 +179,7 @@ namespace sparql_queries {
 			"  VALUES ?fdrid {\\\""+fdrid+"\\\"}\n"
 			"  FILTER ( ?primbus NOT IN ( ?regbus ) )\n"
 			"}\n"
-			"GROUP BY ?rtcname ?xtname ?cemrid ?primbus ?primphs ?regbus ?regphs\n"
+			"GROUP BY ?rtcname ?rtcid ?xtname ?cemrid ?primbus ?primphs ?regbus ?regphs\n"
 			"ORDER by ?rtcname\n";
 		return sparq;
 	}
