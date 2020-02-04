@@ -22,14 +22,15 @@ SSLIBPATHS=-L$(SSCONFLIBPATH) -L$(CSLIBPATH) -L$(AMDLIBPATH) -L$(BTFLIBPATH) -L$
 #SSLIBPATHS=-L$(SSPATH)/lib
 SSLIBS=-lklu -lamd -lbtf -lcolamd -lcxsparse -lsuitesparseconfig
 
-AMQLIBPATH=-L/gridappsd/lib
+AMQLIBDIR=/gridappsd/lib
+AMQLIBPATH=-L$(AMQLIBDIR)
 
 CXXFLAGS=-Ofast
 #CXXFLAGS=-g
 
 bin/state-estimator: obj/state-estimator.o
 	mkdir -p bin
-	g++ $(CXXFLAGS) $? $(SSLIBPATHS) $(SSLIBS) $(AMQLIBPATH) -lactivemq-cpp -lstdc++ -lssl -o $@
+	g++ $(CXXFLAGS) $? $(SSLIBPATHS) $(SSLIBS) $(AMQLIBPATH) -lactivemq-cpp -lstdc++ -lssl -Wl,-rpath=$(AMQLIBDIR) -o $@
 
 obj/state-estimator.o: src/state-estimator.cpp $(wildcard include/*.hpp)
 	mkdir -p obj
