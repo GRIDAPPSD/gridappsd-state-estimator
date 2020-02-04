@@ -8,7 +8,7 @@ AMQINCPATH2=/usr/local/include/activemq-cpp-3.9.4
 AMQINCPATH3=/usr/local/include/activemq-cpp-3.9.5
 # APR is part of the Linux distro by default, hopefully here
 APRINCPATH=/usr/include/apr-1.0
-INCLUDES=-I$(JSONINCPATH) -I$(SSINCPATH) -I$(AMQINCPATH1) -I$(AMQINCPATH2) -I$(AMINCPATH3) -I$(APRINCPATH) -I./include
+INCLUDES=-I$(JSONINCPATH) -I$(SSINCPATH) -I$(AMQINCPATH1) -I$(AMQINCPATH2) -I$(AMQINCPATH3) -I$(APRINCPATH) -I./include
 
 # SparseSuite libraries
 SSCONFLIBPATH=$(SSPATH)/SuiteSparse_config
