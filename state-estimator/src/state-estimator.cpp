@@ -88,17 +88,34 @@ int main(int argc, char** argv){
 		activemq::library::ActiveMQCPP::initializeLibrary();
 
 		// --------------------------------------------------------------------
-		// LISTEN FOR MEASUREMENTS
+		// LISTEN FOR SIMULATION LOG MESSAGES
+		// --------------------------------------------------------------------
+
+		// measurements come from the simulation output
+		string simlogTopic = "goss.gridappsd.simulation.log."+gad.simid;
+
+		SELoopConsumer simLogConsumer(&workQueue, gad.brokerURI, gad.username,
+            gad.password, simlogTopic, "topic");
+		Thread simLogConsumerThread(&simLogConsumer);
+		simLogConsumerThread.start();	// execute simLogConsumer.run()
+		simLogConsumer.waitUntilReady();	// wait for the startup latch release
+
+#ifdef DEBUG_PRIMARY
+		cout << "\nListening for simulation log messages on "+simlogTopic+'\n' << std::flush;
+#endif
+
+		// --------------------------------------------------------------------
+		// LISTEN FOR SIMULATION MEASUREMENTS
 		// --------------------------------------------------------------------
 
 		// measurements come from the simulation output
 		string simoutTopic = "goss.gridappsd.simulation.output."+gad.simid;
 
-		SELoopConsumer loopConsumer(&workQueue, gad.brokerURI, gad.username,
+		SELoopConsumer simOutputConsumer(&workQueue, gad.brokerURI, gad.username,
             gad.password, simoutTopic, "topic");
-		Thread loopConsumerThread(&loopConsumer);
-		loopConsumerThread.start();	// execute loopConsumer.run()
-		loopConsumer.waitUntilReady();	// wait for the startup latch release
+		Thread simOutputConsumerThread(&simOutputConsumer);
+		simOutputConsumerThread.start();	// execute simOutputConsumer.run()
+		simOutputConsumer.waitUntilReady();	// wait for the startup latch release
 
 #ifdef DEBUG_PRIMARY
 		cout << "\nListening for simulation output on "+simoutTopic+'\n' << std::flush;
@@ -184,8 +201,8 @@ int main(int argc, char** argv){
 		// SENSOR INITILIZER
 		// --------------------------------------------------------------------
 	    // map conducting equipment terminals to bus names	
-//        SSMAP term_bus_map;
-//        state_estimator_util::build_term_bus_map(gad, term_bus_map);
+//      SSMAP term_bus_map;
+//      state_estimator_util::build_term_bus_map(gad, term_bus_map);
 
 		// Set up the sensors consumer
 		string sensTopic = "goss.gridappsd.se.response."+gad.simid+".cimdict";

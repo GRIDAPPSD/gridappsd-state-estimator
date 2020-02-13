@@ -627,8 +627,21 @@ class SELoopWorker {
             // drain the queue with quick z-averaging
             do {
                 jmessage = workQueue->pop();
+
+                if (jmessage.find("processStatus") != jmessage.end()) {
+                    string status = jmessage["processStatus"];
+                    // for now, just exit with a COMPLETE or CLOSED status
+                    if (!status.compare("COMPLETE") || !status.compare("CLOSED")) {
+#ifdef DEBUG_PRIMARY
+                        cout << "Normal exit after finding COMPLETE/CLOSED log message on queue\n" << std::flush;
+#endif
+                        exit(0);
+                    } else
+                        continue;
+                }
+
                 // do z summation here keeping track of the # of items summed
-                timestamp = jmessage["timestamp"];
+                timestamp = jmessage["message"]["timestamp"];
 #ifdef DEBUG_PRIMARY
                 cout << "===========> workQueue draining size: " << workQueue->size() << ", timestamp: " << timestamp << "\n" << std::flush;
 #endif
@@ -674,7 +687,7 @@ class SELoopWorker {
         //  - As in SensorDefConsumer.hpp, measurements can have multiple z's
 
         // Next, update new measurements
-        for ( auto& m : jmessage["measurements"] ) {
+        for ( auto& m : jmessage["message"]["measurements"] ) {
             // link back to information about the measurement using its mRID
             string mmrid = m["measurement_mrid"];
             string m_type = zary.mtypes[mmrid];
