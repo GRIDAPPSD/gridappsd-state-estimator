@@ -162,29 +162,32 @@ namespace state_estimator_util{
 
 			// Check for SOURCEBUS
 //			if ( !node.compare(0,9,"SOURCEBUS") ) {
-            if ( !node.rfind(source_node_prefix,0) ) {
+            if ( node.find(source_node_prefix) == 0 ) {
 
 				// Add sourcebus voltage magnitude
 				string vmag_zid = "source_V_"+node;
 				zary.zids.push_back(vmag_zid);
 				zary.zidxs  [vmag_zid] = zary.zqty++;
 				zary.ztypes [vmag_zid] = "vi";
-				zary.zsigs  [vmag_zid] = 0.001;
+				zary.zsigs  [vmag_zid] = 0.00001;
 				zary.znode1s[vmag_zid] = node;
 				zary.znode2s[vmag_zid] = node;
 				zary.zvals  [vmag_zid] = 1.02;
-				zary.znew   [vmag_zid] = true;
+				zary.znew   [vmag_zid] = false;
+
+                cout << "**Source Bus node: " << node << '\n' << std::flush;
+                cout << "\tsource_node_prefix: " << source_node_prefix << '\n' << std::flush;
 
 				// Add sourcebus voltage phase
 				string varg_zid = "source_T_"+node;
 				zary.zids.push_back(varg_zid);
 				zary.zidxs  [varg_zid] = zary.zqty++;
 				zary.ztypes [varg_zid] = "Ti";
-				zary.zsigs  [varg_zid] = 1.0;
+				zary.zsigs  [varg_zid] = 0.01;
 				zary.znode1s[varg_zid] = node;
 				zary.znode2s[varg_zid] = node;
 				zary.zvals  [varg_zid] = 0.0;
-				zary.znew   [varg_zid] = true;
+				zary.znew   [varg_zid] = false;
 			}
 
 			else {
@@ -200,7 +203,10 @@ namespace state_estimator_util{
                 zary.zsigs  [pinj_zid] = std::abs(pseudoP[node]/sbase) + 
                     5.0/100/node_names.size(); // load + leakage
 	
-				// Add the Q injection
+                cout << "NON-Source Bus node: " << node << '\n' << std::flush;
+                cout << "\tsource_node_prefix: " << source_node_prefix << '\n' << std::flush;
+				
+                // Add the Q injection
 				string qinj_zid = "pseudo_Q_"+node;
 				zary.zids.push_back(qinj_zid);
 				zary.zidxs  [qinj_zid] = zary.zqty++;
