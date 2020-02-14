@@ -33,15 +33,19 @@ class SELoopConsumer : public SEConsumer {
     // ------------------------------------------------------------------------
     public:
     virtual void process() {
-        jtext = json::parse(text);
-
 #ifdef DEBUG_PRIMARY
-        uint timestamp = jtext["message"]["timestamp"];
-        cout << "\nSELoopConsumer received mesasurement message of " << text.length() 
-            << " bytes for timestamp: " << timestamp << "\n" << std::flush;
+            cout << "\nSELoopConsumer received message of " << text.length() 
+                << " bytes\n" << std::flush;
+            //cout << "MESSAGE START\n" << std::flush;
+            //for (uint ibuff=0; ibuff<text.length(); ibuff+=4095) {
+            //    cout << text.substr(ibuff,4095) << "\n" << std::flush;
+            //}
+            //cout << "MESSAGE END\n" << std::flush;
 #endif
 
-        workQueue->push(jtext["message"]);
+        jtext = json::parse(text);
+
+        workQueue->push(jtext);
     }
 };
 

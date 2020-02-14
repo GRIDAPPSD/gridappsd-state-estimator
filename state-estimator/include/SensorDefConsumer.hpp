@@ -48,7 +48,7 @@ class SensorDefConsumer : public SEConsumer {
 //	SSMAP znode1s;	// point node or from node for flow measurements [str->str]
 //	SSMAP znode2s;	// point node or to node for flow measurements [str->str]
 //	SDMAP zvals;	// value of the latest measurement [str->double]
-//	SBMAP znew;		// indicator for new measurement [str->bool]
+//	SIMAP znew;		// counter for new measurement [str->uint]
 //	uint zqty = 0;	// number of measurements
 //	// to add to z
 //	//	-- zids.push_back(zid);
