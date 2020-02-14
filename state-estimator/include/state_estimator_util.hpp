@@ -172,7 +172,7 @@ namespace state_estimator_util{
 				zary.zsigs  [vmag_zid] = 0.00001;
 				zary.znode1s[vmag_zid] = node;
 				zary.znode2s[vmag_zid] = node;
-				zary.zvals  [vmag_zid] = 1.02;
+				zary.zvals  [vmag_zid] = 1.00;
 				zary.znew   [vmag_zid] = 0;
 
                 cout << "**Source Bus node: " << node << '\n' << std::flush;
