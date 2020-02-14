@@ -91,6 +91,7 @@ int main(int argc, char** argv){
 		// LISTEN FOR SIMULATION LOG MESSAGES
 		// --------------------------------------------------------------------
 
+#if 000
 		// measurements come from the simulation output
 		string simlogTopic = "goss.gridappsd.simulation.log."+gad.simid;
 
@@ -102,6 +103,7 @@ int main(int argc, char** argv){
 
 #ifdef DEBUG_PRIMARY
 		cout << "\nListening for simulation log messages on "+simlogTopic+'\n' << std::flush;
+#endif
 #endif
 
 		// --------------------------------------------------------------------

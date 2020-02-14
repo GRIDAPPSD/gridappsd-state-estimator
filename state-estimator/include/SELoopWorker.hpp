@@ -614,15 +614,16 @@ class SELoopWorker {
 
     public:
     void workLoop() {
-        json jmessage;
+        json jmessage, lastjmessage;
         uint timestamp;
+        bool exitAfterEstimateFlag = false;
+        bool doEstimateFlag = false;
 
         for (;;) {
             // ----------------------------------------------------------------
             // Reset the new measurement indicator
             // ----------------------------------------------------------------
-            for ( auto& zid : zary.zids ) zary.znew[zid] = false;
-            uint zcount = 0;
+            for ( auto& zid : zary.zids ) zary.znew[zid] = 0;
 
             // drain the queue with quick z-averaging
             do {
@@ -630,36 +631,50 @@ class SELoopWorker {
 
                 if (jmessage.find("processStatus") != jmessage.end()) {
                     string status = jmessage["processStatus"];
-                    // for now, just exit with a COMPLETE or CLOSED status
                     if (!status.compare("COMPLETE") || !status.compare("CLOSED")) {
+                        if (doEstimateFlag) {
 #ifdef DEBUG_PRIMARY
-                        cout << "Normal exit after finding COMPLETE/CLOSED log message on queue\n" << std::flush;
+                            cout << "Got COMPLETE/CLOSED log message on queue, doing full estimate with previous measurement\n" << std::flush;
 #endif
-                        exit(0);
-                    } else
+                            exitAfterEstimateFlag = true;
+                            jmessage = lastjmessage;
+
+                            // we've already done the add_zvals call for the last
+                            // measurement so proceed to estimate
+                            break;
+                        } else {
+#ifdef DEBUG_PRIMARY
+                            cout << "Got COMPLETE/CLOSED log message on queue, normal exit because full estimate just done\n" << std::flush;
+#endif
+                            exit(0);
+                        }
                         continue;
+                    }
                 }
 
-                // do z summation here keeping track of the # of items summed
                 timestamp = jmessage["message"]["timestamp"];
 #ifdef DEBUG_PRIMARY
                 cout << "===========> workQueue draining size: " << workQueue->size() << ", timestamp: " << timestamp << "\n" << std::flush;
 #endif
-                add_zvals(zcount, jmessage);
-                zcount++;
+                // do z summation here
+                add_zvals(jmessage);
+
+                // save the current jmessage in case it happens to be the last one
+                // before the COMPLETE/CLOSED log message so that we can do a 
+                // full estimate with it
+                lastjmessage = jmessage;
+                doEstimateFlag = true;
             //} while (false); // uncomment this to fully process all messages
             } while (!workQueue->empty()); // uncomment this to drain queue
 
             // do z averaging here by dividing sum by # of items
 #ifdef DEBUG_PRIMARY
-            cout << "===========> z-averaging being done after draining queue over " << zcount << " timestamps\n" << std::flush;
+            cout << "===========> z-averaging being done after draining queue\n" << std::flush;
 #endif
-
-            if (zcount > 1)
-                for ( auto& zid : zary.zids )
-                    if (zary.znew[zid])
-                        zary.zvals[zid] /= zcount;
-
+            for ( auto& zid : zary.zids ) {
+                if ( zary.znew[zid] > 1 )
+                    zary.zvals[zid] /= zary.znew[zid];
+            }
 
             // do the core "estimate" processing here since the queue is,
             // for the moment, empty
@@ -673,12 +688,20 @@ class SELoopWorker {
             //sleep(30); // delay to let queue refill for testing
             publish(timestamp);
 
+            if (exitAfterEstimateFlag) {
+#ifdef DEBUG_PRIMARY
+                cout << "Normal exit after COMPLETE/CLOSED log message and full estimate\n" << std::flush;
+#endif
+                exit(0);
+            }
+
+            doEstimateFlag = false;
         }
     }
 
 
     private:
-    void add_zvals(const uint& zcount, const json& jmessage) {
+    void add_zvals(const json& jmessage) {
         // --------------------------------------------------------------------
         // Use the simulation output to update the states
         // --------------------------------------------------------------------
@@ -700,13 +723,13 @@ class SELoopWorker {
                 double vmag_phys = m["magnitude"];
                 // TODO: This uses vnom filled from OpenDSS values, but needs
                 // to use GridLAB-D values
-                if (zcount == 0)
+                if (zary.znew[zid] == 0)
                     zary.zvals[zid] = 
                         vmag_phys / abs(node_vnoms[zary.znode1s[zid]]);
                 else
                     zary.zvals[zid] +=
                         vmag_phys / abs(node_vnoms[zary.znode1s[zid]]);
-                zary.znew[zid] = true;
+                zary.znew[zid]++;
 
                 // update the voltage phase
                 // --- LATER ---
@@ -723,11 +746,11 @@ class SELoopWorker {
                     cout << "tap_positon: " << tap_position 
                         << "\ttap_ratio: " << tap_ratio << std::endl;
 
-                    if (zcount == 0)
+                    if (zary.znew[zid] == 0)
                         zary.zvals[zid] = tap_ratio;
                     else
                         zary.zvals[zid] += tap_ratio;
-                    zary.znew[zid] = true;
+                    zary.znew[zid]++;
                     
                 }
             }
