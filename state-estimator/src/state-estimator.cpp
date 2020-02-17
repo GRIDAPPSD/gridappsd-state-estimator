@@ -245,6 +245,11 @@ int main(int argc, char** argv){
 		state_estimator_util::insert_pseudo_measurements(gad,zary,
 				node_names,node_vnoms,sbase);
 
+        cout << "zvals after pseudo-measurements:\n" << std::flush;
+        for ( auto& zid : zary.zids ) {
+            cout << "\t" << zid << ": " << zary.zvals[zid] << '\n' << std::flush;
+        }
+
 #ifdef DEBUG_PRIMARY
 		cout << "\nInitializing SE loop worker...\n" << std::flush;
 #endif
