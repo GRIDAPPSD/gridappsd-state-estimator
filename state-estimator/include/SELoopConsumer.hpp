@@ -33,8 +33,12 @@ class SELoopConsumer : public SEConsumer {
     // ------------------------------------------------------------------------
     public:
     virtual void process() {
+
+        jtext = json::parse(text);
+
+        if (jtext.find("message") != jtext.end()) {
 #ifdef DEBUG_PRIMARY
-            cout << "\nSELoopConsumer received message of " << text.length() 
+            cout << "\nSELoopConsumer received measurement message of " << text.length() 
                 << " bytes\n" << std::flush;
             //cout << "MESSAGE START\n" << std::flush;
             //for (uint ibuff=0; ibuff<text.length(); ibuff+=4095) {
@@ -42,10 +46,16 @@ class SELoopConsumer : public SEConsumer {
             //}
             //cout << "MESSAGE END\n" << std::flush;
 #endif
-
-        jtext = json::parse(text);
-
-        workQueue->push(jtext);
+            workQueue->push(jtext);
+        } else if (jtext.find("processStatus") != jtext.end()) {
+            string status = jtext["processStatus"];
+            if (!status.compare("COMPLETE") || !status.compare("CLOSED")) {
+#ifdef DEBUG_PRIMARY
+                cout << "\nSELoopConsumer received COMPLETE/CLOSED log message\n" << std::flush;
+#endif
+                workQueue->push(jtext);
+            }
+        }
     }
 };
 

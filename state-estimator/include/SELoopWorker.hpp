@@ -614,56 +614,54 @@ class SELoopWorker {
 
     public:
     void workLoop() {
-        json jmessage, lastjmessage;
+        json jmessage;
         uint timestamp;
         bool exitAfterEstimateFlag = false;
-        bool doEstimateFlag = false;
+        bool doEstimateFlag;
 
         for (;;) {
             // ----------------------------------------------------------------
-            // Reset the new measurement indicator
+            // Reset the new measurement counter for each node
             // ----------------------------------------------------------------
+            doEstimateFlag = false;
             for ( auto& zid : zary.zids ) zary.znew[zid] = 0;
 
             // drain the queue with quick z-averaging
             do {
                 jmessage = workQueue->pop();
 
-                if (jmessage.find("processStatus") != jmessage.end()) {
-                    string status = jmessage["processStatus"];
-                    if (!status.compare("COMPLETE") || !status.compare("CLOSED")) {
-                        if (doEstimateFlag) {
+                if (jmessage.find("message") != jmessage.end()) {
+                    timestamp = jmessage["message"]["timestamp"];
 #ifdef DEBUG_PRIMARY
-                            cout << "Got COMPLETE/CLOSED log message on queue, doing full estimate with previous measurement\n" << std::flush;
+                    cout << "===========> workQueue draining size: " << workQueue->size() << ", timestamp: " << timestamp << "\n" << std::flush;
 #endif
-                            exitAfterEstimateFlag = true;
-                            jmessage = lastjmessage;
+                    // do z summation here
+                    add_zvals(jmessage);
 
-                            // we've already done the add_zvals call for the last
-                            // measurement so proceed to estimate
-                            break;
-                        } else {
+                    // set flag to indicate a full estimate can be done
+                    // if a COMPLETED/CLOSED log message is received
+                    doEstimateFlag = true;
+
+                } else if (jmessage.find("processStatus") != jmessage.end()) {
+                    // only COMPLETE/CLOSED log messages are put on the queue
+                    // so process for that case only
+                    if (doEstimateFlag) {
 #ifdef DEBUG_PRIMARY
-                            cout << "Got COMPLETE/CLOSED log message on queue, normal exit because full estimate just done\n" << std::flush;
+                        cout << "Got COMPLETE/CLOSED log message on queue, doing full estimate with previous measurement\n" << std::flush;
 #endif
-                            exit(0);
-                        }
-                        continue;
+                        // set flag to exit after completing full estimate below
+                        exitAfterEstimateFlag = true;
+
+                        // we've already done the add_zvals call for the last
+                        // measurement so proceed to estimate z-averaging + estimate
+                        break;
+                    } else {
+#ifdef DEBUG_PRIMARY
+                        cout << "Got COMPLETE/CLOSED log message on queue, normal exit because full estimate just done\n" << std::flush;
+#endif
+                        exit(0);
                     }
                 }
-
-                timestamp = jmessage["message"]["timestamp"];
-#ifdef DEBUG_PRIMARY
-                cout << "===========> workQueue draining size: " << workQueue->size() << ", timestamp: " << timestamp << "\n" << std::flush;
-#endif
-                // do z summation here
-                add_zvals(jmessage);
-
-                // save the current jmessage in case it happens to be the last one
-                // before the COMPLETE/CLOSED log message so that we can do a 
-                // full estimate with it
-                lastjmessage = jmessage;
-                doEstimateFlag = true;
             //} while (false); // uncomment this to fully process all messages
             } while (!workQueue->empty()); // uncomment this to drain queue
 
@@ -694,8 +692,6 @@ class SELoopWorker {
 #endif
                 exit(0);
             }
-
-            doEstimateFlag = false;
         }
     }
 
