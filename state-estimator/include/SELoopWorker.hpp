@@ -675,10 +675,12 @@ class SELoopWorker {
             }
 
 
+#ifdef DEBUG_PRIMARY
             cout << "zvals before estimate\n" << std::flush;
             for ( auto& zid : zary.zids ) {
                 cout << "measurement of type: " << zary.ztypes[zid] << "\t" << zid << ": " << zary.zvals[zid] << "\t(" << zary.znew[zid] << ")\n" << std::flush;
             }
+#endif
 
             // do the core "estimate" processing here since the queue is,
             // for the moment, empty
