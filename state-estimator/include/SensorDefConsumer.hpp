@@ -35,8 +35,8 @@ class SensorDefConsumer : public SEConsumer {
     SSMAP term_bus_map; // terminal_mrid -> bus_name
 
     private:
-    SSMAP reg_cemrid_primnode_map;  // for regulator Pos measurement init
-    SSMAP reg_cemrid_regnode_map;   // for regulator Pos measurement init
+    SSMAP reg_cemrid_primbus_map;  // for regulator Pos measurement init
+    SSMAP reg_cemrid_regbus_map;   // for regulator Pos measurement init
     
 	private:
 	SensorArray zary;
@@ -63,16 +63,16 @@ class SensorDefConsumer : public SEConsumer {
 				const string& username,
 				const string& password,
 //                const SSMAP& term_bus_map,
-                const SSMAP& reg_cemrid_primnode_map,
-                const SSMAP& reg_cemrid_regnode_map,
+                const SSMAP& reg_cemrid_primbus_map,
+                const SSMAP& reg_cemrid_regbus_map,
 				const string& target,
 				const string& mode) {
 		this->brokerURI = brokerURI;
 		this->username = username;
 		this->password = password;
 //        this->term_bus_map = term_bus_map;
-        this->reg_cemrid_primnode_map = reg_cemrid_primnode_map;
-        this->reg_cemrid_regnode_map = reg_cemrid_regnode_map;
+        this->reg_cemrid_primbus_map = reg_cemrid_primbus_map;
+        this->reg_cemrid_regbus_map = reg_cemrid_regbus_map;
 		this->target = target;
 		this->mode = mode;
 	}
@@ -100,6 +100,7 @@ class SensorDefConsumer : public SEConsumer {
 		// Iterate over the sensors
 		for ( auto& f : jtext["data"]["feeders"] ) {
 			for ( auto& m : f["measurements"] ) {
+
 				// store the necessary measurement information
 				string mmrid = m["mRID"];
 				string tmeas = m["measurementType"];
@@ -141,8 +142,19 @@ class SensorDefConsumer : public SEConsumer {
 
                         // look up the prim and reg nodes
                         string cemrid = m["ConductingEquipment_mRID"];
-                        string primnode = reg_cemrid_primnode_map[cemrid];
-                        string regnode = reg_cemrid_regnode_map[cemrid];
+                        string primbus = reg_cemrid_primbus_map[cemrid];
+                        string regbus = reg_cemrid_regbus_map[cemrid];
+                        //string primnode = regid_primnode_map[cemrid];
+                        //string regnode = regid_regnode_map[cemrid];
+
+                        string phase = m["phases"];
+                        string primnode = primbus;
+                        string regnode = regbus;
+			            if (!phase.compare("A")) { primnode += ".1"; regnode += ".1"; }
+			            if (!phase.compare("B")) { primnode += ".2"; regnode += ".2"; }
+			            if (!phase.compare("C")) { primnode += ".3"; regnode += ".3"; }
+			            if (!phase.compare("s1")) { primnode += ".1"; regnode += ".1"; }
+			            if (!phase.compare("s2")) { primnode += ".2"; regnode += ".2"; }
 
                         // add the position measurement 
                         string zid = mmrid + "_tap";
@@ -151,13 +163,11 @@ class SensorDefConsumer : public SEConsumer {
                         zary.ztypes[zid] = "aji";
                         zary.znode1s[zid] = primnode;
                         zary.znode2s[zid] = regnode;
-                        zary.zsigs[zid] = 0.00000625;
+                        zary.zsigs[zid] = 0.0000625;
 
 //                        cout << m.dump(2);
-//                        cout << "node: " << node << std::endl;
 //                        cout << "primnode: " << primnode << std::endl;
 //                        cout << "regnode: " << regnode << std::endl;
-//                        exit(1);
                     }
                     else {
                         mmrid_pos_type_map[mmrid] = "other";

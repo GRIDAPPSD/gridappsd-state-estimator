@@ -679,7 +679,7 @@ class SELoopWorker {
 
             cout << "zvals before estimate\n" << std::flush;
             for ( auto& zid : zary.zids ) {
-                cout << "measurement of type: " << zary.ztypes[zid] << "\t" << zid << ": " << zary.zvals[zid] << "\t(" << zary.znew[zid] << ")\n" << std::flush;
+//                cout << "measurement of type: " << zary.ztypes[zid] << "\t" << zid << ": " << zary.zvals[zid] << "\t(" << zary.znew[zid] << ")\n" << std::flush;
             }
 
             // do the core "estimate" processing here since the queue is,
@@ -758,6 +758,32 @@ class SELoopWorker {
                         zary.zvals[zid] += tap_ratio;
                     zary.znew[zid]++;
                     
+
+                    // Update the A matrix with the latest tap ratio measurement
+                    // TODO: Consider averaging for queued measturements
+                    string primnode = zary.znode1s[zid];
+                    uint i = node_idxs[primnode];
+
+                    string regnode = zary.znode2s[zid];
+                    uint j = node_idxs[regnode];
+                    
+                    if ( ( Amat[j][i] - tap_ratio ) > 0.00625 ) {
+                        cout << "\t***Setting Amat[" << regnode << "][" << primnode 
+                                << "] to " << Amat[j][i] - 0.00625 << " (rate limited)" 
+                                << '\n' << std::flush;
+                        Amat[j][i] -= 0.00625;
+                    }
+                    else if ( ( Amat[j][i] - tap_ratio ) < -0.00625 ) {
+                        cout << "\t***Setting Amat[" << regnode << "][" << primnode 
+                                << "] to " << Amat[j][i] + 0.00625 << " (rate limited)" 
+                                << '\n' << std::flush;
+                        Amat[j][i] += 0.00625;
+                    }
+                    else {
+                        cout << "\t***Setting Amat[" << regnode << "][" << primnode 
+                                << "] to " << tap_ratio << '\n' << std::flush;
+                        Amat[j][i] = tap_ratio;
+                    }
                 }
             }
 
@@ -1503,7 +1529,7 @@ class SELoopWorker {
                         auto Arow = Amat.at(i);
                         try {
                             ai = real(Arow.at(j));
-                            cout << "|||||||||||||||||| ai assigned to: " << ai << std::endl;
+//                            cout << "|||||||||||||||||| ai assigned to: " << ai << std::endl;
                         } catch(...) {}
                     } catch(...) {}
                     // We know the nodes are coupled; check for Aji
@@ -1513,7 +1539,7 @@ class SELoopWorker {
                         auto Arow = Amat.at(j);
                         try {
                             aj = real(Arow.at(i));
-                            cout << "|||||||||||||||||| aj assigned to: " << aj << std::endl;
+//                            cout << "|||||||||||||||||| aj assigned to: " << aj << std::endl;
                         } catch (...) {}
                     } catch(...) {}
                 } catch(...) {

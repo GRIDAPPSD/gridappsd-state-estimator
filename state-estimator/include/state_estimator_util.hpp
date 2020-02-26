@@ -223,7 +223,7 @@ namespace state_estimator_util{
 
 
 	void build_A_matrix(gridappsd_session& gad, IMDMAP& A, SIMAP& node_idxs,
-            SSMAP& reg_cemrid_primnode_map, SSMAP& reg_cemrid_regnode_map,
+            SSMAP& reg_cemrid_primbus_map, SSMAP& reg_cemrid_regbus_map,
             SSMAP& regid_primnode_map, SSMAP& regid_regnode_map) {
 		json jregs = sparql_query(gad,"regs",sparq_ratio_tap_changer_nodes(gad.modelID));
             
@@ -235,7 +235,8 @@ namespace state_estimator_util{
 			// Get the primary node
 			string primbus = reg["primbus"]["value"];
 			string primph = reg["primphs"]["value"];
-			string primnode = primbus; for ( auto& c : primnode ) c = toupper(c);
+			for ( auto& c : primbus ) c = toupper(c);
+            string primnode = primbus;
 			if (!primph.compare("A")) primnode += ".1";
 			if (!primph.compare("B")) primnode += ".2";
 			if (!primph.compare("C")) primnode += ".3";
@@ -246,7 +247,8 @@ namespace state_estimator_util{
 			// get the regulation node
 			string regbus = reg["regbus"]["value"];
 			string regph = reg["regphs"]["value"];
-			string regnode = regbus; for ( auto& c : regnode ) c = toupper(c);
+			for ( auto& c : regbus ) c = toupper(c);
+            string regnode = regbus;
 			if (!regph.compare("A")) regnode += ".1";
 			if (!regph.compare("B")) regnode += ".2";
 			if (!regph.compare("C")) regnode += ".3";
@@ -258,15 +260,19 @@ namespace state_estimator_util{
             cout << "reg: " << reg << "\n" << std::flush;
             cout << "\tprimnode: " << primnode <<
                 "\tregnode: " << regnode << "\n" << std::flush;
+            cout << "\tprimph: " << primph << 
+                "\tregph: " << regph << "\n" << std::flush;
 
 			// initialize the A matrix
 			A[primidx][regidx] = 1;		// this will change
 			A[regidx][primidx] = 1;		// this stays unity and may not be required
 
             // map the power transformer mrid to prim and reg nodes
+            // NOTE: This is over-written when multiple single-phase regulators
+            //      are attached to a single multi-phase transformer
             string cemrid = reg["cemrid"]["value"];
-            reg_cemrid_primnode_map[cemrid] = primnode;
-            reg_cemrid_regnode_map[cemrid] = regnode;
+            reg_cemrid_primbus_map[cemrid] = primbus;
+            reg_cemrid_regbus_map[cemrid] = regbus;
 
             // map the regulator id to prim and reg nodes
             string regid = reg["rtcid"]["value"];

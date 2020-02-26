@@ -191,12 +191,12 @@ int main(int argc, char** argv){
         
 		// BUILD THE A-MATRIX
 		IMDMAP Amat;
-        SSMAP reg_cemrid_primnode_map;
-        SSMAP reg_cemrid_regnode_map;
+        SSMAP reg_cemrid_primbus_map;
+        SSMAP reg_cemrid_regbus_map;
         SSMAP regid_primnode_map;
         SSMAP regid_regnode_map;
 		state_estimator_util::build_A_matrix(gad,Amat,node_idxs,
-                reg_cemrid_primnode_map,reg_cemrid_regnode_map,
+                reg_cemrid_primbus_map,reg_cemrid_regbus_map,
                 regid_primnode_map,regid_regnode_map);
 
 		// --------------------------------------------------------------------
@@ -209,7 +209,7 @@ int main(int argc, char** argv){
 		// Set up the sensors consumer
 		string sensTopic = "goss.gridappsd.se.response."+gad.simid+".cimdict";
 		SensorDefConsumer sensConsumer(gad.brokerURI,gad.username,gad.password, 
-                reg_cemrid_primnode_map,reg_cemrid_regnode_map,
+                reg_cemrid_primbus_map,reg_cemrid_regbus_map,
                 sensTopic,"queue");
 		Thread sensConsumerThread(&sensConsumer);
 		sensConsumerThread.start();		// execute sensConsumer.run()
