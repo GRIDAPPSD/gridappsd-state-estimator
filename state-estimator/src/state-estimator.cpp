@@ -88,17 +88,34 @@ int main(int argc, char** argv){
 		activemq::library::ActiveMQCPP::initializeLibrary();
 
 		// --------------------------------------------------------------------
-		// LISTEN FOR MEASUREMENTS
+		// LISTEN FOR SIMULATION LOG MESSAGES
+		// --------------------------------------------------------------------
+
+		// measurements come from the simulation output
+		string simlogTopic = "goss.gridappsd.simulation.log."+gad.simid;
+
+		SELoopConsumer simLogConsumer(&workQueue, gad.brokerURI, gad.username,
+            gad.password, simlogTopic, "topic");
+		Thread simLogConsumerThread(&simLogConsumer);
+		simLogConsumerThread.start();	// execute simLogConsumer.run()
+		simLogConsumer.waitUntilReady();	// wait for the startup latch release
+
+#ifdef DEBUG_PRIMARY
+		cout << "\nListening for simulation log messages on "+simlogTopic+'\n' << std::flush;
+#endif
+
+		// --------------------------------------------------------------------
+		// LISTEN FOR SIMULATION MEASUREMENTS
 		// --------------------------------------------------------------------
 
 		// measurements come from the simulation output
 		string simoutTopic = "goss.gridappsd.simulation.output."+gad.simid;
 
-		SELoopConsumer loopConsumer(&workQueue, gad.brokerURI, gad.username,
+		SELoopConsumer simOutputConsumer(&workQueue, gad.brokerURI, gad.username,
             gad.password, simoutTopic, "topic");
-		Thread loopConsumerThread(&loopConsumer);
-		loopConsumerThread.start();	// execute loopConsumer.run()
-		loopConsumer.waitUntilReady();	// wait for the startup latch release
+		Thread simOutputConsumerThread(&simOutputConsumer);
+		simOutputConsumerThread.start();	// execute simOutputConsumer.run()
+		simOutputConsumer.waitUntilReady();	// wait for the startup latch release
 
 #ifdef DEBUG_PRIMARY
 		cout << "\nListening for simulation output on "+simoutTopic+'\n' << std::flush;
@@ -171,20 +188,27 @@ int main(int argc, char** argv){
         vnomConsumer.close();
         
 		// BUILD THE A-MATRIX
-		IMDMAP A;
-		state_estimator_util::build_A_matrix(gad,A,node_idxs);
+		IMDMAP Amat;
+        SSMAP reg_cemrid_primbus_map;
+        SSMAP reg_cemrid_regbus_map;
+        SSMAP regid_primnode_map;
+        SSMAP regid_regnode_map;
+		state_estimator_util::build_A_matrix(gad,Amat,node_idxs,
+                reg_cemrid_primbus_map,reg_cemrid_regbus_map,
+                regid_primnode_map,regid_regnode_map);
 
 		// --------------------------------------------------------------------
 		// SENSOR INITILIZER
 		// --------------------------------------------------------------------
 	    // map conducting equipment terminals to bus names	
-        SSMAP term_bus_map;
-        state_estimator_util::build_term_bus_map(gad, term_bus_map);
+//      SSMAP term_bus_map;
+//      state_estimator_util::build_term_bus_map(gad, term_bus_map);
 
 		// Set up the sensors consumer
 		string sensTopic = "goss.gridappsd.se.response."+gad.simid+".cimdict";
 		SensorDefConsumer sensConsumer(gad.brokerURI,gad.username,gad.password, 
-            term_bus_map,sensTopic,"queue");
+                reg_cemrid_primbus_map,reg_cemrid_regbus_map,
+                sensTopic,"queue");
 		Thread sensConsumerThread(&sensConsumer);
 		sensConsumerThread.start();		// execute sensConsumer.run()
 		sensConsumer.waitUntilReady();	// wait for latch release
@@ -200,6 +224,7 @@ int main(int argc, char** argv){
 
 		// Initialize sensors
 		SensorArray zary;
+        SSMAP mmrid_pos_type_map;
 //		uint numms; 	// number of sensors
 //		SLIST mns;		// sensor name [list of strings]
 //		SSMAP mts;		// sensor type [sn->str]
@@ -212,7 +237,7 @@ int main(int argc, char** argv){
 		sensConsumerThread.join();
 
         // Add Sensors
-		sensConsumer.fillSens(zary);
+		sensConsumer.fillSens(zary, mmrid_pos_type_map);
 		sensConsumer.close();
 
 		// Add Pseudo-Measurements
@@ -220,13 +245,19 @@ int main(int argc, char** argv){
 		state_estimator_util::insert_pseudo_measurements(gad,zary,
 				node_names,node_vnoms,sbase);
 
+        cout << "zvals after pseudo-measurements:\n" << std::flush;
+        for ( auto& zid : zary.zids ) {
+            cout << "\t" << zid << ": " << zary.zvals[zid] << '\n' << std::flush;
+        }
+
 #ifdef DEBUG_PRIMARY
 		cout << "\nInitializing SE loop worker...\n" << std::flush;
 #endif
         // Initialize class that does the state estimates
 		SELoopWorker loopWorker(&workQueue, gad.brokerURI, gad.username,
             gad.password, gad.simid, zary, node_qty, node_names, node_idxs,
-            node_vnoms, node_bmrids, node_phs, node_name_lookup, sbase, Y, A);
+            node_vnoms, node_bmrids, node_phs, node_name_lookup, sbase, Y, Amat,
+            regid_primnode_map, regid_regnode_map, mmrid_pos_type_map);
 
 #ifdef DEBUG_PRIMARY
 		cout << "\nStarting the SE work loop ...\n" << std::flush;

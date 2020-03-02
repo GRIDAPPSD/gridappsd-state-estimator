@@ -104,6 +104,7 @@ class SELoopWorker {
     enum dydx_type : uint {
         dPi_dvi, dPi_dvj, dQi_dvi, dQi_dvj, dvi_dvi,
         dPi_dTi, dPi_dTj, dQi_dTi, dQi_dTj, dTi_dTi,
+        daji_dvj, daji_dvi,
     };
 
     A5MAP Jshapemap;  // column ordered map of J entries: {zidx,xidx,i,j,dydx_type}
@@ -125,7 +126,9 @@ class SELoopWorker {
     // system state
     private:
     ICMAP Vpu;          // voltage state in per-unit
-    IMDMAP A;           // regulator tap ratios <- we need reg information
+    IMDMAP Amat;           // regulator tap ratios
+    SSMAP regid_primnode_map;
+    SSMAP regid_regnode_map;
 #ifdef DIAGONAL_P
     IDMAP Uvmag;        // variance of voltage magnitudes (per-unit)
     IDMAP Uvarg;        // variance of voltage angles (per-unit)
@@ -137,6 +140,7 @@ class SELoopWorker {
     
     private:
     SensorArray zary;
+    SSMAP mmrid_pos_type_map;   // type of position measurement
 
     private:
     ofstream state_fh;  // file to record states
@@ -167,7 +171,10 @@ class SELoopWorker {
             const ISMAP& node_name_lookup,
             const double& sbase,
             const IMMAP& Yphys,
-            const IMDMAP& A) {
+            const IMDMAP& Amat,
+            const SSMAP& regid_primnode_map,
+            const SSMAP& regid_regnode_map,
+            const SSMAP& mmrid_pos_type_map) {
         this->workQueue = workQueue;
         this->brokerURI = brokerURI;
         this->username = username;
@@ -183,7 +190,10 @@ class SELoopWorker {
         this->node_name_lookup = node_name_lookup;
         this->sbase = sbase;
         this->Yphys = Yphys; 
-        this->A = A;
+        this->Amat = Amat;
+        this->regid_primnode_map = regid_primnode_map;
+        this->regid_regnode_map = regid_regnode_map;
+        this->mmrid_pos_type_map = mmrid_pos_type_map;
 
         // do one-time-only processing
         init();
@@ -306,7 +316,16 @@ class SELoopWorker {
 
             else
             if ( !ztype.compare("aji") ) {
-                // Later
+                // note: the regulation node, j, is assigned to znode2s
+                //       the primary node, i, is assigned to znode1s
+                uint j = node_idxs[zary.znode2s[zid]];
+
+                // daji/dvj exists: 1/viV
+                Jshapemap.insert(A5PAIR(j-1, {zidx, j-1, i, j, daji_dvj}));
+
+                // daja/dvi exists: -vj/vi^2
+                Jshapemap.insert(A5PAIR(i-1, {zidx, i-1, i, j, daji_dvi}));
+
             }
 
             else
@@ -597,37 +616,71 @@ class SELoopWorker {
     void workLoop() {
         json jmessage;
         uint timestamp;
+        bool exitAfterEstimateFlag = false;
+        bool doEstimateFlag;
 
         for (;;) {
             // ----------------------------------------------------------------
-            // Reset the new measurement indicator
+            // Reset the new measurement counter for each node
             // ----------------------------------------------------------------
-            for ( auto& zid : zary.zids ) zary.znew[zid] = false;
-            uint zcount = 0;
+            doEstimateFlag = false;
+            for ( auto& zid : zary.zids ) zary.znew[zid] = 0;
 
             // drain the queue with quick z-averaging
             do {
                 jmessage = workQueue->pop();
-                // do z summation here keeping track of the # of items summed
-                timestamp = jmessage["timestamp"];
+
+                if (jmessage.find("message") != jmessage.end()) {
+                    timestamp = jmessage["message"]["timestamp"];
 #ifdef DEBUG_PRIMARY
-                cout << "===========> workQueue draining size: " << workQueue->size() << ", timestamp: " << timestamp << "\n" << std::flush;
+                    cout << "===========> workQueue draining size: " << workQueue->size() << ", timestamp: " << timestamp << "\n" << std::flush;
 #endif
-                add_zvals(zcount, jmessage);
-                zcount++;
+                    // do z summation here
+                    add_zvals(jmessage);
+
+                    // set flag to indicate a full estimate can be done
+                    // if a COMPLETED/CLOSED log message is received
+                    doEstimateFlag = true;
+
+                } else if (jmessage.find("processStatus") != jmessage.end()) {
+                    // only COMPLETE/CLOSED log messages are put on the queue
+                    // so process for that case only
+                    if (doEstimateFlag) {
+#ifdef DEBUG_PRIMARY
+                        cout << "Got COMPLETE/CLOSED log message on queue, doing full estimate with previous measurement\n" << std::flush;
+#endif
+                        // set flag to exit after completing full estimate below
+                        exitAfterEstimateFlag = true;
+
+                        // we've already done the add_zvals call for the last
+                        // measurement so proceed to estimate z-averaging + estimate
+                        break;
+                    } else {
+#ifdef DEBUG_PRIMARY
+                        cout << "Got COMPLETE/CLOSED log message on queue, normal exit because full estimate just done\n" << std::flush;
+#endif
+                        exit(0);
+                    }
+                }
             //} while (false); // uncomment this to fully process all messages
             } while (!workQueue->empty()); // uncomment this to drain queue
 
             // do z averaging here by dividing sum by # of items
 #ifdef DEBUG_PRIMARY
-            cout << "===========> z-averaging being done after draining queue over " << zcount << " timestamps\n" << std::flush;
+            cout << "===========> z-averaging being done after draining queue\n" << std::flush;
 #endif
+            for ( auto& zid : zary.zids ) {
+                if ( zary.znew[zid] > 1 )
+                    zary.zvals[zid] /= zary.znew[zid];
+            }
 
-            if (zcount > 1)
-                for ( auto& zid : zary.zids )
-                    if (zary.znew[zid])
-                        zary.zvals[zid] /= zcount;
 
+#ifdef DEBUG_PRIMARY
+            cout << "zvals before estimate\n" << std::flush;
+            for ( auto& zid : zary.zids ) {
+//                cout << "measurement of type: " << zary.ztypes[zid] << "\t" << zid << ": " << zary.zvals[zid] << "\t(" << zary.znew[zid] << ")\n" << std::flush;
+            }
+#endif
 
             // do the core "estimate" processing here since the queue is,
             // for the moment, empty
@@ -641,12 +694,18 @@ class SELoopWorker {
             //sleep(30); // delay to let queue refill for testing
             publish(timestamp);
 
+            if (exitAfterEstimateFlag) {
+#ifdef DEBUG_PRIMARY
+                cout << "Normal exit after COMPLETE/CLOSED log message and full estimate\n" << std::flush;
+#endif
+                exit(0);
+            }
         }
     }
 
 
     private:
-    void add_zvals(const uint& zcount, const json& jmessage) {
+    void add_zvals(const json& jmessage) {
         // --------------------------------------------------------------------
         // Use the simulation output to update the states
         // --------------------------------------------------------------------
@@ -655,7 +714,7 @@ class SELoopWorker {
         //  - As in SensorDefConsumer.hpp, measurements can have multiple z's
 
         // Next, update new measurements
-        for ( auto& m : jmessage["measurements"] ) {
+        for ( auto& m : jmessage["message"]["measurements"] ) {
             // link back to information about the measurement using its mRID
             string mmrid = m["measurement_mrid"];
             string m_type = zary.mtypes[mmrid];
@@ -668,17 +727,62 @@ class SELoopWorker {
                 double vmag_phys = m["magnitude"];
                 // TODO: This uses vnom filled from OpenDSS values, but needs
                 // to use GridLAB-D values
-                if (zcount == 0)
+                if (zary.znew[zid] == 0)
                     zary.zvals[zid] = 
                         vmag_phys / abs(node_vnoms[zary.znode1s[zid]]);
                 else
                     zary.zvals[zid] +=
                         vmag_phys / abs(node_vnoms[zary.znode1s[zid]]);
-                zary.znew[zid] = true;
+                zary.znew[zid]++;
 
                 // update the voltage phase
                 // --- LATER ---
                 // -------------
+            }
+           
+            // Check for "Pos" measurement
+            if ( !m_type.compare("Pos") ) {
+                if ( !mmrid_pos_type_map[mmrid].compare("regulator_tap") ) {
+                    // update the tap ratio
+                    string zid = mmrid+"_tap";
+                    double tap_position = m["value"];
+                    double tap_ratio = 1.0 + 0.1*tap_position/16.0;
+                    cout << "tap_positon: " << tap_position 
+                        << "\ttap_ratio: " << tap_ratio << std::endl;
+
+                    if (zary.znew[zid] == 0)
+                        zary.zvals[zid] = tap_ratio;
+                    else
+                        zary.zvals[zid] += tap_ratio;
+                    zary.znew[zid]++;
+                    
+
+                    // Update the A matrix with the latest tap ratio measurement
+                    // TODO: Consider averaging for queued measturements
+                    string primnode = zary.znode1s[zid];
+                    uint i = node_idxs[primnode];
+
+                    string regnode = zary.znode2s[zid];
+                    uint j = node_idxs[regnode];
+                    
+                    if ( ( Amat[j][i] - tap_ratio ) > 0.00625 ) {
+                        cout << "\t***Setting Amat[" << regnode << "][" << primnode 
+                                << "] to " << Amat[j][i] - 0.00625 << " (rate limited)" 
+                                << '\n' << std::flush;
+                        Amat[j][i] -= 0.00625;
+                    }
+                    else if ( ( Amat[j][i] - tap_ratio ) < -0.00625 ) {
+                        cout << "\t***Setting Amat[" << regnode << "][" << primnode 
+                                << "] to " << Amat[j][i] + 0.00625 << " (rate limited)" 
+                                << '\n' << std::flush;
+                        Amat[j][i] += 0.00625;
+                    }
+                    else {
+                        cout << "\t***Setting Amat[" << regnode << "][" << primnode 
+                                << "] to " << tap_ratio << '\n' << std::flush;
+                        Amat[j][i] = tap_ratio;
+                    }
+                }
             }
 
             //else if ( !m_type.compare("") ) {
@@ -1238,7 +1342,31 @@ class SELoopWorker {
             Vpu[idx] = complex<double>(vrei,vimi);
         }
         // update A
-//      for ( auto& reg_name : SLIST reg_names ) {}
+        for ( auto& map_pair : regid_primnode_map ) {
+            cout << map_pair.first << std::endl;
+            string regid = map_pair.first;
+            string primnode = regid_primnode_map[regid];
+            string regnode = regid_regnode_map[regid];
+
+            cout << "primnode: " << primnode << 
+                "\tregnode: " << regnode << std::endl;
+
+            // get i and j
+            uint i = node_idxs[primnode];
+            uint j = node_idxs[regnode];
+            
+            // get vi and vj
+            double vi = abs(xvec[i-1]);
+            double vj = abs(xvec[j-1]);
+
+            cout << "vi: " << vi << "\tvj: " << vj << std::endl;
+
+            // assign vj/vi to Amat[j][i]
+            Amat[j][i] = vj/vi;
+
+            cout << "Amat[j][i]: " << Amat[j][i] << std::endl;
+
+        }
     }
 
 #include <float.h>
@@ -1396,18 +1524,20 @@ class SELoopWorker {
                     // NOTE: A is never iterated over - we don't need at()
                     ai = 1;
                     try {
-                        auto Arow = A.at(i);
+                        auto Arow = Amat.at(i);
                         try {
                             ai = real(Arow.at(j));
+//                            cout << "|||||||||||||||||| ai assigned to: " << ai << std::endl;
                         } catch(...) {}
                     } catch(...) {}
                     // We know the nodes are coupled; check for Aji
                     // NOTE: A is never iterated over - we don't need at()
                     aj = 1;
                     try {
-                        auto Arow = A.at(j);
+                        auto Arow = Amat.at(j);
                         try {
                             aj = real(Arow.at(i));
+//                            cout << "|||||||||||||||||| aj assigned to: " << aj << std::endl;
                         } catch (...) {}
                     } catch(...) {}
                 } catch(...) {
@@ -1481,7 +1611,12 @@ class SELoopWorker {
                 if ( abs(Qi) > NEGL ) gs_entry_firstcol(h,zidx,Qi);
             }
             else if ( !zary.ztypes[zid].compare("aji" ) ) {
-                // aji is a direct state measurement
+                // aji = vj/vi
+                uint i = node_idxs[zary.znode1s[zid]];
+                uint j = node_idxs[zary.znode2s[zid]];
+                set_n(i,j);
+                double aji = vj/vi;
+                if ( abs(aji) > NEGL ) gs_entry_firstcol(h,zidx,aji);
             }
             else if ( !zary.ztypes[zid].compare("vi") ) {
                 // vi is a direct state measurement
@@ -1558,12 +1693,11 @@ class SELoopWorker {
             else
             if ( entry_type == dPi_dvj ) {
                 // --- compute dPi/dvj
-                double dP = 0;
                 auto& Yrow = Ypu.at(i);
                 complex<double> Yij = Yrow.at(j);
 
                 set_n(i,j);
-                dP = -1.0 * vi/ai/aj * (g*cos(T) + b*sin(T));
+                double dP = -1.0 * vi/ai/aj * (g*cos(T) + b*sin(T));
                 if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
             }
 
@@ -1590,12 +1724,11 @@ class SELoopWorker {
             else
             if ( entry_type == dQi_dvj ) {
                 // --- compute dQi/dvj
-                double dQ = 0;
                 auto& Yrow = Ypu.at(i);
                 complex<double> Yij = Yrow.at(j);
 
                 set_n(i,j);
-                dQ = -1.0 * vi/ai/aj * (g*sin(T) - b*cos(T));
+                double dQ = -1.0 * vi/ai/aj * (g*sin(T) - b*cos(T));
                 if ( abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
             }
 
@@ -1625,12 +1758,11 @@ class SELoopWorker {
             else
             if ( entry_type == dPi_dTj ) {
                  // --- compute dP/dTj
-                 double dP = 0;
                  auto& Yrow = Ypu.at(i);
                  complex<double> Yij = Yrow.at(j);
  
                  set_n(i,j);
-                 dP = -1.0 * vi*vj/ai/aj * (g*sin(T) - b*cos(T));
+                 double dP = -1.0 * vi*vj/ai/aj * (g*sin(T) - b*cos(T));
                  if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
             }
 
@@ -1654,18 +1786,33 @@ class SELoopWorker {
             else
             if ( entry_type == dQi_dTj ) {
                 // --- compute dQ/dTj
-                double dQ = 0;
                 auto& Yrow = Ypu.at(i);
                 complex<double> Yij = Yrow.at(j);
 
                 set_n(i,j);
-                dQ = vi*vj/ai/aj * (g*cos(T) + b*sin(T));
+                double dQ = vi*vj/ai/aj * (g*cos(T) + b*sin(T));
                 if ( abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
             }
 
             else
             if ( entry_type == dTi_dTi ) {
                 gs_entry_colorder(J,zidx,xidx,1.0);
+            }
+
+            else
+            if ( entry_type == daji_dvj) {
+                // daji/dvj = 1/vi
+                set_n(i,j);
+                double daji = 1.0/vi;
+                gs_entry_colorder(J, zidx, xidx, daji);
+            }
+
+            else
+            if ( entry_type == daji_dvi) {
+                // daja/dvi -vj/vi^2
+                set_n(i,j);
+                double daji = -vj/(vi*vi);
+                gs_entry_colorder(J, zidx, xidx, daji);
             }
 
             else {

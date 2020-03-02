@@ -21,13 +21,26 @@ using json = nlohmann::json;
 #define SSMAP std::unordered_map<std::string,std::string>
 #endif
 
+//#ifndef IDMAP
+//#define IDMAP std::unordered_map<unsigned int,double>
+//#endif
+
+//#ifndef IMDMAP
+//#define IMDMAP std::unordered_map<unsigned int,IDMAP>
+//#endif
+
 // This class listens for sensor definitions and constructs the sensors
 class SensorDefConsumer : public SEConsumer {
     private:
     SSMAP term_bus_map; // terminal_mrid -> bus_name
+
+    private:
+    SSMAP reg_cemrid_primbus_map;  // for regulator Pos measurement init
+    SSMAP reg_cemrid_regbus_map;   // for regulator Pos measurement init
     
 	private:
 	SensorArray zary;
+    SSMAP mmrid_pos_type_map;
 //	SLIST mmids;
 //	SLIST zids;		// measurement id [mrid_ztype] [list of strings]
 //	SSMAP ztypes;	// measurement types [str->str]
@@ -35,7 +48,7 @@ class SensorDefConsumer : public SEConsumer {
 //	SSMAP znode1s;	// point node or from node for flow measurements [str->str]
 //	SSMAP znode2s;	// point node or to node for flow measurements [str->str]
 //	SDMAP zvals;	// value of the latest measurement [str->double]
-//	SBMAP znew;		// indicator for new measurement [str->bool]
+//	SIMAP znew;		// counter for new measurement [str->uint]
 //	uint zqty = 0;	// number of measurements
 //	// to add to z
 //	//	-- zids.push_back(zid);
@@ -49,20 +62,25 @@ class SensorDefConsumer : public SEConsumer {
 	SensorDefConsumer(const string& brokerURI, 
 				const string& username,
 				const string& password,
-                const SSMAP& term_bus_map,
+//                const SSMAP& term_bus_map,
+                const SSMAP& reg_cemrid_primbus_map,
+                const SSMAP& reg_cemrid_regbus_map,
 				const string& target,
 				const string& mode) {
 		this->brokerURI = brokerURI;
 		this->username = username;
 		this->password = password;
-        this->term_bus_map = term_bus_map;
+//        this->term_bus_map = term_bus_map;
+        this->reg_cemrid_primbus_map = reg_cemrid_primbus_map;
+        this->reg_cemrid_regbus_map = reg_cemrid_regbus_map;
 		this->target = target;
 		this->mode = mode;
 	}
 
 	public:
-	void fillSens(SensorArray &zary) {
+	void fillSens(SensorArray &zary, SSMAP& mmrid_pos_type_map) {
 		zary = this->zary;
+        mmrid_pos_type_map = this->mmrid_pos_type_map;
 	}
 	
 	public:
@@ -82,6 +100,7 @@ class SensorDefConsumer : public SEConsumer {
 		// Iterate over the sensors
 		for ( auto& f : jtext["data"]["feeders"] ) {
 			for ( auto& m : f["measurements"] ) {
+
 				// store the necessary measurement information
 				string mmrid = m["mRID"];
 				string tmeas = m["measurementType"];
@@ -119,26 +138,42 @@ class SensorDefConsumer : public SEConsumer {
                     string ce_type = m["ConductingEquipment_type"];
                     if ( !ce_type.compare("PowerTransformer") ) {
                         // regulator tap measurement
-                        string node = term_bus_map[m["Terminal_mRID"]];
-                        for ( auto& c : node ) c = std::toupper(c);
+                        mmrid_pos_type_map[mmrid] = "regulator_tap";
+
+                        // look up the prim and reg nodes
+                        string cemrid = m["ConductingEquipment_mRID"];
+                        string primbus = reg_cemrid_primbus_map[cemrid];
+                        string regbus = reg_cemrid_regbus_map[cemrid];
+                        //string primnode = regid_primnode_map[cemrid];
+                        //string regnode = regid_regnode_map[cemrid];
+
                         string phase = m["phases"];
-                        if ( !phase.compare("A") ) node += ".1";
-                        if ( !phase.compare("B") ) node += ".2";
-                        if ( !phase.compare("C") ) node += ".3";
-                        if ( !phase.compare("s1") ) node += ".1";	// secondary
-                        if ( !phase.compare("s2") ) node += ".2";	// secondary
+                        string primnode = primbus;
+                        string regnode = regbus;
+			            if (!phase.compare("A")) { primnode += ".1"; regnode += ".1"; }
+			            if (!phase.compare("B")) { primnode += ".2"; regnode += ".2"; }
+			            if (!phase.compare("C")) { primnode += ".3"; regnode += ".3"; }
+			            if (!phase.compare("s1")) { primnode += ".1"; regnode += ".1"; }
+			            if (!phase.compare("s2")) { primnode += ".2"; regnode += ".2"; }
 
                         // add the position measurement 
-//                        string zid = mmrid + "_tap";
-//                        zary.zids.push_back( zid );
-//                        zary.zidxs[zid] = zary.zqty++;
-//                        zary.ztypes[zid] = "aji";
-//                        zary.znode1s[zid] = node;
-//                        zary.znode2s[zid] = node;
-//                        zary.zsigs[zid] = 0.0000625;
+                        string zid = mmrid + "_tap";
+                        zary.zids.push_back( zid );
+                        zary.zidxs[zid] = zary.zqty++;
+                        zary.ztypes[zid] = "aji";
+                        zary.znode1s[zid] = primnode;
+                        zary.znode2s[zid] = regnode;
+                        zary.zsigs[zid] = 0.0000625;
+
+//                        cout << m.dump(2);
+//                        cout << "primnode: " << primnode << std::endl;
+//                        cout << "regnode: " << regnode << std::endl;
+                    }
+                    else {
+                        mmrid_pos_type_map[mmrid] = "other";
                     }
                 } else {
-					// we only care about PNV measurements for now
+					// we only care about PNV and Pos measurements for now
 				}
 			}
 		}

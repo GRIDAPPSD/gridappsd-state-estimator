@@ -162,29 +162,32 @@ namespace state_estimator_util{
 
 			// Check for SOURCEBUS
 //			if ( !node.compare(0,9,"SOURCEBUS") ) {
-            if ( !node.rfind(source_node_prefix,0) ) {
+            if ( node.find(source_node_prefix) == 0 ) {
 
 				// Add sourcebus voltage magnitude
 				string vmag_zid = "source_V_"+node;
 				zary.zids.push_back(vmag_zid);
 				zary.zidxs  [vmag_zid] = zary.zqty++;
 				zary.ztypes [vmag_zid] = "vi";
-				zary.zsigs  [vmag_zid] = 0.001;
+				zary.zsigs  [vmag_zid] = 0.00001;
 				zary.znode1s[vmag_zid] = node;
 				zary.znode2s[vmag_zid] = node;
-				zary.zvals  [vmag_zid] = 1.02;
-				zary.znew   [vmag_zid] = true;
+				zary.zvals  [vmag_zid] = 1.00;
+				zary.znew   [vmag_zid] = 0;
+
+                cout << "**Source Bus node: " << node << '\n' << std::flush;
+                cout << "\tsource_node_prefix: " << source_node_prefix << '\n' << std::flush;
 
 				// Add sourcebus voltage phase
 				string varg_zid = "source_T_"+node;
 				zary.zids.push_back(varg_zid);
 				zary.zidxs  [varg_zid] = zary.zqty++;
 				zary.ztypes [varg_zid] = "Ti";
-				zary.zsigs  [varg_zid] = 1.0;
+				zary.zsigs  [varg_zid] = 0.01;
 				zary.znode1s[varg_zid] = node;
 				zary.znode2s[varg_zid] = node;
 				zary.zvals  [varg_zid] = 0.0;
-				zary.znew   [varg_zid] = true;
+				zary.znew   [varg_zid] = 0;
 			}
 
 			else {
@@ -195,19 +198,22 @@ namespace state_estimator_util{
 				zary.ztypes	[pinj_zid] = "Pi";
 				zary.znode1s[pinj_zid] = node;
 				zary.znode2s[pinj_zid] = node;
-				zary.znew	[pinj_zid] = false;
+				zary.znew	[pinj_zid] = 0;
 				zary.zvals	[pinj_zid] = pseudoP[node]/sbase;
                 zary.zsigs  [pinj_zid] = std::abs(pseudoP[node]/sbase) + 
                     5.0/100/node_names.size(); // load + leakage
 	
-				// Add the Q injection
+                cout << "NON-Source Bus node: " << node << '\n' << std::flush;
+                cout << "\tsource_node_prefix: " << source_node_prefix << '\n' << std::flush;
+				
+                // Add the Q injection
 				string qinj_zid = "pseudo_Q_"+node;
 				zary.zids.push_back(qinj_zid);
 				zary.zidxs  [qinj_zid] = zary.zqty++;
 				zary.ztypes	[qinj_zid] = "Qi";
 				zary.znode1s[qinj_zid] = node;
 				zary.znode2s[qinj_zid] = node;
-				zary.znew	[qinj_zid] = false;
+				zary.znew	[qinj_zid] = 0;
 				zary.zvals	[qinj_zid] = pseudoQ[node]/sbase;
                 zary.zsigs  [qinj_zid] = std::abs(pseudoQ[node]/sbase) + 
                     5.0/100/node_names.size(); // load + leakage
@@ -216,14 +222,21 @@ namespace state_estimator_util{
 	}
 
 
-	void build_A_matrix(gridappsd_session& gad, IMDMAP& A, SIMAP& node_idxs) {
+	void build_A_matrix(gridappsd_session& gad, IMDMAP& A, SIMAP& node_idxs,
+            SSMAP& reg_cemrid_primbus_map, SSMAP& reg_cemrid_regbus_map,
+            SSMAP& regid_primnode_map, SSMAP& regid_regnode_map) {
 		json jregs = sparql_query(gad,"regs",sparq_ratio_tap_changer_nodes(gad.modelID));
+            
+        cout << jregs.dump(2);
+
 		for ( auto& reg : jregs["data"]["results"]["bindings"] ) {
+
 
 			// Get the primary node
 			string primbus = reg["primbus"]["value"];
 			string primph = reg["primphs"]["value"];
-			string primnode = primbus; for ( auto& c : primnode ) c = toupper(c);
+			for ( auto& c : primbus ) c = toupper(c);
+            string primnode = primbus;
 			if (!primph.compare("A")) primnode += ".1";
 			if (!primph.compare("B")) primnode += ".2";
 			if (!primph.compare("C")) primnode += ".3";
@@ -234,7 +247,8 @@ namespace state_estimator_util{
 			// get the regulation node
 			string regbus = reg["regbus"]["value"];
 			string regph = reg["regphs"]["value"];
-			string regnode = regbus; for ( auto& c : regnode ) c = toupper(c);
+			for ( auto& c : regbus ) c = toupper(c);
+            string regnode = regbus;
 			if (!regph.compare("A")) regnode += ".1";
 			if (!regph.compare("B")) regnode += ".2";
 			if (!regph.compare("C")) regnode += ".3";
@@ -246,10 +260,24 @@ namespace state_estimator_util{
             cout << "reg: " << reg << "\n" << std::flush;
             cout << "\tprimnode: " << primnode <<
                 "\tregnode: " << regnode << "\n" << std::flush;
+            cout << "\tprimph: " << primph << 
+                "\tregph: " << regph << "\n" << std::flush;
 
 			// initialize the A matrix
 			A[primidx][regidx] = 1;		// this will change
 			A[regidx][primidx] = 1;		// this stays unity and may not be required
+
+            // map the power transformer mrid to prim and reg nodes
+            // NOTE: This is over-written when multiple single-phase regulators
+            //      are attached to a single multi-phase transformer
+            string cemrid = reg["cemrid"]["value"];
+            reg_cemrid_primbus_map[cemrid] = primbus;
+            reg_cemrid_regbus_map[cemrid] = regbus;
+
+            // map the regulator id to prim and reg nodes
+            string regid = reg["rtcid"]["value"];
+            regid_primnode_map[regid] = primnode;
+            regid_regnode_map[regid] = regnode;
 		}
 	}
 
