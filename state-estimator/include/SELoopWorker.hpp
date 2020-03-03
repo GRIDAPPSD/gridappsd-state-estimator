@@ -675,12 +675,12 @@ class SELoopWorker {
             }
 
 
-#ifdef DEBUG_PRIMARY
-            cout << "zvals before estimate\n" << std::flush;
-            for ( auto& zid : zary.zids ) {
-//                cout << "measurement of type: " << zary.ztypes[zid] << "\t" << zid << ": " << zary.zvals[zid] << "\t(" << zary.znew[zid] << ")\n" << std::flush;
-            }
-#endif
+// #ifdef DEBUG_PRIMARY
+//             cout << "zvals before estimate\n" << std::flush;
+//             for ( auto& zid : zary.zids ) {
+//                 cout << "measurement of type: " << zary.ztypes[zid] << "\t" << zid << ": " << zary.zvals[zid] << "\t(" << zary.znew[zid] << ")\n" << std::flush;
+//             }
+// #endif
 
             // do the core "estimate" processing here since the queue is,
             // for the moment, empty
@@ -747,8 +747,8 @@ class SELoopWorker {
                     string zid = mmrid+"_tap";
                     double tap_position = m["value"];
                     double tap_ratio = 1.0 + 0.1*tap_position/16.0;
-                    cout << "tap_positon: " << tap_position 
-                        << "\ttap_ratio: " << tap_ratio << std::endl;
+//                    cout << "tap_position: " << tap_position 
+//                        << "\ttap_ratio: " << tap_ratio << std::endl;
 
                     if (zary.znew[zid] == 0)
                         zary.zvals[zid] = tap_ratio;
@@ -766,20 +766,20 @@ class SELoopWorker {
                     uint j = node_idxs[regnode];
                     
                     if ( ( Amat[j][i] - tap_ratio ) > 0.00625 ) {
-                        cout << "\t***Setting Amat[" << regnode << "][" << primnode 
-                                << "] to " << Amat[j][i] - 0.00625 << " (rate limited)" 
-                                << '\n' << std::flush;
+//                        cout << "\t***Setting Amat[" << regnode << "][" << primnode 
+//                                << "] to " << Amat[j][i] - 0.00625 << " (rate limited)" 
+//                                << '\n' << std::flush;
                         Amat[j][i] -= 0.00625;
                     }
                     else if ( ( Amat[j][i] - tap_ratio ) < -0.00625 ) {
-                        cout << "\t***Setting Amat[" << regnode << "][" << primnode 
-                                << "] to " << Amat[j][i] + 0.00625 << " (rate limited)" 
-                                << '\n' << std::flush;
+//                        cout << "\t***Setting Amat[" << regnode << "][" << primnode 
+//                                << "] to " << Amat[j][i] + 0.00625 << " (rate limited)" 
+//                                << '\n' << std::flush;
                         Amat[j][i] += 0.00625;
                     }
                     else {
-                        cout << "\t***Setting Amat[" << regnode << "][" << primnode 
-                                << "] to " << tap_ratio << '\n' << std::flush;
+//                        cout << "\t***Setting Amat[" << regnode << "][" << primnode 
+//                                << "] to " << tap_ratio << '\n' << std::flush;
                         Amat[j][i] = tap_ratio;
                     }
                 }
@@ -1343,13 +1343,13 @@ class SELoopWorker {
         }
         // update A
         for ( auto& map_pair : regid_primnode_map ) {
-            cout << map_pair.first << std::endl;
+//            cout << map_pair.first << std::endl;
             string regid = map_pair.first;
             string primnode = regid_primnode_map[regid];
             string regnode = regid_regnode_map[regid];
 
-            cout << "primnode: " << primnode << 
-                "\tregnode: " << regnode << std::endl;
+//            cout << "primnode: " << primnode << 
+//                "\tregnode: " << regnode << std::endl;
 
             // get i and j
             uint i = node_idxs[primnode];
@@ -1359,12 +1359,12 @@ class SELoopWorker {
             double vi = abs(xvec[i-1]);
             double vj = abs(xvec[j-1]);
 
-            cout << "vi: " << vi << "\tvj: " << vj << std::endl;
+//            cout << "vi: " << vi << "\tvj: " << vj << std::endl;
 
             // assign vj/vi to Amat[j][i]
             Amat[j][i] = vj/vi;
 
-            cout << "Amat[j][i]: " << Amat[j][i] << std::endl;
+//            cout << "Amat[j][i]: " << Amat[j][i] << std::endl;
 
         }
     }

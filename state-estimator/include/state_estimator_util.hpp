@@ -175,8 +175,8 @@ namespace state_estimator_util{
 				zary.zvals  [vmag_zid] = 1.00;
 				zary.znew   [vmag_zid] = 0;
 
-                cout << "**Source Bus node: " << node << '\n' << std::flush;
-                cout << "\tsource_node_prefix: " << source_node_prefix << '\n' << std::flush;
+//                cout << "**Source Bus node: " << node << '\n' << std::flush;
+//                cout << "\tsource_node_prefix: " << source_node_prefix << '\n' << std::flush;
 
 				// Add sourcebus voltage phase
 				string varg_zid = "source_T_"+node;
@@ -203,8 +203,8 @@ namespace state_estimator_util{
                 zary.zsigs  [pinj_zid] = std::abs(pseudoP[node]/sbase) + 
                     5.0/100/node_names.size(); // load + leakage
 	
-                cout << "NON-Source Bus node: " << node << '\n' << std::flush;
-                cout << "\tsource_node_prefix: " << source_node_prefix << '\n' << std::flush;
+//                cout << "NON-Source Bus node: " << node << '\n' << std::flush;
+//                cout << "\tsource_node_prefix: " << source_node_prefix << '\n' << std::flush;
 				
                 // Add the Q injection
 				string qinj_zid = "pseudo_Q_"+node;
@@ -227,7 +227,7 @@ namespace state_estimator_util{
             SSMAP& regid_primnode_map, SSMAP& regid_regnode_map) {
 		json jregs = sparql_query(gad,"regs",sparq_ratio_tap_changer_nodes(gad.modelID));
             
-        cout << jregs.dump(2);
+//        cout << jregs.dump(2);
 
 		for ( auto& reg : jregs["data"]["results"]["bindings"] ) {
 
@@ -256,12 +256,12 @@ namespace state_estimator_util{
 			if (!regph.compare("s2")) regnode += ".2";
 			uint regidx = node_idxs[regnode];
 
-            // print
-            cout << "reg: " << reg << "\n" << std::flush;
-            cout << "\tprimnode: " << primnode <<
-                "\tregnode: " << regnode << "\n" << std::flush;
-            cout << "\tprimph: " << primph << 
-                "\tregph: " << regph << "\n" << std::flush;
+//            // print
+//            cout << "reg: " << reg << "\n" << std::flush;
+//            cout << "\tprimnode: " << primnode <<
+//                "\tregnode: " << regnode << "\n" << std::flush;
+//            cout << "\tprimph: " << primph << 
+//                "\tregph: " << regph << "\n" << std::flush;
 
 			// initialize the A matrix
 			A[primidx][regidx] = 1;		// this will change

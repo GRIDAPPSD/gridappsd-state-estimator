@@ -127,6 +127,7 @@ class SensorDefConsumer : public SEConsumer {
 					zary.znode1s[zid] = node;
 					zary.znode2s[zid] = node;
 					zary.zsigs[zid] = 0.01;		// WHERE DOES THIS COME FROM ??
+                    zary.zvals[zid] = 1.0;
                     // uncertanty should come from the sensor service -- in that case
                     // it won't need to be initialized
 
@@ -164,6 +165,7 @@ class SensorDefConsumer : public SEConsumer {
                         zary.znode1s[zid] = primnode;
                         zary.znode2s[zid] = regnode;
                         zary.zsigs[zid] = 0.0000625;
+                        zary.zvals[zid] = 1.0;
 
 //                        cout << m.dump(2);
 //                        cout << "primnode: " << primnode << std::endl;
