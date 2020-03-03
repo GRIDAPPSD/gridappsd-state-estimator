@@ -13,6 +13,8 @@ using sparql_queries::sparq_nodes;
 using sparql_queries::sparq_transformer_end_vbase;
 using sparql_queries::sparq_energy_consumer_pq;
 using sparql_queries::sparq_ratio_tap_changer_nodes;
+using sparql_queries::sparq_energy_source_buses;
+using sparql_queries::sparq_term_bus;
 
 #include <string>
 #define SLIST std::list<std::string>
@@ -20,7 +22,8 @@ using sparql_queries::sparq_ratio_tap_changer_nodes;
 #define SDMAP std::unordered_map<std::string,double>
 #define SCMAP std::unordered_map<std::string,std::complex<double>>
 #define SSMAP std::unordered_map<std::string,std::string>
-#define IMMAP std::unordered_map<unsigned int,ICMAP>
+#define IDMAP std::unordered_map<unsigned int,double>
+#define IMDMAP std::unordered_map<unsigned int,IDMAP>
 
 namespace state_estimator_util{
 
@@ -83,12 +86,9 @@ namespace state_estimator_util{
 
 		// Add nominal load injections
 		for ( auto& load : jpsm["data"]["results"]["bindings"] ) {
-			cout << load.dump() + "\n";
-			string bus = load["busname"]["value"]; for ( char& c : bus ) c = toupper(c);
-			cout << "bus: " + bus + '\n';
+		 	string bus = load["busname"]["value"]; for ( char& c : bus ) c = toupper(c);
 
 			if ( !load.count("phase") ) {
-				cout << "balanced 3-phase load\n";
 				// This is a 3-phase balanced load (handle D and Y the same)
 				string sptot = load["p_3p"]["value"]; double ptot = stod(sptot);
 				string sqtot = load["q_3p"]["value"]; double qtot = stod(sqtot);
@@ -102,11 +102,9 @@ namespace state_estimator_util{
 				pseudoP[bus+".3"] -= ptot/3.0/2.0;
 				pseudoQ[bus+".3"] -= qtot/3.0/2.0;
 			} else {
-				cout << "single-phase load\n";
 				// This is a 1-phase load
 				string spph = load["p_phase"]["value"]; double pph = stod(spph);
 				string sqph = load["q_phase"]["value"]; double qph = stod(sqph);
-				cout << "pph: " << pph << "\t\t" << "qph: " << qph << '\n';
 				string phase = load["phase"]["value"];
 				// determine the node
 				string node = bus;
@@ -118,13 +116,11 @@ namespace state_estimator_util{
 				// Handle Wye or Delta load
 				string conn = load["conn"]["value"];
 				if ( !conn.compare("Y") ) {
-					cout << "\tY load\n";
 					// Wye-connected load - injections are 
 					pseudoP[node] -= pph/2.0;
 					pseudoQ[node] -= qph/2.0;
 				}
 				if ( !conn.compare("D") ) {
-					cout << "\tD load\n";
 					// Delta-connected load - injections depend on load current
 					complex<double> sload = complex<double>(pph,qph);
 					// Find the nominal voltage across the load
@@ -147,32 +143,51 @@ namespace state_estimator_util{
 
 
 		// Add these injections and sourcebus voltages to the sensor array
+		json jesources = sparql_query(gad,"esources",sparq_energy_source_buses(gad.modelID));
+
+        json source_buses = jesources["data"]["results"]["bindings"];
+
+        if ( source_buses.size() != 1 ) {
+            cerr << "ERROR: number of energy sources (" << source_buses.size() << ") is not 1\n" << std::flush;
+            throw("invalid number of energy sources");
+        }
+
+        string sourcebus = source_buses[0]["bus"]["value"]; 
+        std::transform( sourcebus.begin(), sourcebus.end(), sourcebus.begin(), ::toupper );
+        string source_node_prefix = sourcebus + ".";
+
+
 //		const double sbase = 1000000.0;
 		for ( auto& node : node_names ) {
 
 			// Check for SOURCEBUS
-			if ( !node.compare(0,9,"SOURCEBUS") ) {
+//			if ( !node.compare(0,9,"SOURCEBUS") ) {
+            if ( node.find(source_node_prefix) == 0 ) {
+
 				// Add sourcebus voltage magnitude
 				string vmag_zid = "source_V_"+node;
 				zary.zids.push_back(vmag_zid);
 				zary.zidxs  [vmag_zid] = zary.zqty++;
 				zary.ztypes [vmag_zid] = "vi";
-				zary.zsigs  [vmag_zid] = 0.001;
+				zary.zsigs  [vmag_zid] = 0.00001;
 				zary.znode1s[vmag_zid] = node;
 				zary.znode2s[vmag_zid] = node;
-				zary.zvals  [vmag_zid] = 1.2;
-				zary.znew   [vmag_zid] = true;
+				zary.zvals  [vmag_zid] = 1.00;
+				zary.znew   [vmag_zid] = 0;
+
+                cout << "**Source Bus node: " << node << '\n' << std::flush;
+                cout << "\tsource_node_prefix: " << source_node_prefix << '\n' << std::flush;
 
 				// Add sourcebus voltage phase
 				string varg_zid = "source_T_"+node;
 				zary.zids.push_back(varg_zid);
 				zary.zidxs  [varg_zid] = zary.zqty++;
 				zary.ztypes [varg_zid] = "Ti";
-				zary.zsigs  [varg_zid] = 1.0;
+				zary.zsigs  [varg_zid] = 0.01;
 				zary.znode1s[varg_zid] = node;
 				zary.znode2s[varg_zid] = node;
 				zary.zvals  [varg_zid] = 0.0;
-				zary.znew   [varg_zid] = true;
+				zary.znew   [varg_zid] = 0;
 			}
 
 			else {
@@ -181,72 +196,100 @@ namespace state_estimator_util{
 				zary.zids.push_back(pinj_zid);
 				zary.zidxs  [pinj_zid] = zary.zqty++;
 				zary.ztypes	[pinj_zid] = "Pi";
-				zary.zsigs	[pinj_zid] = 5000.0;
 				zary.znode1s[pinj_zid] = node;
 				zary.znode2s[pinj_zid] = node;
+				zary.znew	[pinj_zid] = 0;
 				zary.zvals	[pinj_zid] = pseudoP[node]/sbase;
-				zary.znew	[pinj_zid] = false;
+                zary.zsigs  [pinj_zid] = std::abs(pseudoP[node]/sbase) + 
+                    5.0/100/node_names.size(); // load + leakage
 	
-				// Add the Q injection
+                cout << "NON-Source Bus node: " << node << '\n' << std::flush;
+                cout << "\tsource_node_prefix: " << source_node_prefix << '\n' << std::flush;
+				
+                // Add the Q injection
 				string qinj_zid = "pseudo_Q_"+node;
 				zary.zids.push_back(qinj_zid);
 				zary.zidxs  [qinj_zid] = zary.zqty++;
 				zary.ztypes	[qinj_zid] = "Qi";
-				zary.zsigs	[qinj_zid] = 2000.0;
 				zary.znode1s[qinj_zid] = node;
 				zary.znode2s[qinj_zid] = node;
+				zary.znew	[qinj_zid] = 0;
 				zary.zvals	[qinj_zid] = pseudoQ[node]/sbase;
-				zary.znew	[qinj_zid] = false;
+                zary.zsigs  [qinj_zid] = std::abs(pseudoQ[node]/sbase) + 
+                    5.0/100/node_names.size(); // load + leakage
 			}
 		}
-
-
-		for ( auto& zid : zary.zids ) {
-			cout << zid << '\t' << zary.zvals[zid] << ", sigma " 
-				<< zary.zsigs[zid] << '\n';
-		}
-
 	}
 
 
-	void build_A_matrix(gridappsd_session& gad, IMMAP& A, SIMAP& node_idxs) {
+	void build_A_matrix(gridappsd_session& gad, IMDMAP& A, SIMAP& node_idxs,
+            SSMAP& reg_cemrid_primbus_map, SSMAP& reg_cemrid_regbus_map,
+            SSMAP& regid_primnode_map, SSMAP& regid_regnode_map) {
 		json jregs = sparql_query(gad,"regs",sparq_ratio_tap_changer_nodes(gad.modelID));
-		cout << jregs.dump() + '\n';
+            
+        cout << jregs.dump(2);
+
 		for ( auto& reg : jregs["data"]["results"]["bindings"] ) {
+
 
 			// Get the primary node
 			string primbus = reg["primbus"]["value"];
 			string primph = reg["primphs"]["value"];
-			string primnode = primbus; for ( auto& c : primnode ) c = toupper(c);
-			cout << primbus + '\t' + primph + '\n';
+			for ( auto& c : primbus ) c = toupper(c);
+            string primnode = primbus;
 			if (!primph.compare("A")) primnode += ".1";
 			if (!primph.compare("B")) primnode += ".2";
 			if (!primph.compare("C")) primnode += ".3";
 			if (!primph.compare("s1")) primnode += ".1";
 			if (!primph.compare("s2")) primnode += ".2";
 			uint primidx = node_idxs[primnode];
-			cout << primnode + " index: " << primidx << '\n';
 
 			// get the regulation node
 			string regbus = reg["regbus"]["value"];
 			string regph = reg["regphs"]["value"];
-			string regnode = regbus; for ( auto& c : regnode ) c = toupper(c);
-			cout << regbus + '\t' + regph + '\n';
+			for ( auto& c : regbus ) c = toupper(c);
+            string regnode = regbus;
 			if (!regph.compare("A")) regnode += ".1";
 			if (!regph.compare("B")) regnode += ".2";
 			if (!regph.compare("C")) regnode += ".3";
 			if (!regph.compare("s1")) regnode += ".1";
 			if (!regph.compare("s2")) regnode += ".2";
 			uint regidx = node_idxs[regnode];
-			cout << regnode + " index: " << regidx << '\n';
+
+            // print
+            cout << "reg: " << reg << "\n" << std::flush;
+            cout << "\tprimnode: " << primnode <<
+                "\tregnode: " << regnode << "\n" << std::flush;
+            cout << "\tprimph: " << primph << 
+                "\tregph: " << regph << "\n" << std::flush;
 
 			// initialize the A matrix
 			A[primidx][regidx] = 1;		// this will change
 			A[regidx][primidx] = 1;		// this stays unity and may not be required
-		}
 
+            // map the power transformer mrid to prim and reg nodes
+            // NOTE: This is over-written when multiple single-phase regulators
+            //      are attached to a single multi-phase transformer
+            string cemrid = reg["cemrid"]["value"];
+            reg_cemrid_primbus_map[cemrid] = primbus;
+            reg_cemrid_regbus_map[cemrid] = regbus;
+
+            // map the regulator id to prim and reg nodes
+            string regid = reg["rtcid"]["value"];
+            regid_primnode_map[regid] = primnode;
+            regid_regnode_map[regid] = regnode;
+		}
 	}
 
-} // end namespace state_estimator_init
+    void build_term_bus_map(gridappsd_session& gad, SSMAP& term_bus_map) {
+        json j_term_bus = sparql_query(gad,"terms", sparq_term_bus(gad.modelID));
+        for ( auto& item : j_term_bus["data"]["results"]["bindings"] ) {
+            string termid = item["termid"]["value"];
+            string busname = item["busname"]["value"];
+            term_bus_map[termid] = busname;
+        }
+    }
+
+} // end namespace state_estimator_util
 
 #endif // SE_INIT_HPP

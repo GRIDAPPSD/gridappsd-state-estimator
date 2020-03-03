@@ -1,7 +1,7 @@
 #!/bin/sh
 
-jsonpath="../../../json/single_include/nlohmann"
-sspath="../../../suitesparse-metis-for-windows/SuiteSparse"
+jsonpath="../../json/single_include/nlohmann"
+sspath="../../suitesparse-metis-for-windows/SuiteSparse"
 ssconfpath="$sspath/SuiteSparse_config"
 cspath="$sspath/CXSparse"
 amdpath="$sspath/AMD"

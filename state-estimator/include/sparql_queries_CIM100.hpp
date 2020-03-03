@@ -154,11 +154,14 @@ namespace sparql_queries {
 		string sparq = "# Find the nodes of each regulator\n"
 			"PREFIX r:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
 			"PREFIX c: <http://iec.ch/TC57/CIM100#>\n"
-			"SELECT ?rtcname ?xtname ?primbus ?primphs ?regbus ?regphs WHERE {\n"
+			"SELECT ?rtcname ?rtcid ?xtname ?cemrid ?primbus ?primphs ?regbus ?regphs WHERE {\n"
 			"  # \n"
 			"  ?rtc c:IdentifiedObject.name ?rtcname.\n"
+            "  ?rtc c:IdentifiedObject.mRID ?rtcid.\n"
 			"  ?rtc c:RatioTapChanger.TransformerEnd ?rte.\n"
 			"  ?rte c:TransformerTankEnd.TransformerTank ?xt.\n"
+            "  ?xt c:TransformerTank.PowerTransformer ?ce.\n"
+            "  ?ce c:IdentifiedObject.mRID ?cemrid.\n"
 			"  ?rte c:TransformerEnd.Terminal ?rterm.\n"
 			"  ?rte c:TransformerTankEnd.phases ?rphsraw.\n"
 			"  bind(strafter(str(?rphsraw),\\\"PhaseCode.\\\") as ?regphs)\n"
@@ -176,10 +179,52 @@ namespace sparql_queries {
 			"  VALUES ?fdrid {\\\""+fdrid+"\\\"}\n"
 			"  FILTER ( ?primbus NOT IN ( ?regbus ) )\n"
 			"}\n"
-			"GROUP BY ?rtcname ?xtname ?primbus ?primphs ?regbus ?regphs\n"
+			"GROUP BY ?rtcname ?rtcid ?xtname ?cemrid ?primbus ?primphs ?regbus ?regphs\n"
 			"ORDER by ?rtcname\n";
 		return sparq;
 	}
-}
 
+
+    string sparq_energy_source_buses(string fdrid) {
+        string sparq = 
+            "# substation source - DistSubstation\n"
+            "PREFIX r:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+            "PREFIX c:  <http://iec.ch/TC57/CIM100#>\n"
+            "SELECT ?bus WHERE {\n"
+            "?s r:type c:EnergySource.\n"
+            "# feeder selection options - if all commented out, query matches all feeders\n"
+            "  VALUES ?fdrid {\\\""+fdrid+"\\\"}  # 123 bus\n"
+            "  ?s c:Equipment.EquipmentContainer ?fdr.\n"
+            "  ?fdr c:IdentifiedObject.mRID ?fdrid.\n"
+            "  ?t c:Terminal.ConductingEquipment ?s.\n"
+            "  ?t c:Terminal.ConnectivityNode ?cn.\n"
+            "  ?cn c:IdentifiedObject.name ?bus\n"
+            "}\n"
+            "ORDER by ?name\n";
+        return sparq;
+    }
+
+    string sparq_term_bus(string fdrid) {
+        string sparq = 
+            "PREFIX r:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
+            "PREFIX c:  <http://iec.ch/TC57/CIM100#> "
+            "SELECT ?termid ?busname "
+            "WHERE { "
+            "?term c:Terminal.ConnectivityNode ?bus. "
+            "?term c:IdentifiedObject.mRID ?termid. "
+            "?bus c:IdentifiedObject.name ?busname. "
+            "?bus c:IdentifiedObject.mRID ?busid. "
+            "VALUES ?fdrid {\\\"" + fdrid + "\\\"} "
+            "?term c:Terminal.ConductingEquipment ?ce. "
+            "?ce c:Equipment.EquipmentContainer ?fdr. "
+            "?fdr c:IdentifiedObject.mRID ?fdrid. "
+            "?ce c:IdentifiedObject.name ?cename. "
+            "?ce c:IdentifiedObject.mRID ?cemrid. "
+            " } "
+            "GROUP BY ?termid ?busname "
+            "ORDER BY ?termid";
+        return sparq;
+    }
+
+}
 #endif

@@ -1,3 +1,7 @@
+#define DIAGONAL_P
+#define DEBUG_PRIMARY
+//#define DEBUG_FILES
+
 #define PI 3.1415926535
 
 #include "state_estimator_gridappsd.hpp"
@@ -6,10 +10,9 @@
 #include "TopoProcConsumer.hpp"
 #include "VnomConsumer.hpp"
 #include "SensorDefConsumer.hpp"
+#include "SharedQueue.hpp"
 #include "SELoopConsumer.hpp"
-
-#include "json.hpp"
-using json = nlohmann::json;
+#include "SELoopWorker.hpp"
 
 #include "gridappsd_requests.hpp"
 using gridappsd_requests::sparql_query;
@@ -23,7 +26,6 @@ using gridappsd_requests::sparql_query;
 //using sparql_queries::sparq_ratio_tap_changer_nodes;
 
 #include "state_estimator_util.hpp"
-
 
 #include "State.hpp"
 #include "SensorArray.hpp"
@@ -49,12 +51,17 @@ using gridappsd_requests::sparql_query;
 #define SCMAP std::unordered_map<std::string,std::complex<double>>
 #define SSMAP std::unordered_map<std::string,std::string>
 
+// reverse lookup of nodenames by index
+#define ISMAP std::unordered_map<unsigned int,std::string>
+
 // Hash address (i,j) to the index of a sparse matrix vector
 #define ICMAP std::unordered_map<unsigned int,std::complex<double>>
 #define IMMAP std::unordered_map<unsigned int,ICMAP>
 
 // Store x and z in a list one-indexed by position
 #define IDMAP std::unordered_map<unsigned int,double>
+#define IMDMAP std::unordered_map<unsigned int,IDMAP>
+
 
 int main(int argc, char** argv){
 	
@@ -69,12 +76,50 @@ int main(int argc, char** argv){
 	// ------------------------------------------------------------------------
 	state_estimator_gridappsd::gridappsd_session gad(se);
 
+    // declare the thread-safe queue shared between SELoopConsumer (writer)
+    // and SELoopWorker (reader)
+    SharedQueue<json> workQueue;
+
 	// ------------------------------------------------------------------------
 	// START THE AMQ INTERFACE
 	// ------------------------------------------------------------------------
 
 	try {
 		activemq::library::ActiveMQCPP::initializeLibrary();
+
+		// --------------------------------------------------------------------
+		// LISTEN FOR SIMULATION LOG MESSAGES
+		// --------------------------------------------------------------------
+
+		// measurements come from the simulation output
+		string simlogTopic = "goss.gridappsd.simulation.log."+gad.simid;
+
+		SELoopConsumer simLogConsumer(&workQueue, gad.brokerURI, gad.username,
+            gad.password, simlogTopic, "topic");
+		Thread simLogConsumerThread(&simLogConsumer);
+		simLogConsumerThread.start();	// execute simLogConsumer.run()
+		simLogConsumer.waitUntilReady();	// wait for the startup latch release
+
+#ifdef DEBUG_PRIMARY
+		cout << "\nListening for simulation log messages on "+simlogTopic+'\n' << std::flush;
+#endif
+
+		// --------------------------------------------------------------------
+		// LISTEN FOR SIMULATION MEASUREMENTS
+		// --------------------------------------------------------------------
+
+		// measurements come from the simulation output
+		string simoutTopic = "goss.gridappsd.simulation.output."+gad.simid;
+
+		SELoopConsumer simOutputConsumer(&workQueue, gad.brokerURI, gad.username,
+            gad.password, simoutTopic, "topic");
+		Thread simOutputConsumerThread(&simOutputConsumer);
+		simOutputConsumerThread.start();	// execute simOutputConsumer.run()
+		simOutputConsumer.waitUntilReady();	// wait for the startup latch release
+
+#ifdef DEBUG_PRIMARY
+		cout << "\nListening for simulation output on "+simoutTopic+'\n' << std::flush;
+#endif
 
 		// --------------------------------------------------------------------
 		// MAKE SOME SPARQL QUERIES
@@ -84,12 +129,6 @@ int main(int argc, char** argv){
 		SSMAP node_bmrids;
 		SSMAP node_phs;
 		state_estimator_util::get_nodes(gad,node_bmrids,node_phs);
-
-
-
-//		// PSEUDO-MEASUREMENTS
-//		json jpsm = sparql_query(gad,"psm",sparq_energy_consumer_pq(gad.modelID));
-//		cout << jpsm.dump() + '\n';
 
 
 		// --------------------------------------------------------------------
@@ -120,13 +159,14 @@ int main(int argc, char** argv){
 			"{\"configurationType\":\"Vnom Export\",\"parameters\":{\"simulation_id\":\""
 			+ gad.simid + "\"}}";
 		topoRequester.send(ybusRequestText,ybusTopic);
-//		topoRequester.send(vnomRequestText,vnomTopic);
+		topoRequester.send(vnomRequestText,vnomTopic);
 		topoRequester.close();
 
 		// Initialize topology
 		uint node_qty;		// number of nodes
 		SLIST node_names;	// list of node names
 		SIMAP node_idxs;	// map from node name to unit-indexed position
+        ISMAP node_name_lookup;
 		IMMAP Y;			// double map from indices to complex admittance
 		// G, B, g, and b are derived from Y:
 		//	-- Gij = std::real(Y[i][j]);
@@ -136,42 +176,39 @@ int main(int argc, char** argv){
 		
 		// Wait for topological processor and retrieve topology
 		ybusConsumerThread.join();
-		ybusConsumer.fillTopo(node_qty,node_names,node_idxs,Y);
+		ybusConsumer.fillTopo(node_qty,node_names,node_idxs,node_name_lookup,Y);
 		ybusConsumer.close();
 
 		// Initialize nominal voltages
 		SCMAP node_vnoms;
 		
 		// Wait for the vnom processor and retrive vnom
+        vnomConsumerThread.join();
 		vnomConsumer.fillVnom(node_vnoms);
-		int ctr = 0;
-		for ( auto& node : node_names) {
-			ctr ++;
-			cout << node << " vnom: " << node_vnoms[node] << '\n';
-		} cout << ctr << " total nodes\n";
-		
+        vnomConsumer.close();
+        
 		// BUILD THE A-MATRIX
-		IMMAP A;
-		state_estimator_util::build_A_matrix(gad,A,node_idxs);
+		IMDMAP Amat;
+        SSMAP reg_cemrid_primbus_map;
+        SSMAP reg_cemrid_regbus_map;
+        SSMAP regid_primnode_map;
+        SSMAP regid_regnode_map;
+		state_estimator_util::build_A_matrix(gad,Amat,node_idxs,
+                reg_cemrid_primbus_map,reg_cemrid_regbus_map,
+                regid_primnode_map,regid_regnode_map);
 
-
-		// INITIALIZE THE STATE VECTOR
-		IDMAP xV;	// container for voltage magnitude states
-		IDMAP xT;	// container for voltage angle states
-		for ( auto& node : node_names ) {
-			xV[node_idxs[node]] = abs(node_vnoms[node]);
-			xT[node_idxs[node]] = 180/PI * arg(node_vnoms[node]);
-		}
-		int xqty = xV.size() + xT.size();
-		if ( xqty != 2*node_qty) throw "x initialization failed";
-	
 		// --------------------------------------------------------------------
 		// SENSOR INITILIZER
 		// --------------------------------------------------------------------
-		
+	    // map conducting equipment terminals to bus names	
+//      SSMAP term_bus_map;
+//      state_estimator_util::build_term_bus_map(gad, term_bus_map);
+
 		// Set up the sensors consumer
 		string sensTopic = "goss.gridappsd.se.response."+gad.simid+".cimdict";
-		SensorDefConsumer sensConsumer(gad.brokerURI,gad.username,gad.password,sensTopic,"queue");
+		SensorDefConsumer sensConsumer(gad.brokerURI,gad.username,gad.password, 
+                reg_cemrid_primbus_map,reg_cemrid_regbus_map,
+                sensTopic,"queue");
 		Thread sensConsumerThread(&sensConsumer);
 		sensConsumerThread.start();		// execute sensConsumer.run()
 		sensConsumer.waitUntilReady();	// wait for latch release
@@ -187,6 +224,7 @@ int main(int argc, char** argv){
 
 		// Initialize sensors
 		SensorArray zary;
+        SSMAP mmrid_pos_type_map;
 //		uint numms; 	// number of sensors
 //		SLIST mns;		// sensor name [list of strings]
 //		SSMAP mts;		// sensor type [sn->str]
@@ -198,46 +236,39 @@ int main(int argc, char** argv){
 		// Wait for sensor initializer and retrieve sensors
 		sensConsumerThread.join();
 
-
-//// NO SENSORS RIGHT NOW
-//		sensConsumer.fillSens(zary);
-//		sensConsumer.close();
+        // Add Sensors
+		sensConsumer.fillSens(zary, mmrid_pos_type_map);
+		sensConsumer.close();
 
 		// Add Pseudo-Measurements
 		const double sbase = 1000000.0;
 		state_estimator_util::insert_pseudo_measurements(gad,zary,
 				node_names,node_vnoms,sbase);
 
-		// --------------------------------------------------------------------
-		// LISTEN FOR MEASUREMENTS
-		// --------------------------------------------------------------------
+        cout << "zvals after pseudo-measurements:\n" << std::flush;
+        for ( auto& zid : zary.zids ) {
+            cout << "\t" << zid << ": " << zary.zvals[zid] << '\n' << std::flush;
+        }
 
-		// ideally we want to compute an estimate on a thread at intervals and
-		//   collect measurements in the meantime
+#ifdef DEBUG_PRIMARY
+		cout << "\nInitializing SE loop worker...\n" << std::flush;
+#endif
+        // Initialize class that does the state estimates
+		SELoopWorker loopWorker(&workQueue, gad.brokerURI, gad.username,
+            gad.password, gad.simid, zary, node_qty, node_names, node_idxs,
+            node_vnoms, node_bmrids, node_phs, node_name_lookup, sbase, Y, Amat,
+            regid_primnode_map, regid_regnode_map, mmrid_pos_type_map);
 
-
-		for ( auto& node: node_names ) cout << node+'\n';
-		// measurements come from the simulation output
-		string simoutTopic = "goss.gridappsd.simulation.output."+gad.simid;
-		SELoopConsumer loopConsumer(gad.brokerURI,gad.username,gad.password,
-			simoutTopic,"topic",gad.simid,zary,
-			node_qty,node_names,node_idxs,node_vnoms,node_bmrids,node_phs,
-			sbase,Y,A);
-		Thread loopConsumerThread(&loopConsumer);
-		loopConsumerThread.start();	// execute loopConsumer.run()
-		loopConsumer.waitUntilReady();	// wait for the startup latch release
+#ifdef DEBUG_PRIMARY
+		cout << "\nStarting the SE work loop ...\n" << std::flush;
+#endif
+		loopWorker.workLoop();
 		
-		cout << "\nListening for simulation output on "+simoutTopic+'\n';
-		
-		// wait for the estimator to exit:
-		loopConsumerThread.join(); loopConsumer.close();
-
-		// now we're done
+        // we'll never get here
 		return 0;
 
 	} catch (...) {
-		std::cerr << "Error: Unhandled Exception\n";
+		cerr << "Error: Unhandled Exception\n" << std::flush;
 		throw NULL;
 	}
-	
 }

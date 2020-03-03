@@ -109,9 +109,11 @@ class SEProducer {
 			if ( !started )	this->init();
 			// Create the message
 			auto_ptr<TextMessage> msg(session->createTextMessage(text));
+#ifdef DEBUG_PRIMARY
 			// Report
-//			cout << "\nPublishing to "+target+":\n\t"+text+"\n";
-			cout << "\nPublishing to "+target+"\n";
+//			cout << "Publishing to "+target+":\n\t"+text+"\n\n" << std::flush;
+			cout << "Publishing to "+target+"\n\n" << std::flush;
+#endif
 			// Send the message
 			producer->send(msg.get());
 		} catch (CMSException& e) {
@@ -127,9 +129,10 @@ class SEProducer {
 			auto_ptr<TextMessage> msg(session->createTextMessage(text));
 			// Set the reply-to topic
 			msg->setStringProperty("reply-to",replytopic);
-			// Report
-			cout << "\nPublishing to "+target+":\n\t"+text+"\n";
-//			cout << "\nPublishing to "+target+"\n";
+#ifdef DEBUG_PRIMARY
+            cout << "Publishing to "+target+"\n\n" << std::flush;
+#endif
+
 			// Send the message
 			producer->send(msg.get());
 		} catch (CMSException& e) {

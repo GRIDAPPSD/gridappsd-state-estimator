@@ -58,27 +58,27 @@ class VnomConsumer: public SEConsumer {
 	}
 	
 	public:
-	virtual void init() {
-		// WHEN THE API CALL EXISTS, WE CAN DELETE init()
-		//  - normally, a message populates this->text and calls process()
-		//  - here, we'll populate this->text from a file and call process()
-		json jtext;
-		jtext["data"] = json::object();
-		jtext["data"]["vnomFile"] = json::array();
-
-		// for each line
-		ifstream ifh("base_nominal_voltages.csv");
-
-		string line;
-		while ( getline(ifh,line) )
-			jtext["data"]["vnomFile"].push_back(line);
-
-		text = jtext.dump();
-
-		cout << text + '\n';
-
-		process();
-	}
+//	virtual void init() {
+//		// WHEN THE API CALL EXISTS, WE CAN DELETE init()
+//		//  - normally, a message populates this->text and calls process()
+//		//  - here, we'll populate this->text from a file and call process()
+//		json jtext;
+//		jtext["data"] = json::object();
+//		jtext["data"]["vnomFile"] = json::array();
+//
+//		// for each line
+//		ifstream ifh("base_nominal_voltages.csv");
+//
+//		string line;
+//		while ( getline(ifh,line) )
+//			jtext["data"]["vnomFile"].push_back(line);
+//
+//		text = jtext.dump();
+//
+//		cout << text + "\n" << std::flush;
+//
+//		process();
+//	}
 
 
 	public:
@@ -87,24 +87,20 @@ class VnomConsumer: public SEConsumer {
 		// --------------------------------------------------------------------
 		// PARSE THE MESSAGE AND PROCESS THE TOPOLOGY
 		// --------------------------------------------------------------------
-		cout << "\nRecieved vnom message of " << text.length() << " bytes...\n\n";
-
+#ifdef DEBUG_PRIMARY
+		cout << "Received vnom message of " << text.length() << " bytes...\n\n" << std::flush;
+#endif
 
 		json jtext = json::parse(text);
 
-		// This is actually a list of lines from a dss voltage export file
-		cout << jtext.dump() + "\n\n";
-
 		bool firstline = true;
-		for ( auto& jline : jtext["data"]["vnomFile"] ) {
+		for ( auto& jline : jtext["data"]["vnom"] ) {
 			if (firstline) firstline = false;
 			else {
 				string s = jline;
-				cout << s + '\n';
 				
 				// strip out white space
 				s.erase( remove( s.begin(), s.end(), ' ' ), s.end() );
-				cout<< s + '\n';
 
 				// split the line {Bus, BasekV,
 				//    Node1, Mag1, Arg1, pu1,
@@ -144,13 +140,7 @@ class VnomConsumer: public SEConsumer {
 				double vpu3 = stod( s.substr(0,pos) );
 					s.erase(0,pos+1); pos = s.find(",");
 
-				cout <<'\t'<< bus << '\t' << basekv << "\n\t"
-					<< node1 << '\t' << mag1 << '\t' << arg1 << '\t' << vpu1 << "\n\t"
-					<< node2 << '\t' << mag2 << '\t' << arg2 << '\t' << vpu2 << "\n\t"
-					<< node3 << '\t' << mag3 << '\t' << arg3 << '\t' << vpu3 << "\n";
-			
 				// Each of the the three nodes is a potential entry
-				#define PI 3.1415926535
 				string node;
 				double vre, vim;
 				complex<double> vnom;
@@ -161,7 +151,6 @@ class VnomConsumer: public SEConsumer {
 					vre = mag1 * cos( arg1 * PI/180 );
 					vim = mag1 * sin( arg1 * PI/180);
 					vnom = complex<double>(vre,vim);
-					cout << vnom << endl;
 					node_vnoms[node] = vnom;
 				}
 				
@@ -171,7 +160,6 @@ class VnomConsumer: public SEConsumer {
 					vre = mag2 * cos( arg2 * PI/180 );
 					vim = mag2 * sin( arg2 * PI/180 );
 					vnom = complex<double>(vre,vim);
-					cout << vnom << endl;
 					node_vnoms[node] = vnom;
 				}
 				
@@ -181,7 +169,6 @@ class VnomConsumer: public SEConsumer {
 					vre = mag3 * cos( arg3 * PI/180 );
 					vim = mag3 * sin( arg3 * PI/180 );
 					vnom = complex<double>(vre,vim);
-					cout << vnom << endl;
 					node_vnoms[node] = vnom;
 				}
 
