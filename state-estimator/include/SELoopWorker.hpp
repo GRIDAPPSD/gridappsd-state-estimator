@@ -224,9 +224,6 @@ class SELoopWorker {
         // Construct the producer that will be used to publish the state estimate
         string sePubTopic = "goss.gridappsd.state-estimator.out."+simid;
         statePublisher = new SEProducer(brokerURI,username,password,sePubTopic,"topic");
-#ifdef DEBUG_PRIMARY
-        cout << "State Estimate Message Producer Constructed.\n\n" << std::flush;
-#endif
 
         // --------------------------------------------------------------------
         // Establish Dimension of State Space and Measurement Space

@@ -250,9 +250,6 @@ int main(int argc, char** argv){
 //            cout << "\t" << zid << ": " << zary.zvals[zid] << '\n' << std::flush;
 //        }
 
-#ifdef DEBUG_PRIMARY
-		cout << "\nInitializing SE loop worker...\n" << std::flush;
-#endif
         // Initialize class that does the state estimates
 		SELoopWorker loopWorker(&workQueue, gad.brokerURI, gad.username,
             gad.password, gad.simid, zary, node_qty, node_names, node_idxs,
