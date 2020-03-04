@@ -233,9 +233,6 @@ class SELoopWorker {
         // --------------------------------------------------------------------
         xqty = 2*node_qty;
         zqty = zary.zqty;
-#ifdef DEBUG_PRIMARY
-        cout << "zary.zqty is " << zary.zqty << "\n\n" << std::flush;
-#endif
 
         // --------------------------------------------------------------------
         // Initialize Voltages (complex per-unit)
@@ -633,7 +630,7 @@ class SELoopWorker {
                 if (jmessage.find("message") != jmessage.end()) {
                     timestamp = jmessage["message"]["timestamp"];
 #ifdef DEBUG_PRIMARY
-                    cout << "===========> workQueue draining size: " << workQueue->size() << ", timestamp: " << timestamp << "\n" << std::flush;
+                    cout << "Draining workQueue size: " << workQueue->size() << ", timestamp: " << timestamp << "\n" << std::flush;
 #endif
                     // do z summation here
                     add_zvals(jmessage);
@@ -666,9 +663,9 @@ class SELoopWorker {
             } while (!workQueue->empty()); // uncomment this to drain queue
 
             // do z averaging here by dividing sum by # of items
-#ifdef DEBUG_PRIMARY
-            cout << "===========> z-averaging being done after draining queue\n" << std::flush;
-#endif
+// #ifdef DEBUG_PRIMARY
+//             cout << "===========> z-averaging being done after draining queue\n" << std::flush;
+// #endif
             for ( auto& zid : zary.zids ) {
                 if ( zary.znew[zid] > 1 )
                     zary.zvals[zid] /= zary.znew[zid];
@@ -853,7 +850,7 @@ class SELoopWorker {
     void estimate(const uint& timestamp) {
 #ifdef DEBUG_PRIMARY
         double estimateStartTime = getWallTime();
-        cout << "xqty is " << xqty << "\n" << std::flush;
+        cout << "xqty is " << xqty << "; " << std::flush;
         cout << "zqty is " << zqty << "\n" << std::flush;
         cout << "F is " << F->m << " by " << F->n << " with " << F->nzmax << " entries\n" << std::flush;
         cout << "Q is " << Q->m << " by " << Q->n << " with " << Q->nzmax << " entries\n" << std::flush;
@@ -903,9 +900,9 @@ class SELoopWorker {
         // --------------------------------------------------------------------
         // -- compute p_predict = F*P*F' + Q | F=I (can be simplified)
 #ifdef DIAGONAL_P
-#ifdef DEBUG_PRIMARY
-        cout << "prep_P ... " << std::flush;
-#endif
+// #ifdef DEBUG_PRIMARY
+//         cout << "prep_P ... " << std::flush;
+// #endif
         cs *P; this->prep_P(P);
 #endif
 #ifdef DEBUG_PRIMARY
@@ -962,7 +959,7 @@ class SELoopWorker {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "calc_J ... " << std::flush;
+        cout << "calc_J time ... " << std::flush;
 #endif
         cs *J; this->calc_J(J);
 #ifdef DEBUG_PRIMARY
@@ -1063,8 +1060,7 @@ class SELoopWorker {
 #endif
             
 #ifdef DEBUG_PRIMARY
-            // TODO: BOTTLENECK
-            cout << "*** BOTTLENECK: klu_solve completion time ... " << std::flush;
+            cout << "klu_solve time (bottleneck) ... " << std::flush;
             startTime = getWallTime();
 #endif
             klu_solve(klusym,klunum,Supd->m,Supd->n,rhs,&klucom);
@@ -1085,8 +1081,8 @@ class SELoopWorker {
                 firstEstimateFlag = false;
             }
             process_mem_usage(vm_used, res_used);
-            cout << "*** Post-klu_solve virtual memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
-            cout << "*** Post-klu_solve resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
+            cout << "klu_solve virtual memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
+//            cout << "klu_solve resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
 #endif
 
             // free klusym and klunum or memory leak results
@@ -1119,8 +1115,7 @@ class SELoopWorker {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        // TODO: BOTTLENECK
-        cout << "*** BOTTLENECK: K updated time ... " << std::flush;
+        cout << "K time (bottleneck) ... " << std::flush;
         startTime = getWallTime();
 #endif
         cs *Kupd = cs_multiply(K2,K3); cs_spfree(K2); cs_spfree(K3);
@@ -1138,9 +1133,6 @@ class SELoopWorker {
 
         // -- compute x_update = x_predict + K * y
         // -- compute y = z - h
-#ifdef DEBUG_PRIMARY
-        cout << "sample_z ... " << std::flush;
-#endif
         cs *z; this->sample_z(z);
 #ifdef DEBUG_PRIMARY
         cout << "z is " << z->m << " by " << z->n << 
@@ -1151,7 +1143,7 @@ class SELoopWorker {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "calc_h ... " << std::flush;
+        cout << "calc_h time ... " << std::flush;
 #endif
         cs *h; this->calc_h(h);
 #ifdef DEBUG_PRIMARY
@@ -1182,9 +1174,6 @@ class SELoopWorker {
 #endif
 
         // -- compute x_predict = F*x | F=I (to improve performance, skip this)
-#ifdef DEBUG_PRIMARY
-        cout << "prep_x ... " << std::flush;
-#endif
         cs *x; this->prep_x(x);
 #ifdef DEBUG_PRIMARY
         cout << "x is " << x->m << " by " << x->n << 
@@ -1270,9 +1259,6 @@ class SELoopWorker {
         // --------------------------------------------------------------------
         // Update persistant state (Vpu and A)
         // --------------------------------------------------------------------
-#ifdef DEBUG_PRIMARY
-        cout << "calling decompress_state_xupd\n" << std::flush;
-#endif
         if (xupd) {
             decompress_state(xupd);
             cs_spfree(xupd);
@@ -1280,9 +1266,6 @@ class SELoopWorker {
 
 #ifdef DIAGONAL_P
         // extract the diagonal of P
-#ifdef DEBUG_PRIMARY
-        cout << "calling decompress_variance_Pupd\n" << std::flush;
-#endif
         if (Pupd) {
             decompress_variance(Pupd);
             cs_spfree(Pupd);
@@ -1321,7 +1304,8 @@ class SELoopWorker {
 #endif
         process_mem_usage(vm_used, res_used);
         cout << "End-estimate virtual memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
-        cout << "End-estimate resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n\n" << std::flush;
+//        cout << "End-estimate resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
+        cout << "\n" << std::flush;
 #endif
     }
 
@@ -1633,7 +1617,7 @@ class SELoopWorker {
             }
         }
 #ifdef DEBUG_PRIMARY
-        cout << "calc_h time: " << getMinSec(getWallTime()-startTime)
+        cout << getMinSec(getWallTime()-startTime)
             << "\n" << std::flush;
 #endif
     }
@@ -1647,10 +1631,6 @@ class SELoopWorker {
         // each z component has a Jacobian component for each state
         J = gs_spalloc_colorder(zqty,xqty,Jshapemap.size());
         if (!J) cout << "ERROR: null J\n" << std::flush;
-#ifdef DEBUG_PRIMARY
-        else cout << "J is " << J->m << " by " 
-            << J->n << " with " << J->nzmax << " entries\n" << std::flush;
-#endif
 #ifdef DEBUG_HEARTBEAT
         uint beat_ctr = 0;
         uint total_ctr = Jshape.size();
@@ -1828,7 +1808,7 @@ class SELoopWorker {
 
 #ifdef DEBUG_PRIMARY
         double endTime = getWallTime();
-        cout << "calc_J time: " <<
+        cout << 
             getMinSec(endTime-startTime) << "\n" << std::flush;
 #endif
     }
