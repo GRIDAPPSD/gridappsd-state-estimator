@@ -630,7 +630,11 @@ class SELoopWorker {
                 if (jmessage.find("message") != jmessage.end()) {
                     timestamp = jmessage["message"]["timestamp"];
 #ifdef DEBUG_PRIMARY
-                    cout << "Draining workQueue size: " << workQueue->size() << ", timestamp: " << timestamp << "\n" << std::flush;
+                    if (firstEstimateFlag) {
+                        timezero = timestamp;
+                        firstEstimateFlag = false;
+                    }
+                    cout << "Draining workQueue size: " << workQueue->size() << ", timestep: " << timestamp-timezero << "\n" << std::flush;
 #endif
                     // do z summation here
                     add_zvals(jmessage);
@@ -685,7 +689,7 @@ class SELoopWorker {
             // Estimate the state
             // ----------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-            cout << "\nEstimating state for timestamp " << timestamp << " ... \n" << std::flush;
+            cout << "\nEstimating state for timestep: " << timestamp-timezero << " ... \n" << std::flush;
 #endif
             estimate(timestamp);
             //sleep(30); // delay to let queue refill for testing
@@ -1076,10 +1080,6 @@ class SELoopWorker {
 #endif
 
 #ifdef DEBUG_PRIMARY
-            if (firstEstimateFlag) {
-                timezero = timestamp;
-                firstEstimateFlag = false;
-            }
             process_mem_usage(vm_used, res_used);
             cout << "klu_solve virtual memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
 //            cout << "klu_solve resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
@@ -1115,7 +1115,7 @@ class SELoopWorker {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "K time (bottleneck) ... " << std::flush;
+        cout << "Kupd time (bottleneck) ... " << std::flush;
         startTime = getWallTime();
 #endif
         cs *Kupd = cs_multiply(K2,K3); cs_spfree(K2); cs_spfree(K3);
@@ -1303,8 +1303,8 @@ class SELoopWorker {
 #endif
 #endif
         process_mem_usage(vm_used, res_used);
-        cout << "End-estimate virtual memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
-//        cout << "End-estimate resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
+        cout << "End of estimate virtual memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
+//        cout << "End of estimate resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
         cout << "\n" << std::flush;
 #endif
     }
