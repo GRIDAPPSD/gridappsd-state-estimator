@@ -88,7 +88,7 @@ class VnomConsumer: public SEConsumer {
 		// PARSE THE MESSAGE AND PROCESS THE TOPOLOGY
 		// --------------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-		cout << "Received vnom message of " << text.length() << " bytes...\n\n" << std::flush;
+		cout << "Received vnom message of " << text.length() << " bytes\n\n" << std::flush;
 #endif
 
 		json jtext = json::parse(text);

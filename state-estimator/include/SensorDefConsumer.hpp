@@ -89,7 +89,7 @@ class SensorDefConsumer : public SEConsumer {
 		// PARSE THE MESSAGE AND INITIALIZE SENSORS
 		// --------------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-		cout << "Received sensor message of " << text.length() << " bytes...\n\n" << std::flush;
+		cout << "Received sensor message of " << text.length() << " bytes\n\n" << std::flush;
 #endif
 
 		json jtext = json::parse(text);

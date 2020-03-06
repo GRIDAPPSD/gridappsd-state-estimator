@@ -88,13 +88,13 @@ class TopoProcConsumer : public SEConsumer {
 		// PARSE THE MESSAGE AND PROCESS THE TOPOLOGY
 		// --------------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-		cout << "Received ybus message of " << text.length() << " bytes...\n\n" << std::flush;
+		cout << "Received ybus message of " << text.length() << " bytes\n\n" << std::flush;
 #endif
 
 		json jtext = json::parse(text);
 
 #ifdef DEBUG_PRIMARY
-        cout << "Parsing ybus ... " << std::flush;
+        cout << "Parsing ybus -- " << std::flush;
 #endif
 		// This is actually a list of lines from ysparse
 		json jlines_ysparse = jtext["data"]["yParse"];
@@ -120,7 +120,7 @@ class TopoProcConsumer : public SEConsumer {
 		}
 #ifdef DEBUG_PRIMARY
         cout << "complete.\n\n" << std::flush;
-        cout << "Parsing nodelist ... " << std::flush;
+        cout << "Parsing nodelist -- " << std::flush;
 #endif
 		// This is actually the list of nodes from nodelist
 		json jlines_nodelist = jtext["data"]["nodeList"];
@@ -148,9 +148,9 @@ class TopoProcConsumer : public SEConsumer {
 //					try {
 //						complex<double> ycomp = row.at(j);
 //						cout << "Y(" << i << "," << j << ") -> " << ycomp << "\n" << std::flush;
-//					} catch(...) {}
+//					} catch( const std::out_of_range& oor ) {}
 //				}
-//			} catch(...) {}
+//			} catch( const std::out_of_range& oor ) {}
 //		}
 
 		// --------------------------------------------------------------------

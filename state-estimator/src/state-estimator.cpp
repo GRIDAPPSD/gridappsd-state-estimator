@@ -257,7 +257,7 @@ int main(int argc, char** argv){
             regid_primnode_map, regid_regnode_map, mmrid_pos_type_map);
 
 #ifdef DEBUG_PRIMARY
-		cout << "\nStarting the SE work loop ...\n" << std::flush;
+		cout << "\nStarting the SE work loop\n" << std::flush;
 #endif
 		loopWorker.workLoop();
 		

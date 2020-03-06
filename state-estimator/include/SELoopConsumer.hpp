@@ -37,7 +37,8 @@ class SELoopConsumer : public SEConsumer {
         jtext = json::parse(text);
 
         if (jtext.find("message") != jtext.end()) {
-//#ifdef DEBUG_PRIMARY
+#ifdef DEBUG_PRIMARY
+            cout << "." << std::flush;
 //            cout << "\nSELoopConsumer received measurement message of " << text.length() 
 //                << " bytes\n" << std::flush;
             //cout << "MESSAGE START\n" << std::flush;
@@ -45,7 +46,7 @@ class SELoopConsumer : public SEConsumer {
             //    cout << text.substr(ibuff,4095) << "\n" << std::flush;
             //}
             //cout << "MESSAGE END\n" << std::flush;
-//#endif
+#endif
             workQueue->push(jtext);
         } else if (jtext.find("processStatus") != jtext.end()) {
             string status = jtext["processStatus"];

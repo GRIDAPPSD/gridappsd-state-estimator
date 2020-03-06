@@ -348,7 +348,7 @@ class SELoopWorker {
         // Compute Ypu
         // --------------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-        cout << "Computing Ypu time ... " << std::flush;
+        cout << "Computing Ypu time -- " << std::flush;
         double startTime = getWallTime();
 #endif
         for ( auto& inode : node_names ) {
@@ -387,7 +387,7 @@ class SELoopWorker {
                             << ( tmpim >= 0 ? "+" : "-" )
                             << std::abs(tmpim) << "i" 
                             << ( ++jctr < node_qty ? "," : "\n" );
-                    } catch ( const std::out_of_range& oor) {
+                    } catch ( const std::out_of_range& oor ) {
                         ofh << "0+0i" << ( ++jctr < node_qty ? "," : "\n" );
                     }
                 }
@@ -504,7 +504,7 @@ class SELoopWorker {
         // --------------------------------------------------------------------
         // state transition matrix (constant)
 #ifdef DEBUG_PRIMARY
-        cout << "Initializing F ... " << std::flush;
+        cout << "Initializing F -- " << std::flush;
 #endif
 
         F = gs_singleval_diagonal(xqty, 1.0);
@@ -517,7 +517,7 @@ class SELoopWorker {
 
         // process covariance matrix (constant)
 #ifdef DEBUG_PRIMARY
-        cout << "Initializing Q ... " << std::flush;
+        cout << "Initializing Q -- " << std::flush;
 #endif
         Q = gs_doubleval_diagonal(node_qty, 0.001, 0.001*PI);
 #ifdef DEBUG_FILES
@@ -529,7 +529,7 @@ class SELoopWorker {
 
         // identity matrix of dimension x (constant)
 #ifdef DEBUG_PRIMARY
-        cout << "Initializing eyex ... " << std::flush;
+        cout << "Initializing eyex -- " << std::flush;
 #endif
         eyex = gs_singleval_diagonal(xqty, 1.0);
 #ifdef DEBUG_FILES
@@ -541,7 +541,7 @@ class SELoopWorker {
 
         // measurement covariance matrix (constant)
 #ifdef DEBUG_PRIMARY
-        cout << "Initializing R ... " << std::flush;
+        cout << "Initializing R -- " << std::flush;
 #endif
         R = gs_spalloc_diagonal(zqty);
         for ( auto& zid : zary.zids )
@@ -571,7 +571,7 @@ class SELoopWorker {
                     << ( tmpim >= 0 ? "+" : "-" )
                     << std::abs(tmpim) << "i" 
                     << "\n";
-            } catch ( const std::out_of_range& oor) {
+            } catch ( const std::out_of_range& oor ) {
                 ofh << "0+0i" << "\n";
             }
         } ofh.close();
@@ -686,7 +686,7 @@ class SELoopWorker {
             // Estimate the state
             // ----------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-            cout << "\nEstimating state for timestep: " << timestamp-timezero << " ... \n" << std::flush;
+            cout << "\nEstimating state for timestep: " << timestamp-timezero << "\n" << std::flush;
 #endif
             estimate(timestamp);
             //sleep(30); // delay to let queue refill for testing
@@ -890,7 +890,7 @@ class SELoopWorker {
                     << ( tmpim >= 0 ? "+" : "-" )
                     << std::abs(tmpim) << "i" 
                     << "\n";
-            } catch ( const std::out_of_range& oor) {
+            } catch ( const std::out_of_range& oor ) {
                 ofh << "0+0i" << "\n";
             }
         } ofh.close();
@@ -902,7 +902,7 @@ class SELoopWorker {
         // -- compute p_predict = F*P*F' + Q | F=I (can be simplified)
 #ifdef DIAGONAL_P
 // #ifdef DEBUG_PRIMARY
-//         cout << "prep_P ... " << std::flush;
+//         cout << "prep_P -- " << std::flush;
 // #endif
         cs *P; this->prep_P(P);
 #endif
@@ -960,7 +960,7 @@ class SELoopWorker {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "calc_J time ... " << std::flush;
+        cout << "calc_J time -- " << std::flush;
 #endif
         cs *J; this->calc_J(J);
 #ifdef DEBUG_PRIMARY
@@ -1034,7 +1034,7 @@ class SELoopWorker {
             if (!klusym) throw "klu_analyze failed";
 
 #ifdef DEBUG_PRIMARY
-            cout << "klu_factor time ... " << std::flush;
+            cout << "klu_factor time -- " << std::flush;
             startTime = getWallTime();
 #endif
             klunum = klu_factor(Supd->p,Supd->i,Supd->x,klusym,&klucom);
@@ -1061,7 +1061,7 @@ class SELoopWorker {
 #endif
             
 #ifdef DEBUG_PRIMARY
-            cout << "klu_solve time (bottleneck) ... " << std::flush;
+            cout << "klu_solve time (bottleneck) -- " << std::flush;
             startTime = getWallTime();
 #endif
             klu_solve(klusym,klunum,Supd->m,Supd->n,rhs,&klucom);
@@ -1112,7 +1112,7 @@ class SELoopWorker {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "Kupd time (bottleneck) ... " << std::flush;
+        cout << "Kupd time (bottleneck) -- " << std::flush;
         startTime = getWallTime();
 #endif
         cs *Kupd = cs_multiply(K2,K3); cs_spfree(K2); cs_spfree(K3);
@@ -1140,7 +1140,7 @@ class SELoopWorker {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "calc_h time ... " << std::flush;
+        cout << "calc_h time -- " << std::flush;
 #endif
         cs *h; this->calc_h(h);
 #ifdef DEBUG_PRIMARY
@@ -1201,7 +1201,7 @@ class SELoopWorker {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "P4 time ... " << std::flush;
+        cout << "P4 time -- " << std::flush;
         startTime = getWallTime();
 #endif
         // -- compute P_update = (I-K_update*J)*P_predict
@@ -1485,7 +1485,7 @@ class SELoopWorker {
                 auto& Yrow = Ypu.at(i);
                 for ( auto& yij_pair : Yrow )
                     Yi0 += yij_pair.second;
-            } catch(...) {}
+            } catch ( const std::out_of_range& oor ) {}
             g = real(Yi0);
             b = imag(Yi0);
         }
@@ -1509,8 +1509,8 @@ class SELoopWorker {
                         try {
                             ai = real(Arow.at(j));
 //                            cout << "|||||||||||||||||| ai assigned to: " << ai << std::endl;
-                        } catch(...) {}
-                    } catch(...) {}
+                        } catch ( const std::out_of_range& oor ) {}
+                    } catch ( const std::out_of_range& oor ) {}
                     // We know the nodes are coupled; check for Aji
                     // NOTE: A is never iterated over - we don't need at()
                     aj = 1;
@@ -1519,13 +1519,13 @@ class SELoopWorker {
                         try {
                             aj = real(Arow.at(i));
 //                            cout << "|||||||||||||||||| aj assigned to: " << aj << std::endl;
-                        } catch (...) {}
-                    } catch(...) {}
-                } catch(...) {
+                        } catch ( const std::out_of_range& oor ) {}
+                    } catch ( const std::out_of_range& oor ) {}
+                } catch ( const std::out_of_range& oor ) {
                     cout << "ERROR: set_n catch on Yrow.at(j) lookup\n" << std::flush;
                     exit(1);
                 }
-            } catch(...) {
+            } catch ( const std::out_of_range& oor ) {
                 cout << "ERROR: set_n catch on Ypu.at(i) lookup\n" << std::flush;
                 exit(1);
             }
@@ -1566,7 +1566,7 @@ class SELoopWorker {
                     // Add the real power component flowing from i to 0
                     set_n(i,0);
                     Pi += vi*vi * g; // times cos(T) ????
-                } catch(...) {}
+                } catch ( const std::out_of_range& oor ) {}
                 // Insert the measurement component
                 if ( abs(Pi) > NEGL ) gs_entry_firstcol(h,zidx,Pi);
             }
@@ -1588,7 +1588,7 @@ class SELoopWorker {
                     // Add the reactive power component flowing from i to 0
                     set_n(i,0);
                     Qi -= vi*vi * b;
-                } catch(...) {}
+                } catch ( const std::out_of_range& oor ) {}
                 if ( abs(Qi) > NEGL ) gs_entry_firstcol(h,zidx,Qi);
             }
             else if ( !zary.ztypes[zid].compare("aji" ) ) {
