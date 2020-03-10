@@ -39,9 +39,9 @@ The following is the structure of the state estimator:
 
 5. The state estimator is distributed pre-built under the gridappsd-docker repository, but you may instead build the state estimator from source code from its own repository if you wish to modify it, run a different branch than master, or otherwise run it outside the gridappsd-docker container.
 
-6. If you wish to run the state estimator provided with gridappsd-docker, follow the instructions in the following section, (#running-state-estimator-from-the-gridappsd-docker-container).
+6. If you wish to run the state estimator provided with gridappsd-docker, follow the instructions in the following section, [test 1](#running-state-estimator-from-the-gridappsd-docker-container).
 
-7. Alternatively, to build the state estimator from source code and then run that version from the command line, skip to the section (#building-state-estimator) below.
+7. Alternatively, to build the state estimator from source code and then run that version from the command line, skip to the section [test 2](#building-state-estimator) below.
 
 ## Running state estimator from the gridappsd-docker container
 
