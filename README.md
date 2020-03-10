@@ -27,14 +27,18 @@ The following is the structure of the state estimator:
 
 1. Docker ce version 17.12 or better.  You can install this via the docker_install_ubuntu.sh script.  (note for mint you will need to modify the file to work with xenial rather than ubuntu generically)
 
-2. Please clone the repository <https://github.com/GRIDAPPSD/gridappsd-docker> (refered to as gridappsd-docker repository).  The state estimator is distributed under the gridappsd-docker repository, but you may optionally build the state estimator from source code from its own repository if you wish to modify it, run a different branch than master, or otherwise run it outside the gridappsd-docker container.  If you only wish to run the state estimator provided with gridappsd-docker, follow the instructions in the following section, "Running the state estimator from the container".  To build the state estimator from source code and then run that version from the command line, skip to the section titled "Building the state estimator" below.
+2. Please clone the repository <https://github.com/GRIDAPPSD/gridappsd-docker> (refered to as gridappsd-docker repository).  The state estimator is distributed pre-built under the gridappsd-docker repository, but you may instead build the state estimator from source code from its own repository if you wish to modify it, run a different branch than master, or otherwise run it outside the gridappsd-docker container.
+
+3. If you wish to run the state estimator provided with gridappsd-docker, follow the instructions in the following section, "Running state estimator from the container".
+
+4. Alternatively, to build the state estimator from source code and then run that version from the command line, skip to the section titled "Building state estimator" below.
 
 ```` bash
 ~/git
 └── gridappsd-docker
 ````
 
-## Running the state estimator from the container
+## Running state estimator from the container
 
 1. Configure the simulation from the GRIDAPPSD platform web browser visualization.
 
@@ -46,7 +50,7 @@ The following is the structure of the state estimator:
 
 The remainder of these instructions apply only when building the state estimator from source code and running that build from the command line.
 
-## Building the state estimator
+## Building state estimator
 
 Clone the repository <https://github.com/GRIDAPPSD/gridappsd-state-estimator> next to the gridappsd-docker repository (they should both have the same parent folder, assumed to be ~/git in docker-compose.yml)
 
@@ -97,7 +101,7 @@ make
 
 The executable application will be placed in bin/state-estimator.  The Json distribution consists entirely of include files and therefore is not compiled separately from the application using it.
 
-## Running the state estimator from the command line
+## Running state estimator from the command line
 
 1. Edit the run-se.sh script in the state-estimator subdirectory of the top-level gridappsd-state-estimator repository, uncomment the appropriate SIMREQ variable for the model being run based on the comment at the end of each SIMREQ line denoting the corresponding model, and save changes.
 
