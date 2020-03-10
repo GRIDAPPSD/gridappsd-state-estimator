@@ -56,7 +56,7 @@ The following is the structure of the state estimator:
 
 4. The state estimator will process running simulation measurements producing state estimate messages for other applications.
 
-5. The gridappsd-state-plotter application can be used to plot state estimator output as described at <https://github.com/GRIDAPPSD/gridapps-state-plotter>
+5. The gridappsd-state-plotter application can be used to plot state estimator output as described at <https://github.com/GRIDAPPSD/gridappsd-state-plotter>
 
 The remainder of these instructions apply only when building the state estimator from source code and running that build from the command line.
 
@@ -121,5 +121,5 @@ The executable application will be placed in bin/state-estimator.  The Json dist
 
 4. The state estimator will process running simulation measurements producing state estimate messages for other applications along with diagnostic log output to the terminal.
 
-5. The gridappsd-state-plotter application can be used to plot state estimator output as described at <https://github.com/GRIDAPPSD/gridapps-state-plotter>
+5. The gridappsd-state-plotter application can be used to plot state estimator output as described at <https://github.com/GRIDAPPSD/gridappsd-state-plotter>
 
