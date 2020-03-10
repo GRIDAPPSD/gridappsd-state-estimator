@@ -56,14 +56,14 @@ The following is the structure of the state estimator:
 
 4. The state estimator will process running simulation measurements producing state estimate messages for other applications.
 
-5. The gridappsd-state-plotter application can be used to plot state estimator output as described at <https://github.com/GRIDAPPSD/gridappsd-state-plotter>
+5. The gridappsd-state-plotter application can be used to plot state estimator output as described at <https://github.com/GRIDAPPSD/gridappsd-state-plotter>.
 
 The remainder of these instructions apply only when building the state estimator from source code and running that build from the command line.
 
 
 ## Building state estimator
 
-Clone the repository <https://github.com/GRIDAPPSD/gridappsd-state-estimator> next to the gridappsd-docker repository (they should both have the same parent folder, assumed to be ~/git in docker-compose.yml)
+1. Clone the repository <https://github.com/GRIDAPPSD/gridappsd-state-estimator> next to the gridappsd-docker repository (they should both have the same parent folder, assumed to be ~/git in docker-compose.yml)
 
 ```` bash
 ~/git
@@ -71,20 +71,20 @@ Clone the repository <https://github.com/GRIDAPPSD/gridappsd-state-estimator> ne
 └── gridappsd-state-estimator
 ````
 
-Then the following two repositories should be cloned into the state-estimator directory under the gridappsd-state-estimator repository cloned above
+2. Then the following two repositories should be cloned into the state-estimator directory under the gridappsd-state-estimator repository cloned above
 
 ````
 	- https://github.com/GRIDAPPSD/SuiteSparse
 	- https://github.com/GRIDAPPSD/json
 ````
 
-The ActiveMQ C++ client library, ActiveMQ-CPP, should be downloaded from the URL below as a Unix source code distrubtion.  Both the 3.9.4 and 3.9.5 releases have been successfully used with state estimator.  The tar.gz or tar.bz2 distribution should be extracted under the state-estimator directory, the same location as the SuiteSparse and json repositories.
+3. The ActiveMQ C++ client library, ActiveMQ-CPP, should be downloaded from the URL below as a Unix source code distrubtion.  Both the 3.9.4 and 3.9.5 releases have been successfully used with state estimator.  The tar.gz or tar.bz2 distribution should be extracted under the state-estimator directory, the same location as the SuiteSparse and json repositories.
 
 ````
     - https://activemq.apache.org/components/cms/download
 ````
 
-Building prerequisite libraries requires some other packages to be installed first.  The following apt-get install commands should install those packages if they are not already installed:
+4. Building prerequisite libraries requires some other packages to be installed first.  The following apt-get install commands should install those packages if they are not already installed:
 
 ```` bash
 sudo apt-get install cmake
@@ -93,7 +93,7 @@ sudo apt-get install liblapack-dev libblas-dev
 sudo apt-get install libapr1 libapr1-dev
 ````
 
-From the state-estimator directory, run the following commands to build the prerequisite libraries and then the state-estimator executable:
+5. From the state-estimator directory, run the following commands to build the prerequisite libraries and then the state-estimator executable:
 
 ```` bash
 cd activemq-cpp-library-*
@@ -108,7 +108,7 @@ cd ../state-estimator
 make
 ````
 
-The executable application will be placed in bin/state-estimator.  The Json distribution consists entirely of include files and therefore is not compiled separately from the application using it.
+6. The executable application will be placed in bin/state-estimator.  The Json distribution consists entirely of include files and therefore is not compiled separately from the application using it.
 
 
 ## Running state estimator from the command line
@@ -121,5 +121,5 @@ The executable application will be placed in bin/state-estimator.  The Json dist
 
 4. The state estimator will process running simulation measurements producing state estimate messages for other applications along with diagnostic log output to the terminal.
 
-5. The gridappsd-state-plotter application can be used to plot state estimator output as described at <https://github.com/GRIDAPPSD/gridappsd-state-plotter>
+5. The gridappsd-state-plotter application can be used to plot state estimator output as described at <https://github.com/GRIDAPPSD/gridappsd-state-plotter>.
 
