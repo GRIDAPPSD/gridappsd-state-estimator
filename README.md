@@ -23,22 +23,28 @@ The following is the structure of the state estimator:
 └───(Prerequisite libraries--SuiteSparse, ActiveMQ-CPP, Json)
 ````
 
-## Requirements 
+## Prerequisites
 
-1. Docker ce version 17.12 or better.  You can install this via the docker_install_ubuntu.sh script.  (note for mint you will need to modify the file to work with xenial rather than ubuntu generically)
+1. Docker ce version 17.12 or newer is required.  You can install this via the docker_install_ubuntu.sh script in the gridappsd-docker repository described in the next step. (note for mint you will need to modify the file to work with xenial rather than ubuntu generically)
 
-2. Please clone the repository <https://github.com/GRIDAPPSD/gridappsd-docker> (refered to as gridappsd-docker repository).  The state estimator is distributed pre-built under the gridappsd-docker repository, but you may instead build the state estimator from source code from its own repository if you wish to modify it, run a different branch than master, or otherwise run it outside the gridappsd-docker container.
-
-3. If you wish to run the state estimator provided with gridappsd-docker, follow the instructions in the following section, "Running state estimator from the container".
-
-4. Alternatively, to build the state estimator from source code and then run that version from the command line, skip to the section titled "Building state estimator" below.
+2. Clone the repository <https://github.com/GRIDAPPSD/gridappsd-docker> (referred to as gridappsd-docker repository).
 
 ```` bash
 ~/git
 └── gridappsd-docker
 ````
 
-## Running state estimator from the container
+3. To run the gridappsd-docker platform, follow the instructions provided at <https://github.com/GRIDAPPSD/gridappsd-docker/README.md>.
+
+4. To configure and run a simulation under the platform, follow the instructions provided at <https://gridappsd.readthedocs.io/en/master/using_gridappsd>.
+
+5. The state estimator is distributed pre-built under the gridappsd-docker repository, but you may instead build the state estimator from source code from its own repository if you wish to modify it, run a different branch than master, or otherwise run it outside the gridappsd-docker container.
+
+6. If you wish to run the state estimator provided with gridappsd-docker, follow the instructions in the following section, <#running-state-estimator-from-the-gridappsd-docker-container>.
+
+7. Alternatively, to build the state estimator from source code and then run that version from the command line, skip to the section <#building-state-estimator> below.
+
+## Running state estimator from the gridappsd-docker container
 
 1. Configure the simulation from the GRIDAPPSD platform web browser visualization.
 
@@ -65,14 +71,12 @@ Then the following two repositories should be cloned into the state-estimator di
 ````
 	- https://github.com/GRIDAPPSD/SuiteSparse
 	- https://github.com/GRIDAPPSD/json
-
 ````
 
 The ActiveMQ C++ client library, ActiveMQ-CPP, should be downloaded from the URL below as a Unix source code distrubtion.  Both the 3.9.4 and 3.9.5 releases have been successfully used with state estimator.  The tar.gz or tar.bz2 distribution should be extracted under the state-estimator directory, the same location as the SuiteSparse and json repositories.
 
 ````
     - https://activemq.apache.org/components/cms/download
-
 ````
 
 Building prerequisite libraries requires some other packages to be installed first.  The following apt-get install commands should install those packages if they are not already installed:
