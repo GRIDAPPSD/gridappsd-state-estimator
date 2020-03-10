@@ -4,6 +4,7 @@
 
 The state estimator service will produce and output the best available system state from measurements for use by other applications.
 
+
 ## State Estimator Service Layout
 
 The following is the structure of the state estimator:
@@ -22,6 +23,7 @@ The following is the structure of the state estimator:
 └───(Prerequisite libraries--SuiteSparse, ActiveMQ-CPP, Json)
 ````
 
+
 ## Prerequisites
 
 1. Docker ce version 17.12 or newer is required.  You can install this via the docker_install_ubuntu.sh script in the gridappsd-docker repository described in the next step. (note for mint you will need to modify the file to work with xenial rather than ubuntu generically)
@@ -39,9 +41,10 @@ The following is the structure of the state estimator:
 
 5. The state estimator is distributed pre-built under the gridappsd-docker repository, but you may instead build the state estimator from source code from its own repository if you wish to modify it, run a different branch than master, or otherwise run it outside the gridappsd-docker container.
 
-6. If you wish to run the state estimator provided with gridappsd-docker, follow the instructions in the following section, [test 1](#running-state-estimator-from-the-gridappsd-docker-container).
+6. If you wish to run the state estimator provided with gridappsd-docker, follow the instructions in the following section, [Running state estimator from the gridappsd-docker container](#running-state-estimator-from-the-gridappsd-docker-container).
 
-7. Alternatively, to build the state estimator from source code and then run that version from the command line, skip to the section [test 2](#building-state-estimator) below.
+7. Alternatively, to build the state estimator from source code and then run that version from the command line, skip to the section [Building state estimator](#building-state-estimator) below.
+
 
 ## Running state estimator from the gridappsd-docker container
 
@@ -53,7 +56,10 @@ The following is the structure of the state estimator:
 
 4. The state estimator will process running simulation measurements producing state estimate messages for other applications.
 
+5. The gridappsd-state-plotter application can be used to plot state estimator output as described at <https://github.com/GRIDAPPSD/gridapps-state-plotter>
+
 The remainder of these instructions apply only when building the state estimator from source code and running that build from the command line.
+
 
 ## Building state estimator
 
@@ -104,6 +110,7 @@ make
 
 The executable application will be placed in bin/state-estimator.  The Json distribution consists entirely of include files and therefore is not compiled separately from the application using it.
 
+
 ## Running state estimator from the command line
 
 1. Edit the run-se.sh script in the state-estimator subdirectory of the top-level gridappsd-state-estimator repository, uncomment the appropriate SIMREQ variable for the model being run based on the comment at the end of each SIMREQ line denoting the corresponding model, and save changes.
@@ -113,4 +120,6 @@ The executable application will be placed in bin/state-estimator.  The Json dist
 3. Invoke the script "./run-se.sh" from the command line with the Simulation ID value pasted from the clipboard as the command line argument to the script.
 
 4. The state estimator will process running simulation measurements producing state estimate messages for other applications along with diagnostic log output to the terminal.
+
+5. The gridappsd-state-plotter application can be used to plot state estimator output as described at <https://github.com/GRIDAPPSD/gridapps-state-plotter>
 
