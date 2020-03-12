@@ -5,7 +5,7 @@
 The state estimator service will produce and output the best available system state from measurements for use by other applications.
 
 
-## State Estimator Service Layout
+## State estimator service layout
 
 The following is the structure of the state estimator:
 
