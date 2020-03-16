@@ -240,7 +240,7 @@ class SELoopWorker {
             Vpu[node_idxs[node_name]] = 1.0;
         }
 #ifdef DEBUG_PRIMARY
-        cout << "Voltages Initialized.\n\n" << std::flush;
+        *selog << "Voltages Initialized.\n\n" << std::flush;
 #endif
 
         // --------------------------------------------------------------------
@@ -264,7 +264,7 @@ class SELoopWorker {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "State Covariance Matrix Initialized.\n\n" << std::flush;
+        *selog << "State Covariance Matrix Initialized.\n\n" << std::flush;
 #endif
 
         // --------------------------------------------------------------------
@@ -336,19 +336,19 @@ class SELoopWorker {
             }
 
             else { 
-                cout << "ERROR: Unrecognized measurement type " << 
+                *selog << "ERROR: Unrecognized measurement type " << 
                     ztype << std::flush;
             }
         }
 #ifdef DEBUG_PRIMARY
-        cout << "Jshapemap Jacobian elements: " << Jshapemap.size() << "\n" << std::flush;
+        *selog << "Jshapemap Jacobian elements: " << Jshapemap.size() << "\n" << std::flush;
 #endif
 
         // --------------------------------------------------------------------
         // Compute Ypu
         // --------------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-        cout << "Computing Ypu time -- " << std::flush;
+        *selog << "Computing Ypu time -- " << std::flush;
         double startTime = getWallTime();
 #endif
         for ( auto& inode : node_names ) {
@@ -364,7 +364,7 @@ class SELoopWorker {
             }
         }
 #ifdef DEBUG_PRIMARY
-        cout << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
+        *selog << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
         // write to file
@@ -403,7 +403,7 @@ class SELoopWorker {
         // write Y to file
         ofh.open(initpath+"Yphys.csv",ofstream::out);
         ofh << std::setprecision(16);
-        cout << "writing " << initpath+"Yphys.csv\n" << std::flush;
+        *selog << "writing " << initpath+"Yphys.csv\n" << std::flush;
         for ( uint i = 1 ; i <= node_qty ; i++ ) {
             try {
                 auto& row = Yphys.at(i);
@@ -431,12 +431,12 @@ class SELoopWorker {
         // write Vbase to file
         ofh.open(initpath+"vnoms.csv",ofstream::out);
         ofh << std::setprecision(16);
-        cout << "writing " << initpath+"vnoms.csv\n" << std::flush;
+        *selog << "writing " << initpath+"vnoms.csv\n" << std::flush;
         std::vector<complex<double>> vnoms(node_qty);
         for ( auto& node_name : node_names ) {
-            cout << node_name << "\n" << std::flush;
-            cout << "\tidx is " << node_idxs[node_name] << "\n" << std::flush;
-            cout << "\tvnom is " << node_vnoms[node_name] << "\n" << std::flush;
+            *selog << node_name << "\n" << std::flush;
+            *selog << "\tidx is " << node_idxs[node_name] << "\n" << std::flush;
+            *selog << "\tvnom is " << node_vnoms[node_name] << "\n" << std::flush;
             vnoms[node_idxs[node_name]-1] = node_vnoms[node_name];
         }
         for ( complex<double>& vnom : vnoms ) {
@@ -452,7 +452,7 @@ class SELoopWorker {
 #ifdef DEBUG_FILES
         // write the node map to file
         ofh.open(initpath+"nodem.csv",ofstream::out);
-        cout << "writing " << initpath+"nodem.csv\n" << std::flush;
+        *selog << "writing " << initpath+"nodem.csv\n" << std::flush;
         for ( auto& node_name : node_names )
             ofh << node_name << "\n";
         ofh.close();
@@ -461,7 +461,7 @@ class SELoopWorker {
 #ifdef DEBUG_FILES
         // write sensor information to file
         ofh.open(initpath+"meas.txt",ofstream::out);
-        cout << "writing output/init/meas.txt\n" << std::flush;
+        *selog << "writing output/init/meas.txt\n" << std::flush;
         ofh << "sensor_type\tsensor_name\tnode1\tnode2\tvalue\tsigma\n";
         for ( auto& zid : zary.zids ) {
             ofh << zary.ztypes[zid] << "\t"
@@ -472,7 +472,7 @@ class SELoopWorker {
                 << zary.zsigs[zid] << "\n";
         } ofh.close();
 
-        cout << "done writing\n" << std::flush;
+        *selog << "done writing\n" << std::flush;
 #endif
 
 #ifdef DEBUG_FILES
@@ -504,7 +504,7 @@ class SELoopWorker {
         // --------------------------------------------------------------------
         // state transition matrix (constant)
 #ifdef DEBUG_PRIMARY
-        cout << "Initializing F -- " << std::flush;
+        *selog << "Initializing F -- " << std::flush;
 #endif
 
         F = gs_singleval_diagonal(xqty, 1.0);
@@ -512,36 +512,36 @@ class SELoopWorker {
         print_cs_compress(F,initpath+"F.csv");
 #endif
 #ifdef DEBUG_PRIMARY
-        cout << "F is " << F->m << " by " << F->n << " with " << F->nzmax << " entries\n" << std::flush;
+        *selog << "F is " << F->m << " by " << F->n << " with " << F->nzmax << " entries\n" << std::flush;
 #endif
 
         // process covariance matrix (constant)
 #ifdef DEBUG_PRIMARY
-        cout << "Initializing Q -- " << std::flush;
+        *selog << "Initializing Q -- " << std::flush;
 #endif
         Q = gs_doubleval_diagonal(node_qty, 0.001, 0.001*PI);
 #ifdef DEBUG_FILES
         print_cs_compress(Q,initpath+"Q.csv");
 #endif
 #ifdef DEBUG_PRIMARY
-        cout << "Q is " << Q->m << " by " << Q->n << " with " << Q->nzmax << " entries\n" << std::flush;
+        *selog << "Q is " << Q->m << " by " << Q->n << " with " << Q->nzmax << " entries\n" << std::flush;
 #endif
 
         // identity matrix of dimension x (constant)
 #ifdef DEBUG_PRIMARY
-        cout << "Initializing eyex -- " << std::flush;
+        *selog << "Initializing eyex -- " << std::flush;
 #endif
         eyex = gs_singleval_diagonal(xqty, 1.0);
 #ifdef DEBUG_FILES
         print_cs_compress(eyex,initpath+"eyex.csv");
 #endif
 #ifdef DEBUG_PRIMARY
-        cout << "eyex is " << eyex->m << " by " << eyex->n << " with " << eyex->nzmax << " entries\n" << std::flush;
+        *selog << "eyex is " << eyex->m << " by " << eyex->n << " with " << eyex->nzmax << " entries\n" << std::flush;
 #endif
 
         // measurement covariance matrix (constant)
 #ifdef DEBUG_PRIMARY
-        cout << "Initializing R -- " << std::flush;
+        *selog << "Initializing R -- " << std::flush;
 #endif
         R = gs_spalloc_diagonal(zqty);
         for ( auto& zid : zary.zids )
@@ -550,19 +550,19 @@ class SELoopWorker {
         print_cs_compress(R,initpath+"R.csv");
 #endif
 #ifdef DEBUG_PRIMARY
-        cout << "R is " << R->m << " by " << R->n << " with " << R->nzmax << " entries\n" << std::flush;
+        *selog << "R is " << R->m << " by " << R->n << " with " << R->nzmax << " entries\n" << std::flush;
 #endif
         
 #ifdef DEBUG_FILES
         // print initial state vector
         ofh.open(initpath+"Vpu.csv",ofstream::out);
         ofh << std::setprecision(16);
-        cout << "writing " << initpath+"Vpu.csv\n\n" << std::flush;
-        cout << "node_qty is " << node_qty << "\n" << std::flush;
+        *selog << "writing " << initpath+"Vpu.csv\n\n" << std::flush;
+        *selog << "node_qty is " << node_qty << "\n" << std::flush;
 
         for ( auto& inode : node_names ) {
             uint i = node_idxs[inode];
-            cout << inode << " idx is " << i << "\n" << std::flush;
+            *selog << inode << " idx is " << i << "\n" << std::flush;
             try {
                 complex<double> tmp = Vpu.at(i);
                 double tmpre = tmp.real();
@@ -631,7 +631,7 @@ class SELoopWorker {
                         timezero = timestamp;
                         firstEstimateFlag = false;
                     }
-                    cout << "Draining workQueue size: " << workQueue->size() << ", timestep: " << timestamp-timezero << "\n" << std::flush;
+                    *selog << "Draining workQueue size: " << workQueue->size() << ", timestep: " << timestamp-timezero << "\n" << std::flush;
 #endif
                     // do z summation here
                     add_zvals(jmessage);
@@ -645,7 +645,7 @@ class SELoopWorker {
                     // so process for that case only
                     if (doEstimateFlag) {
 #ifdef DEBUG_PRIMARY
-                        cout << "Got COMPLETE/CLOSED log message on queue, doing full estimate with previous measurement\n" << std::flush;
+                        *selog << "Got COMPLETE/CLOSED log message on queue, doing full estimate with previous measurement\n" << std::flush;
 #endif
                         // set flag to exit after completing full estimate below
                         exitAfterEstimateFlag = true;
@@ -655,7 +655,7 @@ class SELoopWorker {
                         break;
                     } else {
 #ifdef DEBUG_PRIMARY
-                        cout << "Got COMPLETE/CLOSED log message on queue, normal exit because full estimate just done\n" << std::flush;
+                        *selog << "Got COMPLETE/CLOSED log message on queue, normal exit because full estimate just done\n" << std::flush;
 #endif
                         exit(0);
                     }
@@ -665,7 +665,7 @@ class SELoopWorker {
 
             // do z averaging here by dividing sum by # of items
 // #ifdef DEBUG_PRIMARY
-//             cout << "===========> z-averaging being done after draining queue\n" << std::flush;
+//             *selog << "===========> z-averaging being done after draining queue\n" << std::flush;
 // #endif
             for ( auto& zid : zary.zids ) {
                 if ( zary.znew[zid] > 1 )
@@ -674,9 +674,9 @@ class SELoopWorker {
 
 
 // #ifdef DEBUG_PRIMARY
-//             cout << "zvals before estimate\n" << std::flush;
+//             *selog << "zvals before estimate\n" << std::flush;
 //             for ( auto& zid : zary.zids ) {
-//                 cout << "measurement of type: " << zary.ztypes[zid] << "\t" << zid << ": " << zary.zvals[zid] << "\t(" << zary.znew[zid] << ")\n" << std::flush;
+//                 *selog << "measurement of type: " << zary.ztypes[zid] << "\t" << zid << ": " << zary.zvals[zid] << "\t(" << zary.znew[zid] << ")\n" << std::flush;
 //             }
 // #endif
 
@@ -686,7 +686,7 @@ class SELoopWorker {
             // Estimate the state
             // ----------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-            cout << "\nEstimating state for timestep: " << timestamp-timezero << "\n" << std::flush;
+            *selog << "\nEstimating state for timestep: " << timestamp-timezero << "\n" << std::flush;
 #endif
             estimate(timestamp);
             //sleep(30); // delay to let queue refill for testing
@@ -694,7 +694,7 @@ class SELoopWorker {
 
             if (exitAfterEstimateFlag) {
 #ifdef DEBUG_PRIMARY
-                cout << "Normal exit after COMPLETE/CLOSED log message and full estimate\n" << std::flush;
+                *selog << "Normal exit after COMPLETE/CLOSED log message and full estimate\n" << std::flush;
 #endif
                 exit(0);
             }
@@ -745,7 +745,7 @@ class SELoopWorker {
                     string zid = mmrid+"_tap";
                     double tap_position = m["value"];
                     double tap_ratio = 1.0 + 0.1*tap_position/16.0;
-//                    cout << "tap_position: " << tap_position 
+//                    *selog << "tap_position: " << tap_position 
 //                        << "\ttap_ratio: " << tap_ratio << std::endl;
 
                     if (zary.znew[zid] == 0)
@@ -764,19 +764,19 @@ class SELoopWorker {
                     uint j = node_idxs[regnode];
                     
                     if ( ( Amat[j][i] - tap_ratio ) > 0.00625 ) {
-//                        cout << "\t***Setting Amat[" << regnode << "][" << primnode 
+//                        *selog << "\t***Setting Amat[" << regnode << "][" << primnode 
 //                                << "] to " << Amat[j][i] - 0.00625 << " (rate limited)" 
 //                                << '\n' << std::flush;
                         Amat[j][i] -= 0.00625;
                     }
                     else if ( ( Amat[j][i] - tap_ratio ) < -0.00625 ) {
-//                        cout << "\t***Setting Amat[" << regnode << "][" << primnode 
+//                        *selog << "\t***Setting Amat[" << regnode << "][" << primnode 
 //                                << "] to " << Amat[j][i] + 0.00625 << " (rate limited)" 
 //                                << '\n' << std::flush;
                         Amat[j][i] += 0.00625;
                     }
                     else {
-//                        cout << "\t***Setting Amat[" << regnode << "][" << primnode 
+//                        *selog << "\t***Setting Amat[" << regnode << "][" << primnode 
 //                                << "] to " << tap_ratio << '\n' << std::flush;
                         Amat[j][i] = tap_ratio;
                     }
@@ -851,10 +851,10 @@ class SELoopWorker {
     void estimate(const uint& timestamp) {
 #ifdef DEBUG_PRIMARY
         double estimateStartTime = getWallTime();
-        cout << "xqty is " << xqty << "; " << std::flush;
-        cout << "zqty is " << zqty << "\n" << std::flush;
-        cout << "F is " << F->m << " by " << F->n << " with " << F->nzmax << " entries\n" << std::flush;
-        cout << "Q is " << Q->m << " by " << Q->n << " with " << Q->nzmax << " entries\n" << std::flush;
+        *selog << "xqty is " << xqty << "; " << std::flush;
+        *selog << "zqty is " << zqty << "\n" << std::flush;
+        *selog << "F is " << F->m << " by " << F->n << " with " << F->nzmax << " entries\n" << std::flush;
+        *selog << "Q is " << Q->m << " by " << Q->n << " with " << Q->nzmax << " entries\n" << std::flush;
 #endif
 
         // TODO: WE NEED TO HANDLE R-MASK IN HERE SOMEWHERE
@@ -876,12 +876,12 @@ class SELoopWorker {
         ofstream ofh;
         ofh.open(tspath+"Vpu.csv",ofstream::out);
         ofh << std::setprecision(16);
-        cout << "writing " << tspath+"Vpu.csv\n\n" << std::flush;
-        cout << "node_qty is " << node_qty << "\n" << std::flush;
+        *selog << "writing " << tspath+"Vpu.csv\n\n" << std::flush;
+        *selog << "node_qty is " << node_qty << "\n" << std::flush;
 
         for ( auto& inode : node_names ) {
             uint i = node_idxs[inode];
-            cout << inode << " idx is " << i << "\n" << std::flush;
+            *selog << inode << " idx is " << i << "\n" << std::flush;
             try {
                 complex<double> tmp = Vpu.at(i);
                 double tmpre = tmp.real();
@@ -902,12 +902,12 @@ class SELoopWorker {
         // -- compute p_predict = F*P*F' + Q | F=I (can be simplified)
 #ifdef DIAGONAL_P
 // #ifdef DEBUG_PRIMARY
-//         cout << "prep_P -- " << std::flush;
+//         *selog << "prep_P -- " << std::flush;
 // #endif
         cs *P; this->prep_P(P);
 #endif
 #ifdef DEBUG_PRIMARY
-        cout << "P is " << P->m << " by " << P->n << 
+        *selog << "P is " << P->m << " by " << P->n << 
             " with " << P->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -915,9 +915,9 @@ class SELoopWorker {
 #endif
 
         cs *P1 = cs_transpose(F,1);
-        if (!P1) cout << "ERROR: null P1\n" << std::flush;
+        if (!P1) *selog << "ERROR: null P1\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "P1 is " << P1->m << " by " << P1->n << 
+        else *selog << "P1 is " << P1->m << " by " << P1->n << 
             " with " << P1->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -925,9 +925,9 @@ class SELoopWorker {
 #endif
 
         cs *P2 = cs_multiply(P,P1); cs_spfree(P); cs_spfree(P1);
-        if (!P2) cout << "ERROR: null P2\n" << std::flush;
+        if (!P2) *selog << "ERROR: null P2\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "P2 is " << P2->m << " by " << P2->n << 
+        else *selog << "P2 is " << P2->m << " by " << P2->n << 
             " with " << P2->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -935,9 +935,9 @@ class SELoopWorker {
 #endif
 
         cs *P3 = cs_multiply(F,P2); cs_spfree(P2);
-        if (!P3) cout << "ERROR: null P3\n" << std::flush;
+        if (!P3) *selog << "ERROR: null P3\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "P3 is " << P3->m << " by " << P3->n << 
+        else *selog << "P3 is " << P3->m << " by " << P3->n << 
             " with " << P3->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -950,9 +950,9 @@ class SELoopWorker {
         // -- compute S = J*P_predict*J' + R
 
         cs *Ppre = cs_add(P3,Q,1,1); cs_spfree(P3);
-        if (!Ppre) cout << "ERROR: null Ppre\n" << std::flush;
+        if (!Ppre) *selog << "ERROR: null Ppre\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "Ppre is " << Ppre->m << " by " << Ppre->n << 
+        else *selog << "Ppre is " << Ppre->m << " by " << Ppre->n << 
             " with " << Ppre->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -960,11 +960,11 @@ class SELoopWorker {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "calc_J time -- " << std::flush;
+        *selog << "calc_J time -- " << std::flush;
 #endif
         cs *J; this->calc_J(J);
 #ifdef DEBUG_PRIMARY
-        cout << "J is " << J->m << " by " << J->n << 
+        *selog << "J is " << J->m << " by " << J->n << 
             " with " << J->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -972,9 +972,9 @@ class SELoopWorker {
 #endif
 
         cs *S1 = cs_transpose(J,1);
-        if (!S1) cout << "ERROR: null S1\n" << std::flush;
+        if (!S1) *selog << "ERROR: null S1\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "S1 is " << S1->m << " by " << S1->n << 
+        else *selog << "S1 is " << S1->m << " by " << S1->n << 
             " with " << S1->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -982,9 +982,9 @@ class SELoopWorker {
 #endif
 
         cs *S2 = cs_multiply(Ppre,S1);
-        if (!S2) cout << "ERROR: null S2\n" << std::flush;
+        if (!S2) *selog << "ERROR: null S2\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "S2 is " << S2->m << " by " << S2->n << 
+        else *selog << "S2 is " << S2->m << " by " << S2->n << 
             " with " << S2->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -992,9 +992,9 @@ class SELoopWorker {
 #endif
 
         cs *S3 = cs_multiply(J,S2); cs_spfree(S2);
-        if (!S3) cout << "ERROR: null S3\n" << std::flush;
+        if (!S3) *selog << "ERROR: null S3\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "S3 is " << S3->m << " by " << S3->n << 
+        else *selog << "S3 is " << S3->m << " by " << S3->n << 
             " with " << S3->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1002,9 +1002,9 @@ class SELoopWorker {
 #endif
 
         cs *Supd = cs_add(R,S3,1,1); cs_spfree(S3);
-        if (!Supd) cout << "ERROR: null Supd\n" << std::flush;
+        if (!Supd) *selog << "ERROR: null Supd\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "Supd is " << Supd->m << " by " << Supd->n << 
+        else *selog << "Supd is " << Supd->m << " by " << Supd->n << 
             " with " << Supd->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1034,20 +1034,20 @@ class SELoopWorker {
             if (!klusym) throw "klu_analyze failed";
 
 #ifdef DEBUG_PRIMARY
-            cout << "klu_factor time -- " << std::flush;
+            *selog << "klu_factor time -- " << std::flush;
             startTime = getWallTime();
 #endif
             klunum = klu_factor(Supd->p,Supd->i,Supd->x,klusym,&klucom);
             if (!klunum) {
 #ifdef DEBUG_PRIMARY
-                cout << "Common->status is: " << klucom.status << "\n" << std::flush;
-                if ( klucom.status == 1 ) cout << "\tKLU_SINGULAR\n" << std::flush;
+                *selog << "Common->status is: " << klucom.status << "\n" << std::flush;
+                if ( klucom.status == 1 ) *selog << "\tKLU_SINGULAR\n" << std::flush;
 #endif
                 throw "klu_factor failed";
             }
 
 #ifdef DEBUG_PRIMARY
-            cout << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
+            *selog << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
 #endif
 
             // initialize an identity right-hand side
@@ -1061,38 +1061,38 @@ class SELoopWorker {
 #endif
             
 #ifdef DEBUG_PRIMARY
-            cout << "klu_solve time (bottleneck) -- " << std::flush;
+            *selog << "klu_solve time (bottleneck) -- " << std::flush;
             startTime = getWallTime();
 #endif
             klu_solve(klusym,klunum,Supd->m,Supd->n,rhs,&klucom);
             if (klucom.status) {
 #ifdef DEBUG_PRIMARY
-                cout << "Common->status is: " << klucom.status << "\n" << std::flush;
+                *selog << "Common->status is: " << klucom.status << "\n" << std::flush;
 #endif
                 throw "klu_solve failed";
             }
 
 #ifdef DEBUG_PRIMARY
-            cout << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
+            *selog << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
 #endif
 
 #ifdef DEBUG_PRIMARY
             process_mem_usage(vm_used, res_used);
-            cout << "klu_solve virtual memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
-//            cout << "klu_solve resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
+            *selog << "klu_solve virtual memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
+//            *selog << "klu_solve resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
 #endif
 
             // free klusym and klunum or memory leak results
             klu_free_symbolic(&klusym, &klucom);
             klu_free_numeric(&klunum, &klucom);
         } catch (const char *msg) {
-            cout << "KLU ERROR: " << msg << "\n" << std::flush;
+            *selog << "KLU ERROR: " << msg << "\n" << std::flush;
             return;
         }
         cs_spfree(Supd);
 
 #ifdef DEBUG_PRIMARY
-        if ( K3 ) cout << "K3 is " << K3->m << " by " << K3->n <<
+        if ( K3 ) *selog << "K3 is " << K3->m << " by " << K3->n <<
                 " with " << K3->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1102,9 +1102,9 @@ class SELoopWorker {
         // -- compute K = P_predict*J'*S^-1
         // GDB S1 and K1 are both J transpose so use S1 here
         cs *K2 = cs_multiply(Ppre,S1); cs_spfree(S1);
-        if (!K2) cout << "ERROR: null K2\n" << std::flush;
+        if (!K2) *selog << "ERROR: null K2\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "K2 is " << K2->m << " by " 
+        else *selog << "K2 is " << K2->m << " by " 
             << K2->n << " with " << K2->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1112,16 +1112,16 @@ class SELoopWorker {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "Kupd time (bottleneck) -- " << std::flush;
+        *selog << "Kupd time (bottleneck) -- " << std::flush;
         startTime = getWallTime();
 #endif
         cs *Kupd = cs_multiply(K2,K3); cs_spfree(K2); cs_spfree(K3);
-        if ( !Kupd ) cout << "ERROR: Kupd null\n" << std::flush;
+        if ( !Kupd ) *selog << "ERROR: Kupd null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        cout << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
+        *selog << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
 #endif
 #ifdef DEBUG_PRIMARY
-        if ( Kupd ) cout << "Kupd is " << Kupd->m << " by " << Kupd->n <<
+        if ( Kupd ) *selog << "Kupd is " << Kupd->m << " by " << Kupd->n <<
                 " with " << Kupd->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1132,7 +1132,7 @@ class SELoopWorker {
         // -- compute y = z - h
         cs *z; this->sample_z(z);
 #ifdef DEBUG_PRIMARY
-        cout << "z is " << z->m << " by " << z->n << 
+        *selog << "z is " << z->m << " by " << z->n << 
             " with " << z->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1140,11 +1140,11 @@ class SELoopWorker {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "calc_h time -- " << std::flush;
+        *selog << "calc_h time -- " << std::flush;
 #endif
         cs *h; this->calc_h(h);
 #ifdef DEBUG_PRIMARY
-        cout << "h is " << h->m << " by " << h->n << 
+        *selog << "h is " << h->m << " by " << h->n << 
             " with " << h->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1152,18 +1152,18 @@ class SELoopWorker {
 #endif
 
         cs *yupd = cs_add(z,h,1,-1); cs_spfree(z); cs_spfree(h);
-        if (!yupd) cout << "ERROR: null yupd\n" << std::flush;
+        if (!yupd) *selog << "ERROR: null yupd\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "yupd is " << yupd->m << " by " << yupd->n << 
+        else *selog << "yupd is " << yupd->m << " by " << yupd->n << 
             " with " << yupd->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(yupd,tspath+"yupd.csv");
 #endif
         cs *x1 = cs_multiply(Kupd,yupd); cs_spfree(yupd);
-        if ( !x1 ) cout << "ERROR: x1 null\n" << std::flush;
+        if ( !x1 ) *selog << "ERROR: x1 null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "x1 is " << x1->m << " by " << x1->n <<
+        else *selog << "x1 is " << x1->m << " by " << x1->n <<
                 " with " << x1->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1173,7 +1173,7 @@ class SELoopWorker {
         // -- compute x_predict = F*x | F=I (to improve performance, skip this)
         cs *x; this->prep_x(x);
 #ifdef DEBUG_PRIMARY
-        cout << "x is " << x->m << " by " << x->n << 
+        *selog << "x is " << x->m << " by " << x->n << 
             " with " << x->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1181,9 +1181,9 @@ class SELoopWorker {
 #endif
 
         cs *xpre = cs_multiply(F,x); cs_spfree(x);
-        if (!xpre) cout << "ERROR: null xpre\n" << std::flush;
+        if (!xpre) *selog << "ERROR: null xpre\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "xpre is " << xpre->m << " by " << xpre->n << 
+        else *selog << "xpre is " << xpre->m << " by " << xpre->n << 
             " with " << xpre->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1191,9 +1191,9 @@ class SELoopWorker {
 #endif
 
         cs *xupd = cs_add(xpre,x1,1,1); cs_spfree(x1); cs_spfree(xpre);
-        if ( !xupd ) cout << "ERROR: xupd null\n" << std::flush;
+        if ( !xupd ) *selog << "ERROR: xupd null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "xupd is " << xupd->m << " by " << xupd->n <<
+        else *selog << "xupd is " << xupd->m << " by " << xupd->n <<
                 " with " << xupd->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1201,17 +1201,17 @@ class SELoopWorker {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "P4 time -- " << std::flush;
+        *selog << "P4 time -- " << std::flush;
         startTime = getWallTime();
 #endif
         // -- compute P_update = (I-K_update*J)*P_predict
         cs *P4 = cs_multiply(Kupd,J); cs_spfree(Kupd); cs_spfree(J);
-        if ( !P4 ) cout << "ERROR: P4 null\n" << std::flush;
+        if ( !P4 ) *selog << "ERROR: P4 null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        cout << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
+        *selog << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
 #endif
 #ifdef DEBUG_PRIMARY
-        if ( P4 ) cout << "P4 is " << P4->m << " by " << P4->n <<
+        if ( P4 ) *selog << "P4 is " << P4->m << " by " << P4->n <<
                 " with " << P4->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1219,9 +1219,9 @@ class SELoopWorker {
 #endif
 
         cs *P5 = cs_add(eyex,P4,1,-1); cs_spfree(P4);
-        if ( !P5 ) cout << "ERROR: P5 null\n" << std::flush;
+        if ( !P5 ) *selog << "ERROR: P5 null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "P5 is " << P5->m << " by " << P5->n << 
+        else *selog << "P5 is " << P5->m << " by " << P5->n << 
                 " with " << P5->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1230,9 +1230,9 @@ class SELoopWorker {
 
 #ifdef DIAGONAL_P
         cs *Pupd = cs_multiply(P5,Ppre); cs_spfree(P5); cs_spfree(Ppre);
-        if ( !Pupd ) cout << "ERROR: P updated null\n" << std::flush;
+        if ( !Pupd ) *selog << "ERROR: P updated null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "P updated is " << Pupd->m << " by " << Pupd->n << 
+        else *selog << "P updated is " << Pupd->m << " by " << Pupd->n << 
                 " with " << Pupd->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1242,9 +1242,9 @@ class SELoopWorker {
 #else
         // re-allocate P for the updated state
         P = cs_multiply(P5,Ppre); cs_spfree(P5); cs_spfree(Ppre);
-        if ( !P ) cout << "ERROR: P updated null\n" << std::flush;
+        if ( !P ) *selog << "ERROR: P updated null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else cout << "P updated is " << P->m << " by " << P->n << 
+        else *selog << "P updated is " << P->m << " by " << P->n << 
                 " with " << P->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1270,7 +1270,7 @@ class SELoopWorker {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        cout << "\n*** Total estimate time: " << 
+        *selog << "\n*** Total estimate time: " << 
             getMinSec(getWallTime()-estimateStartTime) << ", timestep: " <<
             timestamp-timezero << "\n" << std::flush;
 #ifdef DEBUG_SIZES
@@ -1300,9 +1300,9 @@ class SELoopWorker {
 #endif
 #endif
         process_mem_usage(vm_used, res_used);
-        cout << "End of estimate virtual memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
-//        cout << "End of estimate resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
-        cout << "\n" << std::flush;
+        *selog << "End of estimate virtual memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
+//        *selog << "End of estimate resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
+        *selog << "\n" << std::flush;
 #endif
     }
 
@@ -1324,12 +1324,12 @@ class SELoopWorker {
         }
         // update A
         for ( auto& map_pair : regid_primnode_map ) {
-//            cout << map_pair.first << std::endl;
+//            *selog << map_pair.first << std::endl;
             string regid = map_pair.first;
             string primnode = regid_primnode_map[regid];
             string regnode = regid_regnode_map[regid];
 
-//            cout << "primnode: " << primnode << 
+//            *selog << "primnode: " << primnode << 
 //                "\tregnode: " << regnode << std::endl;
 
             // get i and j
@@ -1340,12 +1340,12 @@ class SELoopWorker {
             double vi = abs(xvec[i-1]);
             double vj = abs(xvec[j-1]);
 
-//            cout << "vi: " << vi << "\tvj: " << vj << std::endl;
+//            *selog << "vi: " << vi << "\tvj: " << vj << std::endl;
 
             // assign vj/vi to Amat[j][i]
             Amat[j][i] = vj/vi;
 
-//            cout << "Amat[j][i]: " << Amat[j][i] << std::endl;
+//            *selog << "Amat[j][i]: " << Amat[j][i] << std::endl;
 
         }
     }
@@ -1365,8 +1365,8 @@ class SELoopWorker {
             uvec[j] = Pmat->x[p];
             //for ( uint p = Pmat->p[j] ; p < Pmat->p[j+1] ; p++ )
             //    test whether the first entry is always the diagonal
-            //    if (j == Pmat->i[Pmat->p[j]]) cout << "Diagonal First Test: PASS!!!!!\n" << std::flush;
-            //    else cout << "Diagonal First Test: fail\n" << std::flush;
+            //    if (j == Pmat->i[Pmat->p[j]]) *selog << "Diagonal First Test: PASS!!!!!\n" << std::flush;
+            //    else *selog << "Diagonal First Test: fail\n" << std::flush;
 #else
             // iterate over existing data in column j
             for ( uint p = Pmat->p[j] ; p < Pmat->p[j+1] ; p++ ) {
@@ -1401,8 +1401,8 @@ class SELoopWorker {
 #endif
         }
 #ifdef DEBUG_PRIMARY
-        cout << "Uvmag min: " << minMag << ", max: " << maxMag << "\n" << std::flush;
-        cout << "Uvarg min: " << minArg << ", max: " << maxArg << "\n" << std::flush;
+        *selog << "Uvmag min: " << minMag << ", max: " << maxMag << "\n" << std::flush;
+        *selog << "Uvarg min: " << minArg << ", max: " << maxArg << "\n" << std::flush;
 #endif
     }
 #endif
@@ -1412,7 +1412,7 @@ class SELoopWorker {
     void prep_x(cs *&x) {
         // Prepare x
         x = gs_spalloc_firstcol(xqty);
-        if (!x) cout << "ERROR: null x\n" << std::flush;
+        if (!x) *selog << "ERROR: null x\n" << std::flush;
 
         for ( auto& node_name : node_names ) {
             // Find the per-unit voltage of active node
@@ -1431,7 +1431,7 @@ class SELoopWorker {
     void prep_P(cs *&Pmat) {
         // Prepare P as a diagonal matrix from state uncertanty
         Pmat = gs_spalloc_diagonal(xqty);
-        if (!Pmat) cout << "ERROR: null Pmat in prep_P\n" << std::flush;
+        if (!Pmat) *selog << "ERROR: null Pmat in prep_P\n" << std::flush;
 
         for ( auto& node_name : node_names ) {
             uint idx = node_idxs[node_name];
@@ -1448,7 +1448,7 @@ class SELoopWorker {
     void sample_z(cs *&z) {
         // measurements have been loaded from the sim output message to zary
         z = gs_spalloc_firstcol(zqty);
-        if (!z) cout << "ERROR: null z\n" << std::flush;
+        if (!z) *selog << "ERROR: null z\n" << std::flush;
 
         for ( auto& zid : zary.zids ) {
             if ( zary.zvals[zid] > NEGL || -zary.zvals[zid] > NEGL )
@@ -1470,7 +1470,7 @@ class SELoopWorker {
     private:
     void set_n(uint i, uint j) {
         if ( !i ) {
-            cout << "ERROR: Unexpected call to set_n with i=0\n" << std::flush;
+            *selog << "ERROR: Unexpected call to set_n with i=0\n" << std::flush;
             return;
         }
         if ( !j ) {
@@ -1508,7 +1508,7 @@ class SELoopWorker {
                         auto Arow = Amat.at(i);
                         try {
                             ai = real(Arow.at(j));
-//                            cout << "|||||||||||||||||| ai assigned to: " << ai << std::endl;
+//                            *selog << "|||||||||||||||||| ai assigned to: " << ai << std::endl;
                         } catch ( const std::out_of_range& oor ) {}
                     } catch ( const std::out_of_range& oor ) {}
                     // We know the nodes are coupled; check for Aji
@@ -1518,15 +1518,15 @@ class SELoopWorker {
                         auto Arow = Amat.at(j);
                         try {
                             aj = real(Arow.at(i));
-//                            cout << "|||||||||||||||||| aj assigned to: " << aj << std::endl;
+//                            *selog << "|||||||||||||||||| aj assigned to: " << aj << std::endl;
                         } catch ( const std::out_of_range& oor ) {}
                     } catch ( const std::out_of_range& oor ) {}
                 } catch ( const std::out_of_range& oor ) {
-                    cout << "ERROR: set_n catch on Yrow.at(j) lookup\n" << std::flush;
+                    *selog << "ERROR: set_n catch on Yrow.at(j) lookup\n" << std::flush;
                     exit(1);
                 }
             } catch ( const std::out_of_range& oor ) {
-                cout << "ERROR: set_n catch on Ypu.at(i) lookup\n" << std::flush;
+                *selog << "ERROR: set_n catch on Ypu.at(i) lookup\n" << std::flush;
                 exit(1);
             }
             g = real(-1.0*Yij);
@@ -1539,7 +1539,7 @@ class SELoopWorker {
     void calc_h(cs *&h) {
         // each z component has a measurement function component
         h = gs_spalloc_firstcol(zqty);
-        if (!h) cout << "ERROR: null h\n" << std::flush;
+        if (!h) *selog << "ERROR: null h\n" << std::flush;
 
 #ifdef DEBUG_PRIMARY
         double startTime = getWallTime();
@@ -1610,11 +1610,11 @@ class SELoopWorker {
                 if ( arg(Vpu[i]) > NEGL ) gs_entry_firstcol(h,zidx,arg(Vpu[i]));
             }
             else { 
-                cout << "WARNING: Undefined measurement type " + ztype + "\n" << std::flush;
+                *selog << "WARNING: Undefined measurement type " + ztype + "\n" << std::flush;
             }
         }
 #ifdef DEBUG_PRIMARY
-        cout << getMinSec(getWallTime()-startTime)
+        *selog << getMinSec(getWallTime()-startTime)
             << "\n" << std::flush;
 #endif
     }
@@ -1627,7 +1627,7 @@ class SELoopWorker {
 #endif
         // each z component has a Jacobian component for each state
         J = gs_spalloc_colorder(zqty,xqty,Jshapemap.size());
-        if (!J) cout << "ERROR: null J\n" << std::flush;
+        if (!J) *selog << "ERROR: null J\n" << std::flush;
 #ifdef DEBUG_HEARTBEAT
         uint beat_ctr = 0;
         uint total_ctr = Jshape.size();
@@ -1636,7 +1636,7 @@ class SELoopWorker {
         for (std::pair<unsigned int, std::array<unsigned int, 5>> Jelem : Jshapemap) {
 #ifdef DEBUG_HEARTBEAT
             if ( ++beat_ctr % 100 == 0 ) 
-                cout << "--- calc_J heartbeat - " << beat_ctr << ", " <<
+                *selog << "--- calc_J heartbeat - " << beat_ctr << ", " <<
                     getPerComp(beat_ctr, total_ctr) << ", " <<
                     getMinSec(getWallTime()-startTime) << " ---\n" << std::flush;
 #endif
@@ -1793,7 +1793,7 @@ class SELoopWorker {
             }
 
             else {
-                cout << "WARNING: Undefined jacobian element type type " + 
+                *selog << "WARNING: Undefined jacobian element type type " + 
                     entry_type << "\n" << std::flush;
             }
 
@@ -1805,7 +1805,7 @@ class SELoopWorker {
 
 #ifdef DEBUG_PRIMARY
         double endTime = getWallTime();
-        cout << 
+        *selog << 
             getMinSec(endTime-startTime) << "\n" << std::flush;
 #endif
     }
@@ -1941,7 +1941,7 @@ class SELoopWorker {
         ofstream ofh;
         ofh << std::setprecision(16);
         ofh.open(filename,ofstream::out);
-        cout << "writing " + filename + "\n\n" << std::flush;
+        *selog << "writing " + filename + "\n\n" << std::flush;
         for ( uint i = 0 ; i < a->m ; i++ )
             for ( uint j = 0 ; j < a->n ; j++ )
                 ofh << mat[i][j] << ( j == a->n-1 ? "\n" : "," );
@@ -1991,15 +1991,15 @@ class SELoopWorker {
                 double mbsize = kbsize/1024.0;
                 if (mbsize > 1024.0) {
                     double gbsize = mbsize/1024.0;
-                    cout << msg << " size: " << gbsize << " GB\n" << std::flush;
+                    *selog << msg << " size: " << gbsize << " GB\n" << std::flush;
                 } else {
-                    cout << msg << " size: " << mbsize << " MB\n" << std::flush;
+                    *selog << msg << " size: " << mbsize << " MB\n" << std::flush;
                 }
             } else {
-                cout << msg << " size: " << kbsize << " KB\n" << std::flush;
+                *selog << msg << " size: " << kbsize << " KB\n" << std::flush;
             }
         } else {
-            cout << msg << " size: " << size << " bytes\n" << std::flush;
+            *selog << msg << " size: " << size << " bytes\n" << std::flush;
         }
     }
 #endif

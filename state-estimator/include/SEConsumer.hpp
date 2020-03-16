@@ -109,13 +109,13 @@ class SEConsumer : public ExceptionListener,
 				destination = session->createTopic(target);
 				Topic *tmpTopic = session->createTopic(target);
 #ifdef DEBUG_PRIMARY
-				cout << "topic: " << tmpTopic->getTopicName() << "\n\n" << std::flush;
+				*selog << "topic: " << tmpTopic->getTopicName() << "\n\n" << std::flush;
 #endif
 			}
 			else if ( mode == "queue" ){
 				destination = session->createQueue(target);
 #ifdef DEBUG_PRIMARY
-//				cout << "queue: " <<
+//				*selog << "queue: " <<
 //					((activemq::commands::ActiveMQQueue)(destination))->getQueueName() << '\n' << std::flush;
 #endif
 			}
@@ -126,9 +126,6 @@ class SEConsumer : public ExceptionListener,
 			// Create a MessageConsumer from the Session to the Topic or Queue
 			this->consumer = session->createConsumer(destination);
 			this->consumer->setMessageListener(this);
-			std::cout.flush();
-			std::cerr.flush();
-
 
 			// Allow implementation-specific actions:
 			this->init();
@@ -181,7 +178,7 @@ class SEConsumer : public ExceptionListener,
 	public:
 	virtual void process() {
 		// implementation-specific actions - default is to print the message
-		//cout << "Received message:\n\t" << text << '\n' << std::flush;
+		//*selog << "Received message:\n\t" << text << '\n' << std::flush;
 		this->doneLatch.countDown();
 	}
 
@@ -194,7 +191,7 @@ class SEConsumer : public ExceptionListener,
 	// If something bad happens you see it here as this class is also been
 	// registered as an ExceptionListener with the connection.
 	virtual void onException(const CMSException& ex AMQCPP_UNUSED) {
-		cout << "ActiveMQ CMS Exception occurred.  Shutting down client.\n" <<
+		*selog << "ActiveMQ CMS Exception occurred.  Shutting down client.\n" <<
             std::flush;
 		ex.printStackTrace();
 		exit(1);

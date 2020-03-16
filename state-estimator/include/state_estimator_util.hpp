@@ -29,7 +29,7 @@ namespace state_estimator_util{
 
 	void get_nodes(gridappsd_session& gad, SSMAP& node_bmrids, SSMAP& node_phs) {
 		json jnodes = sparql_query(gad,"nodes",sparq_nodes(gad.modelID)); 
-		//cout << jnodes.dump(2); 
+		//*selog << jnodes.dump(2); 
 		for ( auto& binding : jnodes["data"]["results"]["bindings"] ) { 
 			string busname = binding["busname"]["value"]; 
 			string busid = binding["busid"]["value"]; 
@@ -175,8 +175,8 @@ namespace state_estimator_util{
 				zary.zvals  [vmag_zid] = 1.00;
 				zary.znew   [vmag_zid] = 0;
 
-//                cout << "**Source Bus node: " << node << '\n' << std::flush;
-//                cout << "\tsource_node_prefix: " << source_node_prefix << '\n' << std::flush;
+//                *selog << "**Source Bus node: " << node << '\n' << std::flush;
+//                *selog << "\tsource_node_prefix: " << source_node_prefix << '\n' << std::flush;
 
 				// Add sourcebus voltage phase
 				string varg_zid = "source_T_"+node;
@@ -203,8 +203,8 @@ namespace state_estimator_util{
                 zary.zsigs  [pinj_zid] = std::abs(pseudoP[node]/sbase) + 
                     5.0/100/node_names.size(); // load + leakage
 	
-//                cout << "NON-Source Bus node: " << node << '\n' << std::flush;
-//                cout << "\tsource_node_prefix: " << source_node_prefix << '\n' << std::flush;
+//                *selog << "NON-Source Bus node: " << node << '\n' << std::flush;
+//                *selog << "\tsource_node_prefix: " << source_node_prefix << '\n' << std::flush;
 				
                 // Add the Q injection
 				string qinj_zid = "pseudo_Q_"+node;
@@ -227,7 +227,7 @@ namespace state_estimator_util{
             SSMAP& regid_primnode_map, SSMAP& regid_regnode_map) {
 		json jregs = sparql_query(gad,"regs",sparq_ratio_tap_changer_nodes(gad.modelID));
             
-//        cout << jregs.dump(2);
+//        *selog << jregs.dump(2);
 
 		for ( auto& reg : jregs["data"]["results"]["bindings"] ) {
 
@@ -257,10 +257,10 @@ namespace state_estimator_util{
 			uint regidx = node_idxs[regnode];
 
 //            // print
-//            cout << "reg: " << reg << "\n" << std::flush;
-//            cout << "\tprimnode: " << primnode <<
+//            *selog << "reg: " << reg << "\n" << std::flush;
+//            *selog << "\tprimnode: " << primnode <<
 //                "\tregnode: " << regnode << "\n" << std::flush;
-//            cout << "\tprimph: " << primph << 
+//            *selog << "\tprimph: " << primph << 
 //                "\tregph: " << regph << "\n" << std::flush;
 
 			// initialize the A matrix

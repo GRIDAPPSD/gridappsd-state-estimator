@@ -38,21 +38,21 @@ class SELoopConsumer : public SEConsumer {
 
         if (jtext.find("message") != jtext.end()) {
 #ifdef DEBUG_PRIMARY
-            cout << "." << std::flush;
-//            cout << "\nSELoopConsumer received measurement message of " << text.length() 
+            *selog << "." << std::flush;
+//            *selog << "\nSELoopConsumer received measurement message of " << text.length() 
 //                << " bytes\n" << std::flush;
-            //cout << "MESSAGE START\n" << std::flush;
+            //*selog << "MESSAGE START\n" << std::flush;
             //for (uint ibuff=0; ibuff<text.length(); ibuff+=4095) {
-            //    cout << text.substr(ibuff,4095) << "\n" << std::flush;
+            //    *selog << text.substr(ibuff,4095) << "\n" << std::flush;
             //}
-            //cout << "MESSAGE END\n" << std::flush;
+            //*selog << "MESSAGE END\n" << std::flush;
 #endif
             workQueue->push(jtext);
         } else if (jtext.find("processStatus") != jtext.end()) {
             string status = jtext["processStatus"];
             if (!status.compare("COMPLETE") || !status.compare("CLOSED")) {
 #ifdef DEBUG_PRIMARY
-                cout << "\nSELoopConsumer received COMPLETE/CLOSED log message\n" << std::flush;
+                *selog << "\nSELoopConsumer received COMPLETE/CLOSED log message\n" << std::flush;
 #endif
                 workQueue->push(jtext);
             }

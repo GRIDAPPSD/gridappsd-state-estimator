@@ -4,6 +4,11 @@
 
 #define PI 3.1415926535
 
+#include <iostream>
+
+// global logging stream--either a file or stdout based on invocation
+std::ostream* selog = &std::cout;
+
 #include "state_estimator_gridappsd.hpp"
 #include "SEProducer.hpp"
 #include "GenericConsumer.hpp"
@@ -29,8 +34,6 @@ using gridappsd_requests::sparql_query;
 
 #include "State.hpp"
 #include "SensorArray.hpp"
-
-#include <iostream>
 
 // standard data types
 #include <string>
@@ -62,8 +65,7 @@ using gridappsd_requests::sparql_query;
 #define IDMAP std::unordered_map<unsigned int,double>
 #define IMDMAP std::unordered_map<unsigned int,IDMAP>
 
-
-int main(int argc, char** argv){
+int main(int argc, char** argv) {
 	
 	// ------------------------------------------------------------------------
 	// INITIALIZE THE STATE ESTIMATOR SESSION WITH RUNTIME ARGS
@@ -101,7 +103,18 @@ int main(int argc, char** argv){
 		simLogConsumer.waitUntilReady();	// wait for the startup latch release
 
 #ifdef DEBUG_PRIMARY
-		cout << "\nListening for simulation log messages on "+simlogTopic+'\n' << std::flush;
+        // determine whether to write to a log file or stdout based on whether
+        // this is a container invocation
+        static std::ofstream logfile;
+        string simreq = argv[2];
+        // SIMREQUEST from a container has lots of extra stuff we don't pass
+        // for a command line invocation so look for one of those
+        if (simreq.find("simulation_config") != string::npos) {
+            logfile.open("/tmp/state-estimator.log");
+            selog = &logfile;
+        }
+
+		*selog << "\nListening for simulation log messages on "+simlogTopic+'\n' << std::flush;
 #endif
 
 		// --------------------------------------------------------------------
@@ -118,7 +131,7 @@ int main(int argc, char** argv){
 		simOutputConsumer.waitUntilReady();	// wait for the startup latch release
 
 #ifdef DEBUG_PRIMARY
-		cout << "\nListening for simulation output on "+simoutTopic+'\n' << std::flush;
+		*selog << "\nListening for simulation output on "+simoutTopic+'\n' << std::flush;
 #endif
 
 		// --------------------------------------------------------------------
@@ -245,9 +258,9 @@ int main(int argc, char** argv){
 		state_estimator_util::insert_pseudo_measurements(gad,zary,
 				node_names,node_vnoms,sbase);
 
-//        cout << "zvals after pseudo-measurements:\n" << std::flush;
+//        *selog << "zvals after pseudo-measurements:\n" << std::flush;
 //        for ( auto& zid : zary.zids ) {
-//            cout << "\t" << zid << ": " << zary.zvals[zid] << '\n' << std::flush;
+//            *selog << "\t" << zid << ": " << zary.zvals[zid] << '\n' << std::flush;
 //        }
 
         // Initialize class that does the state estimates
@@ -257,7 +270,7 @@ int main(int argc, char** argv){
             regid_primnode_map, regid_regnode_map, mmrid_pos_type_map);
 
 #ifdef DEBUG_PRIMARY
-		cout << "\nStarting the SE work loop\n" << std::flush;
+		*selog << "\nStarting the SE work loop\n" << std::flush;
 #endif
 		loopWorker.workLoop();
 		

@@ -89,7 +89,7 @@ class SensorDefConsumer : public SEConsumer {
 		// PARSE THE MESSAGE AND INITIALIZE SENSORS
 		// --------------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-		cout << "Received sensor message of " << text.length() << " bytes\n\n" << std::flush;
+		*selog << "Received sensor message of " << text.length() << " bytes\n\n" << std::flush;
 #endif
 
 		json jtext = json::parse(text);
@@ -167,9 +167,9 @@ class SensorDefConsumer : public SEConsumer {
                         zary.zsigs[zid] = 0.0000625;
                         zary.zvals[zid] = 1.0;
 
-//                        cout << m.dump(2);
-//                        cout << "primnode: " << primnode << std::endl;
-//                        cout << "regnode: " << regnode << std::endl;
+//                        *selog << m.dump(2);
+//                        *selog << "primnode: " << primnode << std::endl;
+//                        *selog << "regnode: " << regnode << std::endl;
                     }
                     else {
                         mmrid_pos_type_map[mmrid] = "other";
@@ -185,7 +185,7 @@ class SensorDefConsumer : public SEConsumer {
 		// SENSOR INITIALIZATION COMPLETE
 		// --------------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-		cout << "Sensor initialization complete.\n\n" << std::flush;
+		*selog << "Sensor initialization complete.\n\n" << std::flush;
 #endif
 		// release latch
 		doneLatch.countDown();
