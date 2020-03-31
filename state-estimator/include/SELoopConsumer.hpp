@@ -48,6 +48,10 @@ class SELoopConsumer : public SEConsumer {
             //*selog << "MESSAGE END\n" << std::flush;
 #endif
             workQueue->push(jtext);
+
+            extern bool blockedFlag;
+            blockedFlag = false;
+
         } else if (jtext.find("processStatus") != jtext.end()) {
             string status = jtext["processStatus"];
             if (!status.compare("COMPLETE") || !status.compare("CLOSED")) {

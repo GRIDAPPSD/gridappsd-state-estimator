@@ -65,6 +65,10 @@ using gridappsd_requests::sparql_query;
 #define IDMAP std::unordered_map<unsigned int,double>
 #define IMDMAP std::unordered_map<unsigned int,IDMAP>
 
+# temporary flag to hold up initialization until the platform has finished
+# its own initialization for the simulation based on producing measurements
+bool blockedFlag = true;
+
 int main(int argc, char** argv) {
 	
 	// ------------------------------------------------------------------------
@@ -134,6 +138,16 @@ int main(int argc, char** argv) {
 		*selog << "\nListening for simulation output on "+simoutTopic+'\n' << std::flush;
 #endif
 
+#ifdef DEBUG_PRIMARY
+		*selog << "\nWaiting for measurement before continuing with initialization\n" << std::flush;
+#endif
+        while (blockedFlag) {
+            sleep(1);
+        }
+#ifdef DEBUG_PRIMARY
+		*selog << "\nGot measurement--continuing with initialization\n" << std::flush;
+#endif
+
 		// --------------------------------------------------------------------
 		// MAKE SOME SPARQL QUERIES
 		// --------------------------------------------------------------------
@@ -142,7 +156,6 @@ int main(int argc, char** argv) {
 		SSMAP node_bmrids;
 		SSMAP node_phs;
 		state_estimator_util::get_nodes(gad,node_bmrids,node_phs);
-
 
 		// --------------------------------------------------------------------
 		// TOPOLOGY PROCESSOR
