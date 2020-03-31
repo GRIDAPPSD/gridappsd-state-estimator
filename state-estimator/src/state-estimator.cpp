@@ -65,8 +65,8 @@ using gridappsd_requests::sparql_query;
 #define IDMAP std::unordered_map<unsigned int,double>
 #define IMDMAP std::unordered_map<unsigned int,IDMAP>
 
-# temporary flag to hold up initialization until the platform has finished
-# its own initialization for the simulation based on producing measurements
+// temporary flag to hold up initialization until the platform has finished
+// its own initialization for the simulation based on producing measurements
 bool blockedFlag = true;
 
 int main(int argc, char** argv) {
