@@ -49,9 +49,12 @@ class SELoopConsumer : public SEConsumer {
 #endif
             workQueue->push(jtext);
 
+#ifdef DEBUG_PRIMARY
+            // this is only needed for command line invocations, but
+            // easier to just do it than check if it's needed
             extern bool blockedFlag;
             blockedFlag = false;
-
+#endif
         } else if (jtext.find("processStatus") != jtext.end()) {
             string status = jtext["processStatus"];
             if (!status.compare("COMPLETE") || !status.compare("CLOSED")) {

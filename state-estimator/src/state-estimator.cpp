@@ -65,9 +65,11 @@ using gridappsd_requests::sparql_query;
 #define IDMAP std::unordered_map<unsigned int,double>
 #define IMDMAP std::unordered_map<unsigned int,IDMAP>
 
+#ifdef DEBUG_PRIMARY
 // temporary flag to hold up initialization until the platform has finished
 // its own initialization for the simulation based on producing measurements
 bool blockedFlag = true;
+#endif
 
 int main(int argc, char** argv) {
 	
@@ -140,11 +142,10 @@ int main(int argc, char** argv) {
 
 #ifdef DEBUG_PRIMARY
 		*selog << "\nWaiting for measurement before continuing with initialization\n" << std::flush;
-#endif
-        while (blockedFlag) {
-            sleep(1);
+        // only block initialization for command line invocations
+        if (simreq.find("simulation_config") == string::npos) {
+            while (blockedFlag) sleep(1);
         }
-#ifdef DEBUG_PRIMARY
 		*selog << "\nGot measurement--continuing with initialization\n" << std::flush;
 #endif
 
