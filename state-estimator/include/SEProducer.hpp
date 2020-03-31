@@ -109,6 +109,9 @@ class SEProducer {
 			if ( !started )	this->init();
 			// Create the message
 			auto_ptr<TextMessage> msg(session->createTextMessage(text));
+			// Set the username
+            msg->setBooleanProperty("GOSS_HAS_SUBJECT", true);
+            msg->setStringProperty("GOSS_SUBJECT", username);
 #ifdef DEBUG_PRIMARY
 			// Report
 //			*selog << "Publishing to "+target+":\n\t"+text+"\n\n" << std::flush;
@@ -127,6 +130,9 @@ class SEProducer {
 			if ( !started )	this->init();
 			// Create the message
 			auto_ptr<TextMessage> msg(session->createTextMessage(text));
+			// Set the username
+            msg->setBooleanProperty("GOSS_HAS_SUBJECT", true);
+            msg->setStringProperty("GOSS_SUBJECT", username);
 			// Set the reply-to topic
 			msg->setStringProperty("reply-to",replytopic);
 #ifdef DEBUG_PRIMARY
