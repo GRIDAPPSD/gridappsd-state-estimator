@@ -141,12 +141,14 @@ int main(int argc, char** argv) {
 #endif
 
 #ifdef DEBUG_PRIMARY
-		*selog << "\nWaiting for measurement before continuing with initialization\n" << std::flush;
         // only block initialization for command line invocations
         if (simreq.find("simulation_config") == string::npos) {
+		    *selog << "\nWaiting for measurement before continuing with initialization\n" << std::flush;
             while (blockedFlag) sleep(1);
+		    *selog << "\nGot measurement--continuing with initialization\n" << std::flush;
+        } else {
+		    *selog << "\nNOT waiting before continuing with initialization\n" << std::flush;
         }
-		*selog << "\nGot measurement--continuing with initialization\n" << std::flush;
 #endif
 
 		// --------------------------------------------------------------------
