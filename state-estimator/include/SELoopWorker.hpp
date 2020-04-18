@@ -344,6 +344,56 @@ class SELoopWorker {
         *selog << "Jshapemap Jacobian elements: " << Jshapemap.size() << "\n" << std::flush;
 #endif
 
+#if 111
+        // Cap Yphys with magnitude greater than 1e3 threshold
+        double thresh = 1e+3;
+#ifdef DEBUG_PRIMARY
+        uint ctr = 0;
+        *selog << "Yphys scaling started...\n" << std::flush;
+#endif
+        for ( auto& inode : node_names ) {
+            uint i = node_idxs[inode];
+            for ( auto& jpair : Yphys[i] ) {
+                uint j = jpair.first;
+                if ( j == i )
+                    continue;
+
+                complex<double> term_val = jpair.second;
+                double term_mag = abs(term_val);
+
+                if ( term_mag <= thresh )
+                    continue;
+#ifdef DEBUG_PRIMARY
+                ctr++;
+                *selog << "Yphys scaling down row: " << i << ", col: " << j << "\n" << std::flush;
+#endif
+                double scaler = thresh / term_mag;
+                // update the term
+                complex<double> new_term_val = term_val * scaler;
+#ifdef DEBUG_PRIMARY
+                *selog << "\tYphys original term: " << abs(term_val) << "(" << arg(term_val) << ")\n" << std::flush;
+                *selog << "\tYphys updated term: " << abs(new_term_val) << "(" << arg(new_term_val) << ")\n" << std::flush;
+#endif
+                Yphys[i][j] = new_term_val;
+
+                // update the symmetric term
+                complex<double> mirror_term_val = Yphys[j][i];
+                complex<double> new_mirror_term_val = mirror_term_val * scaler;
+                Yphys[j][i] = new_mirror_term_val;
+
+                // update the diagonal
+                complex<double> diag_term_val = Yphys[j][j];
+                complex<double> delta_term_val = new_term_val - term_val;
+                complex<double> delta_diag_val = -1.0 * delta_term_val;
+                complex<double> new_diag_term_val = diag_term_val + delta_diag_val;
+                Yphys[j][j] = new_diag_term_val;
+            }
+        }
+#ifdef DEBUG_PRIMARY
+        *selog << "Yphys # of scaled terms: " << ctr << "\n\n" << std::flush;
+#endif
+#endif
+
         // --------------------------------------------------------------------
         // Compute Ypu
         // --------------------------------------------------------------------
