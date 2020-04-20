@@ -347,6 +347,7 @@ class SELoopWorker {
 #if 111
         // Cap Yphys with magnitude greater than 1e3 threshold
         double thresh = 1e+3;
+        //double thresh = 1e+4;
 #ifdef DEBUG_PRIMARY
         uint ctr = 0;
         *selog << "Yphys scaling started...\n" << std::flush;
@@ -376,21 +377,22 @@ class SELoopWorker {
 #endif
                 Yphys[i][j] = new_term_val;
 
-                // update the symmetric term
-                complex<double> mirror_term_val = Yphys[j][i];
-                complex<double> new_mirror_term_val = mirror_term_val * scaler;
-                Yphys[j][i] = new_mirror_term_val;
-
                 // update the diagonal
-                complex<double> diag_term_val = Yphys[j][j];
+                complex<double> idiag_term_val = Yphys[i][i];
                 complex<double> delta_term_val = new_term_val - term_val;
-                complex<double> delta_diag_val = -1.0 * delta_term_val;
-                complex<double> new_diag_term_val = diag_term_val + delta_diag_val;
-                Yphys[j][j] = new_diag_term_val;
+                string jnode = node_name_lookup[j];
+                complex<double> delta_diag_val = -1.0 * delta_term_val * node_vnoms[jnode]/node_vnoms[inode];
+                complex<double> inew_diag_term_val = idiag_term_val + delta_diag_val;
+                Yphys[i][i] = inew_diag_term_val;
+#ifdef DEBUG_PRIMARY
+                *selog << "\tYphys original idiagonal term: " << abs(idiag_term_val) << "(" << arg(idiag_term_val) << ")\n" << std::flush;
+                *selog << "\tYphys updated idiagonal term: " << abs(inew_diag_term_val) << "(" << arg(inew_diag_term_val) << ")\n" << std::flush;
+#endif
             }
         }
 #ifdef DEBUG_PRIMARY
         *selog << "Yphys # of scaled terms: " << ctr << "\n\n" << std::flush;
+        //exit(0);
 #endif
 #endif
 
