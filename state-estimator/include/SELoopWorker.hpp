@@ -77,6 +77,7 @@ using json = nlohmann::json;
 
 // negligable
 #define NEGL 0.00000001
+#define PI 3.1415926535
 
 // This class listens for system state messages
 class SELoopWorker {
@@ -198,6 +199,22 @@ class SELoopWorker {
         // do one-time-only processing
         init();
     }
+
+
+#if 000
+    private:
+    void accumulate(const uint& row) {
+        // Calculate baseline nominal current injections for comparison with
+        // capped values after the capping code runs below
+        complex<double> accumulator(0,0);
+        for ( auto& jpair : Yphys[row] ) {
+            string jnode = node_name_lookup[jpair.first];
+            accumulator += jpair.second * node_vnoms[jnode];
+        }
+        *selog << "Yphys nominal current injection row: " << row << ", value: " << abs(accumulator) << "(" << 180/PI*arg(accumulator) << ")\n" << std::flush;
+    }
+#endif
+
 
     private:
     void init() {
@@ -344,10 +361,14 @@ class SELoopWorker {
         *selog << "Jshapemap Jacobian elements: " << Jshapemap.size() << "\n" << std::flush;
 #endif
 
-#if 111
         // Cap Yphys with magnitude greater than 1e3 threshold
+#if 000
+        for ( auto& inode : node_names ) {
+            uint i = node_idxs[inode];
+            accumulate(i);
+        }
+#endif
         double thresh = 1e+3;
-        //double thresh = 1e+4;
 #ifdef DEBUG_PRIMARY
         uint ctr = 0;
         *selog << "Yphys scaling started...\n" << std::flush;
@@ -372,28 +393,26 @@ class SELoopWorker {
                 // update the term
                 complex<double> new_term_val = term_val * scaler;
 #ifdef DEBUG_PRIMARY
-                *selog << "\tYphys original term: " << abs(term_val) << "(" << arg(term_val) << ")\n" << std::flush;
-                *selog << "\tYphys updated term: " << abs(new_term_val) << "(" << arg(new_term_val) << ")\n" << std::flush;
+                *selog << "\tYphys scaler: " << scaler << "\n" << std::flush;
+                *selog << "\tYphys term_val: " << abs(term_val) << "(" << 180/PI*arg(term_val) << ")\n" << std::flush;
+                *selog << "\tYphys new_term_val: " << abs(new_term_val) << "(" << 180/PI*arg(new_term_val) << ")\n" << std::flush;
 #endif
                 Yphys[i][j] = new_term_val;
 
                 // update the diagonal
-                complex<double> idiag_term_val = Yphys[i][i];
+                complex<double> diag_term_val = Yphys[i][i];
                 complex<double> delta_term_val = new_term_val - term_val;
                 string jnode = node_name_lookup[j];
                 complex<double> delta_diag_val = -1.0 * delta_term_val * node_vnoms[jnode]/node_vnoms[inode];
-                complex<double> inew_diag_term_val = idiag_term_val + delta_diag_val;
-                Yphys[i][i] = inew_diag_term_val;
-#ifdef DEBUG_PRIMARY
-                *selog << "\tYphys original idiagonal term: " << abs(idiag_term_val) << "(" << arg(idiag_term_val) << ")\n" << std::flush;
-                *selog << "\tYphys updated idiagonal term: " << abs(inew_diag_term_val) << "(" << arg(inew_diag_term_val) << ")\n" << std::flush;
+                complex<double> new_diag_term_val = diag_term_val + delta_diag_val;
+                Yphys[i][i] = new_diag_term_val;
+#if 000
+                accumulate(i);
 #endif
             }
         }
 #ifdef DEBUG_PRIMARY
         *selog << "Yphys # of scaled terms: " << ctr << "\n\n" << std::flush;
-        //exit(0);
-#endif
 #endif
 
         // --------------------------------------------------------------------
@@ -481,6 +500,7 @@ class SELoopWorker {
 
 #ifdef DEBUG_FILES
         // write Vbase to file
+        //ofstream ofh;
         ofh.open(initpath+"vnoms.csv",ofstream::out);
         ofh << std::setprecision(16);
         *selog << "writing " << initpath+"vnoms.csv\n" << std::flush;
@@ -1100,6 +1120,12 @@ class SELoopWorker {
 
 #ifdef DEBUG_PRIMARY
             *selog << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
+#endif
+
+#ifdef DEBUG_PRIMARY
+            // KLU condition number estimation
+            (void)klu_condest(Supd->p,Supd->x,klusym,klunum,&klucom);
+            *selog << "klu_condest Supd condition number estimate: " << klucom.condest << "\n" << std::flush;
 #endif
 
             // initialize an identity right-hand side
