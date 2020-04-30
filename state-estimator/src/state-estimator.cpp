@@ -274,9 +274,9 @@ int main(int argc, char** argv) {
 		state_estimator_util::insert_pseudo_measurements(gad,zary,
 				node_names,node_vnoms,sbase);
 
-//        *selog << "zvals after pseudo-measurements:\n" << std::flush;
+//        *selog << "zsigs/zvals after pseudo-measurements:\n" << std::flush;
 //        for ( auto& zid : zary.zids ) {
-//            *selog << "\t" << zid << ": " << zary.zvals[zid] << '\n' << std::flush;
+//            *selog << "\tzid: " << zid << ", ztype: " << zary.ztypes[zid] << ", zsig: " << zary.zsigs[zid] << ", zvals: " << zary.zvals[zid] << "\n" << std::flush;
 //        }
 
         // Initialize class that does the state estimates
