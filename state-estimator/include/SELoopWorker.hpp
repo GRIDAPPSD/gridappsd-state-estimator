@@ -215,6 +215,38 @@ class SELoopWorker {
     }
 #endif
 
+#if 000
+    private:
+    void condition(cs* csparse, string label) {
+        try {
+            // Initialize klusolve variables
+            klu_symbolic *klusym;
+            klu_numeric *klunum;
+            klu_common klucom;
+            if (!klu_defaults(&klucom)) throw "klu_defaults failed";
+
+            klusym = klu_analyze(csparse->m,csparse->p,csparse->i,&klucom);
+            if (!klusym) throw "klu_analyze failed";
+
+            klunum = klu_factor(csparse->p,csparse->i,csparse->x,klusym,&klucom);
+            if (!klunum) {
+#ifdef DEBUG_PRIMARY
+                *selog << "Common->status is: " << klucom.status << "\n" << std::flush;
+                if ( klucom.status == 1 ) *selog << "\tKLU_SINGULAR\n" << std::flush;
+#endif
+                throw "klu_factor failed";
+            }
+
+            // KLU condition number estimation
+            (void)klu_condest(csparse->p,csparse->x,klusym,klunum,&klucom);
+            *selog << "klu_condest " << label << " condition number estimate: " << klucom.condest << "\n" << std::flush;
+        } catch (const char *msg) {
+            *selog << "KLU ERROR: " << msg << "\n" << std::flush;
+        }
+        exit(0);
+    }
+#endif
+
 
     private:
     void init() {
@@ -615,9 +647,20 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
         *selog << "Initializing R -- " << std::flush;
 #endif
+        // Rmat
         R = gs_spalloc_diagonal(zqty);
         for ( auto& zid : zary.zids )
+            // GARY tweaking R diagonal value denominator values
+            // original value from Andy was 1e+6, but 1e+4 and 1e+2 can
+            // be used to decrease the condition of Supd just like sbase
+            // at the cost of some increased error in the results such as
+            // mean % difference in magnitude plot
             gs_entry_diagonal(R,zary.zidxs[zid],zary.zsigs[zid]/1000000.0);
+            //gs_entry_diagonal(R,zary.zidxs[zid],zary.zsigs[zid]/10000.0);
+            //gs_entry_diagonal(R,zary.zidxs[zid],zary.zsigs[zid]/100.0);
+            //gs_entry_diagonal(R,zary.zidxs[zid],1.0/1000000.0);
+            //gs_entry_diagonal(R,zary.zidxs[zid],1000000.0);
+            //gs_entry_diagonal(R,zary.zidxs[zid],1.0);
 #ifdef DEBUG_FILES
         print_cs_compress(R,initpath+"R.csv");
 #endif
@@ -2023,6 +2066,22 @@ class SELoopWorker {
         for ( uint i = 0 ; i < a->m ; i++ )
             for ( uint j = 0 ; j < a->n ; j++ )
                 ofh << mat[i][j] << ( j == a->n-1 ? "\n" : "," );
+        ofh.close();
+    }
+
+    private:
+    void print_cs_compress_sparse(cs *&a, const string &filename="cs.csv") {
+        // First copy into a map
+        ofstream ofh;
+        ofh << std::setprecision(16);
+        ofh.open(filename,ofstream::out);
+        *selog << "writing " + filename + "\n\n" << std::flush;
+        unordered_map<uint,unordered_map<uint,double>> mat;
+        for ( uint i = 0 ; i < a->n ; i++ ) {
+            for ( uint j = a->p[i] ; j < a->p[i+1] ; j++ ) {
+                ofh << a->i[j] << ", " << i << ", " << a->x[j] << "\n";
+            }
+        }
         ofh.close();
     }
 #endif
