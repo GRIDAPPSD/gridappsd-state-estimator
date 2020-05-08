@@ -83,6 +83,7 @@ namespace state_estimator_util{
 
 		// Initialize containers to hold pseudo-measurements
 		SDMAP pseudoP, pseudoQ;
+        double nominal_systemP, nominal_systemQ;
 
 		// Add nominal load injections
 		for ( auto& load : jpsm["data"]["results"]["bindings"] ) {
@@ -101,6 +102,10 @@ namespace state_estimator_util{
 				// Add injection to phase C
 				pseudoP[bus+".3"] -= ptot/3.0/2.0;
 				pseudoQ[bus+".3"] -= qtot/3.0/2.0;
+
+                // Add combined injection to total
+                nominal_systemP += ptot/2.0;
+                nominal_systemQ += qtot/2.0;
 			} else {
 				// This is a 1-phase load
 				string spph = load["p_phase"]["value"]; double pph = stod(spph);
@@ -119,6 +124,10 @@ namespace state_estimator_util{
 					// Wye-connected load - injections are 
 					pseudoP[node] -= pph/2.0;
 					pseudoQ[node] -= qph/2.0;
+
+                    // Add phase injection to total
+                    nominal_systemP += pph/2.0;
+                    nominal_systemQ += qph/2.0;
 				}
 				if ( !conn.compare("D") ) {
 					// Delta-connected load - injections depend on load current
@@ -137,6 +146,12 @@ namespace state_estimator_util{
 					// Negative load at the second node
 					pseudoP[n2] += real(sload/vload*node_vnoms[n2])/2.0;
 					pseudoQ[n2] += imag(sload/vload*node_vnoms[n2])/2.0;
+
+                    // Add net load injection to total
+					nominal_systemP += real(sload/vload*node_vnoms[node])/2.0;
+					nominal_systemQ += imag(sload/vload*node_vnoms[node])/2.0;
+					nominal_systemP -= real(sload/vload*node_vnoms[n2])/2.0;
+					nominal_systemQ -= imag(sload/vload*node_vnoms[n2])/2.0;
 				}
 			}
 		}
@@ -191,6 +206,8 @@ namespace state_estimator_util{
 			}
 
 			else {
+                double loss_ratio = 0.05;
+
 				// Add the P injection
 				string pinj_zid = "pseudo_P_"+node;
 				zary.zids.push_back(pinj_zid);
@@ -200,9 +217,9 @@ namespace state_estimator_util{
 				zary.znode2s[pinj_zid] = node;
 				zary.znew	[pinj_zid] = 0;
 				zary.zvals	[pinj_zid] = pseudoP[node]/sbase;
-                zary.zsigs  [pinj_zid] = std::abs(pseudoP[node]/sbase) + 
-                    5.0/100/node_names.size(); // load + leakage
-	
+                zary.zsigs  [pinj_zid] = std::abs(pseudoP[node]/sbase) +
+                    loss_ratio*(nominal_systemP/sbase)/node_names.size(); // load + leakage
+
 //                *selog << "NON-Source Bus node: " << node << '\n' << std::flush;
 //                *selog << "\tsource_node_prefix: " << source_node_prefix << '\n' << std::flush;
 				
@@ -215,8 +232,8 @@ namespace state_estimator_util{
 				zary.znode2s[qinj_zid] = node;
 				zary.znew	[qinj_zid] = 0;
 				zary.zvals	[qinj_zid] = pseudoQ[node]/sbase;
-                zary.zsigs  [qinj_zid] = std::abs(pseudoQ[node]/sbase) + 
-                    5.0/100/node_names.size(); // load + leakage
+                zary.zsigs  [qinj_zid] = std::abs(pseudoQ[node]/sbase) +
+                    loss_ratio*(nominal_systemQ/sbase)/node_names.size(); // load + leakage
 			}
 		}
 	}

@@ -76,7 +76,7 @@ using json = nlohmann::json;
 #endif
 
 // negligable
-#define NEGL 0.00000001
+#define NEGL 1.0e-16
 #define PI 3.1415926535
 
 // This class listens for system state messages
@@ -299,14 +299,16 @@ class SELoopWorker {
         double span_varg = 1.0/3.0*PI;
         double span_taps = 0.2;
 
+        // TODO: finalize scaling for state uncertainty initialization
+        double span_multiplier = 0.02;
 #ifdef DIAGONAL_P
         for ( auto& node_name : node_names ) {
             uint idx = node_idxs[node_name];
-            Uvmag[idx] = 0.002*span_vmag;
-            Uvarg[idx] = 0.002*span_varg;
+            Uvmag[idx] = span_multiplier*span_vmag;
+            Uvarg[idx] = span_multiplier*span_varg;
         }
 #else
-        cs *P = gs_doubleval_diagonal(node_qty, 0.002*span_vmag, 0.002*span_varg);
+        cs *P = gs_doubleval_diagonal(node_qty, span_multiplier*span_vmag, span_multiplier*span_varg);
 #ifdef DEBUG_FILES
         print_cs_compress(P,initpath+"Pinit.csv");
 #endif
@@ -623,7 +625,14 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
         *selog << "Initializing Q -- " << std::flush;
 #endif
-        Q = gs_doubleval_diagonal(node_qty, 0.001, 0.001*PI);
+        // TODO: finalize scale factor to determine weighting of
+        // previous system state
+        // Consider whether to conditionalize value based on
+        // elapsed time since previous state estimate,
+        // i.e., large model vs. smaller models
+        // 0.03 is a large model estimate
+        // 0.001 is a smaller model estimate
+        Q = gs_doubleval_diagonal(node_qty, 0.03, 0.03*PI);
 #ifdef DEBUG_FILES
         print_cs_compress(Q,initpath+"Q.csv");
 #endif
@@ -647,20 +656,9 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
         *selog << "Initializing R -- " << std::flush;
 #endif
-        // Rmat
         R = gs_spalloc_diagonal(zqty);
         for ( auto& zid : zary.zids )
-            // GARY tweaking R diagonal value denominator values
-            // original value from Andy was 1e+6, but 1e+4 and 1e+2 can
-            // be used to decrease the condition of Supd just like sbase
-            // at the cost of some increased error in the results such as
-            // mean % difference in magnitude plot
-            gs_entry_diagonal(R,zary.zidxs[zid],zary.zsigs[zid]/1000000.0);
-            //gs_entry_diagonal(R,zary.zidxs[zid],zary.zsigs[zid]/10000.0);
-            //gs_entry_diagonal(R,zary.zidxs[zid],zary.zsigs[zid]/100.0);
-            //gs_entry_diagonal(R,zary.zidxs[zid],1.0/1000000.0);
-            //gs_entry_diagonal(R,zary.zidxs[zid],1000000.0);
-            //gs_entry_diagonal(R,zary.zidxs[zid],1.0);
+            gs_entry_diagonal(R,zary.zidxs[zid],zary.zsigs[zid]);
 #ifdef DEBUG_FILES
         print_cs_compress(R,initpath+"R.csv");
 #endif

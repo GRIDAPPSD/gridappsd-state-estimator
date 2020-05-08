@@ -270,29 +270,25 @@ int main(int argc, char** argv) {
 		sensConsumer.close();
 
 		// Add Pseudo-Measurements
-		//const double sbase = 1.0e+6;
-        // GARY tweaking to sbase
+		const double sbase = 1.0e+6;
         // Initial setting by Andy was 1e+6 as above
-        // All values 1e+4 and less made the Supd condition number worse and
-        // voltage magnitude maximums increased leading to KLU_SINGULAR for
-        // the factor call
-        // sbase as 1e+10 was the first value found that resulted in the 9500
-        // node model converging, but not all that well
-        // Below are values of sbase that converge with original zsigs values
-        // and 1e+6 as the denominator when setting R diagonal values
-        //const double sbase = 1.0e+10;
-        const double sbase = 1.0e+12;
-        //const double sbase = 1.0e+13;
-        // With sbase as 1e+14 or larger state estimator will exit immediately
-        // after calculating S1, probably during the S2 calculation, but not
-        // investigated further.
+        // All values 1e+4 and less increased the Supd condition number,
+        // eventually leading to a condition number resulting in
+        // KLU_SINGULAR when inverting the matrix
+        // Values for sbase greater than 1e+6 reduce the Supd
+        // condition number, e.g., 1e+10 and 1e+12
+        // With excessively large sbase, the state estimator will exit
+        // immediately after calculating S1, probably during the S2
+        // calculation, but this has not investigated further
 		state_estimator_util::insert_pseudo_measurements(gad,zary,
 				node_names,node_vnoms,sbase);
 
-//        *selog << "zsigs/zvals after pseudo-measurements:\n" << std::flush;
-//        for ( auto& zid : zary.zids ) {
-//            *selog << "\tzid: " << zid << ", ztype: " << zary.ztypes[zid] << ", zsig: " << zary.zsigs[zid] << ", zvals: " << zary.zvals[zid] << "\n" << std::flush;
-//        }
+#ifdef DEBUG_PRIMARY
+        *selog << "\nzsigs/zvals after adding pseudo-measurements:\n" << std::flush;
+        for ( auto& zid : zary.zids ) {
+            *selog << "\tzid: " << zid << ", ztype: " << zary.ztypes[zid] << ", zsig: " << zary.zsigs[zid] << ", zvals: " << zary.zvals[zid] << "\n" << std::flush;
+        }
+#endif
 
         // Initialize class that does the state estimates
 		SELoopWorker loopWorker(&workQueue, gad.brokerURI, gad.username,
