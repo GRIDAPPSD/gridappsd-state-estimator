@@ -39,8 +39,9 @@ class SELoopConsumer : public SEConsumer {
         if (jtext.find("message") != jtext.end()) {
 #ifdef DEBUG_PRIMARY
             *selog << "." << std::flush;
-//            *selog << "\nSELoopConsumer received measurement message of " << text.length() 
-//                << " bytes\n" << std::flush;
+            //*selog << "(" << jtext["message"]["timestamp"] << ")" << std::flush;
+            //*selog << "\nSELoopConsumer received measurement message of " << text.length()
+            //      << " bytes\n" << std::flush;
             //*selog << "MESSAGE START\n" << std::flush;
             //for (uint ibuff=0; ibuff<text.length(); ibuff+=4095) {
             //    *selog << text.substr(ibuff,4095) << "\n" << std::flush;
