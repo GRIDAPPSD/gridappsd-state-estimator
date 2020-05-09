@@ -932,7 +932,13 @@ class SELoopWorker {
             uint idx = node_idxs[node_name];
             complex<double> vnom = node_vnoms[node_name];
             state["v"] = abs ( vnom * Vpu[idx] );
-            state["angle"] = 180.0/PI * arg ( vnom * Vpu[idx] );
+
+            double degrees = 180.0/PI * arg ( vnom * Vpu[idx] );
+            // -165 <= degrees <= 195
+            while (degrees > 195.0) degrees -= 360.0;
+            while (degrees < -165.0) degrees += 360.0;
+            state["angle"] = degrees;
+
             // TODO: Add v and angle variance values
             state["vVariance"] = 0;         // This comes from P
             state["angleVariance"] = 0;     // This comes from P
