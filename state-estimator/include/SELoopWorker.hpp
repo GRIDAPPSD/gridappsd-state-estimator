@@ -250,6 +250,17 @@ class SELoopWorker {
 
     private:
     void init() {
+
+#ifdef DEBUG_FILES
+        *selog << "writing zary.ztypes values\n\n" << std::flush;
+        ofstream ofh;
+        ofh.open("ztypes.csv",ofstream::out);
+        for ( auto& zid: zary.zids ) {
+            ofh << zary.ztypes[zid] << "\n";
+        }
+        ofh.close();
+#endif
+
         // set up the output message json object
         jstate["simulation_id"] = simid;
 
@@ -989,8 +1000,6 @@ class SELoopWorker {
         mkdir(tspath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 #endif
 
-        // x, z, h, and J will be maintained here
-        
 #ifdef DEBUG_FILES
         ofstream ofh;
         ofh.open(tspath+"Vpu.csv",ofstream::out);
@@ -1018,6 +1027,7 @@ class SELoopWorker {
         // --------------------------------------------------------------------
         // Predict Step
         // --------------------------------------------------------------------
+        // -- compute x_predict = F*x | F=I (skipping to improve performance)
         // -- compute p_predict = F*P*F' + Q | F=I (can be simplified)
 #ifdef DIAGONAL_P
 // #ifdef DEBUG_PRIMARY
@@ -1063,11 +1073,6 @@ class SELoopWorker {
         print_cs_compress(P3,tspath+"P3.csv");
 #endif
 
-        // --------------------------------------------------------------------
-        // Update Step
-        // --------------------------------------------------------------------
-        // -- compute S = J*P_predict*J' + R
-
         cs *Ppre = cs_add(P3,Q,1,1); cs_spfree(P3);
         if (!Ppre) *selog << "ERROR: null Ppre\n" << std::flush;
 #ifdef DEBUG_PRIMARY
@@ -1077,6 +1082,10 @@ class SELoopWorker {
 #ifdef DEBUG_FILES
         print_cs_compress(Ppre,tspath+"Ppre.csv");
 #endif
+
+        // --------------------------------------------------------------------
+        // Update Step
+        // --------------------------------------------------------------------
 
 #ifdef DEBUG_PRIMARY
         *selog << "calc_J time -- " << std::flush;
@@ -1089,6 +1098,8 @@ class SELoopWorker {
 #ifdef DEBUG_FILES
         print_cs_compress(J,tspath+"J.csv");
 #endif
+
+        // -- compute S = J*P_predict*J' + R
 
         cs *S1 = cs_transpose(J,1);
         if (!S1) *selog << "ERROR: null S1\n" << std::flush;
@@ -1129,6 +1140,8 @@ class SELoopWorker {
 #ifdef DEBUG_FILES
         print_cs_compress(Supd,tspath+"Supd.csv");
 #endif
+
+        // -- compute K = P_predict*J'*S^-1
 
 #ifdef DEBUG_PRIMARY
         double startTime;
@@ -1224,7 +1237,6 @@ class SELoopWorker {
         print_cs_compress(K3,tspath+"K3.csv");
 #endif
 
-        // -- compute K = P_predict*J'*S^-1
         // GDB S1 and K1 are both J transpose so use S1 here
         cs *K2 = cs_multiply(Ppre,S1); cs_spfree(S1);
         if (!K2) *selog << "ERROR: null K2\n" << std::flush;
@@ -1253,7 +1265,6 @@ class SELoopWorker {
         print_cs_compress(Kupd,tspath+"Kupd.csv");
 #endif
 
-        // -- compute x_update = x_predict + K * y
         // -- compute y = z - h
         cs *z; this->sample_z(z);
 #ifdef DEBUG_PRIMARY
@@ -1285,6 +1296,9 @@ class SELoopWorker {
 #ifdef DEBUG_FILES
         print_cs_compress(yupd,tspath+"yupd.csv");
 #endif
+
+        // -- compute x_update = x_predict + K * y
+
         cs *x1 = cs_multiply(Kupd,yupd); cs_spfree(yupd);
         if ( !x1 ) *selog << "ERROR: x1 null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
@@ -1295,7 +1309,6 @@ class SELoopWorker {
         print_cs_compress(x1,tspath+"x1.csv");
 #endif
 
-        // -- compute x_predict = F*x | F=I (to improve performance, skip this)
         cs *x; this->prep_x(x);
 #ifdef DEBUG_PRIMARY
         *selog << "x is " << x->m << " by " << x->n << 
@@ -1325,11 +1338,12 @@ class SELoopWorker {
         print_cs_compress(xupd,tspath+"xupd.csv");
 #endif
 
+        // -- compute P_update = (I-K_update*J)*P_predict
+
 #ifdef DEBUG_PRIMARY
         *selog << "P4 time -- " << std::flush;
         startTime = getWallTime();
 #endif
-        // -- compute P_update = (I-K_update*J)*P_predict
         cs *P4 = cs_multiply(Kupd,J); cs_spfree(Kupd); cs_spfree(J);
         if ( !P4 ) *selog << "ERROR: P4 null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
@@ -1376,7 +1390,6 @@ class SELoopWorker {
         print_cs_compress(P,tspath+"Pupd.csv");
 #endif
 #endif
-
 
         // --------------------------------------------------------------------
         // Update persistant state (Vpu and A)

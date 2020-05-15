@@ -142,6 +142,7 @@ int main(int argc, char** argv) {
 
 #ifdef DEBUG_PRIMARY
         // only block initialization for command line invocations
+        //if (false) {
         if (simreq.find("simulation_config") == string::npos) {
 		    *selog << "\nWaiting for measurement before continuing with initialization\n" << std::flush;
             while (blockedFlag) sleep(1);
@@ -271,6 +272,7 @@ int main(int argc, char** argv) {
 
 		// Add Pseudo-Measurements
 		const double sbase = 1.0e+6;
+		//const double sbase = 1.0e+12;
         // Initial setting by Andy was 1e+6 as above
         // All values 1e+4 and less increased the Supd condition number,
         // eventually leading to a condition number resulting in
