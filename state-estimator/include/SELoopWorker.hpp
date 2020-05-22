@@ -252,11 +252,11 @@ class SELoopWorker {
     void init() {
 
 #ifdef DEBUG_FILES
-        *selog << "writing zary.ztypes values\n\n" << std::flush;
+        *selog << "writing zary ztypes,znodes1s values\n\n" << std::flush;
         ofstream ofh;
-        ofh.open("ztypes.csv",ofstream::out);
+        ofh.open("zary.csv",ofstream::out);
         for ( auto& zid: zary.zids ) {
-            ofh << zary.ztypes[zid] << "\n";
+            ofh << zary.ztypes[zid] << ", " << zary.znode1s[zid] << "\n";
         }
         ofh.close();
 #endif
@@ -484,7 +484,7 @@ class SELoopWorker {
 #endif
 #ifdef DEBUG_FILES
         // write to file
-        ofstream ofh;
+        //ofstream ofh;
         ofh.open(initpath+"Ypu.csv",ofstream::out);
         ofh << std::setprecision(16);
 
@@ -1284,6 +1284,11 @@ class SELoopWorker {
             " with " << h->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
+        // TODO 5/22/20, h is getting corrupted regarding indices, which 
+        // is either due to the optimized gs_* code not producing the same
+        // compressed matrices as teh original CSparse code or the calc_h
+        // gs_entry zidx indices not being correct
+        print_cs_colvec("h_sbase1e6_prec8.csv", h);
         print_cs_compress(h,tspath+"h.csv");
 #endif
 
@@ -1294,6 +1299,9 @@ class SELoopWorker {
             " with " << yupd->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
+        // TODO 5/22/20, check yupd as well as h for correctness between sbase
+        // values as well as between gs_* vs. original CSparse
+        print_cs_colvec("yupd_sbase1e6_prec8.csv", yupd);
         print_cs_compress(yupd,tspath+"yupd.csv");
 #endif
 
@@ -1336,6 +1344,7 @@ class SELoopWorker {
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(xupd,tspath+"xupd.csv");
+        print_cs_compress_sparse(xupd,tspath+"xupd_sparse_prec8.csv", 8);
 #endif
 
         // -- compute P_update = (I-K_update*J)*P_predict
@@ -1441,6 +1450,10 @@ class SELoopWorker {
         *selog << "End of estimate virtual memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
 //        *selog << "End of estimate resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
         *selog << "\n" << std::flush;
+#if 000
+        // TODO 5/22/20, for debugging h corruption, exit after first estimate
+        exit(0);
+#endif
 #endif
     }
 
@@ -1582,16 +1595,76 @@ class SELoopWorker {
 #endif
 
 
+#ifdef DEBUG_FILES
+    private:
+    void print_zvals(const string& filename) {
+        ofstream ofh;
+        ofh << std::setprecision(8);
+        ofh.open(filename,ofstream::out);
+
+        for ( auto& zid : zary.zids ) {
+            uint zidx = zary.zidxs[zid];
+            double zval = zary.zvals[zid];
+            string ztype = zary.ztypes[zid];
+#if 111
+            // these sbase checks are for when the comparison is to sbase 1e6
+            if (sbase > 1.0e+11) {
+                if (ztype=="Qi" || ztype=="Pi")
+                    zval *= 1.0e+6;
+            }
+            else if (sbase > 1.0e+9) {
+                if (ztype=="Qi" || ztype=="Pi")
+                    zval *= 1.0e+4;
+            }
+#endif
+            ofh << zidx << ", " << zid << ", " << ztype << ", " << zval << "\n";
+        }
+        ofh.close();
+    }
+
+    private:
+    void print_cs_colvec(const string& filename, cs* colvec) {
+        ofstream ofh;
+        ofh << std::setprecision(8);
+        ofh.open(filename,ofstream::out);
+
+        for ( auto& zid : zary.zids ) {
+            uint zidx = zary.zidxs[zid];
+            string ztype = zary.ztypes[zid];
+            double val = colvec->x[zidx];
+#if 111
+            // these sbase checks are for when the comparison is to sbase 1e6
+            if (sbase > 1.0e+11) {
+                if (ztype=="Qi" || ztype=="Pi")
+                    val *= 1.0e+6;
+            }
+            else if (sbase > 1.0e+9) {
+                if (ztype=="Qi" || ztype=="Pi")
+                    val *= 1.0e+4;
+            }
+#endif
+            ofh << zidx << ", " << zid << ", " << ztype << ", " << val << "\n";
+        }
+        ofh.close();
+    }
+#endif
+
+
     private:
     void sample_z(cs *&z) {
         // measurements have been loaded from the sim output message to zary
         z = gs_spalloc_firstcol(zqty);
         if (!z) *selog << "ERROR: null z\n" << std::flush;
 
+
         for ( auto& zid : zary.zids ) {
             if ( zary.zvals[zid] > NEGL || -zary.zvals[zid] > NEGL )
                 gs_entry_firstcol(z,zary.zidxs[zid],zary.zvals[zid]);
         }
+
+#ifdef DEBUG_FILES
+        print_zvals("zvals_sbase1e12_prec8.csv");
+#endif
     }
 
 
@@ -1802,6 +1875,16 @@ class SELoopWorker {
                 // consider the reference node
                 set_n(i,0);
                 dP = dP + 2*vi * g;
+#if 000
+                double dval = dP;
+                if (sbase > 1.0e+11) {
+                    dval = dP * 1.0e+6;
+                }
+                *selog << "\ndPi_dvi zidx: " << zidx <<
+                          ", xidx: " << xidx <<
+                          ", i: " << i <<
+                          ", dP: " << dval << "\n" << std::flush;
+#endif
                 if ( abs(dP > NEGL ) ) gs_entry_colorder(J,zidx,xidx,dP);
             }
 
@@ -1813,6 +1896,27 @@ class SELoopWorker {
 
                 set_n(i,j);
                 double dP = -1.0 * vi/ai/aj * (g*cos(T) + b*sin(T));
+#if 000
+                double dval = dP;
+                double gval = g;
+                double bval = b;
+                if (sbase > 1.0e+11) {
+                    dval = dP * 1.0e+6;
+                    gval = g * 1.0e+6;
+                    bval = b * 1.0e+6;
+                }
+                *selog << "\ndPi_dvj zidx: " << zidx <<
+                          ", xidx: " << xidx <<
+                          ", i: " << i <<
+                          ", j: " << j <<
+                          ", vi: " << vi <<
+                          ", ai: " << ai <<
+                          ", aj: " << aj <<
+                          ", g: " << gval <<
+                          ", b: " << bval <<
+                          ", T: " << T <<
+                          ", dP: " << dval << "\n" << std::flush;
+#endif
                 if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
             }
 
@@ -1833,6 +1937,16 @@ class SELoopWorker {
                 // consider the reference node
                 set_n(i,0);
                 dQ = dQ - 2*vi*b;
+#if 000
+                double dval = dQ;
+                if (sbase > 1.0e+11) {
+                    dval = dQ * 1.0e+6;
+                }
+                *selog << "\ndQi_dvi zidx: " << zidx <<
+                          ", xidx: " << xidx <<
+                          ", i: " << i <<
+                          ", dQ: " << dval << "\n" << std::flush;
+#endif
                 if ( abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
             }
 
@@ -1844,6 +1958,27 @@ class SELoopWorker {
 
                 set_n(i,j);
                 double dQ = -1.0 * vi/ai/aj * (g*sin(T) - b*cos(T));
+#if 000
+                double dval = dQ;
+                double gval = g;
+                double bval = b;
+                if (sbase > 1.0e+11) {
+                    dval = dQ * 1.0e+6;
+                    gval = g * 1.0e+6;
+                    bval = b * 1.0e+6;
+                }
+                *selog << "\ndQi_dvj zidx: " << zidx <<
+                          ", xidx: " << xidx <<
+                          ", i: " << i <<
+                          ", j: " << j <<
+                          ", vi: " << vi <<
+                          ", ai: " << ai <<
+                          ", aj: " << aj <<
+                          ", g: " << gval <<
+                          ", b: " << bval <<
+                          ", T: " << T <<
+                          ", dQ: " << dval << "\n" << std::flush;
+#endif
                 if ( abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
             }
 
@@ -1867,17 +2002,49 @@ class SELoopWorker {
                     }
                 }
                 // reference node component is 0
+#if 000
+                double dval = dP;
+                if (sbase > 1.0e+11) {
+                    dval = dP * 1.0e+6;
+                }
+                *selog << "\ndPi_dTi zidx: " << zidx <<
+                          ", xidx: " << xidx <<
+                          ", i: " << i <<
+                          ", dP: " << dval << "\n" << std::flush;
+#endif
                 if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
             }
 
             else
             if ( entry_type == dPi_dTj ) {
-                 // --- compute dP/dTj
-                 auto& Yrow = Ypu.at(i);
-                 complex<double> Yij = Yrow.at(j);
+                // --- compute dP/dTj
+                auto& Yrow = Ypu.at(i);
+                complex<double> Yij = Yrow.at(j);
  
-                 set_n(i,j);
-                 double dP = -1.0 * vi*vj/ai/aj * (g*sin(T) - b*cos(T));
+                set_n(i,j);
+                double dP = -1.0 * vi*vj/ai/aj * (g*sin(T) - b*cos(T));
+#if 000
+                double dval = dP;
+                double gval = g;
+                double bval = b;
+                if (sbase > 1.0e+11) {
+                    dval = dP * 1.0e+6;
+                    gval = g * 1.0e+6;
+                    bval = b * 1.0e+6;
+                }
+                *selog << "\ndPi_dTj zidx: " << zidx <<
+                          ", xidx: " << xidx <<
+                          ", i: " << i <<
+                          ", j: " << j <<
+                          ", vi: " << vi <<
+                          ", vj: " << vj <<
+                          ", ai: " << ai <<
+                          ", aj: " << aj <<
+                          ", g: " << gval <<
+                          ", b: " << bval <<
+                          ", T: " << T <<
+                          ", dP: " << dval << "\n" << std::flush;
+#endif
                  if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
             }
 
@@ -1895,6 +2062,16 @@ class SELoopWorker {
                     }
                 }
                 // reference component is 0
+#if 000
+                double dval = dQ;
+                if (sbase > 1.0e+11) {
+                    dval = dQ * 1.0e+6;
+                }
+                *selog << "\ndQi_dTi zidx: " << zidx <<
+                          ", xidx: " << xidx <<
+                          ", i: " << i <<
+                          ", dQ: " << dval << "\n" << std::flush;
+#endif
                 if (abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
             }
 
@@ -1906,6 +2083,28 @@ class SELoopWorker {
 
                 set_n(i,j);
                 double dQ = vi*vj/ai/aj * (g*cos(T) + b*sin(T));
+#if 000
+                double dval = dQ;
+                double gval = g;
+                double bval = b;
+                if (sbase > 1.0e+11) {
+                    dval = dQ * 1.0e+6;
+                    gval = g * 1.0e+6;
+                    bval = b * 1.0e+6;
+                }
+                *selog << "\ndQi_dTj zidx: " << zidx <<
+                          ", xidx: " << xidx <<
+                          ", i: " << i <<
+                          ", j: " << j <<
+                          ", vi: " << vi <<
+                          ", vj: " << vj <<
+                          ", ai: " << ai <<
+                          ", aj: " << aj <<
+                          ", g: " << gval <<
+                          ", b: " << bval <<
+                          ", T: " << T <<
+                          ", dQ: " << dval << "\n" << std::flush;
+#endif
                 if ( abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
             }
 
@@ -1919,6 +2118,14 @@ class SELoopWorker {
                 // daji/dvj = 1/vi
                 set_n(i,j);
                 double daji = 1.0/vi;
+#if 000
+                *selog << "\ndaji_dvj zidx: " << zidx <<
+                          ", xidx: " << xidx <<
+                          ", i: " << i <<
+                          ", j: " << j <<
+                          ", vi: " << vi <<
+                          ", daji: " << daji << "\n" << std::flush;
+#endif
                 gs_entry_colorder(J, zidx, xidx, daji);
             }
 
@@ -1927,6 +2134,15 @@ class SELoopWorker {
                 // daja/dvi -vj/vi^2
                 set_n(i,j);
                 double daji = -vj/(vi*vi);
+#if 000
+                *selog << "\ndaji_dvi zidx: " << zidx <<
+                          ", xidx: " << xidx <<
+                          ", i: " << i <<
+                          ", j: " << j <<
+                          ", vi: " << vi <<
+                          ", vj: " << vj <<
+                          ", daji: " << daji << "\n" << std::flush;
+#endif
                 gs_entry_colorder(J, zidx, xidx, daji);
             }
 
@@ -2067,7 +2283,8 @@ class SELoopWorker {
 
 #ifdef DEBUG_FILES
     private:
-    void print_cs_compress(cs *&a, const string &filename="cs.csv") {
+    void print_cs_compress(cs *&a, const string &filename="cs.csv",
+                           const uint &precision=16) {
         // First copy into a map
         unordered_map<uint,unordered_map<uint,double>> mat;
         for ( uint i = 0 ; i < a->n ; i++ ) {
@@ -2077,7 +2294,7 @@ class SELoopWorker {
         }
         // write to file
         ofstream ofh;
-        ofh << std::setprecision(16);
+        ofh << std::setprecision(precision);
         ofh.open(filename,ofstream::out);
         *selog << "writing " + filename + "\n\n" << std::flush;
         for ( uint i = 0 ; i < a->m ; i++ )
@@ -2087,10 +2304,11 @@ class SELoopWorker {
     }
 
     private:
-    void print_cs_compress_sparse(cs *&a, const string &filename="cs.csv") {
+    void print_cs_compress_sparse(cs *&a, const string &filename="cs.csv",
+                                  const uint &precision=16) {
         // First copy into a map
         ofstream ofh;
-        ofh << std::setprecision(16);
+        ofh << std::setprecision(precision);
         ofh.open(filename,ofstream::out);
         *selog << "writing " + filename + "\n\n" << std::flush;
         unordered_map<uint,unordered_map<uint,double>> mat;
