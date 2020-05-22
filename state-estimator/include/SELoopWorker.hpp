@@ -319,7 +319,10 @@ class SELoopWorker {
             Uvarg[idx] = span_multiplier*span_varg;
         }
 #else
+#ifdef GS_OPTIMIZE
         cs *P = gs_doubleval_diagonal(node_qty, span_multiplier*span_vmag, span_multiplier*span_varg);
+#else
+#endif
 #ifdef DEBUG_FILES
         print_cs_compress(P,initpath+"Pinit.csv");
 #endif
@@ -624,7 +627,10 @@ class SELoopWorker {
         *selog << "Initializing F -- " << std::flush;
 #endif
 
+#ifdef GS_OPTIMIZE
         F = gs_singleval_diagonal(xqty, 1.0);
+#else
+#endif
 #ifdef DEBUG_FILES
         print_cs_compress(F,initpath+"F.csv");
 #endif
@@ -643,7 +649,10 @@ class SELoopWorker {
         // i.e., large model vs. smaller models
         // 0.03 is a large model estimate
         // 0.001 is a smaller model estimate
+#ifdef GS_OPTIMIZE
         Q = gs_doubleval_diagonal(node_qty, 0.03, 0.03*PI);
+#else
+#endif
 #ifdef DEBUG_FILES
         print_cs_compress(Q,initpath+"Q.csv");
 #endif
@@ -655,7 +664,10 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
         *selog << "Initializing eyex -- " << std::flush;
 #endif
+#ifdef GS_OPTIMIZE
         eyex = gs_singleval_diagonal(xqty, 1.0);
+#else
+#endif
 #ifdef DEBUG_FILES
         print_cs_compress(eyex,initpath+"eyex.csv");
 #endif
@@ -667,9 +679,12 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
         *selog << "Initializing R -- " << std::flush;
 #endif
+#ifdef GS_OPTIMIZE
         R = gs_spalloc_diagonal(zqty);
         for ( auto& zid : zary.zids )
             gs_entry_diagonal(R,zary.zidxs[zid],zary.zsigs[zid]);
+#else
+#endif
 #ifdef DEBUG_FILES
         print_cs_compress(R,initpath+"R.csv");
 #endif
@@ -1150,7 +1165,10 @@ class SELoopWorker {
 #if 000
         double *rhs;
 #else
+#ifdef GS_OPTIMIZE
         cs *K3 = gs_spalloc_fullsquare(zqty);
+#else
+#endif
         double *rhs = K3->x;
         //double *rhs = (double *)calloc(zqty*zqty, sizeof(double));
 #endif
@@ -1562,17 +1580,23 @@ class SELoopWorker {
     private:
     void prep_x(cs *&x) {
         // Prepare x
+#ifdef GS_OPTIMIZE
         x = gs_spalloc_firstcol(xqty);
+#else
+#endif
         if (!x) *selog << "ERROR: null x\n" << std::flush;
 
         for ( auto& node_name : node_names ) {
             // Find the per-unit voltage of active node
             uint idx = node_idxs[node_name];
             complex<double> Vi = Vpu[idx];
+#ifdef GS_OPTIMIZE
             // Add the voltage magnitude to x
             if ( abs(Vi) > NEGL ) gs_entry_firstcol(x,idx-1,abs(Vi));
             // Add the voltage angle to x
             if ( arg(Vi) ) gs_entry_firstcol(x,node_qty + idx-1,arg(Vi));
+#else
+#endif
         }
     }
 
@@ -1581,15 +1605,21 @@ class SELoopWorker {
     private:
     void prep_P(cs *&Pmat) {
         // Prepare P as a diagonal matrix from state uncertanty
+#ifdef GS_OPTIMIZE
         Pmat = gs_spalloc_diagonal(xqty);
+#else
+#endif
         if (!Pmat) *selog << "ERROR: null Pmat in prep_P\n" << std::flush;
 
         for ( auto& node_name : node_names ) {
             uint idx = node_idxs[node_name];
+#ifdef GS_OPTIMIZE
             // insert the voltage magnitude variance
             if ( Uvmag[idx] ) gs_entry_diagonal(Pmat,idx-1,Uvmag[idx]);
             // insert the voltage phase variance
             if ( Uvarg[idx] ) gs_entry_diagonal(Pmat,node_qty + idx-1,Uvarg[idx]);
+#else
+#endif
         }
     }
 #endif
@@ -1653,13 +1683,19 @@ class SELoopWorker {
     private:
     void sample_z(cs *&z) {
         // measurements have been loaded from the sim output message to zary
+#ifdef GS_OPTIMIZE
         z = gs_spalloc_firstcol(zqty);
+#else
+#endif
         if (!z) *selog << "ERROR: null z\n" << std::flush;
 
 
         for ( auto& zid : zary.zids ) {
             if ( zary.zvals[zid] > NEGL || -zary.zvals[zid] > NEGL )
+#ifdef GS_OPTIMIZE
                 gs_entry_firstcol(z,zary.zidxs[zid],zary.zvals[zid]);
+#else
+#endif
         }
 
 #ifdef DEBUG_FILES
@@ -1749,7 +1785,10 @@ class SELoopWorker {
     private:
     void calc_h(cs *&h) {
         // each z component has a measurement function component
+#ifdef GS_OPTIMIZE
         h = gs_spalloc_firstcol(zqty);
+#else
+#endif
         if (!h) *selog << "ERROR: null h\n" << std::flush;
 
 #ifdef DEBUG_PRIMARY
@@ -1779,7 +1818,10 @@ class SELoopWorker {
                     Pi += vi*vi * g; // times cos(T) ????
                 } catch ( const std::out_of_range& oor ) {}
                 // Insert the measurement component
+#ifdef GS_OPTIMIZE
                 if ( abs(Pi) > NEGL ) gs_entry_firstcol(h,zidx,Pi);
+#else
+#endif
             }
             else if ( !zary.ztypes[zid].compare("Qi") ) {
                 // Reactive power injection into node i
@@ -1800,7 +1842,10 @@ class SELoopWorker {
                     set_n(i,0);
                     Qi -= vi*vi * b;
                 } catch ( const std::out_of_range& oor ) {}
+#ifdef GS_OPTIMIZE
                 if ( abs(Qi) > NEGL ) gs_entry_firstcol(h,zidx,Qi);
+#else
+#endif
             }
             else if ( !zary.ztypes[zid].compare("aji" ) ) {
                 // aji = vj/vi
@@ -1808,17 +1853,26 @@ class SELoopWorker {
                 uint j = node_idxs[zary.znode2s[zid]];
                 set_n(i,j);
                 double aji = vj/vi;
+#ifdef GS_OPTIMIZE
                 if ( abs(aji) > NEGL ) gs_entry_firstcol(h,zidx,aji);
+#else
+#endif
             }
             else if ( !zary.ztypes[zid].compare("vi") ) {
                 // vi is a direct state measurement
                 uint i = node_idxs[zary.znode1s[zid]];
+#ifdef GS_OPTIMIZE
                 if ( abs(Vpu[i]) > NEGL ) gs_entry_firstcol(h,zidx,abs(Vpu[i]));
+#else
+#endif
             }
             else if ( !zary.ztypes[zid].compare("Ti") ) {
                 // Ti is a direct state measurement
                 uint i = node_idxs[zary.znode1s[zid]];
+#ifdef GS_OPTIMIZE
                 if ( arg(Vpu[i]) > NEGL ) gs_entry_firstcol(h,zidx,arg(Vpu[i]));
+#else
+#endif
             }
             else { 
                 *selog << "WARNING: Undefined measurement type " + ztype + "\n" << std::flush;
@@ -1837,7 +1891,10 @@ class SELoopWorker {
         double startTime = getWallTime();
 #endif
         // each z component has a Jacobian component for each state
+#ifdef GS_OPTIMIZE
         J = gs_spalloc_colorder(zqty,xqty,Jshapemap.size());
+#else
+#endif
         if (!J) *selog << "ERROR: null J\n" << std::flush;
 #ifdef DEBUG_HEARTBEAT
         uint beat_ctr = 0;
@@ -1885,7 +1942,10 @@ class SELoopWorker {
                           ", i: " << i <<
                           ", dP: " << dval << "\n" << std::flush;
 #endif
+#ifdef GS_OPTIMIZE
                 if ( abs(dP > NEGL ) ) gs_entry_colorder(J,zidx,xidx,dP);
+#else
+#endif
             }
 
             else
@@ -1917,7 +1977,10 @@ class SELoopWorker {
                           ", T: " << T <<
                           ", dP: " << dval << "\n" << std::flush;
 #endif
+#ifdef GS_OPTIMIZE
                 if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
+#else
+#endif
             }
 
             else
@@ -1947,7 +2010,10 @@ class SELoopWorker {
                           ", i: " << i <<
                           ", dQ: " << dval << "\n" << std::flush;
 #endif
+#ifdef GS_OPTIMIZE
                 if ( abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
+#else
+#endif
             }
 
             else
@@ -1979,13 +2045,19 @@ class SELoopWorker {
                           ", T: " << T <<
                           ", dQ: " << dval << "\n" << std::flush;
 #endif
+#ifdef GS_OPTIMIZE
                 if ( abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
+#else
+#endif
             }
 
             else
             if ( entry_type == dvi_dvi ) {
                  // --- compute dvi/dvi
+#ifdef GS_OPTIMIZE
                  gs_entry_colorder(J,zidx,xidx,1.0);
+#else
+#endif
             }
             
             else
@@ -2012,7 +2084,10 @@ class SELoopWorker {
                           ", i: " << i <<
                           ", dP: " << dval << "\n" << std::flush;
 #endif
+#ifdef GS_OPTIMIZE
                 if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
+#else
+#endif
             }
 
             else
@@ -2045,7 +2120,10 @@ class SELoopWorker {
                           ", T: " << T <<
                           ", dP: " << dval << "\n" << std::flush;
 #endif
+#ifdef GS_OPTIMIZE
                  if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
+#else
+#endif
             }
 
             else
@@ -2072,7 +2150,10 @@ class SELoopWorker {
                           ", i: " << i <<
                           ", dQ: " << dval << "\n" << std::flush;
 #endif
+#ifdef GS_OPTIMIZE
                 if (abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
+#else
+#endif
             }
 
             else
@@ -2105,12 +2186,18 @@ class SELoopWorker {
                           ", T: " << T <<
                           ", dQ: " << dval << "\n" << std::flush;
 #endif
+#ifdef GS_OPTIMIZE
                 if ( abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
+#else
+#endif
             }
 
             else
             if ( entry_type == dTi_dTi ) {
+#ifdef GS_OPTIMIZE
                 gs_entry_colorder(J,zidx,xidx,1.0);
+#else
+#endif
             }
 
             else
@@ -2126,7 +2213,10 @@ class SELoopWorker {
                           ", vi: " << vi <<
                           ", daji: " << daji << "\n" << std::flush;
 #endif
+#ifdef GS_OPTIMIZE
                 gs_entry_colorder(J, zidx, xidx, daji);
+#else
+#endif
             }
 
             else
@@ -2143,7 +2233,10 @@ class SELoopWorker {
                           ", vj: " << vj <<
                           ", daji: " << daji << "\n" << std::flush;
 #endif
+#ifdef GS_OPTIMIZE
                 gs_entry_colorder(J, zidx, xidx, daji);
+#else
+#endif
             }
 
             else {
@@ -2165,6 +2258,7 @@ class SELoopWorker {
     }
     
 
+#ifdef GS_OPTIMIZE
     private:
     cs *gs_singleval_diagonal(uint mn, double single) {
         cs *A = cs_spalloc (mn, mn, mn, 1, 0);
@@ -2280,6 +2374,7 @@ class SELoopWorker {
         A->x[gsidx++] = value;
         if (jj+1 == A->n) A->p[jj+1] = gsidx;
     }
+#endif
 
 #ifdef DEBUG_FILES
     private:
