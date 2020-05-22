@@ -1592,9 +1592,11 @@ class SELoopWorker {
             complex<double> Vi = Vpu[idx];
 #ifdef GS_OPTIMIZE
             // Add the voltage magnitude to x
-            if ( abs(Vi) > NEGL ) gs_entry_firstcol(x,idx-1,abs(Vi));
+            if ( abs(Vi) > NEGL || -abs(Vi) > NEGL )
+                gs_entry_firstcol(x,idx-1,abs(Vi));
             // Add the voltage angle to x
-            if ( arg(Vi) ) gs_entry_firstcol(x,node_qty + idx-1,arg(Vi));
+            if ( arg(Vi) > NEGL || -arg(Vi) > NEGL )
+                gs_entry_firstcol(x,node_qty + idx-1,arg(Vi));
 #else
 #endif
         }
@@ -1615,9 +1617,11 @@ class SELoopWorker {
             uint idx = node_idxs[node_name];
 #ifdef GS_OPTIMIZE
             // insert the voltage magnitude variance
-            if ( Uvmag[idx] ) gs_entry_diagonal(Pmat,idx-1,Uvmag[idx]);
+            if ( Uvmag[idx] > NEGL || -Uvmag[idx] > NEGL )
+                gs_entry_diagonal(Pmat,idx-1,Uvmag[idx]);
             // insert the voltage phase variance
-            if ( Uvarg[idx] ) gs_entry_diagonal(Pmat,node_qty + idx-1,Uvarg[idx]);
+            if ( Uvarg[idx] > NEGL || -Uvarg[idx] > NEGL )
+                gs_entry_diagonal(Pmat,node_qty + idx-1,Uvarg[idx]);
 #else
 #endif
         }
@@ -1787,6 +1791,10 @@ class SELoopWorker {
         // each z component has a measurement function component
 #ifdef GS_OPTIMIZE
         h = gs_spalloc_firstcol(zqty);
+#if 000
+        // hdbg is just for debugging so toss it when done
+        cs* hdbg = gs_spalloc_firstcol(zqty);
+#endif
 #else
 #endif
         if (!h) *selog << "ERROR: null h\n" << std::flush;
@@ -1819,7 +1827,12 @@ class SELoopWorker {
                 } catch ( const std::out_of_range& oor ) {}
                 // Insert the measurement component
 #ifdef GS_OPTIMIZE
-                if ( abs(Pi) > NEGL ) gs_entry_firstcol(h,zidx,Pi);
+                if ( abs(Pi) > NEGL || -abs(Pi) > NEGL) {
+                    gs_entry_firstcol(h,zidx,Pi);
+#if 000
+                    gs_entry_firstcol(hdbg,zidx,zidx);
+#endif
+                }
 #else
 #endif
             }
@@ -1843,7 +1856,12 @@ class SELoopWorker {
                     Qi -= vi*vi * b;
                 } catch ( const std::out_of_range& oor ) {}
 #ifdef GS_OPTIMIZE
-                if ( abs(Qi) > NEGL ) gs_entry_firstcol(h,zidx,Qi);
+                if ( abs(Qi) > NEGL || -abs(Qi) > NEGL ) {
+                    gs_entry_firstcol(h,zidx,Qi);
+#if 000
+                    gs_entry_firstcol(hdbg,zidx,zidx);
+#endif
+                }
 #else
 #endif
             }
@@ -1854,7 +1872,12 @@ class SELoopWorker {
                 set_n(i,j);
                 double aji = vj/vi;
 #ifdef GS_OPTIMIZE
-                if ( abs(aji) > NEGL ) gs_entry_firstcol(h,zidx,aji);
+                if ( abs(aji) > NEGL || -abs(aji) > NEGL ) {
+                    gs_entry_firstcol(h,zidx,aji);
+#if 000
+                    gs_entry_firstcol(hdbg,zidx,zidx);
+#endif
+                }
 #else
 #endif
             }
@@ -1862,7 +1885,12 @@ class SELoopWorker {
                 // vi is a direct state measurement
                 uint i = node_idxs[zary.znode1s[zid]];
 #ifdef GS_OPTIMIZE
-                if ( abs(Vpu[i]) > NEGL ) gs_entry_firstcol(h,zidx,abs(Vpu[i]));
+                if ( abs(Vpu[i]) > NEGL || -abs(Vpu[i]) > NEGL ) {
+                    gs_entry_firstcol(h,zidx,abs(Vpu[i]));
+#if 000
+                    gs_entry_firstcol(hdbg,zidx,zidx);
+#endif
+                }
 #else
 #endif
             }
@@ -1870,7 +1898,12 @@ class SELoopWorker {
                 // Ti is a direct state measurement
                 uint i = node_idxs[zary.znode1s[zid]];
 #ifdef GS_OPTIMIZE
-                if ( arg(Vpu[i]) > NEGL ) gs_entry_firstcol(h,zidx,arg(Vpu[i]));
+                if ( arg(Vpu[i]) > NEGL || -arg(Vpu[i]) > NEGL ) {
+                    gs_entry_firstcol(h,zidx,arg(Vpu[i]));
+#if 000
+                    gs_entry_firstcol(hdbg,zidx,zidx);
+#endif
+                }
 #else
 #endif
             }
@@ -1881,6 +1914,9 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
         *selog << getMinSec(getWallTime()-startTime)
             << "\n" << std::flush;
+#endif
+#if 000
+        print_cs_colvec("hdbg_sbase1e6_prec8.csv", hdbg);
 #endif
     }
 
@@ -1943,7 +1979,7 @@ class SELoopWorker {
                           ", dP: " << dval << "\n" << std::flush;
 #endif
 #ifdef GS_OPTIMIZE
-                if ( abs(dP > NEGL ) ) gs_entry_colorder(J,zidx,xidx,dP);
+                if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
 #else
 #endif
             }
