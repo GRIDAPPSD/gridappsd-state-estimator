@@ -201,53 +201,6 @@ class SELoopWorker {
     }
 
 
-#if 000
-    private:
-    void accumulate(const uint& row) {
-        // Calculate baseline nominal current injections for comparison with
-        // capped values after the capping code runs below
-        complex<double> accumulator(0,0);
-        for ( auto& jpair : Yphys[row] ) {
-            string jnode = node_name_lookup[jpair.first];
-            accumulator += jpair.second * node_vnoms[jnode];
-        }
-        *selog << "Yphys nominal current injection row: " << row << ", value: " << abs(accumulator) << "(" << 180/PI*arg(accumulator) << ")\n" << std::flush;
-    }
-#endif
-
-#if 000
-    private:
-    void condition(cs* csparse, string label) {
-        try {
-            // Initialize klusolve variables
-            klu_symbolic *klusym;
-            klu_numeric *klunum;
-            klu_common klucom;
-            if (!klu_defaults(&klucom)) throw "klu_defaults failed";
-
-            klusym = klu_analyze(csparse->m,csparse->p,csparse->i,&klucom);
-            if (!klusym) throw "klu_analyze failed";
-
-            klunum = klu_factor(csparse->p,csparse->i,csparse->x,klusym,&klucom);
-            if (!klunum) {
-#ifdef DEBUG_PRIMARY
-                *selog << "Common->status is: " << klucom.status << "\n" << std::flush;
-                if ( klucom.status == 1 ) *selog << "\tKLU_SINGULAR\n" << std::flush;
-#endif
-                throw "klu_factor failed";
-            }
-
-            // KLU condition number estimation
-            (void)klu_condest(csparse->p,csparse->x,klusym,klunum,&klucom);
-            *selog << "klu_condest " << label << " condition number estimate: " << klucom.condest << "\n" << std::flush;
-        } catch (const char *msg) {
-            *selog << "KLU ERROR: " << msg << "\n" << std::flush;
-        }
-        exit(0);
-    }
-#endif
-
-
     private:
     void init() {
 
@@ -322,6 +275,13 @@ class SELoopWorker {
 #ifdef GS_OPTIMIZE
         cs *P = gs_doubleval_diagonal(node_qty, span_multiplier*span_vmag, span_multiplier*span_varg);
 #else
+        cs *Praw = cs_spalloc (2*node_qty, 2*node_qty, 2*node_qty, 1, 1);
+        for (uint i = 0; i < node_qty; i++) {
+            cs_entry(Praw, i, i, span_multiplier*span_vmag);
+            cs_entry(Praw, node_qty+i, node_qty+i, span_multiplier*span_varg);
+        }
+        cs *P = cs_compress(Praw);
+        cs_spfree(Praw);
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(P,initpath+"Pinit.csv");
@@ -410,12 +370,6 @@ class SELoopWorker {
 #endif
 
         // Cap Yphys with magnitude greater than 1e3 threshold
-#if 000
-        for ( auto& inode : node_names ) {
-            uint i = node_idxs[inode];
-            accumulate(i);
-        }
-#endif
         double thresh = 1e+3;
 #ifdef DEBUG_PRIMARY
         uint ctr = 0;
@@ -454,9 +408,6 @@ class SELoopWorker {
                 complex<double> delta_diag_val = -1.0 * delta_term_val * node_vnoms[jnode]/node_vnoms[inode];
                 complex<double> new_diag_term_val = diag_term_val + delta_diag_val;
                 Yphys[i][i] = new_diag_term_val;
-#if 000
-                accumulate(i);
-#endif
             }
         }
 #ifdef DEBUG_PRIMARY
@@ -630,6 +581,11 @@ class SELoopWorker {
 #ifdef GS_OPTIMIZE
         F = gs_singleval_diagonal(xqty, 1.0);
 #else
+        cs* Fraw = cs_spalloc(xqty, xqty, xqty, 1, 1);
+        for (uint i=0; i < xqty; i++)
+            cs_entry(Fraw, i, i, 1.0);
+        F = cs_compress(Fraw);
+        cs_spfree(Fraw);
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(F,initpath+"F.csv");
@@ -652,6 +608,13 @@ class SELoopWorker {
 #ifdef GS_OPTIMIZE
         Q = gs_doubleval_diagonal(node_qty, 0.03, 0.03*PI);
 #else
+        cs *Qraw = cs_spalloc (2*node_qty, 2*node_qty, 2*node_qty, 1, 1);
+        for (uint i = 0; i < node_qty; i++) {
+            cs_entry(Qraw, i, i, 0.03);
+            cs_entry(Qraw, node_qty+i, node_qty+i, 0.03*PI);
+        }
+        Q = cs_compress(Qraw);
+        cs_spfree(Qraw);
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(Q,initpath+"Q.csv");
@@ -667,6 +630,11 @@ class SELoopWorker {
 #ifdef GS_OPTIMIZE
         eyex = gs_singleval_diagonal(xqty, 1.0);
 #else
+        cs* eyexraw = cs_spalloc(xqty, xqty, xqty, 1, 1);
+        for (uint i=0; i < xqty; i++)
+            cs_entry(eyexraw, i, i, 1.0);
+        eyex = cs_compress(eyexraw);
+        cs_spfree(eyexraw);
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(eyex,initpath+"eyex.csv");
@@ -675,18 +643,36 @@ class SELoopWorker {
         *selog << "eyex is " << eyex->m << " by " << eyex->n << " with " << eyex->nzmax << " entries\n" << std::flush;
 #endif
 
-        // measurement covariance matrix (constant)
+        // R is the measurement covariance matrix (constant)
 #ifdef DEBUG_PRIMARY
         *selog << "Initializing R -- " << std::flush;
 #endif
 #ifdef GS_OPTIMIZE
         R = gs_spalloc_diagonal(zqty);
         for ( auto& zid : zary.zids )
-            gs_entry_diagonal(R,zary.zidxs[zid],zary.zsigs[zid]);
+            // variance of R[i,i] is sigma[i]^2
+            // Originally we had this as just sigma[i], which resulted in
+            // different sbase producing different estimate results and took
+            // a couple weeks to debug working through many matrices to figure
+            // out if they were different for different sbase values
+            gs_entry_diagonal(R,zary.zidxs[zid],
+                              zary.zsigs[zid]*zary.zsigs[zid]);
 #else
+        cs* Rraw = cs_spalloc(zqty, zqty, zqty, 1, 1);
+        for ( auto& zid : zary.zids )
+            // variance of R[i,i] is sigma[i]^2
+            // Originally we had this as just sigma[i], which resulted in
+            // different sbase producing different estimate results and took
+            // a couple weeks to debug working through many matrices to figure
+            // out if they were different for different sbase values
+            cs_entry(Rraw,zary.zidxs[zid],zary.zidxs[zid],
+                     zary.zsigs[zid]*zary.zsigs[zid]);
+        R = cs_compress(Rraw);
+        cs_spfree(Rraw);
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(R,initpath+"R.csv");
+        //print_cs_compress_triples(R,"R_sbase1e6_trip.csv", 8);
 #endif
 #ifdef DEBUG_PRIMARY
         *selog << "R is " << R->m << " by " << R->n << " with " << R->nzmax << " entries\n" << std::flush;
@@ -1045,9 +1031,9 @@ class SELoopWorker {
         // -- compute x_predict = F*x | F=I (skipping to improve performance)
         // -- compute p_predict = F*P*F' + Q | F=I (can be simplified)
 #ifdef DIAGONAL_P
-// #ifdef DEBUG_PRIMARY
-//         *selog << "prep_P -- " << std::flush;
-// #endif
+//#ifdef DEBUG_PRIMARY
+//        *selog << "prep_P -- " << std::flush;
+//#endif
         cs *P; this->prep_P(P);
 #endif
 #ifdef DEBUG_PRIMARY
@@ -1154,6 +1140,7 @@ class SELoopWorker {
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(Supd,tspath+"Supd.csv");
+        //print_cs_compress_triples(Supd, "Supd_sbase1e6_trip.csv", 8);
 #endif
 
         // -- compute K = P_predict*J'*S^-1
@@ -1162,15 +1149,17 @@ class SELoopWorker {
         double startTime;
         string vm_used, res_used;
 #endif
-#if 000
-        double *rhs;
-#else
+
 #ifdef GS_OPTIMIZE
         cs *K3 = gs_spalloc_fullsquare(zqty);
-#else
-#endif
         double *rhs = K3->x;
-        //double *rhs = (double *)calloc(zqty*zqty, sizeof(double));
+#else
+#if 000
+        double *rhs = (double *)calloc(zqty*zqty, sizeof(double));
+#else
+        cs *K3 = gs_spalloc_fullsquare(zqty);
+        double *rhs = K3->x;
+#endif
 #endif
 
         try {
@@ -1247,6 +1236,20 @@ class SELoopWorker {
         }
         cs_spfree(Supd);
 
+#if 000
+#ifndef GS_OPTIMIZE
+        cs *K3raw = cs_spalloc(zqty, zqty, zqty*zqty, 1, 1);
+
+        for (uint j=0; j<zqty; j++)
+            for (uint i=0; i<zqty; i++)
+                cs_entry(K3raw,i,j,rhs[j*zqty + i]);
+
+        cs *K3 = cs_compress(K3raw);
+        cs_spfree(K3raw);
+        free(rhs);
+#endif
+#endif
+
 #ifdef DEBUG_PRIMARY
         if ( K3 ) *selog << "K3 is " << K3->m << " by " << K3->n <<
                 " with " << K3->nzmax << " entries\n" << std::flush;
@@ -1281,6 +1284,7 @@ class SELoopWorker {
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(Kupd,tspath+"Kupd.csv");
+        //print_cs_compress_triples(Kupd, "Kupd_sbase1e12_trip.csv", 4);
 #endif
 
         // -- compute y = z - h
@@ -1302,11 +1306,6 @@ class SELoopWorker {
             " with " << h->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
-        // TODO 5/22/20, h is getting corrupted regarding indices, which 
-        // is either due to the optimized gs_* code not producing the same
-        // compressed matrices as teh original CSparse code or the calc_h
-        // gs_entry zidx indices not being correct
-        print_cs_colvec("h_sbase1e6_prec8.csv", h);
         print_cs_compress(h,tspath+"h.csv");
 #endif
 
@@ -1317,10 +1316,8 @@ class SELoopWorker {
             " with " << yupd->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
-        // TODO 5/22/20, check yupd as well as h for correctness between sbase
-        // values as well as between gs_* vs. original CSparse
-        print_cs_colvec("yupd_sbase1e6_prec8.csv", yupd);
         print_cs_compress(yupd,tspath+"yupd.csv");
+        //print_cs_colvec("yupd_sbase1e6_prec8.csv", yupd);
 #endif
 
         // -- compute x_update = x_predict + K * y
@@ -1362,7 +1359,7 @@ class SELoopWorker {
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(xupd,tspath+"xupd.csv");
-        print_cs_compress_sparse(xupd,tspath+"xupd_sparse_prec8.csv", 8);
+        //print_cs_compress_sparse(xupd,"xupd_sbase1e6_sparse.csv", 8);
 #endif
 
         // -- compute P_update = (I-K_update*J)*P_predict
@@ -1469,7 +1466,7 @@ class SELoopWorker {
 //        *selog << "End of estimate resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
         *selog << "\n" << std::flush;
 #if 000
-        // TODO 5/22/20, for debugging h corruption, exit after first estimate
+        // when needed for debugging, exit after first estimate call
         exit(0);
 #endif
 #endif
@@ -1528,15 +1525,6 @@ class SELoopWorker {
         vector<double> uvec(Pmat->n);
         // Pmat is in compressed-column form; iterate over columns
         for ( uint j = 0; j < Pmat->n ; j++ ) {
-#if 0000
-            // for P, the first entry for each column is always the diagonal
-            uint p = Pmat->p[j];
-            uvec[j] = Pmat->x[p];
-            //for ( uint p = Pmat->p[j] ; p < Pmat->p[j+1] ; p++ )
-            //    test whether the first entry is always the diagonal
-            //    if (j == Pmat->i[Pmat->p[j]]) *selog << "Diagonal First Test: PASS!!!!!\n" << std::flush;
-            //    else *selog << "Diagonal First Test: fail\n" << std::flush;
-#else
             // iterate over existing data in column j
             for ( uint p = Pmat->p[j] ; p < Pmat->p[j+1] ; p++ ) {
                 // get the row index for existing data
@@ -1546,7 +1534,6 @@ class SELoopWorker {
                     break;
                 }
             }
-#endif
         }
 
 #ifdef DEBUG_PRIMARY
@@ -1582,10 +1569,10 @@ class SELoopWorker {
         // Prepare x
 #ifdef GS_OPTIMIZE
         x = gs_spalloc_firstcol(xqty);
-#else
-#endif
         if (!x) *selog << "ERROR: null x\n" << std::flush;
-
+#else
+        cs* xraw = cs_spalloc(xqty, 1, xqty, 1, 1);
+#endif
         for ( auto& node_name : node_names ) {
             // Find the per-unit voltage of active node
             uint idx = node_idxs[node_name];
@@ -1598,8 +1585,18 @@ class SELoopWorker {
             if ( arg(Vi) > NEGL || -arg(Vi) > NEGL )
                 gs_entry_firstcol(x,node_qty + idx-1,arg(Vi));
 #else
+            // Add the voltage magnitude to x
+            //if ( abs(Vi) > NEGL || -abs(Vi) > NEGL )
+                cs_entry(xraw,idx-1,0,abs(Vi));
+            // Add the voltage angle to x
+            //if ( arg(Vi) > NEGL || -arg(Vi) > NEGL )
+                cs_entry(xraw,node_qty + idx-1,0,arg(Vi));
 #endif
         }
+#ifndef GS_OPTIMIZE
+        x = cs_compress(xraw);
+        cs_spfree(xraw);
+#endif
     }
 
 
@@ -1609,10 +1606,10 @@ class SELoopWorker {
         // Prepare P as a diagonal matrix from state uncertanty
 #ifdef GS_OPTIMIZE
         Pmat = gs_spalloc_diagonal(xqty);
-#else
-#endif
         if (!Pmat) *selog << "ERROR: null Pmat in prep_P\n" << std::flush;
-
+#else
+        cs* Pmatraw = cs_spalloc(xqty, xqty, xqty, 1, 1);
+#endif
         for ( auto& node_name : node_names ) {
             uint idx = node_idxs[node_name];
 #ifdef GS_OPTIMIZE
@@ -1623,8 +1620,18 @@ class SELoopWorker {
             if ( Uvarg[idx] > NEGL || -Uvarg[idx] > NEGL )
                 gs_entry_diagonal(Pmat,node_qty + idx-1,Uvarg[idx]);
 #else
+            // insert the voltage magnitude variance
+            //if ( Uvmag[idx] > NEGL || -Uvmag[idx] > NEGL )
+                cs_entry(Pmatraw,idx-1,idx-1,Uvmag[idx]);
+            // insert the voltage phase variance
+            //if ( Uvarg[idx] > NEGL || -Uvarg[idx] > NEGL )
+                cs_entry(Pmatraw,node_qty + idx-1,node_qty + idx-1,Uvarg[idx]);
 #endif
         }
+#ifndef GS_OPTIMIZE
+        Pmat = cs_compress(Pmatraw);
+        cs_spfree(Pmatraw);
+#endif
     }
 #endif
 
@@ -1640,7 +1647,7 @@ class SELoopWorker {
             uint zidx = zary.zidxs[zid];
             double zval = zary.zvals[zid];
             string ztype = zary.ztypes[zid];
-#if 111
+
             // these sbase checks are for when the comparison is to sbase 1e6
             if (sbase > 1.0e+11) {
                 if (ztype=="Qi" || ztype=="Pi")
@@ -1650,7 +1657,7 @@ class SELoopWorker {
                 if (ztype=="Qi" || ztype=="Pi")
                     zval *= 1.0e+4;
             }
-#endif
+
             ofh << zidx << ", " << zid << ", " << ztype << ", " << zval << "\n";
         }
         ofh.close();
@@ -1665,18 +1672,13 @@ class SELoopWorker {
         for ( auto& zid : zary.zids ) {
             uint zidx = zary.zidxs[zid];
             string ztype = zary.ztypes[zid];
-            double val = colvec->x[zidx];
-#if 111
-            // these sbase checks are for when the comparison is to sbase 1e6
-            if (sbase > 1.0e+11) {
-                if (ztype=="Qi" || ztype=="Pi")
-                    val *= 1.0e+6;
+            double val = colvec->x[colvec->i[zidx]];
+            if (filename[0]=='k' && (ztype=="Qi" || ztype=="Pi")) {
+                //val /= sbase;
             }
-            else if (sbase > 1.0e+9) {
-                if (ztype=="Qi" || ztype=="Pi")
-                    val *= 1.0e+4;
+            else if (ztype=="Qi" || ztype=="Pi") {
+                val *= sbase;
             }
-#endif
             ofh << zidx << ", " << zid << ", " << ztype << ", " << val << "\n";
         }
         ofh.close();
@@ -1689,21 +1691,26 @@ class SELoopWorker {
         // measurements have been loaded from the sim output message to zary
 #ifdef GS_OPTIMIZE
         z = gs_spalloc_firstcol(zqty);
-#else
-#endif
         if (!z) *selog << "ERROR: null z\n" << std::flush;
-
-
+#else
+        cs* zraw = cs_spalloc(zqty, 1, zqty, 1, 1);
+#endif
         for ( auto& zid : zary.zids ) {
-            if ( zary.zvals[zid] > NEGL || -zary.zvals[zid] > NEGL )
 #ifdef GS_OPTIMIZE
+            if ( zary.zvals[zid] > NEGL || -zary.zvals[zid] > NEGL )
                 gs_entry_firstcol(z,zary.zidxs[zid],zary.zvals[zid]);
 #else
+            //if ( zary.zvals[zid] > NEGL || -zary.zvals[zid] > NEGL )
+                cs_entry(zraw,zary.zidxs[zid],0,zary.zvals[zid]);
 #endif
         }
+#ifndef GS_OPTIMIZE
+        z = cs_compress(zraw);
+        cs_spfree(zraw);
+#endif
 
 #ifdef DEBUG_FILES
-        print_zvals("zvals_sbase1e12_prec8.csv");
+        print_zvals("zvals_sbase1e6_prec8.csv");
 #endif
     }
 
@@ -1791,13 +1798,10 @@ class SELoopWorker {
         // each z component has a measurement function component
 #ifdef GS_OPTIMIZE
         h = gs_spalloc_firstcol(zqty);
-#if 000
-        // hdbg is just for debugging so toss it when done
-        cs* hdbg = gs_spalloc_firstcol(zqty);
-#endif
-#else
-#endif
         if (!h) *selog << "ERROR: null h\n" << std::flush;
+#else
+        cs* hraw = cs_spalloc(zqty, 1, zqty, 1, 1);
+#endif
 
 #ifdef DEBUG_PRIMARY
         double startTime = getWallTime();
@@ -1827,13 +1831,11 @@ class SELoopWorker {
                 } catch ( const std::out_of_range& oor ) {}
                 // Insert the measurement component
 #ifdef GS_OPTIMIZE
-                if ( abs(Pi) > NEGL || -abs(Pi) > NEGL) {
+                if ( abs(Pi) > NEGL || -abs(Pi) > NEGL)
                     gs_entry_firstcol(h,zidx,Pi);
-#if 000
-                    gs_entry_firstcol(hdbg,zidx,zidx);
-#endif
-                }
 #else
+                //if ( abs(Pi) > NEGL || -abs(Pi) > NEGL)
+                    cs_entry(hraw,zidx,0,Pi);
 #endif
             }
             else if ( !zary.ztypes[zid].compare("Qi") ) {
@@ -1856,13 +1858,11 @@ class SELoopWorker {
                     Qi -= vi*vi * b;
                 } catch ( const std::out_of_range& oor ) {}
 #ifdef GS_OPTIMIZE
-                if ( abs(Qi) > NEGL || -abs(Qi) > NEGL ) {
+                if ( abs(Qi) > NEGL || -abs(Qi) > NEGL )
                     gs_entry_firstcol(h,zidx,Qi);
-#if 000
-                    gs_entry_firstcol(hdbg,zidx,zidx);
-#endif
-                }
 #else
+                //if ( abs(Qi) > NEGL || -abs(Qi) > NEGL )
+                    cs_entry(hraw,zidx,0,Qi);
 #endif
             }
             else if ( !zary.ztypes[zid].compare("aji" ) ) {
@@ -1872,51 +1872,45 @@ class SELoopWorker {
                 set_n(i,j);
                 double aji = vj/vi;
 #ifdef GS_OPTIMIZE
-                if ( abs(aji) > NEGL || -abs(aji) > NEGL ) {
+                if ( abs(aji) > NEGL || -abs(aji) > NEGL )
                     gs_entry_firstcol(h,zidx,aji);
-#if 000
-                    gs_entry_firstcol(hdbg,zidx,zidx);
-#endif
-                }
 #else
+                //if ( abs(aji) > NEGL || -abs(aji) > NEGL )
+                    cs_entry(hraw,zidx,0,aji);
 #endif
             }
             else if ( !zary.ztypes[zid].compare("vi") ) {
                 // vi is a direct state measurement
                 uint i = node_idxs[zary.znode1s[zid]];
 #ifdef GS_OPTIMIZE
-                if ( abs(Vpu[i]) > NEGL || -abs(Vpu[i]) > NEGL ) {
+                if ( abs(Vpu[i]) > NEGL || -abs(Vpu[i]) > NEGL )
                     gs_entry_firstcol(h,zidx,abs(Vpu[i]));
-#if 000
-                    gs_entry_firstcol(hdbg,zidx,zidx);
-#endif
-                }
 #else
+                //if ( abs(Vpu[i]) > NEGL || -abs(Vpu[i]) > NEGL )
+                    cs_entry(hraw,zidx,0,abs(Vpu[i]));
 #endif
             }
             else if ( !zary.ztypes[zid].compare("Ti") ) {
                 // Ti is a direct state measurement
                 uint i = node_idxs[zary.znode1s[zid]];
 #ifdef GS_OPTIMIZE
-                if ( arg(Vpu[i]) > NEGL || -arg(Vpu[i]) > NEGL ) {
+                if ( arg(Vpu[i]) > NEGL || -arg(Vpu[i]) > NEGL )
                     gs_entry_firstcol(h,zidx,arg(Vpu[i]));
-#if 000
-                    gs_entry_firstcol(hdbg,zidx,zidx);
-#endif
-                }
 #else
+                //if ( arg(Vpu[i]) > NEGL || -arg(Vpu[i]) > NEGL )
+                    cs_entry(hraw,zidx,0,arg(Vpu[i]));
 #endif
             }
             else { 
                 *selog << "WARNING: Undefined measurement type " + ztype + "\n" << std::flush;
             }
         }
-#ifdef DEBUG_PRIMARY
-        *selog << getMinSec(getWallTime()-startTime)
-            << "\n" << std::flush;
+#ifndef GS_OPTIMIZE
+        h = cs_compress(hraw);
+        cs_spfree(hraw);
 #endif
-#if 000
-        print_cs_colvec("hdbg_sbase1e6_prec8.csv", hdbg);
+#ifdef DEBUG_PRIMARY
+        *selog << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
 #endif
     }
 
@@ -1929,22 +1923,12 @@ class SELoopWorker {
         // each z component has a Jacobian component for each state
 #ifdef GS_OPTIMIZE
         J = gs_spalloc_colorder(zqty,xqty,Jshapemap.size());
-#else
-#endif
         if (!J) *selog << "ERROR: null J\n" << std::flush;
-#ifdef DEBUG_HEARTBEAT
-        uint beat_ctr = 0;
-        uint total_ctr = Jshape.size();
+#else
+        cs* Jraw = cs_spalloc(zqty, xqty, Jshapemap.size(), 1, 1);
 #endif
         // loop over existing Jacobian entries
         for (std::pair<unsigned int, std::array<unsigned int, 5>> Jelem : Jshapemap) {
-#ifdef DEBUG_HEARTBEAT
-            if ( ++beat_ctr % 100 == 0 ) 
-                *selog << "--- calc_J heartbeat - " << beat_ctr << ", " <<
-                    getPerComp(beat_ctr, total_ctr) << ", " <<
-                    getMinSec(getWallTime()-startTime) << " ---\n" << std::flush;
-#endif
-            
             // Unpack entry data
             uint zidx = Jelem.second[0];
             uint xidx = Jelem.second[1];
@@ -1968,19 +1952,11 @@ class SELoopWorker {
                 // consider the reference node
                 set_n(i,0);
                 dP = dP + 2*vi * g;
-#if 000
-                double dval = dP;
-                if (sbase > 1.0e+11) {
-                    dval = dP * 1.0e+6;
-                }
-                *selog << "\ndPi_dvi zidx: " << zidx <<
-                          ", xidx: " << xidx <<
-                          ", i: " << i <<
-                          ", dP: " << dval << "\n" << std::flush;
-#endif
 #ifdef GS_OPTIMIZE
                 if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
 #else
+                //if ( abs(dP) > NEGL )
+                    cs_entry(Jraw,zidx,xidx,dP);
 #endif
             }
 
@@ -1992,30 +1968,11 @@ class SELoopWorker {
 
                 set_n(i,j);
                 double dP = -1.0 * vi/ai/aj * (g*cos(T) + b*sin(T));
-#if 000
-                double dval = dP;
-                double gval = g;
-                double bval = b;
-                if (sbase > 1.0e+11) {
-                    dval = dP * 1.0e+6;
-                    gval = g * 1.0e+6;
-                    bval = b * 1.0e+6;
-                }
-                *selog << "\ndPi_dvj zidx: " << zidx <<
-                          ", xidx: " << xidx <<
-                          ", i: " << i <<
-                          ", j: " << j <<
-                          ", vi: " << vi <<
-                          ", ai: " << ai <<
-                          ", aj: " << aj <<
-                          ", g: " << gval <<
-                          ", b: " << bval <<
-                          ", T: " << T <<
-                          ", dP: " << dval << "\n" << std::flush;
-#endif
 #ifdef GS_OPTIMIZE
                 if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
 #else
+                //if ( abs(dP) > NEGL )
+                    cs_entry(Jraw,zidx,xidx,dP);
 #endif
             }
 
@@ -2036,19 +1993,11 @@ class SELoopWorker {
                 // consider the reference node
                 set_n(i,0);
                 dQ = dQ - 2*vi*b;
-#if 000
-                double dval = dQ;
-                if (sbase > 1.0e+11) {
-                    dval = dQ * 1.0e+6;
-                }
-                *selog << "\ndQi_dvi zidx: " << zidx <<
-                          ", xidx: " << xidx <<
-                          ", i: " << i <<
-                          ", dQ: " << dval << "\n" << std::flush;
-#endif
 #ifdef GS_OPTIMIZE
                 if ( abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
 #else
+                //if ( abs(dQ) > NEGL )
+                    cs_entry(Jraw,zidx,xidx,dQ);
 #endif
             }
 
@@ -2060,30 +2009,11 @@ class SELoopWorker {
 
                 set_n(i,j);
                 double dQ = -1.0 * vi/ai/aj * (g*sin(T) - b*cos(T));
-#if 000
-                double dval = dQ;
-                double gval = g;
-                double bval = b;
-                if (sbase > 1.0e+11) {
-                    dval = dQ * 1.0e+6;
-                    gval = g * 1.0e+6;
-                    bval = b * 1.0e+6;
-                }
-                *selog << "\ndQi_dvj zidx: " << zidx <<
-                          ", xidx: " << xidx <<
-                          ", i: " << i <<
-                          ", j: " << j <<
-                          ", vi: " << vi <<
-                          ", ai: " << ai <<
-                          ", aj: " << aj <<
-                          ", g: " << gval <<
-                          ", b: " << bval <<
-                          ", T: " << T <<
-                          ", dQ: " << dval << "\n" << std::flush;
-#endif
 #ifdef GS_OPTIMIZE
                 if ( abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
 #else
+                //if ( abs(dQ) > NEGL )
+                    cs_entry(Jraw,zidx,xidx,dQ);
 #endif
             }
 
@@ -2093,6 +2023,7 @@ class SELoopWorker {
 #ifdef GS_OPTIMIZE
                  gs_entry_colorder(J,zidx,xidx,1.0);
 #else
+                 cs_entry(Jraw,zidx,xidx,1.0);
 #endif
             }
             
@@ -2110,19 +2041,11 @@ class SELoopWorker {
                     }
                 }
                 // reference node component is 0
-#if 000
-                double dval = dP;
-                if (sbase > 1.0e+11) {
-                    dval = dP * 1.0e+6;
-                }
-                *selog << "\ndPi_dTi zidx: " << zidx <<
-                          ", xidx: " << xidx <<
-                          ", i: " << i <<
-                          ", dP: " << dval << "\n" << std::flush;
-#endif
 #ifdef GS_OPTIMIZE
                 if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
 #else
+                ///if ( abs(dP) > NEGL )
+                    cs_entry(Jraw,zidx,xidx,dP);
 #endif
             }
 
@@ -2134,31 +2057,11 @@ class SELoopWorker {
  
                 set_n(i,j);
                 double dP = -1.0 * vi*vj/ai/aj * (g*sin(T) - b*cos(T));
-#if 000
-                double dval = dP;
-                double gval = g;
-                double bval = b;
-                if (sbase > 1.0e+11) {
-                    dval = dP * 1.0e+6;
-                    gval = g * 1.0e+6;
-                    bval = b * 1.0e+6;
-                }
-                *selog << "\ndPi_dTj zidx: " << zidx <<
-                          ", xidx: " << xidx <<
-                          ", i: " << i <<
-                          ", j: " << j <<
-                          ", vi: " << vi <<
-                          ", vj: " << vj <<
-                          ", ai: " << ai <<
-                          ", aj: " << aj <<
-                          ", g: " << gval <<
-                          ", b: " << bval <<
-                          ", T: " << T <<
-                          ", dP: " << dval << "\n" << std::flush;
-#endif
 #ifdef GS_OPTIMIZE
                  if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
 #else
+                 //if ( abs(dP) > NEGL )
+                     cs_entry(Jraw,zidx,xidx,dP);
 #endif
             }
 
@@ -2176,19 +2079,11 @@ class SELoopWorker {
                     }
                 }
                 // reference component is 0
-#if 000
-                double dval = dQ;
-                if (sbase > 1.0e+11) {
-                    dval = dQ * 1.0e+6;
-                }
-                *selog << "\ndQi_dTi zidx: " << zidx <<
-                          ", xidx: " << xidx <<
-                          ", i: " << i <<
-                          ", dQ: " << dval << "\n" << std::flush;
-#endif
 #ifdef GS_OPTIMIZE
                 if (abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
 #else
+                //if (abs(dQ) > NEGL )
+                    cs_entry(Jraw,zidx,xidx,dQ);
 #endif
             }
 
@@ -2200,31 +2095,11 @@ class SELoopWorker {
 
                 set_n(i,j);
                 double dQ = vi*vj/ai/aj * (g*cos(T) + b*sin(T));
-#if 000
-                double dval = dQ;
-                double gval = g;
-                double bval = b;
-                if (sbase > 1.0e+11) {
-                    dval = dQ * 1.0e+6;
-                    gval = g * 1.0e+6;
-                    bval = b * 1.0e+6;
-                }
-                *selog << "\ndQi_dTj zidx: " << zidx <<
-                          ", xidx: " << xidx <<
-                          ", i: " << i <<
-                          ", j: " << j <<
-                          ", vi: " << vi <<
-                          ", vj: " << vj <<
-                          ", ai: " << ai <<
-                          ", aj: " << aj <<
-                          ", g: " << gval <<
-                          ", b: " << bval <<
-                          ", T: " << T <<
-                          ", dQ: " << dval << "\n" << std::flush;
-#endif
 #ifdef GS_OPTIMIZE
                 if ( abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
 #else
+                //if ( abs(dQ) > NEGL )
+                    cs_entry(Jraw,zidx,xidx,dQ);
 #endif
             }
 
@@ -2233,6 +2108,7 @@ class SELoopWorker {
 #ifdef GS_OPTIMIZE
                 gs_entry_colorder(J,zidx,xidx,1.0);
 #else
+                cs_entry(Jraw,zidx,xidx,1.0);
 #endif
             }
 
@@ -2241,17 +2117,10 @@ class SELoopWorker {
                 // daji/dvj = 1/vi
                 set_n(i,j);
                 double daji = 1.0/vi;
-#if 000
-                *selog << "\ndaji_dvj zidx: " << zidx <<
-                          ", xidx: " << xidx <<
-                          ", i: " << i <<
-                          ", j: " << j <<
-                          ", vi: " << vi <<
-                          ", daji: " << daji << "\n" << std::flush;
-#endif
 #ifdef GS_OPTIMIZE
                 gs_entry_colorder(J, zidx, xidx, daji);
 #else
+                cs_entry(Jraw, zidx, xidx, daji);
 #endif
             }
 
@@ -2260,18 +2129,10 @@ class SELoopWorker {
                 // daja/dvi -vj/vi^2
                 set_n(i,j);
                 double daji = -vj/(vi*vi);
-#if 000
-                *selog << "\ndaji_dvi zidx: " << zidx <<
-                          ", xidx: " << xidx <<
-                          ", i: " << i <<
-                          ", j: " << j <<
-                          ", vi: " << vi <<
-                          ", vj: " << vj <<
-                          ", daji: " << daji << "\n" << std::flush;
-#endif
 #ifdef GS_OPTIMIZE
                 gs_entry_colorder(J, zidx, xidx, daji);
 #else
+                cs_entry(Jraw, zidx, xidx, daji);
 #endif
             }
 
@@ -2285,7 +2146,10 @@ class SELoopWorker {
             // -------------
 
         }
-
+#ifndef GS_OPTIMIZE
+        J = cs_compress(Jraw);
+        cs_spfree(Jraw);
+#endif
 #ifdef DEBUG_PRIMARY
         double endTime = getWallTime();
         *selog << 
@@ -2355,10 +2219,10 @@ class SELoopWorker {
         A->nzmax++;
         A->p[1] = A->nzmax;
     }
+#endif
 
     private:
     cs *gs_spalloc_fullsquare(uint mn) {
-        //cs *A = cs_spalloc (mn, mn, mn*mn, 1, 0);
         cs *A = (cs *)cs_calloc (1, sizeof (cs)) ;
         if (!A) return (NULL) ;
         A->m = A->n = mn ;
@@ -2378,6 +2242,7 @@ class SELoopWorker {
         return (A);
     }
 
+#ifdef GS_OPTIMIZE
     private:
     void gs_entry_fullsquare(cs *A, uint ii, uint jj, double value) {
         A->x[jj*A->n + ii] = value;
@@ -2435,9 +2300,52 @@ class SELoopWorker {
     }
 
     private:
+    void print_cs_compress_triples(cs *&a, const string &filename="cs.csv",
+                                   const uint &precision=16) {
+        // First copy into a map
+        unordered_map<uint,unordered_map<uint,double>> mat;
+        for ( uint i = 0 ; i < a->n ; i++ ) {
+            for ( uint j = a->p[i] ; j < a->p[i+1] ; j++ ) {
+                mat[a->i[j]][i] = a->x[j];
+            }
+        }
+
+        unordered_map<uint,bool> powerMap;
+        for ( auto& zid : zary.zids ) {
+            uint zidx = zary.zidxs[zid];
+            string ztype = zary.ztypes[zid];
+            powerMap[zidx] = (ztype=="Qi" || ztype=="Pi");
+        }
+
+        // write to file
+        ofstream ofh;
+        ofh << std::setprecision(precision);
+        ofh.open(filename,ofstream::out);
+        *selog << "writing " + filename + "\n\n" << std::flush;
+        for ( uint j = 0 ; j < a->n ; j++ )
+            for ( uint i = 0 ; i < a->m ; i++ ) {
+                double val = mat[i][j];
+                string prefix = "";
+#if 000
+                if ( powerMap[j] ) {
+                    prefix = " Pi/Qi column ";
+                    //val *= sbase; // R, Supd
+                    val /= sbase; // Kupd
+                }
+                if ( powerMap[i] ) {
+                    prefix += " Pi/Qi row ";
+                    //val *= sbase; // R, Supd, Y, z, h, J
+                }
+#endif
+                if (val != 0.0)
+                    ofh << prefix << i << ", " << j << ", " << val << "\n";
+            }
+        ofh.close();
+    }
+
+    private:
     void print_cs_compress_sparse(cs *&a, const string &filename="cs.csv",
                                   const uint &precision=16) {
-        // First copy into a map
         ofstream ofh;
         ofh << std::setprecision(precision);
         ofh.open(filename,ofstream::out);
@@ -2468,13 +2376,6 @@ class SELoopWorker {
         uint sec = (uint)seconds % 60;
         string secstr = (sec<10)? "0"+std::to_string(sec): std::to_string(sec);
         return (std::to_string((uint)seconds/60) + ":" + secstr);
-    }
-#endif
-
-#ifdef DEBUG_HEARTBEAT
-    private:
-    string getPerComp(uint current, uint total) {
-        return std::to_string((uint)(100.0 * current/total)) + "%";
     }
 #endif
 
