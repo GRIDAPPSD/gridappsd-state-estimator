@@ -4,6 +4,7 @@
 //#define GS_OPTIMIZE
 
 #define PI 3.1415926535
+#define NEGL 1.0e-16
 
 #include <iostream>
 

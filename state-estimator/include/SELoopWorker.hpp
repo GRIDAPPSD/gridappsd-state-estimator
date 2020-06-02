@@ -75,9 +75,6 @@ using json = nlohmann::json;
 #define A5PAIR std::pair<unsigned int, std::array<unsigned int, 5>>
 #endif
 
-// negligable
-#define NEGL 1.0e-16
-#define PI 3.1415926535
 
 // This class listens for system state messages
 class SELoopWorker {
@@ -277,8 +274,8 @@ class SELoopWorker {
 #else
         cs *Praw = cs_spalloc (2*node_qty, 2*node_qty, 2*node_qty, 1, 1);
         for (uint i = 0; i < node_qty; i++) {
-            cs_entry(Praw, i, i, span_multiplier*span_vmag);
-            cs_entry(Praw, node_qty+i, node_qty+i, span_multiplier*span_varg);
+            cs_entry_negl(Praw, i, i, span_multiplier*span_vmag);
+            cs_entry_negl(Praw, node_qty+i, node_qty+i, span_multiplier*span_varg);
         }
         cs *P = cs_compress(Praw);
         cs_spfree(Praw);
@@ -583,7 +580,7 @@ class SELoopWorker {
 #else
         cs* Fraw = cs_spalloc(xqty, xqty, xqty, 1, 1);
         for (uint i=0; i < xqty; i++)
-            cs_entry(Fraw, i, i, 1.0);
+            cs_entry_negl(Fraw, i, i, 1.0);
         F = cs_compress(Fraw);
         cs_spfree(Fraw);
 #endif
@@ -610,8 +607,8 @@ class SELoopWorker {
 #else
         cs *Qraw = cs_spalloc (2*node_qty, 2*node_qty, 2*node_qty, 1, 1);
         for (uint i = 0; i < node_qty; i++) {
-            cs_entry(Qraw, i, i, 0.03);
-            cs_entry(Qraw, node_qty+i, node_qty+i, 0.03*PI);
+            cs_entry_negl(Qraw, i, i, 0.03);
+            cs_entry_negl(Qraw, node_qty+i, node_qty+i, 0.03*PI);
         }
         Q = cs_compress(Qraw);
         cs_spfree(Qraw);
@@ -632,7 +629,7 @@ class SELoopWorker {
 #else
         cs* eyexraw = cs_spalloc(xqty, xqty, xqty, 1, 1);
         for (uint i=0; i < xqty; i++)
-            cs_entry(eyexraw, i, i, 1.0);
+            cs_entry_negl(eyexraw, i, i, 1.0);
         eyex = cs_compress(eyexraw);
         cs_spfree(eyexraw);
 #endif
@@ -665,8 +662,8 @@ class SELoopWorker {
             // different sbase producing different estimate results and took
             // a couple weeks to debug working through many matrices to figure
             // out if they were different for different sbase values
-            cs_entry(Rraw,zary.zidxs[zid],zary.zidxs[zid],
-                     zary.zsigs[zid]*zary.zsigs[zid]);
+            cs_entry_negl(Rraw,zary.zidxs[zid],zary.zidxs[zid],
+                          zary.zsigs[zid]*zary.zsigs[zid]);
         R = cs_compress(Rraw);
         cs_spfree(Rraw);
 #endif
@@ -1242,7 +1239,7 @@ class SELoopWorker {
 
         for (uint j=0; j<zqty; j++)
             for (uint i=0; i<zqty; i++)
-                cs_entry(K3raw,i,j,rhs[j*zqty + i]);
+                cs_entry_negl(K3raw,i,j,rhs[j*zqty + i]);
 
         cs *K3 = cs_compress(K3raw);
         cs_spfree(K3raw);
@@ -1579,18 +1576,14 @@ class SELoopWorker {
             complex<double> Vi = Vpu[idx];
 #ifdef GS_OPTIMIZE
             // Add the voltage magnitude to x
-            if ( abs(Vi) > NEGL || -abs(Vi) > NEGL )
-                gs_entry_firstcol(x,idx-1,abs(Vi));
+            gs_entry_firstcol(x,idx-1,abs(Vi));
             // Add the voltage angle to x
-            if ( arg(Vi) > NEGL || -arg(Vi) > NEGL )
-                gs_entry_firstcol(x,node_qty + idx-1,arg(Vi));
+            gs_entry_firstcol(x,node_qty + idx-1,arg(Vi));
 #else
             // Add the voltage magnitude to x
-            //if ( abs(Vi) > NEGL || -abs(Vi) > NEGL )
-                cs_entry(xraw,idx-1,0,abs(Vi));
+            cs_entry_negl(xraw,idx-1,0,abs(Vi));
             // Add the voltage angle to x
-            //if ( arg(Vi) > NEGL || -arg(Vi) > NEGL )
-                cs_entry(xraw,node_qty + idx-1,0,arg(Vi));
+            cs_entry_negl(xraw,node_qty + idx-1,0,arg(Vi));
 #endif
         }
 #ifndef GS_OPTIMIZE
@@ -1614,18 +1607,14 @@ class SELoopWorker {
             uint idx = node_idxs[node_name];
 #ifdef GS_OPTIMIZE
             // insert the voltage magnitude variance
-            if ( Uvmag[idx] > NEGL || -Uvmag[idx] > NEGL )
-                gs_entry_diagonal(Pmat,idx-1,Uvmag[idx]);
+            gs_entry_diagonal(Pmat,idx-1,Uvmag[idx]);
             // insert the voltage phase variance
-            if ( Uvarg[idx] > NEGL || -Uvarg[idx] > NEGL )
-                gs_entry_diagonal(Pmat,node_qty + idx-1,Uvarg[idx]);
+            gs_entry_diagonal(Pmat,node_qty + idx-1,Uvarg[idx]);
 #else
             // insert the voltage magnitude variance
-            //if ( Uvmag[idx] > NEGL || -Uvmag[idx] > NEGL )
-                cs_entry(Pmatraw,idx-1,idx-1,Uvmag[idx]);
+            cs_entry_negl(Pmatraw,idx-1,idx-1,Uvmag[idx]);
             // insert the voltage phase variance
-            //if ( Uvarg[idx] > NEGL || -Uvarg[idx] > NEGL )
-                cs_entry(Pmatraw,node_qty + idx-1,node_qty + idx-1,Uvarg[idx]);
+            cs_entry_negl(Pmatraw,node_qty + idx-1,node_qty + idx-1,Uvarg[idx]);
 #endif
         }
 #ifndef GS_OPTIMIZE
@@ -1697,11 +1686,9 @@ class SELoopWorker {
 #endif
         for ( auto& zid : zary.zids ) {
 #ifdef GS_OPTIMIZE
-            if ( zary.zvals[zid] > NEGL || -zary.zvals[zid] > NEGL )
-                gs_entry_firstcol(z,zary.zidxs[zid],zary.zvals[zid]);
+            gs_entry_firstcol(z,zary.zidxs[zid],zary.zvals[zid]);
 #else
-            //if ( zary.zvals[zid] > NEGL || -zary.zvals[zid] > NEGL )
-                cs_entry(zraw,zary.zidxs[zid],0,zary.zvals[zid]);
+            cs_entry_negl(zraw,zary.zidxs[zid],0,zary.zvals[zid]);
 #endif
         }
 #ifndef GS_OPTIMIZE
@@ -1831,11 +1818,9 @@ class SELoopWorker {
                 } catch ( const std::out_of_range& oor ) {}
                 // Insert the measurement component
 #ifdef GS_OPTIMIZE
-                if ( abs(Pi) > NEGL || -abs(Pi) > NEGL)
-                    gs_entry_firstcol(h,zidx,Pi);
+                gs_entry_firstcol(h,zidx,Pi);
 #else
-                //if ( abs(Pi) > NEGL || -abs(Pi) > NEGL)
-                    cs_entry(hraw,zidx,0,Pi);
+                cs_entry_negl(hraw,zidx,0,Pi);
 #endif
             }
             else if ( !zary.ztypes[zid].compare("Qi") ) {
@@ -1858,11 +1843,9 @@ class SELoopWorker {
                     Qi -= vi*vi * b;
                 } catch ( const std::out_of_range& oor ) {}
 #ifdef GS_OPTIMIZE
-                if ( abs(Qi) > NEGL || -abs(Qi) > NEGL )
-                    gs_entry_firstcol(h,zidx,Qi);
+                gs_entry_firstcol(h,zidx,Qi);
 #else
-                //if ( abs(Qi) > NEGL || -abs(Qi) > NEGL )
-                    cs_entry(hraw,zidx,0,Qi);
+                cs_entry_negl(hraw,zidx,0,Qi);
 #endif
             }
             else if ( !zary.ztypes[zid].compare("aji" ) ) {
@@ -1872,33 +1855,27 @@ class SELoopWorker {
                 set_n(i,j);
                 double aji = vj/vi;
 #ifdef GS_OPTIMIZE
-                if ( abs(aji) > NEGL || -abs(aji) > NEGL )
-                    gs_entry_firstcol(h,zidx,aji);
+                gs_entry_firstcol(h,zidx,aji);
 #else
-                //if ( abs(aji) > NEGL || -abs(aji) > NEGL )
-                    cs_entry(hraw,zidx,0,aji);
+                cs_entry_negl(hraw,zidx,0,aji);
 #endif
             }
             else if ( !zary.ztypes[zid].compare("vi") ) {
                 // vi is a direct state measurement
                 uint i = node_idxs[zary.znode1s[zid]];
 #ifdef GS_OPTIMIZE
-                if ( abs(Vpu[i]) > NEGL || -abs(Vpu[i]) > NEGL )
-                    gs_entry_firstcol(h,zidx,abs(Vpu[i]));
+                gs_entry_firstcol(h,zidx,abs(Vpu[i]));
 #else
-                //if ( abs(Vpu[i]) > NEGL || -abs(Vpu[i]) > NEGL )
-                    cs_entry(hraw,zidx,0,abs(Vpu[i]));
+                cs_entry_negl(hraw,zidx,0,abs(Vpu[i]));
 #endif
             }
             else if ( !zary.ztypes[zid].compare("Ti") ) {
                 // Ti is a direct state measurement
                 uint i = node_idxs[zary.znode1s[zid]];
 #ifdef GS_OPTIMIZE
-                if ( arg(Vpu[i]) > NEGL || -arg(Vpu[i]) > NEGL )
-                    gs_entry_firstcol(h,zidx,arg(Vpu[i]));
+                gs_entry_firstcol(h,zidx,arg(Vpu[i]));
 #else
-                //if ( arg(Vpu[i]) > NEGL || -arg(Vpu[i]) > NEGL )
-                    cs_entry(hraw,zidx,0,arg(Vpu[i]));
+                cs_entry_negl(hraw,zidx,0,arg(Vpu[i]));
 #endif
             }
             else { 
@@ -1953,10 +1930,9 @@ class SELoopWorker {
                 set_n(i,0);
                 dP = dP + 2*vi * g;
 #ifdef GS_OPTIMIZE
-                if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
+                gs_entry_colorder(J,zidx,xidx,dP);
 #else
-                //if ( abs(dP) > NEGL )
-                    cs_entry(Jraw,zidx,xidx,dP);
+                cs_entry_negl(Jraw,zidx,xidx,dP);
 #endif
             }
 
@@ -1969,10 +1945,9 @@ class SELoopWorker {
                 set_n(i,j);
                 double dP = -1.0 * vi/ai/aj * (g*cos(T) + b*sin(T));
 #ifdef GS_OPTIMIZE
-                if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
+                gs_entry_colorder(J,zidx,xidx,dP);
 #else
-                //if ( abs(dP) > NEGL )
-                    cs_entry(Jraw,zidx,xidx,dP);
+                cs_entry_negl(Jraw,zidx,xidx,dP);
 #endif
             }
 
@@ -1994,10 +1969,9 @@ class SELoopWorker {
                 set_n(i,0);
                 dQ = dQ - 2*vi*b;
 #ifdef GS_OPTIMIZE
-                if ( abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
+                gs_entry_colorder(J,zidx,xidx,dQ);
 #else
-                //if ( abs(dQ) > NEGL )
-                    cs_entry(Jraw,zidx,xidx,dQ);
+                cs_entry_negl(Jraw,zidx,xidx,dQ);
 #endif
             }
 
@@ -2010,10 +1984,9 @@ class SELoopWorker {
                 set_n(i,j);
                 double dQ = -1.0 * vi/ai/aj * (g*sin(T) - b*cos(T));
 #ifdef GS_OPTIMIZE
-                if ( abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
+                gs_entry_colorder(J,zidx,xidx,dQ);
 #else
-                //if ( abs(dQ) > NEGL )
-                    cs_entry(Jraw,zidx,xidx,dQ);
+                cs_entry_negl(Jraw,zidx,xidx,dQ);
 #endif
             }
 
@@ -2023,7 +1996,7 @@ class SELoopWorker {
 #ifdef GS_OPTIMIZE
                  gs_entry_colorder(J,zidx,xidx,1.0);
 #else
-                 cs_entry(Jraw,zidx,xidx,1.0);
+                 cs_entry_negl(Jraw,zidx,xidx,1.0);
 #endif
             }
             
@@ -2042,10 +2015,9 @@ class SELoopWorker {
                 }
                 // reference node component is 0
 #ifdef GS_OPTIMIZE
-                if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
+                gs_entry_colorder(J,zidx,xidx,dP);
 #else
-                ///if ( abs(dP) > NEGL )
-                    cs_entry(Jraw,zidx,xidx,dP);
+                cs_entry_negl(Jraw,zidx,xidx,dP);
 #endif
             }
 
@@ -2058,10 +2030,9 @@ class SELoopWorker {
                 set_n(i,j);
                 double dP = -1.0 * vi*vj/ai/aj * (g*sin(T) - b*cos(T));
 #ifdef GS_OPTIMIZE
-                 if ( abs(dP) > NEGL ) gs_entry_colorder(J,zidx,xidx,dP);
+                 gs_entry_colorder(J,zidx,xidx,dP);
 #else
-                 //if ( abs(dP) > NEGL )
-                     cs_entry(Jraw,zidx,xidx,dP);
+                 cs_entry_negl(Jraw,zidx,xidx,dP);
 #endif
             }
 
@@ -2080,10 +2051,9 @@ class SELoopWorker {
                 }
                 // reference component is 0
 #ifdef GS_OPTIMIZE
-                if (abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
+                gs_entry_colorder(J,zidx,xidx,dQ);
 #else
-                //if (abs(dQ) > NEGL )
-                    cs_entry(Jraw,zidx,xidx,dQ);
+                cs_entry_negl(Jraw,zidx,xidx,dQ);
 #endif
             }
 
@@ -2096,10 +2066,9 @@ class SELoopWorker {
                 set_n(i,j);
                 double dQ = vi*vj/ai/aj * (g*cos(T) + b*sin(T));
 #ifdef GS_OPTIMIZE
-                if ( abs(dQ) > NEGL ) gs_entry_colorder(J,zidx,xidx,dQ);
+                gs_entry_colorder(J,zidx,xidx,dQ);
 #else
-                //if ( abs(dQ) > NEGL )
-                    cs_entry(Jraw,zidx,xidx,dQ);
+                cs_entry_negl(Jraw,zidx,xidx,dQ);
 #endif
             }
 
@@ -2108,7 +2077,7 @@ class SELoopWorker {
 #ifdef GS_OPTIMIZE
                 gs_entry_colorder(J,zidx,xidx,1.0);
 #else
-                cs_entry(Jraw,zidx,xidx,1.0);
+                cs_entry_negl(Jraw,zidx,xidx,1.0);
 #endif
             }
 
@@ -2120,7 +2089,7 @@ class SELoopWorker {
 #ifdef GS_OPTIMIZE
                 gs_entry_colorder(J, zidx, xidx, daji);
 #else
-                cs_entry(Jraw, zidx, xidx, daji);
+                cs_entry_negl(Jraw, zidx, xidx, daji);
 #endif
             }
 
@@ -2132,7 +2101,7 @@ class SELoopWorker {
 #ifdef GS_OPTIMIZE
                 gs_entry_colorder(J, zidx, xidx, daji);
 #else
-                cs_entry(Jraw, zidx, xidx, daji);
+                cs_entry_negl(Jraw, zidx, xidx, daji);
 #endif
             }
 
@@ -2199,8 +2168,10 @@ class SELoopWorker {
 
     private:
     void gs_entry_diagonal(cs *A, uint ij, double value) {
-        A->p[ij] = A->i[ij] = ij;
-        A->x[ij] = value;
+        if ( value> NEGL || -value>NEGL ) {
+            A->p[ij] = A->i[ij] = ij;
+            A->x[ij] = value;
+        }
     }
 
     private:
@@ -2214,10 +2185,12 @@ class SELoopWorker {
 
     private:
     void gs_entry_firstcol(cs *A, uint ii, double value) {
-        A->i[A->nzmax] = ii;
-        A->x[A->nzmax] = value;
-        A->nzmax++;
-        A->p[1] = A->nzmax;
+        if ( value> NEGL || -value>NEGL ) {
+            A->i[A->nzmax] = ii;
+            A->x[A->nzmax] = value;
+            A->nzmax++;
+            A->p[1] = A->nzmax;
+        }
     }
 #endif
 
@@ -2245,7 +2218,8 @@ class SELoopWorker {
 #ifdef GS_OPTIMIZE
     private:
     void gs_entry_fullsquare(cs *A, uint ii, uint jj, double value) {
-        A->x[jj*A->n + ii] = value;
+        if ( value> NEGL || -value>NEGL )
+            A->x[jj*A->n + ii] = value;
     }
 
     private:
@@ -2270,10 +2244,18 @@ class SELoopWorker {
 
     private:
     void gs_entry_colorder(cs *A, uint ii, uint jj, double value) {
-        if (jj>0 && A->p[jj]==0) A->p[jj] = gsidx;
-        A->i[gsidx] = ii;
-        A->x[gsidx++] = value;
-        if (jj+1 == A->n) A->p[jj+1] = gsidx;
+        if ( value> NEGL || -value>NEGL ) {
+            if (jj>0 && A->p[jj]==0) A->p[jj] = gsidx;
+            A->i[gsidx] = ii;
+            A->x[gsidx++] = value;
+            if (jj+1 == A->n) A->p[jj+1] = gsidx;
+        }
+    }
+#else
+    private:
+    void cs_entry_negl(cs *A, uint ii, uint jj, double value) {
+        if ( value> NEGL || -value>NEGL )
+            cs_entry(A, ii, jj, value);
     }
 #endif
 
