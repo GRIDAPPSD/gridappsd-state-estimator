@@ -1,7 +1,7 @@
 #define DIAGONAL_P
 #define DEBUG_PRIMARY
 //#define DEBUG_FILES
-#define GS_OPTIMIZE
+//#define GS_OPTIMIZE
 
 #define PI 3.1415926535
 
