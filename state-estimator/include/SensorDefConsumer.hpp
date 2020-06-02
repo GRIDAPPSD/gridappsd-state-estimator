@@ -126,10 +126,9 @@ class SensorDefConsumer : public SEConsumer {
 					zary.ztypes[zid] = "vi";
 					zary.znode1s[zid] = node;
 					zary.znode2s[zid] = node;
-					zary.zsigs[zid] = 0.01;		// WHERE DOES THIS COME FROM ??
+                    // TODO switch to sensor service uncertainty
+					zary.zsigs[zid] = 0.01;	// 1 sigma = 1%
                     zary.zvals[zid] = 1.0;
-                    // uncertanty should come from the sensor service -- in that case
-                    // it won't need to be initialized
 
 					// add the voltage phase measurement
 					// --- LATER ---
@@ -164,7 +163,8 @@ class SensorDefConsumer : public SEConsumer {
                         zary.ztypes[zid] = "aji";
                         zary.znode1s[zid] = primnode;
                         zary.znode2s[zid] = regnode;
-                        zary.zsigs[zid] = 0.0000625;
+                        //zary.zsigs[zid] = 0.0000625; // 1% of 1 tap
+                        zary.zsigs[zid] = 0.001; // 1% of span
                         zary.zvals[zid] = 1.0;
 
 //                        *selog << m.dump(2);

@@ -172,7 +172,6 @@ namespace state_estimator_util{
         string source_node_prefix = sourcebus + ".";
 
 
-//		const double sbase = 1000000.0;
 		for ( auto& node : node_names ) {
 
 			// Check for SOURCEBUS
@@ -184,7 +183,7 @@ namespace state_estimator_util{
 				zary.zids.push_back(vmag_zid);
 				zary.zidxs  [vmag_zid] = zary.zqty++;
 				zary.ztypes [vmag_zid] = "vi";
-				zary.zsigs  [vmag_zid] = 0.00001;
+				zary.zsigs  [vmag_zid] = 0.001; // 1 sigma = 0.1%
 				zary.znode1s[vmag_zid] = node;
 				zary.znode2s[vmag_zid] = node;
 				zary.zvals  [vmag_zid] = 1.00;
