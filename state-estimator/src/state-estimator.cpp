@@ -4,7 +4,24 @@
 //#define GS_OPTIMIZE
 
 #define PI 3.1415926535
+
+// negligable macros
+//#define USE_NEGL
+
+#ifdef USE_NEGL
 #define NEGL 1.0e-16
+#define cs_entry_negl(A,i,j,val) if (val>NEGL || -val>NEGL) cs_entry(A,i,j,val)
+#define gs_entry_diagonal_negl(A,ij,val) if (val>NEGL || -val>NEGL) gs_entry_diagonal(A,ij,val)
+#define gs_entry_firstcol_negl(A,i,val) if (val>NEGL || -val>NEGL) gs_entry_firstcol(A,i,val)
+#define gs_entry_fullsquare_negl(A,i,j,val) if (val>NEGL || -val>NEGL) gs_entry_fullsquare(A,i,j,val)
+#define gs_entry_colorder_negl(A,i,j,val) if (val>NEGL || -val>NEGL) gs_entry_colorder(A,i,j,val)
+#else
+#define cs_entry_negl(A,i,j,val) cs_entry(A,i,j,val)
+#define gs_entry_diagonal_negl(A,ij,val) gs_entry_diagonal(A,ij,val)
+#define gs_entry_firstcol_negl(A,i,val) gs_entry_firstcol(A,i,val)
+#define gs_entry_fullsquare_negl(A,i,j,val) gs_entry_fullsquare(A,i,j,val)
+#define gs_entry_colorder_negl(A,i,j,val) gs_entry_colorder(A,i,j,val)
+#endif
 
 #include <iostream>
 
@@ -272,18 +289,14 @@ int main(int argc, char** argv) {
 		sensConsumer.fillSens(zary, mmrid_pos_type_map);
 		sensConsumer.close();
 
-		// Add Pseudo-Measurements
+        // system base power, functionally arbitrary -- can be tweaked
+        // for better numerical stability
+        // values in the 1e+6 to 1e+12 seem to converge for all models
+        // larger values slightly improve condition of inverted Supd
 		const double sbase = 1.0e+6;
 		//const double sbase = 1.0e+12;
-        // Initial setting by Andy was 1e+6 as above
-        // All values 1e+4 and less increased the Supd condition number,
-        // eventually leading to a condition number resulting in
-        // KLU_SINGULAR when inverting the matrix
-        // Values for sbase greater than 1e+6 reduce the Supd
-        // condition number, e.g., 1e+10 and 1e+12
-        // With excessively large sbase, the state estimator will exit
-        // immediately after calculating S1, probably during the S2
-        // calculation, but this has not investigated further
+
+		// Add Pseudo-Measurements
 		state_estimator_util::insert_pseudo_measurements(gad,zary,
 				node_names,node_vnoms,sbase);
 
