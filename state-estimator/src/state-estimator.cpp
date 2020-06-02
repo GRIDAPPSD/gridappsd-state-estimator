@@ -292,9 +292,11 @@ int main(int argc, char** argv) {
         // system base power, functionally arbitrary -- can be tweaked
         // for better numerical stability
         // values in the 1e+6 to 1e+12 seem to converge for all models
-        // larger values slightly improve condition of inverted Supd
+        // values in this range make a negligible difference in the condition
+        // of the inverted Supd matrix
         // values both below this range like 1e+4 and above like 1e+14
-        // result in higher condition numbers that could lead to problems
+        // result in higher condition numbers that could lead to instability
+        // at least for the 9500-node model
 		const double sbase = 1.0e+6;
 		//const double sbase = 1.0e+12;
 
