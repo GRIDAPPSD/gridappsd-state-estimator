@@ -10,17 +10,23 @@
 
 #ifdef USE_NEGL
 #define NEGL 1.0e-16
-#define cs_entry_negl(A,i,j,val) if (val>NEGL || -val>NEGL) cs_entry(A,i,j,val)
+#ifdef GS_OPTIMIZE
 #define gs_entry_diagonal_negl(A,ij,val) if (val>NEGL || -val>NEGL) gs_entry_diagonal(A,ij,val)
 #define gs_entry_firstcol_negl(A,i,val) if (val>NEGL || -val>NEGL) gs_entry_firstcol(A,i,val)
 #define gs_entry_fullsquare_negl(A,i,j,val) if (val>NEGL || -val>NEGL) gs_entry_fullsquare(A,i,j,val)
 #define gs_entry_colorder_negl(A,i,j,val) if (val>NEGL || -val>NEGL) gs_entry_colorder(A,i,j,val)
 #else
-#define cs_entry_negl(A,i,j,val) cs_entry(A,i,j,val)
+#define cs_entry_negl(A,i,j,val) if (val>NEGL || -val>NEGL) cs_entry(A,i,j,val)
+#endif
+#else
+#ifdef GS_OPTIMIZE
 #define gs_entry_diagonal_negl(A,ij,val) gs_entry_diagonal(A,ij,val)
 #define gs_entry_firstcol_negl(A,i,val) gs_entry_firstcol(A,i,val)
 #define gs_entry_fullsquare_negl(A,i,j,val) gs_entry_fullsquare(A,i,j,val)
 #define gs_entry_colorder_negl(A,i,j,val) gs_entry_colorder(A,i,j,val)
+#else
+#define cs_entry_negl(A,i,j,val) cs_entry(A,i,j,val)
+#endif
 #endif
 
 #include <iostream>
