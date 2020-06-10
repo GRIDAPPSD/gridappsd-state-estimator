@@ -8,7 +8,6 @@ using nlohmann::json;
 using std::string;
 
 #include<iostream>
-using std::cerr;
 
 namespace state_estimator_gridappsd {
 	class state_estimator_session {
@@ -63,7 +62,7 @@ namespace state_estimator_gridappsd {
 
 		private:
 		void usage(char** argv) {
-			cerr << "Usage: " << *argv
+            std::cerr << "Usage: " << *argv
 				<< " simid simreq ipaddr port username password\n" << std::flush;
 		}
 
@@ -78,6 +77,8 @@ namespace state_estimator_gridappsd {
 		string username;
 		string password;
 		string modelID;
+        bool stateEstimatorFromPlatformFlag;
+        bool useSensorsForEstimatesFlag;
 		
 		public:
 		gridappsd_session(void) {}
@@ -88,7 +89,32 @@ namespace state_estimator_gridappsd {
 			brokerURI = "tcp://" + se.addr + ':' + se.port;
 			username = se.username;
 			password = se.password;
-			modelID = json::parse(se.simreq)["power_system_config"]["Line_name"];
+            
+            json jsimreq = json::parse(se.simreq);
+			modelID = jsimreq["power_system_config"]["Line_name"];
+
+            // as long as the key used below isn't set when running from the
+            // command line, this check will be sufficient for distinguishing
+            // platfrom from command-line invocations
+            stateEstimatorFromPlatformFlag = se.simreq.find("simulation_request_type")!=string::npos;
+
+            // process simreq service_configs entries to set whether the
+            // sensor-simulator has been configured and whether the
+            // state-estimator should use the measurements from sensor-simulator
+            bool sensorSimulatorRunningFlag = false;
+            useSensorsForEstimatesFlag = false;
+            for (auto const& jsc : jsimreq["service_configs"]) {
+                if (jsc["id"] == "gridappsd-sensor-simulator")
+                    // if sensor-simulator is in the list of configured
+                    // services, it is running
+                    sensorSimulatorRunningFlag = true;
+                else if (jsc["id"] == "state-estimator")
+                    useSensorsForEstimatesFlag = jsc["user_options"]["use-sensors-for-estimates"];
+            }
+            // override the use of sensors for estimates if the service
+            // isn't running
+            if (!sensorSimulatorRunningFlag)
+                useSensorsForEstimatesFlag = false;
 		}
 
 		public:

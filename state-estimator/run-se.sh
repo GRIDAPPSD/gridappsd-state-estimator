@@ -1,6 +1,12 @@
 #!/bin/bash
 # ulimit -c unlimited # make sure core dump files are allowed to be generated
-SIMREQ={\"power_system_config\":{\"Line_name\":\"_5B816B93-7A5F-B64C-8460-47C17D6E4B0F\"}} # ieee13nodecktassets
-#SIMREQ={\"power_system_config\":{\"Line_name\":\"_C1C3E687-6FFD-C753-582B-632A27E28507\"}}  # ieee123
-#SIMREQ={\"power_system_config\":{\"Line_name\":\"_AAE94E4A-2465-6F5E-37B1-3E72183A4E44\"}}  # test9500new
+SIMREQ={\"power_system_config\":{\"Line_name\":\"_5B816B93-7A5F-B64C-8460-47C17D6E4B0F\"},\"service_configs\":[{\"id\":\"state-estimator\",\"user_options\":{\"use-sensors-for-estimates\":true}},{\"id\":\"gridappsd-sensor-simulator\",\"user_options\":{\"default-perunit-confidence-band\":0.02,\"simulate-all\":true,\"sensors-config\":{},\"default-normal-value\":100.0,\"random-seed\":0.0,\"default-aggregation-interval\":30.0,\"passthrough-if-not-specified\":false,\"default-perunit-drop-rate\":0.05}}]} # ieee13nodecktassets using sensors
+#SIMREQ={\"power_system_config\":{\"Line_name\":\"_5B816B93-7A5F-B64C-8460-47C17D6E4B0F\"},\"service_configs\":[{\"id\":\"state-estimator\",\"user_options\":{\"use-sensors-for-estimates\":false}}]} # ieee13nodecktassets using simulation
+
+#SIMREQ={\"power_system_config\":{\"Line_name\":\"_C1C3E687-6FFD-C753-582B-632A27E28507\"},\"service_configs\":[{\"id\":\"state-estimator\",\"user_options\":{\"use-sensors-for-estimates\":true}},{\"id\":\"gridappsd-sensor-simulator\",\"user_options\":{\"default-perunit-confidence-band\":0.02,\"simulate-all\":true,\"sensors-config\":{},\"default-normal-value\":100.0,\"random-seed\":0.0,\"default-aggregation-interval\":30.0,\"passthrough-if-not-specified\":false,\"default-perunit-drop-rate\":0.05}}]} # ieee123 using sensors
+#SIMREQ={\"power_system_config\":{\"Line_name\":\"_C1C3E687-6FFD-C753-582B-632A27E28507\"},\"service_configs\":[{\"id\":\"state-estimator\",\"user_options\":{\"use-sensors-for-estimates\":false}}]} # ieee123 using simulation
+
+#SIMREQ={\"power_system_config\":{\"Line_name\":\"_AAE94E4A-2465-6F5E-37B1-3E72183A4E44\"},\"service_configs\":[{\"id\":\"state-estimator\",\"user_options\":{\"use-sensors-for-estimates\":true}},{\"id\":\"gridappsd-sensor-simulator\",\"user_options\":{\"default-perunit-confidence-band\":0.02,\"simulate-all\":true,\"sensors-config\":{},\"default-normal-value\":100.0,\"random-seed\":0.0,\"default-aggregation-interval\":30.0,\"passthrough-if-not-specified\":false,\"default-perunit-drop-rate\":0.05}}]} # test9500new using sensors
+#SIMREQ={\"power_system_config\":{\"Line_name\":\"_AAE94E4A-2465-6F5E-37B1-3E72183A4E44\"},\"service_configs\":[{\"id\":\"state-estimator\",\"user_options\":{\"use-sensors-for-estimates\":false}} # test9500new using simulation
+
 bin/state-estimator $1 $SIMREQ 2>&1 | tee sedbg.log

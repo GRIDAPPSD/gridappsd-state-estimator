@@ -135,12 +135,9 @@ int main(int argc, char** argv) {
 
 #ifdef DEBUG_PRIMARY
         // determine whether to write to a log file or stdout based on whether
-        // this is a container invocation
+        // this is a platform vs. command line invocation
         static std::ofstream logfile;
-        string simreq = argv[2];
-        // SIMREQUEST from a container has lots of extra stuff we don't pass
-        // for a command line invocation so look for one of those
-        if (simreq.find("simulation_config") != string::npos) {
+        if (gad.stateEstimatorFromPlatformFlag) {
             logfile.open("/tmp/state-estimator.log");
             selog = &logfile;
         }
@@ -152,23 +149,28 @@ int main(int argc, char** argv) {
 		// LISTEN FOR SIMULATION MEASUREMENTS
 		// --------------------------------------------------------------------
 
-		// measurements come from the simulation output
-		string simoutTopic = "goss.gridappsd.simulation.output."+gad.simid;
+		// measurements come from either simulation output or sensors
+        string topic = gad.useSensorsForEstimatesFlag?
+            "goss.gridappsd.simulation.gridappsd-sensor-simulator."+gad.simid+".output":
+            "goss.gridappsd.simulation.output."+gad.simid;
 
-		SELoopConsumer simOutputConsumer(&workQueue, gad.brokerURI, gad.username,
-            gad.password, simoutTopic, "topic");
-		Thread simOutputConsumerThread(&simOutputConsumer);
-		simOutputConsumerThread.start();	// execute simOutputConsumer.run()
-		simOutputConsumer.waitUntilReady();	// wait for the startup latch release
+		SELoopConsumer measurementConsumer(&workQueue, gad.brokerURI,
+                                gad.username, gad.password, topic, "topic");
+		Thread measurementConsumerThread(&measurementConsumer);
+		measurementConsumerThread.start();	// execute measurementConsumer.run()
+		measurementConsumer.waitUntilReady();	// wait for the startup latch release
 
 #ifdef DEBUG_PRIMARY
-		*selog << "\nListening for simulation output on "+simoutTopic+'\n' << std::flush;
+        if (gad.useSensorsForEstimatesFlag)
+            *selog << "\nListening for sensor-simulator output on "+topic+'\n' << std::flush;
+        else
+            *selog << "\nListening for simulation output on "+topic+'\n' << std::flush;
 #endif
 
 #ifdef DEBUG_PRIMARY
         // only block initialization for command line invocations
         //if (false) {
-        if (simreq.find("simulation_config") == string::npos) {
+        if (!gad.stateEstimatorFromPlatformFlag) {
 		    *selog << "\nWaiting for measurement before continuing with initialization\n" << std::flush;
             while (blockedFlag) sleep(1);
 		    *selog << "\nGot measurement--continuing with initialization\n" << std::flush;
