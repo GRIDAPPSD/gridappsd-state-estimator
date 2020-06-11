@@ -4,10 +4,8 @@
 #include "json.hpp"
 using nlohmann::json;
 
-#include<string>
+#include <string>
 using std::string;
-
-#include<iostream>
 
 namespace state_estimator_gridappsd {
 	class state_estimator_session {
@@ -89,7 +87,7 @@ namespace state_estimator_gridappsd {
 			brokerURI = "tcp://" + se.addr + ':' + se.port;
 			username = se.username;
 			password = se.password;
-            
+
             json jsimreq = json::parse(se.simreq);
 			modelID = jsimreq["power_system_config"]["Line_name"];
 
@@ -100,7 +98,8 @@ namespace state_estimator_gridappsd {
 
             // process simreq service_configs entries to set whether the
             // sensor-simulator has been configured and whether the
-            // state-estimator should use the measurements from sensor-simulator
+            // state-estimator should use the measurements from
+            // sensor-simulator
             bool sensorSimulatorRunningFlag = false;
             useSensorsForEstimatesFlag = false;
             for (auto const& jsc : jsimreq["service_configs"]) {

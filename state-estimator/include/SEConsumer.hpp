@@ -24,9 +24,7 @@
 #include <string>
 #include <regex>
 
-
 #include <activemq/commands/ActiveMQTopic.h>
-#include <iostream>
 
 using namespace activemq::core;
 
