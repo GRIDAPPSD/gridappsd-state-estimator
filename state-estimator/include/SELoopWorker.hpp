@@ -148,8 +148,6 @@ class SELoopWorker {
 
     private:
     bool firstEstimateFlag = true;
-    uint timeZero;
-    uint timeLastEstimate;
 #ifdef SBASE_TESTING
     uint estimateExitCount = 0;
 #endif
@@ -593,37 +591,6 @@ class SELoopWorker {
         *selog << "F is " << F->m << " by " << F->n << " with " << F->nzmax << " entries\n" << std::flush;
 #endif
 
-#if 111
-        // update process covariance matrix
-#ifdef DEBUG_PRIMARY
-        *selog << "Initializing Q -- " << std::flush;
-#endif
-        // TODO: finalize scale factor to determine weighting of
-        // previous system state
-        // Consider whether to conditionalize value based on
-        // elapsed time since previous state estimate,
-        // i.e., large model vs. smaller models
-        // 0.03 is a large model estimate
-        // 0.001 is a smaller model estimate
-#ifdef GS_OPTIMIZE
-        Q = gs_doubleval_diagonal(node_qty, 0.03, 0.03*PI);
-#else
-        cs *Qraw = cs_spalloc (2*node_qty, 2*node_qty, 2*node_qty, 1, 1);
-        for (uint i = 0; i < node_qty; i++) {
-            cs_entry_negl(Qraw, i, i, 0.03);
-            cs_entry_negl(Qraw, node_qty+i, node_qty+i, 0.03*PI);
-        }
-        Q = cs_compress(Qraw);
-        cs_spfree(Qraw);
-#endif
-#ifdef DEBUG_FILES
-        print_cs_compress(Q,initpath+"Q.csv");
-#endif
-#ifdef DEBUG_PRIMARY
-        *selog << "Q is " << Q->m << " by " << Q->n << " with " << Q->nzmax << " entries\n" << std::flush;
-#endif
-#endif
-
         // identity matrix of dimension x (constant)
 #ifdef DEBUG_PRIMARY
         *selog << "Initializing eyex -- " << std::flush;
@@ -735,7 +702,7 @@ class SELoopWorker {
     public:
     void workLoop() {
         json jmessage;
-        uint timestamp;
+        uint timestamp, timestampLastEstimate, timeZero;
         bool exitAfterEstimateFlag = false;
         bool doEstimateFlag;
 
@@ -755,7 +722,7 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
                     if (firstEstimateFlag) {
                         timeZero = timestamp;
-                        timeLastEstimate = timestamp;
+                        timestampLastEstimate = timestamp;
                         firstEstimateFlag = false;
                     }
                     *selog << "Draining workQueue size: " << workQueue->size() << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
@@ -815,8 +782,8 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
             *selog << "\nEstimating state for timestep: " << timestamp-timeZero << "\n" << std::flush;
 #endif
-            estimate(timestamp);
-            timeLastEstimate = timestamp;
+            estimate(timestamp, timestampLastEstimate, timeZero);
+            timestampLastEstimate = timestamp;
             //sleep(30); // delay to let queue refill for testing
             publish(timestamp);
 
@@ -982,7 +949,8 @@ class SELoopWorker {
 
 
     private:
-    void estimate(const uint& timestamp) {
+    void estimate(const uint& timestamp, const uint& timestampLastEstimate,
+                  const uint& timeZero) {
 #ifdef DEBUG_PRIMARY
         double estimateStartTime = getWallTime();
         *selog << "xqty is " << xqty << "; " << std::flush;
@@ -1035,42 +1003,7 @@ class SELoopWorker {
         // -- compute x_predict = F*x | F=I (skipping to improve performance)
         // -- compute p_predict = F*P*F' + Q | F=I (can be simplified)
 
-#if 000
-        // START HERE
-        // update process covariance matrix
-#ifdef DEBUG_PRIMARY
-        *selog << "Initializing Q -- " << std::flush;
-#endif
-        // TODO: finalize scale factor to determine weighting of
-        // previous system state
-        // Consider whether to conditionalize value based on
-        // elapsed time since previous state estimate,
-        // i.e., large model vs. smaller models
-        // 0.03 is a large model estimate
-        // 0.001 is a smaller model estimate
-#ifdef GS_OPTIMIZE
-        Q = gs_doubleval_diagonal(node_qty, 0.03, 0.03*PI);
-#else
-        cs *Qraw = cs_spalloc (2*node_qty, 2*node_qty, 2*node_qty, 1, 1);
-        for (uint i = 0; i < node_qty; i++) {
-            cs_entry_negl(Qraw, i, i, 0.03);
-            cs_entry_negl(Qraw, node_qty+i, node_qty+i, 0.03*PI);
-        }
-        Q = cs_compress(Qraw);
-        cs_spfree(Qraw);
-#endif
-#ifdef DEBUG_FILES
-        print_cs_compress(Q,initpath+"Q.csv");
-#endif
-#ifdef DEBUG_PRIMARY
-        *selog << "Q is " << Q->m << " by " << Q->n << " with " << Q->nzmax << " entries\n" << std::flush;
-#endif
-#endif
-
 #ifdef DIAGONAL_P
-//#ifdef DEBUG_PRIMARY
-//        *selog << "prep_P -- " << std::flush;
-//#endif
         cs *P; this->prep_P(P);
 #endif
 #ifdef DEBUG_PRIMARY
@@ -1111,7 +1044,15 @@ class SELoopWorker {
         print_cs_compress(P3,tspath+"P3.csv");
 #endif
 
-        cs *Ppre = cs_add(P3,Q,1,1); cs_spfree(P3);
+       cs *Q; this->prep_Q(Q, timestamp-timestampLastEstimate);
+#ifdef DEBUG_PRIMARY
+        *selog << "Q is " << Q->m << " by " << Q->n << " with " << Q->nzmax << " entries\n" << std::flush;
+#endif
+#ifdef DEBUG_FILES
+        print_cs_compress(Q,tspath+"Q.csv");
+#endif
+
+        cs *Ppre = cs_add(P3,Q,1,1); cs_spfree(P3); cs_spfree(Q);
         if (!Ppre) *selog << "ERROR: null Ppre\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else *selog << "Ppre is " << Ppre->m << " by " << Ppre->n << 
@@ -1479,8 +1420,6 @@ class SELoopWorker {
 #endif
         uint Fsize = cs_size(F);
         print_sizeof(Fsize, "F");
-        uint Qsize = cs_size(Q);
-        print_sizeof(Qsize, "Q");
         uint Rsize = cs_size(R);
         print_sizeof(Rsize, "R");
         uint eyexsize = cs_size(eyex);
@@ -1495,7 +1434,7 @@ class SELoopWorker {
         print_sizeof(Uvmagsize, "Uvmag");
         uint Uvargsize = Uvarg.size()*8;
         print_sizeof(Uvargsize, "Uvarg");
-        print_sizeof(Fsize+Qsize+Rsize+eyexsize+Vpusize+Uvmagsize+Uvargsize, "Total");
+        print_sizeof(Fsize+Rsize+eyexsize+Vpusize+Uvmagsize+Uvargsize, "Total");
 #endif
 #endif
         process_mem_usage(vm_used, res_used);
@@ -1664,6 +1603,39 @@ class SELoopWorker {
 #endif
     }
 #endif
+
+
+    private:
+    void prep_Q(cs *&Qmat, const uint& timeSinceLastEstimate) {
+        // update process covariance matrix
+
+        // Set scale factor to determine weighting of previous system state
+        // based on elapsed time since previous state estimate,
+        // i.e., large models will have more time between estimates
+        // due to the size of the matrices involved while smaller models
+        // will keep up with real-time GridLAB-D or sensor service output
+        // of 3 seconds between measurements
+
+        // Modeling change in system state as a Wiener process; therefore
+        // covariance is proportional to the time between estimates.
+        // Within 1 standard deviation, change is 0.01 p.u. in a
+        // 1 second interval as a high-end estimate for likely voltage change
+        // so 0.01^2 is the variance for that voltage change estimate
+        double factor = 0.0001 * timeSinceLastEstimate;
+        // Previously, the scale factor was hardwired to 0.03 for all models
+
+#ifdef GS_OPTIMIZE
+        Qmat = gs_doubleval_diagonal(node_qty, factor, factor*PI);
+#else
+        cs *Qraw = cs_spalloc (2*node_qty, 2*node_qty, 2*node_qty, 1, 1);
+        for (uint i = 0; i < node_qty; i++) {
+            cs_entry_negl(Qraw, i, i, factor);
+            cs_entry_negl(Qraw, node_qty+i, node_qty+i, factor*PI);
+        }
+        Qmat = cs_compress(Qraw);
+        cs_spfree(Qraw);
+#endif
+    }
 
 
 #ifdef DEBUG_FILES
