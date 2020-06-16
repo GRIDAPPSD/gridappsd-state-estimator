@@ -32,6 +32,12 @@ namespace state_estimator_gridappsd {
 				simreq = argv[2];
 			} else { usage(argv); return 0; }
 
+#ifdef SBASE_TESTING
+			addr = "127.0.0.1";
+			port = "61616";
+			username = "system";
+			password = "manager";
+#else
 			// Host address
 			if ( argc > 3 ) addr = argv[3];
 			else addr = "127.0.0.1";
@@ -53,6 +59,7 @@ namespace state_estimator_gridappsd {
 				std::cerr << "Unrecognized input: " << argv[7] << '\n' << std::flush;
 				usage(argv); return 0;
 			}
+#endif
 
 			// Success
 			return 1;

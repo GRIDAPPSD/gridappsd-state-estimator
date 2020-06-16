@@ -146,10 +146,12 @@ class SELoopWorker {
     private:
     SEProducer *statePublisher = 0;
 
-#ifdef DEBUG_PRIMARY
     private:
     bool firstEstimateFlag = true;
-    uint timezero;
+    uint timeZero;
+    uint timeLastEstimate;
+#ifdef SBASE_TESTING
+    uint estimateExitCount = 0;
 #endif
 
 
@@ -591,7 +593,8 @@ class SELoopWorker {
         *selog << "F is " << F->m << " by " << F->n << " with " << F->nzmax << " entries\n" << std::flush;
 #endif
 
-        // process covariance matrix (constant)
+#if 111
+        // update process covariance matrix
 #ifdef DEBUG_PRIMARY
         *selog << "Initializing Q -- " << std::flush;
 #endif
@@ -618,6 +621,7 @@ class SELoopWorker {
 #endif
 #ifdef DEBUG_PRIMARY
         *selog << "Q is " << Q->m << " by " << Q->n << " with " << Q->nzmax << " entries\n" << std::flush;
+#endif
 #endif
 
         // identity matrix of dimension x (constant)
@@ -750,10 +754,11 @@ class SELoopWorker {
                     timestamp = jmessage["message"]["timestamp"];
 #ifdef DEBUG_PRIMARY
                     if (firstEstimateFlag) {
-                        timezero = timestamp;
+                        timeZero = timestamp;
+                        timeLastEstimate = timestamp;
                         firstEstimateFlag = false;
                     }
-                    *selog << "Draining workQueue size: " << workQueue->size() << ", timestep: " << timestamp-timezero << "\n" << std::flush;
+                    *selog << "Draining workQueue size: " << workQueue->size() << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
 #endif
                     // do z summation here
                     add_zvals(jmessage);
@@ -808,9 +813,10 @@ class SELoopWorker {
             // Estimate the state
             // ----------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-            *selog << "\nEstimating state for timestep: " << timestamp-timezero << "\n" << std::flush;
+            *selog << "\nEstimating state for timestep: " << timestamp-timeZero << "\n" << std::flush;
 #endif
             estimate(timestamp);
+            timeLastEstimate = timestamp;
             //sleep(30); // delay to let queue refill for testing
             publish(timestamp);
 
@@ -1022,11 +1028,45 @@ class SELoopWorker {
         } ofh.close();
 #endif
 
+
         // --------------------------------------------------------------------
         // Predict Step
         // --------------------------------------------------------------------
         // -- compute x_predict = F*x | F=I (skipping to improve performance)
         // -- compute p_predict = F*P*F' + Q | F=I (can be simplified)
+
+#if 000
+        // START HERE
+        // update process covariance matrix
+#ifdef DEBUG_PRIMARY
+        *selog << "Initializing Q -- " << std::flush;
+#endif
+        // TODO: finalize scale factor to determine weighting of
+        // previous system state
+        // Consider whether to conditionalize value based on
+        // elapsed time since previous state estimate,
+        // i.e., large model vs. smaller models
+        // 0.03 is a large model estimate
+        // 0.001 is a smaller model estimate
+#ifdef GS_OPTIMIZE
+        Q = gs_doubleval_diagonal(node_qty, 0.03, 0.03*PI);
+#else
+        cs *Qraw = cs_spalloc (2*node_qty, 2*node_qty, 2*node_qty, 1, 1);
+        for (uint i = 0; i < node_qty; i++) {
+            cs_entry_negl(Qraw, i, i, 0.03);
+            cs_entry_negl(Qraw, node_qty+i, node_qty+i, 0.03*PI);
+        }
+        Q = cs_compress(Qraw);
+        cs_spfree(Qraw);
+#endif
+#ifdef DEBUG_FILES
+        print_cs_compress(Q,initpath+"Q.csv");
+#endif
+#ifdef DEBUG_PRIMARY
+        *selog << "Q is " << Q->m << " by " << Q->n << " with " << Q->nzmax << " entries\n" << std::flush;
+#endif
+#endif
+
 #ifdef DIAGONAL_P
 //#ifdef DEBUG_PRIMARY
 //        *selog << "prep_P -- " << std::flush;
@@ -1220,8 +1260,8 @@ class SELoopWorker {
 
 #ifdef DEBUG_PRIMARY
             process_mem_usage(vm_used, res_used);
-            *selog << "klu_solve virtual memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
-//            *selog << "klu_solve resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
+            *selog << "klu_solve virtual memory: " << vm_used << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
+//            *selog << "klu_solve resident memory: " << res_used << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
 #endif
 
             // free klusym and klunum or memory leak results
@@ -1431,7 +1471,7 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
         *selog << "\n*** Total estimate time: " << 
             getMinSec(getWallTime()-estimateStartTime) << ", timestep: " <<
-            timestamp-timezero << "\n" << std::flush;
+            timestamp-timeZero << "\n" << std::flush;
 #ifdef DEBUG_SIZES
 #ifndef DIAGONAL_P
         uint Psize = cs_size(P);
@@ -1459,12 +1499,13 @@ class SELoopWorker {
 #endif
 #endif
         process_mem_usage(vm_used, res_used);
-        *selog << "End of estimate virtual memory: " << vm_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
-//        *selog << "End of estimate resident memory: " << res_used << ", timestep: " << timestamp-timezero << "\n" << std::flush;
+        *selog << "End of estimate virtual memory: " << vm_used << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
+//        *selog << "End of estimate resident memory: " << res_used << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
         *selog << "\n" << std::flush;
-#if 000
+#ifdef SBASE_TESTING
         // when needed for debugging, exit after first estimate call
-        exit(0);
+        if (++estimateExitCount == 20)
+            exit(0);
 #endif
 #endif
     }

@@ -2,6 +2,7 @@
 #define DEBUG_PRIMARY
 //#define DEBUG_FILES
 #define GS_OPTIMIZE
+//#define SBASE_TESTING
 
 #define PI 3.1415926535
 
@@ -305,8 +306,13 @@ int main(int argc, char** argv) {
         // values both below this range like 1e+4 and above like 1e+14
         // result in higher condition numbers that could lead to instability
         // at least for the 9500-node model
+#ifdef SBASE_TESTING
+        double spower = (double)std::stoi(argv[3]);
+		const double sbase = pow(10.0, spower);
+#else
 		const double sbase = 1.0e+6;
 		//const double sbase = 1.0e+12;
+#endif
 
 		// Add Pseudo-Measurements
 		state_estimator_util::insert_pseudo_measurements(gad,zary,
