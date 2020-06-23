@@ -299,19 +299,16 @@ int main(int argc, char** argv) {
 		sensConsumer.close();
 
         // system base power, functionally arbitrary -- can be tweaked
-        // for better numerical stability
-        // values in the 1e+6 to 1e+12 seem to converge for all models
-        // values in this range make a negligible difference in the condition
-        // of the inverted Supd matrix
-        // values both below this range like 1e+4 and above like 1e+14
-        // result in higher condition numbers that could lead to instability
-        // at least for the 9500-node model
+        // for better numerical stability if needed
+        // all values in the approximate range 1e-140 to 1e+150 converge
+        // and only numeric overflow/underflow results in failures
+        // values in the 1e+6 to 1e+12 range result in minimum Supd condition
+        // numbers with the range for lowest condition varying somewhat by model
 #ifdef SBASE_TESTING
         double spower = (double)std::stoi(argv[3]);
 		const double sbase = pow(10.0, spower);
 #else
 		const double sbase = 1.0e+6;
-		//const double sbase = 1.0e+12;
 #endif
 
 		// Add Pseudo-Measurements
@@ -326,10 +323,10 @@ int main(int argc, char** argv) {
 #endif
 
         // Initialize class that does the state estimates
-		SELoopWorker loopWorker(&workQueue, gad.brokerURI, gad.username,
-            gad.password, gad.simid, zary, node_qty, node_names, node_idxs,
-            node_vnoms, node_bmrids, node_phs, node_name_lookup, sbase, Y, Amat,
-            regid_primnode_map, regid_regnode_map, mmrid_pos_type_map);
+        SELoopWorker loopWorker(&workQueue, &gad, zary, node_qty, node_names,
+            node_idxs, node_vnoms, node_bmrids, node_phs, node_name_lookup,
+            sbase, Y, Amat, regid_primnode_map, regid_regnode_map,
+            mmrid_pos_type_map);
 
 #ifdef DEBUG_PRIMARY
 		*selog << "\nStarting the SE work loop\n" << std::flush;

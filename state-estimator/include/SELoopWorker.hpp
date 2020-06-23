@@ -1,6 +1,9 @@
 #ifndef SELOOPWORKER_HPP
 #define SELOOPWORKER_HPP
 
+#include "state_estimator_gridappsd.hpp"
+using state_estimator_gridappsd::gridappsd_session;
+
 #include "json.hpp"
 using json = nlohmann::json;
 
@@ -80,18 +83,15 @@ using json = nlohmann::json;
 class SELoopWorker {
     protected:
     SharedQueue<json>* workQueue;
-    string brokerURI;
-    string username;
-    string password;
-    string simid;
 
     // system state
     private:
-//  cs *x, *P;      // state model
+    gridappsd_session* gad;
 #ifndef DIAGONAL_P
-    cs *P;          // x comes from V and A but P is persistent 
+    cs *P=NULL;     // x comes from V and A but P is persistent 
 #endif
-    cs *F, *Q;      // process model
+    cs *F;          // process model
+    cs *Q;
     cs *R;          // measurement covariance (diagonal)
     cs *eyex;       // identity matrix of dimension x
     uint xqty;      // number of states
@@ -124,7 +124,7 @@ class SELoopWorker {
     // system state
     private:
     ICMAP Vpu;          // voltage state in per-unit
-    IMDMAP Amat;           // regulator tap ratios
+    IMDMAP Amat;        // regulator tap ratios
     SSMAP regid_primnode_map;
     SSMAP regid_regnode_map;
 #ifdef DIAGONAL_P
@@ -155,10 +155,7 @@ class SELoopWorker {
 
     public:
     SELoopWorker(SharedQueue<json>* workQueue,
-            const string& brokerURI, 
-            const string& username,
-            const string& password,
-            const string& simid,
+            gridappsd_session* gad,
             const SensorArray& zary,
             const uint& node_qty,
             const SLIST& node_names,
@@ -174,10 +171,7 @@ class SELoopWorker {
             const SSMAP& regid_regnode_map,
             const SSMAP& mmrid_pos_type_map) {
         this->workQueue = workQueue;
-        this->brokerURI = brokerURI;
-        this->username = username;
-        this->password = password;
-        this->simid = simid;
+        this->gad = gad;
         this->zary = zary;
         this->node_qty = node_qty;
         this->node_names = node_names;
@@ -192,9 +186,6 @@ class SELoopWorker {
         this->regid_primnode_map = regid_primnode_map;
         this->regid_regnode_map = regid_regnode_map;
         this->mmrid_pos_type_map = mmrid_pos_type_map;
-
-        // do one-time-only processing
-        init();
     }
 
 
@@ -212,7 +203,7 @@ class SELoopWorker {
 #endif
 
         // set up the output message json object
-        jstate["simulation_id"] = simid;
+        jstate["simulation_id"] = gad->simid;
 
 #ifdef DEBUG_FILES
         // create the output directory if needed
@@ -223,7 +214,7 @@ class SELoopWorker {
         }
 
         // create simulation parent directory
-        std::string simpath = "output/sim_" + simid + "/";
+        std::string simpath = "output/sim_" + gad->simid + "/";
         mkdir(simpath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
         // create init directory
@@ -232,8 +223,8 @@ class SELoopWorker {
 #endif
 
         // Construct the producer that will be used to publish the state estimate
-        string sePubTopic = "goss.gridappsd.state-estimator.out."+simid;
-        statePublisher = new SEProducer(brokerURI,username,password,sePubTopic,"topic");
+        string sePubTopic = "goss.gridappsd.state-estimator.out."+gad->simid;
+        statePublisher = new SEProducer(gad->brokerURI,gad->username,gad->password,sePubTopic,"topic");
 
         // --------------------------------------------------------------------
         // Establish Dimension of State Space and Measurement Space
@@ -242,57 +233,8 @@ class SELoopWorker {
         zqty = zary.zqty;
 
         // --------------------------------------------------------------------
-        // Initialize Voltages (complex per-unit)
-        // --------------------------------------------------------------------
-        for ( auto& node_name : node_names ) {
-            // Important: V is indexed by node index like A and Y
-//          V[node_idxs[node_name]] = node_vnoms[node_name];
-            Vpu[node_idxs[node_name]] = 1.0;
-        }
-#ifdef DEBUG_PRIMARY
-        *selog << "Voltages Initialized.\n\n" << std::flush;
-#endif
-
-        // --------------------------------------------------------------------
-        // Initialize State Covariance Matrix
-        // --------------------------------------------------------------------
-        double span_vmag = 1.0;
-        double span_varg = 1.0/3.0*PI;
-        double span_taps = 0.2;
-
-        // TODO: finalize scaling for state uncertainty initialization
-        double span_multiplier = 0.02;
-#ifdef DIAGONAL_P
-        for ( auto& node_name : node_names ) {
-            uint idx = node_idxs[node_name];
-            Uvmag[idx] = span_multiplier*span_vmag;
-            Uvarg[idx] = span_multiplier*span_varg;
-        }
-#else
-#ifdef GS_OPTIMIZE
-        cs *P = gs_doubleval_diagonal(node_qty, span_multiplier*span_vmag, span_multiplier*span_varg);
-#else
-        cs *Praw = cs_spalloc (2*node_qty, 2*node_qty, 2*node_qty, 1, 1);
-        for (uint i = 0; i < node_qty; i++) {
-            cs_entry_negl(Praw, i, i, span_multiplier*span_vmag);
-            cs_entry_negl(Praw, node_qty+i, node_qty+i, span_multiplier*span_varg);
-        }
-        cs *P = cs_compress(Praw);
-        cs_spfree(Praw);
-#endif
-#ifdef DEBUG_FILES
-        print_cs_compress(P,initpath+"Pinit.csv");
-#endif
-#endif
-
-#ifdef DEBUG_PRIMARY
-        *selog << "State Covariance Matrix Initialized.\n\n" << std::flush;
-#endif
-
-        // --------------------------------------------------------------------
         // Determine possible non-zero Jacobian elements
         // --------------------------------------------------------------------
-
         for ( auto& zid: zary.zids ) {
             uint zidx = zary.zidxs[zid];            // row index of J
             string ztype = zary.ztypes[zid];        // measurement type
@@ -574,7 +516,6 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
         *selog << "Initializing F -- " << std::flush;
 #endif
-
 #ifdef GS_OPTIMIZE
         F = gs_singleval_diagonal(xqty, 1.0);
 #else
@@ -645,7 +586,7 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
         *selog << "R is " << R->m << " by " << R->n << " with " << R->nzmax << " entries\n" << std::flush;
 #endif
-        
+
 #ifdef DEBUG_FILES
         // print initial state vector
         ofh.open(initpath+"Vpu.csv",ofstream::out);
@@ -671,21 +612,6 @@ class SELoopWorker {
 #endif
 
 #ifdef DEBUG_FILES
-        // initial measurement vector (these actually don't need to be done here)
-        cs* z; this->sample_z(z);
-        print_cs_compress(z,initpath+"z.csv"); 
-        cs_spfree(z);
-
-        cs* h; this->calc_h(h);
-        print_cs_compress(h,initpath+"h.csv"); 
-        cs_spfree(h);
-        
-        cs* J; this->calc_J(J);
-        print_cs_compress(J,initpath+"J.csv"); 
-        cs_spfree(J);
-#endif
-
-#ifdef DEBUG_FILES
         // --------------------------------------------------------------------
         // Initialize the state recorder file
         // --------------------------------------------------------------------
@@ -699,12 +625,81 @@ class SELoopWorker {
     }
 
 
+    private:
+    void initVoltagesAndCovariance() {
+        // --------------------------------------------------------------------
+        // Initialize Voltages (complex per-unit)
+        // --------------------------------------------------------------------
+        // clear previous values if this was called before
+        if ( Vpu.size() > 0 ) Vpu.clear();
+
+        for ( auto& node_name : node_names ) {
+            // Important: V is indexed by node index like A and Y
+            // V[node_idxs[node_name]] = node_vnoms[node_name];
+            Vpu[node_idxs[node_name]] = 1.0;
+        }
+#ifdef DEBUG_PRIMARY
+        *selog << "Voltages Initialized.\n\n" << std::flush;
+#endif
+
+        // --------------------------------------------------------------------
+        // Initialize State Covariance Matrix
+        // --------------------------------------------------------------------
+        double span_vmag = 1.0;
+        double span_varg = 1.0/3.0*PI;
+        double span_taps = 0.2;
+
+        // TODO: finalize scaling for state uncertainty initialization
+        double span_multiplier = 0.02;
+#ifdef DIAGONAL_P
+        // clear previous values if this was called before
+        if ( Uvmag.size() > 0 ) Uvmag.clear();
+        if ( Uvarg.size() > 0 ) Uvarg.clear();
+
+        for ( auto& node_name : node_names ) {
+            uint idx = node_idxs[node_name];
+            Uvmag[idx] = span_multiplier*span_vmag;
+            Uvarg[idx] = span_multiplier*span_varg;
+        }
+#else
+        // clear previous values if this was called before
+        cs_spfree(P);
+#ifdef GS_OPTIMIZE
+        P = gs_doubleval_diagonal(node_qty, span_multiplier*span_vmag, span_multiplier*span_varg);
+#else
+        cs *Praw = cs_spalloc (2*node_qty, 2*node_qty, 2*node_qty, 1, 1);
+        for (uint i = 0; i < node_qty; i++) {
+            cs_entry_negl(Praw, i, i, span_multiplier*span_vmag);
+            cs_entry_negl(Praw, node_qty+i, node_qty+i, span_multiplier*span_varg);
+        }
+        P = cs_compress(Praw);
+        cs_spfree(Praw);
+#endif
+#ifdef DEBUG_FILES
+        print_cs_compress(P,initpath+"Pinit.csv");
+#endif
+#endif
+
+#ifdef DEBUG_PRIMARY
+        *selog << "State Covariance Matrix Initialized.\n\n" << std::flush;
+#endif
+
+    }
+
+
     public:
     void workLoop() {
         json jmessage;
         uint timestamp, timestampLastEstimate, timeZero;
         bool exitAfterEstimateFlag = false;
         bool doEstimateFlag;
+
+        // do one-time-only processing
+        init();
+
+        // initialize what's updated during processing
+        // (if things go bad we'll need to reset these)
+        initVoltagesAndCovariance();
 
         for (;;) {
             // ----------------------------------------------------------------
@@ -754,18 +749,18 @@ class SELoopWorker {
                         exit(0);
                     }
                 }
-            //} while (false); // uncomment this to fully process all messages
             } while (!workQueue->empty()); // uncomment this to drain queue
+            //} while (false); // uncomment this to fully process all messages
 
             // do z averaging here by dividing sum by # of items
 // #ifdef DEBUG_PRIMARY
 //             *selog << "===========> z-averaging being done after draining queue\n" << std::flush;
 // #endif
+
             for ( auto& zid : zary.zids ) {
                 if ( zary.znew[zid] > 1 )
                     zary.zvals[zid] /= zary.znew[zid];
             }
-
 
 // #ifdef DEBUG_PRIMARY
 //             *selog << "zvals before estimate\n" << std::flush;
@@ -782,10 +777,28 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
             *selog << "\nEstimating state for timestep: " << timestamp-timeZero << "\n" << std::flush;
 #endif
-            estimate(timestamp, timestampLastEstimate, timeZero);
-            timestampLastEstimate = timestamp;
-            //sleep(30); // delay to let queue refill for testing
-            publish(timestamp);
+            try {
+                estimate(timestamp, timestampLastEstimate, timeZero);
+                timestampLastEstimate = timestamp;
+                //sleep(30); // delay to let queue refill for testing
+                publish(timestamp);
+
+            } catch(const char* msg) {
+                *selog << "\nCaught klu_error exception--resetting state estimation\n" << std::flush;
+
+                // reset Amat to where it started
+                // iterate over map of maps setting all entries back to 1
+                for (auto& ent1 : Amat) {
+                    for (auto& ent2 : ent1.second) {
+                        ent2.second = 1;
+                    }
+                }
+
+                // things went bad so reset what was previously updated
+                initVoltagesAndCovariance();
+
+                // start fresh with new estimates from the top of the loop
+            }
 
             if (exitAfterEstimateFlag) {
 #ifdef DEBUG_PRIMARY
@@ -892,7 +905,7 @@ class SELoopWorker {
         
         // Initializae json
         json jstate;
-        jstate["simulation_id"] = simid;
+        jstate["simulation_id"] = gad->simid;
         jstate["message"] = json::object();
         jstate["message"]["timestamp"] = timestamp;
         jstate["message"]["Estimate"] = json::object();
@@ -935,7 +948,7 @@ class SELoopWorker {
 
 #ifdef DEBUG_FILES
         // write to file
-        std::string simpath = "output/sim_" + simid + "/";
+        std::string simpath = "output/sim_" + gad->simid + "/";
         state_fh.open(simpath+"vmag_per-unit.csv",ofstream::app);
         state_fh << timestamp << ',';
         uint ctr = 0;
@@ -963,7 +976,7 @@ class SELoopWorker {
 
 #ifdef DEBUG_FILES
         // set filename path based on timestamp
-        std::string simpath = "output/sim_" + simid + "/ts_";
+        std::string simpath = "output/sim_" + gad->simid + "/ts_";
         std::ostringstream out;
         out << simpath << timestamp << "/";
         std::string tspath = out.str();
@@ -1210,9 +1223,16 @@ class SELoopWorker {
             klu_free_numeric(&klunum, &klucom);
         } catch (const char *msg) {
             *selog << "KLU ERROR: " << msg << "\n" << std::flush;
-            return;
+            throw "klu_error";
         }
         cs_spfree(Supd);
+
+#if 000
+        if (estimateExitCount == 20) {
+            estimateExitCount = 0;
+            throw "klu_error";
+        }
+#endif
 
 #if 000
 #ifndef GS_OPTIMIZE
@@ -1622,6 +1642,7 @@ class SELoopWorker {
         // 1 second interval as a high-end estimate for likely voltage change
         // so 0.01^2 is the variance for that voltage change estimate
         double factor = 0.0001 * timeSinceLastEstimate;
+        //double factor = 0.03;
         // Previously, the scale factor was hardwired to 0.03 for all models
 
 #ifdef GS_OPTIMIZE
