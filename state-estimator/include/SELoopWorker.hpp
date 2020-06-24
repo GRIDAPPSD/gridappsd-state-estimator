@@ -702,30 +702,6 @@ class SELoopWorker {
 #endif
 
 #ifdef DEBUG_FILES
-        // print initial state vector
-        ofh.open(initpath+"Vpu.csv",ofstream::out);
-        ofh << std::setprecision(16);
-        *selog << "writing " << initpath+"Vpu.csv\n\n" << std::flush;
-        *selog << "node_qty is " << node_qty << "\n" << std::flush;
-
-        for ( auto& inode : node_names ) {
-            uint i = node_idxs[inode];
-            *selog << inode << " idx is " << i << "\n" << std::flush;
-            try {
-                complex<double> tmp = Vpu.at(i);
-                double tmpre = tmp.real();
-                double tmpim = tmp.imag();
-                ofh << tmpre 
-                    << ( tmpim >= 0 ? "+" : "-" )
-                    << std::abs(tmpim) << "i" 
-                    << "\n";
-            } catch ( const std::out_of_range& oor ) {
-                ofh << "0+0i" << "\n";
-            }
-        } ofh.close();
-#endif
-
-#ifdef DEBUG_FILES
         // --------------------------------------------------------------------
         // Initialize the state recorder file
         // --------------------------------------------------------------------
@@ -754,6 +730,30 @@ class SELoopWorker {
         }
 #ifdef DEBUG_PRIMARY
         *selog << "Voltages Initialized.\n\n" << std::flush;
+#endif
+
+#ifdef DEBUG_FILES
+        // print initial state vector
+        ofh.open(initpath+"Vpu.csv",ofstream::out);
+        ofh << std::setprecision(16);
+        *selog << "writing " << initpath+"Vpu.csv\n\n" << std::flush;
+        *selog << "node_qty is " << node_qty << "\n" << std::flush;
+
+        for ( auto& inode : node_names ) {
+            uint i = node_idxs[inode];
+            *selog << inode << " idx is " << i << "\n" << std::flush;
+            try {
+                complex<double> tmp = Vpu.at(i);
+                double tmpre = tmp.real();
+                double tmpim = tmp.imag();
+                ofh << tmpre
+                    << ( tmpim >= 0 ? "+" : "-" )
+                    << std::abs(tmpim) << "i"
+                    << "\n";
+            } catch ( const std::out_of_range& oor ) {
+                ofh << "0+0i" << "\n";
+            }
+        } ofh.close();
 #endif
 
         // --------------------------------------------------------------------
@@ -797,7 +797,6 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
         *selog << "State Covariance Matrix Initialized.\n\n" << std::flush;
 #endif
-
     }
 
 
