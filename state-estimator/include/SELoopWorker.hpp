@@ -81,22 +81,33 @@ using json = nlohmann::json;
 
 // This class listens for system state messages
 class SELoopWorker {
-    protected:
-    SharedQueue<json>* workQueue;
-
-    // system state
     private:
-    gridappsd_session* gad;
-#ifndef DIAGONAL_P
-    cs *Pmat=NULL;  // x comes from V and A but P is persistent 
-#endif
-    cs *Fmat;       // process model
-    cs *Rmat;       // measurement covariance (diagonal)
-    cs *eyex;       // identity matrix of dimension x
-    uint xqty;      // number of states
-    uint zqty;      // number of measurements
 
-    
+    // passed in from constructor
+    SharedQueue<json>* workQueue;
+    gridappsd_session* gad;
+    SensorArray        zary;
+    uint               node_qty;     // number of nodes
+    SLIST              node_names;   // node names [list of strings]
+    SIMAP              node_idxs;    // node positional indices [node->int]
+    SCMAP              node_vnoms;   // complex nominal voltages of nodes
+    SSMAP              node_bmrids;  // string mRIDs of the associated buses
+    SSMAP              node_phs;     // string phases
+    ISMAP              node_name_lookup;
+    double             sbase;
+    IMMAP              Yphys;        // Ybus [node->[row->col]] [physical units]
+    IMDMAP             Amat;         // regulator tap ratios
+    SSMAP              regid_primnode_map;
+    SSMAP              regid_regnode_map;
+    SSMAP              mmrid_pos_type_map; // type of position measurement
+
+    SEProducer *statePublisher = 0;
+    json jstate;       // object holding the output message
+
+    // system topology definition
+    uint xqty;          // number of states
+    uint zqty;          // number of measurements
+
     // establish jacobian entry types
     enum dydx_type : uint {
         dPi_dvi, dPi_dvj, dQi_dvi, dQi_dvj, dvi_dvi,
@@ -104,52 +115,31 @@ class SELoopWorker {
         daji_dvj, daji_dvi,
     };
 
-    A5MAP Jshapemap;  // column ordered map of J entries: {zidx,xidx,i,j,dydx_type}
-
-    private:
-    json jstate;    // object holding the output message
-
-    // system topology definition
-    public:
-    uint node_qty;      // number of nodes
-    SLIST node_names;   // node names [list of strings]
-    SIMAP node_idxs;    // node positional indices [node->int]
-    SCMAP node_vnoms;   // complex nominal voltages of nodes
-    SSMAP node_bmrids;  // string mRIDs of the associated buses
-    SSMAP node_phs;     // string phases
-    IMMAP Yphys;        // Ybus [node->[row->col]] [physical units]
-    ISMAP node_name_lookup;
+    A5MAP Jshapemap;   // column ordered map of J entries: {zidx,xidx,i,j,dydx_type}
 
     // system state
-    private:
+    IMMAP Ypu;
     ICMAP Vpu;          // voltage state in per-unit
-    IMDMAP Amat;        // regulator tap ratios
-    SSMAP regid_primnode_map;
-    SSMAP regid_regnode_map;
 #ifdef DIAGONAL_P
     IDMAP Uvmag;        // variance of voltage magnitudes (per-unit)
     IDMAP Uvarg;        // variance of voltage angles (per-unit)
+#else
+    cs *Pmat=NULL;      // x comes from V and A but P is persistent 
 #endif
 
-    private:
-    double sbase;
-    IMMAP Ypu;
-    
-    private:
-    SensorArray zary;
-    SSMAP mmrid_pos_type_map;   // type of position measurement
+    cs *Fmat;           // process model
+    cs *Rmat;           // measurement covariance (diagonal)
+    cs *eyex;           // identity matrix of dimension x
 
-    private:
-    ofstream state_fh;  // file to record states
-
-    private:
-    SEProducer *statePublisher = 0;
-
-    private:
     bool firstEstimateFlag = true;
 #ifdef SBASE_TESTING
     uint estimateExitCount = 0;
 #endif
+
+#ifdef DEBUG_FILES
+    ofstream state_fh;  // file to record states
+#endif
+
 
     public:
     SELoopWorker(SharedQueue<json>* workQueue,
@@ -184,6 +174,127 @@ class SELoopWorker {
         this->regid_primnode_map = regid_primnode_map;
         this->regid_regnode_map = regid_regnode_map;
         this->mmrid_pos_type_map = mmrid_pos_type_map;
+    }
+
+
+    public:
+    void workLoop() {
+        json jmessage;
+        uint timestamp, timestampLastEstimate, timeZero;
+        bool exitAfterEstimateFlag = false;
+        bool doEstimateFlag;
+
+        // do one-time-only processing
+        init();
+
+        // initialize what's updated during processing
+        // (if things go bad we'll need to reset these)
+        initVoltagesAndCovariance();
+
+        for (;;) {
+            // ----------------------------------------------------------------
+            // Reset the new measurement counter for each node
+            // ----------------------------------------------------------------
+            doEstimateFlag = false;
+            for ( auto& zid : zary.zids ) zary.znew[zid] = 0;
+
+            // drain the queue with quick z-averaging
+            do {
+                jmessage = workQueue->pop();
+
+                if (jmessage.find("message") != jmessage.end()) {
+                    timestamp = jmessage["message"]["timestamp"];
+#ifdef DEBUG_PRIMARY
+                    if (firstEstimateFlag) {
+                        timeZero = timestamp;
+                        timestampLastEstimate = timestamp;
+                        firstEstimateFlag = false;
+                    }
+                    *selog << "Draining workQueue size: " << workQueue->size() << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
+#endif
+                    // do z summation here
+                    add_zvals(jmessage);
+
+                    // set flag to indicate a full estimate can be done
+                    // if a COMPLETED/CLOSED log message is received
+                    doEstimateFlag = true;
+
+                } else if (jmessage.find("processStatus") != jmessage.end()) {
+                    // only COMPLETE/CLOSED log messages are put on the queue
+                    // so process for that case only
+                    if (doEstimateFlag) {
+#ifdef DEBUG_PRIMARY
+                        *selog << "Got COMPLETE/CLOSED log message on queue, doing full estimate with previous measurement\n" << std::flush;
+#endif
+                        // set flag to exit after completing full estimate below
+                        exitAfterEstimateFlag = true;
+
+                        // we've already done the add_zvals call for the last
+                        // measurement so proceed to estimate z-averaging + estimate
+                        break;
+                    } else {
+#ifdef DEBUG_PRIMARY
+                        *selog << "Got COMPLETE/CLOSED log message on queue, normal exit because full estimate just done\n" << std::flush;
+#endif
+                        exit(0);
+                    }
+                }
+            } while (!workQueue->empty()); // uncomment this to drain queue
+            //} while (false); // uncomment this to fully process all messages
+
+            // do z averaging here by dividing sum by # of items
+// #ifdef DEBUG_PRIMARY
+//             *selog << "===========> z-averaging being done after draining queue\n" << std::flush;
+// #endif
+
+            for ( auto& zid : zary.zids ) {
+                if ( zary.znew[zid] > 1 )
+                    zary.zvals[zid] /= zary.znew[zid];
+            }
+
+// #ifdef DEBUG_PRIMARY
+//             *selog << "zvals before estimate\n" << std::flush;
+//             for ( auto& zid : zary.zids ) {
+//                 *selog << "measurement of type: " << zary.ztypes[zid] << "\t" << zid << ": " << zary.zvals[zid] << "\t(" << zary.znew[zid] << ")\n" << std::flush;
+//             }
+// #endif
+
+            // do the core "estimate" processing here since the queue is,
+            // for the moment, empty
+            // ----------------------------------------------------------------
+            // Estimate the state
+            // ----------------------------------------------------------------
+#ifdef DEBUG_PRIMARY
+            *selog << "\nEstimating state for timestep: " << timestamp-timeZero << "\n" << std::flush;
+#endif
+            try {
+                estimate(timestamp, timestampLastEstimate, timeZero);
+                timestampLastEstimate = timestamp;
+                //sleep(30); // delay to let queue refill for testing
+                publish(timestamp);
+
+            } catch(const char* msg) {
+                *selog << "\nCaught klu_error exception--resetting state estimation\n" << std::flush;
+
+                // reset Amat to where it started
+                // iterate over map of maps setting all entries back to 1
+                for (auto& ent1 : Amat)
+                    for (auto& ent2 : ent1.second)
+                        ent2.second = 1;
+
+                // things went bad so reset what was previously updated
+                initVoltagesAndCovariance();
+
+                // start fresh with new estimates from the top of the loop
+            }
+
+            if (exitAfterEstimateFlag) {
+#ifdef DEBUG_PRIMARY
+                *selog << "Normal exit after COMPLETE/CLOSED log message and full estimate\n" << std::flush;
+#endif
+                exit(0);
+            }
+        }
     }
 
 
@@ -687,129 +798,6 @@ class SELoopWorker {
         *selog << "State Covariance Matrix Initialized.\n\n" << std::flush;
 #endif
 
-    }
-
-
-    public:
-    void workLoop() {
-        json jmessage;
-        uint timestamp, timestampLastEstimate, timeZero;
-        bool exitAfterEstimateFlag = false;
-        bool doEstimateFlag;
-
-        // do one-time-only processing
-        init();
-
-        // initialize what's updated during processing
-        // (if things go bad we'll need to reset these)
-        initVoltagesAndCovariance();
-
-        for (;;) {
-            // ----------------------------------------------------------------
-            // Reset the new measurement counter for each node
-            // ----------------------------------------------------------------
-            doEstimateFlag = false;
-            for ( auto& zid : zary.zids ) zary.znew[zid] = 0;
-
-            // drain the queue with quick z-averaging
-            do {
-                jmessage = workQueue->pop();
-
-                if (jmessage.find("message") != jmessage.end()) {
-                    timestamp = jmessage["message"]["timestamp"];
-#ifdef DEBUG_PRIMARY
-                    if (firstEstimateFlag) {
-                        timeZero = timestamp;
-                        timestampLastEstimate = timestamp;
-                        firstEstimateFlag = false;
-                    }
-                    *selog << "Draining workQueue size: " << workQueue->size() << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
-#endif
-                    // do z summation here
-                    add_zvals(jmessage);
-
-                    // set flag to indicate a full estimate can be done
-                    // if a COMPLETED/CLOSED log message is received
-                    doEstimateFlag = true;
-
-                } else if (jmessage.find("processStatus") != jmessage.end()) {
-                    // only COMPLETE/CLOSED log messages are put on the queue
-                    // so process for that case only
-                    if (doEstimateFlag) {
-#ifdef DEBUG_PRIMARY
-                        *selog << "Got COMPLETE/CLOSED log message on queue, doing full estimate with previous measurement\n" << std::flush;
-#endif
-                        // set flag to exit after completing full estimate below
-                        exitAfterEstimateFlag = true;
-
-                        // we've already done the add_zvals call for the last
-                        // measurement so proceed to estimate z-averaging + estimate
-                        break;
-                    } else {
-#ifdef DEBUG_PRIMARY
-                        *selog << "Got COMPLETE/CLOSED log message on queue, normal exit because full estimate just done\n" << std::flush;
-#endif
-                        exit(0);
-                    }
-                }
-            } while (!workQueue->empty()); // uncomment this to drain queue
-            //} while (false); // uncomment this to fully process all messages
-
-            // do z averaging here by dividing sum by # of items
-// #ifdef DEBUG_PRIMARY
-//             *selog << "===========> z-averaging being done after draining queue\n" << std::flush;
-// #endif
-
-            for ( auto& zid : zary.zids ) {
-                if ( zary.znew[zid] > 1 )
-                    zary.zvals[zid] /= zary.znew[zid];
-            }
-
-// #ifdef DEBUG_PRIMARY
-//             *selog << "zvals before estimate\n" << std::flush;
-//             for ( auto& zid : zary.zids ) {
-//                 *selog << "measurement of type: " << zary.ztypes[zid] << "\t" << zid << ": " << zary.zvals[zid] << "\t(" << zary.znew[zid] << ")\n" << std::flush;
-//             }
-// #endif
-
-            // do the core "estimate" processing here since the queue is,
-            // for the moment, empty
-            // ----------------------------------------------------------------
-            // Estimate the state
-            // ----------------------------------------------------------------
-#ifdef DEBUG_PRIMARY
-            *selog << "\nEstimating state for timestep: " << timestamp-timeZero << "\n" << std::flush;
-#endif
-            try {
-                estimate(timestamp, timestampLastEstimate, timeZero);
-                timestampLastEstimate = timestamp;
-                //sleep(30); // delay to let queue refill for testing
-                publish(timestamp);
-
-            } catch(const char* msg) {
-                *selog << "\nCaught klu_error exception--resetting state estimation\n" << std::flush;
-
-                // reset Amat to where it started
-                // iterate over map of maps setting all entries back to 1
-                for (auto& ent1 : Amat) {
-                    for (auto& ent2 : ent1.second) {
-                        ent2.second = 1;
-                    }
-                }
-
-                // things went bad so reset what was previously updated
-                initVoltagesAndCovariance();
-
-                // start fresh with new estimates from the top of the loop
-            }
-
-            if (exitAfterEstimateFlag) {
-#ifdef DEBUG_PRIMARY
-                *selog << "Normal exit after COMPLETE/CLOSED log message and full estimate\n" << std::flush;
-#endif
-                exit(0);
-            }
-        }
     }
 
 
