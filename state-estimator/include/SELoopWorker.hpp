@@ -88,11 +88,10 @@ class SELoopWorker {
     private:
     gridappsd_session* gad;
 #ifndef DIAGONAL_P
-    cs *P=NULL;     // x comes from V and A but P is persistent 
+    cs *Pmat=NULL;  // x comes from V and A but P is persistent 
 #endif
-    cs *F;          // process model
-    cs *Q;
-    cs *R;          // measurement covariance (diagonal)
+    cs *Fmat;       // process model
+    cs *Rmat;       // measurement covariance (diagonal)
     cs *eyex;       // identity matrix of dimension x
     uint xqty;      // number of states
     uint zqty;      // number of measurements
@@ -151,7 +150,6 @@ class SELoopWorker {
 #ifdef SBASE_TESTING
     uint estimateExitCount = 0;
 #endif
-
 
     public:
     SELoopWorker(SharedQueue<json>* workQueue,
@@ -231,6 +229,11 @@ class SELoopWorker {
         // --------------------------------------------------------------------
         xqty = 2*node_qty;
         zqty = zary.zqty;
+
+#ifdef DEBUG_PRIMARY
+        *selog << "xqty is " << xqty << "; " << std::flush;
+        *selog << "zqty is " << zqty << "\n" << std::flush;
+#endif
 
         // --------------------------------------------------------------------
         // Determine possible non-zero Jacobian elements
@@ -517,19 +520,19 @@ class SELoopWorker {
         *selog << "Initializing F -- " << std::flush;
 #endif
 #ifdef GS_OPTIMIZE
-        F = gs_singleval_diagonal(xqty, 1.0);
+        Fmat = gs_singleval_diagonal(xqty, 1.0);
 #else
         cs* Fraw = cs_spalloc(xqty, xqty, xqty, 1, 1);
         for (uint i=0; i < xqty; i++)
             cs_entry_negl(Fraw, i, i, 1.0);
-        F = cs_compress(Fraw);
+        Fmat = cs_compress(Fraw);
         cs_spfree(Fraw);
 #endif
 #ifdef DEBUG_FILES
-        print_cs_compress(F,initpath+"F.csv");
+        print_cs_compress(Fmat,initpath+"F.csv");
 #endif
 #ifdef DEBUG_PRIMARY
-        *selog << "F is " << F->m << " by " << F->n << " with " << F->nzmax << " entries\n" << std::flush;
+        *selog << "F is " << Fmat->m << " by " << Fmat->n << " with " << Fmat->nzmax << " entries\n" << std::flush;
 #endif
 
         // identity matrix of dimension x (constant)
@@ -557,14 +560,14 @@ class SELoopWorker {
         *selog << "Initializing R -- " << std::flush;
 #endif
 #ifdef GS_OPTIMIZE
-        R = gs_spalloc_diagonal(zqty);
+        Rmat = gs_spalloc_diagonal(zqty);
         for ( auto& zid : zary.zids )
             // variance of R[i,i] is sigma[i]^2
             // Originally we had this as just sigma[i], which resulted in
             // different sbase producing different estimate results and took
             // a couple weeks to debug working through many matrices to figure
             // out if they were different for different sbase values
-            gs_entry_diagonal_negl(R,zary.zidxs[zid],
+            gs_entry_diagonal_negl(Rmat,zary.zidxs[zid],
                                    zary.zsigs[zid]*zary.zsigs[zid]);
 #else
         cs* Rraw = cs_spalloc(zqty, zqty, zqty, 1, 1);
@@ -576,15 +579,15 @@ class SELoopWorker {
             // out if they were different for different sbase values
             cs_entry_negl(Rraw,zary.zidxs[zid],zary.zidxs[zid],
                           zary.zsigs[zid]*zary.zsigs[zid]);
-        R = cs_compress(Rraw);
+        Rmat = cs_compress(Rraw);
         cs_spfree(Rraw);
 #endif
 #ifdef DEBUG_FILES
-        print_cs_compress(R,initpath+"R.csv");
-        //print_cs_compress_triples(R,"R_sbase1e6_trip.csv", 8);
+        print_cs_compress(Rmat,initpath+"R.csv");
+        //print_cs_compress_triples(Rmat,"R_sbase1e6_trip.csv", 8);
 #endif
 #ifdef DEBUG_PRIMARY
-        *selog << "R is " << R->m << " by " << R->n << " with " << R->nzmax << " entries\n" << std::flush;
+        *selog << "R is " << Rmat->m << " by " << Rmat->n << " with " << Rmat->nzmax << " entries\n" << std::flush;
 #endif
 
 #ifdef DEBUG_FILES
@@ -663,16 +666,16 @@ class SELoopWorker {
         }
 #else
         // clear previous values if this was called before
-        cs_spfree(P);
+        cs_spfree(Pmat);
 #ifdef GS_OPTIMIZE
-        P = gs_doubleval_diagonal(node_qty, span_multiplier*span_vmag, span_multiplier*span_varg);
+        Pmat = gs_doubleval_diagonal(node_qty, span_multiplier*span_vmag, span_multiplier*span_varg);
 #else
         cs *Praw = cs_spalloc (2*node_qty, 2*node_qty, 2*node_qty, 1, 1);
         for (uint i = 0; i < node_qty; i++) {
             cs_entry_negl(Praw, i, i, span_multiplier*span_vmag);
             cs_entry_negl(Praw, node_qty+i, node_qty+i, span_multiplier*span_varg);
         }
-        P = cs_compress(Praw);
+        Pmat = cs_compress(Praw);
         cs_spfree(Praw);
 #endif
 #ifdef DEBUG_FILES
@@ -966,10 +969,6 @@ class SELoopWorker {
                   const uint& timeZero) {
 #ifdef DEBUG_PRIMARY
         double estimateStartTime = getWallTime();
-        *selog << "xqty is " << xqty << "; " << std::flush;
-        *selog << "zqty is " << zqty << "\n" << std::flush;
-        *selog << "F is " << F->m << " by " << F->n << " with " << F->nzmax << " entries\n" << std::flush;
-        *selog << "Q is " << Q->m << " by " << Q->n << " with " << Q->nzmax << " entries\n" << std::flush;
 #endif
 
         // TODO: WE NEED TO HANDLE R-MASK IN HERE SOMEWHERE
@@ -1017,58 +1016,58 @@ class SELoopWorker {
         // -- compute p_predict = F*P*F' + Q | F=I (can be simplified)
 
 #ifdef DIAGONAL_P
-        cs *P; this->prep_P(P);
+        cs *Pmat; this->prep_P(Pmat);
 #endif
 #ifdef DEBUG_PRIMARY
-        *selog << "P is " << P->m << " by " << P->n << 
-            " with " << P->nzmax << " entries\n" << std::flush;
+        *selog << "P is " << Pmat->m << " by " << Pmat->n <<
+            " with " << Pmat->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
-        print_cs_compress(P,tspath+"P.csv");
+        print_cs_compress(Pmat,tspath+"P.csv");
 #endif
 
-        cs *P1 = cs_transpose(F,1);
+        cs *P1 = cs_transpose(Fmat,1);
         if (!P1) *selog << "ERROR: null P1\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else *selog << "P1 is " << P1->m << " by " << P1->n << 
+        else *selog << "P1 is " << P1->m << " by " << P1->n <<
             " with " << P1->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(P1,tspath+"P1.csv");
 #endif
 
-        cs *P2 = cs_multiply(P,P1); cs_spfree(P); cs_spfree(P1);
+        cs *P2 = cs_multiply(Pmat,P1); cs_spfree(Pmat); cs_spfree(P1);
         if (!P2) *selog << "ERROR: null P2\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else *selog << "P2 is " << P2->m << " by " << P2->n << 
+        else *selog << "P2 is " << P2->m << " by " << P2->n <<
             " with " << P2->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(P2,tspath+"P2.csv");
 #endif
 
-        cs *P3 = cs_multiply(F,P2); cs_spfree(P2);
+        cs *P3 = cs_multiply(Fmat,P2); cs_spfree(P2);
         if (!P3) *selog << "ERROR: null P3\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else *selog << "P3 is " << P3->m << " by " << P3->n << 
+        else *selog << "P3 is " << P3->m << " by " << P3->n <<
             " with " << P3->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(P3,tspath+"P3.csv");
 #endif
 
-       cs *Q; this->prep_Q(Q, timestamp-timestampLastEstimate);
+       cs *Qmat; this->prep_Q(Qmat, timestamp-timestampLastEstimate);
 #ifdef DEBUG_PRIMARY
-        *selog << "Q is " << Q->m << " by " << Q->n << " with " << Q->nzmax << " entries\n" << std::flush;
+        *selog << "Q is " << Qmat->m << " by " << Qmat->n << " with " << Qmat->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
-        print_cs_compress(Q,tspath+"Q.csv");
+        print_cs_compress(Qmat,tspath+"Q.csv");
 #endif
 
-        cs *Ppre = cs_add(P3,Q,1,1); cs_spfree(P3); cs_spfree(Q);
+        cs *Ppre = cs_add(P3,Qmat,1,1); cs_spfree(P3); cs_spfree(Qmat);
         if (!Ppre) *selog << "ERROR: null Ppre\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else *selog << "Ppre is " << Ppre->m << " by " << Ppre->n << 
+        else *selog << "Ppre is " << Ppre->m << " by " << Ppre->n <<
             " with " << Ppre->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1082,21 +1081,21 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
         *selog << "calc_J time -- " << std::flush;
 #endif
-        cs *J; this->calc_J(J);
+        cs *Jmat; this->calc_J(Jmat);
 #ifdef DEBUG_PRIMARY
-        *selog << "J is " << J->m << " by " << J->n << 
-            " with " << J->nzmax << " entries\n" << std::flush;
+        *selog << "J is " << Jmat->m << " by " << Jmat->n <<
+            " with " << Jmat->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
-        print_cs_compress(J,tspath+"J.csv");
+        print_cs_compress(Jmat,tspath+"J.csv");
 #endif
 
         // -- compute S = J*P_predict*J' + R
 
-        cs *S1 = cs_transpose(J,1);
+        cs *S1 = cs_transpose(Jmat,1);
         if (!S1) *selog << "ERROR: null S1\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else *selog << "S1 is " << S1->m << " by " << S1->n << 
+        else *selog << "S1 is " << S1->m << " by " << S1->n <<
             " with " << S1->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1106,27 +1105,27 @@ class SELoopWorker {
         cs *S2 = cs_multiply(Ppre,S1);
         if (!S2) *selog << "ERROR: null S2\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else *selog << "S2 is " << S2->m << " by " << S2->n << 
+        else *selog << "S2 is " << S2->m << " by " << S2->n <<
             " with " << S2->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(S2,tspath+"S2.csv");
 #endif
 
-        cs *S3 = cs_multiply(J,S2); cs_spfree(S2);
+        cs *S3 = cs_multiply(Jmat,S2); cs_spfree(S2);
         if (!S3) *selog << "ERROR: null S3\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else *selog << "S3 is " << S3->m << " by " << S3->n << 
+        else *selog << "S3 is " << S3->m << " by " << S3->n <<
             " with " << S3->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(S3,tspath+"S3.csv");
 #endif
 
-        cs *Supd = cs_add(R,S3,1,1); cs_spfree(S3);
+        cs *Supd = cs_add(Rmat,S3,1,1); cs_spfree(S3);
         if (!Supd) *selog << "ERROR: null Supd\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else *selog << "Supd is " << Supd->m << " by " << Supd->n << 
+        else *selog << "Supd is " << Supd->m << " by " << Supd->n <<
             " with " << Supd->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1260,8 +1259,8 @@ class SELoopWorker {
         cs *K2 = cs_multiply(Ppre,S1); cs_spfree(S1);
         if (!K2) *selog << "ERROR: null K2\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else *selog << "K2 is " << K2->m << " by " 
-            << K2->n << " with " << K2->nzmax << " entries\n" << std::flush;
+        else *selog << "K2 is " << K2->m << " by " <<
+             K2->n << " with " << K2->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(K2,tspath+"K2.csv");
@@ -1286,31 +1285,31 @@ class SELoopWorker {
 #endif
 
         // -- compute y = z - h
-        cs *z; this->sample_z(z);
+        cs *zmat; this->sample_z(zmat);
 #ifdef DEBUG_PRIMARY
-        *selog << "z is " << z->m << " by " << z->n << 
-            " with " << z->nzmax << " entries\n" << std::flush;
+        *selog << "z is " << zmat->m << " by " << zmat->n <<
+            " with " << zmat->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
-        print_cs_compress(z,tspath+"z.csv");
+        print_cs_compress(zmat,tspath+"z.csv");
 #endif
 
 #ifdef DEBUG_PRIMARY
         *selog << "calc_h time -- " << std::flush;
 #endif
-        cs *h; this->calc_h(h);
+        cs *hmat; this->calc_h(hmat);
 #ifdef DEBUG_PRIMARY
-        *selog << "h is " << h->m << " by " << h->n << 
-            " with " << h->nzmax << " entries\n" << std::flush;
+        *selog << "h is " << hmat->m << " by " << hmat->n <<
+            " with " << hmat->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
-        print_cs_compress(h,tspath+"h.csv");
+        print_cs_compress(hmat,tspath+"h.csv");
 #endif
 
-        cs *yupd = cs_add(z,h,1,-1); cs_spfree(z); cs_spfree(h);
+        cs *yupd = cs_add(zmat,hmat,1,-1); cs_spfree(zmat); cs_spfree(hmat);
         if (!yupd) *selog << "ERROR: null yupd\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else *selog << "yupd is " << yupd->m << " by " << yupd->n << 
+        else *selog << "yupd is " << yupd->m << " by " << yupd->n <<
             " with " << yupd->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1330,19 +1329,19 @@ class SELoopWorker {
         print_cs_compress(x1,tspath+"x1.csv");
 #endif
 
-        cs *x; this->prep_x(x);
+        cs *xmat; this->prep_x(xmat);
 #ifdef DEBUG_PRIMARY
-        *selog << "x is " << x->m << " by " << x->n << 
-            " with " << x->nzmax << " entries\n" << std::flush;
+        *selog << "x is " << xmat->m << " by " << xmat->n <<
+            " with " << xmat->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
-        print_cs_compress(x,tspath+"x.csv");
+        print_cs_compress(xmat,tspath+"x.csv");
 #endif
 
-        cs *xpre = cs_multiply(F,x); cs_spfree(x);
+        cs *xpre = cs_multiply(Fmat,xmat); cs_spfree(xmat);
         if (!xpre) *selog << "ERROR: null xpre\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else *selog << "xpre is " << xpre->m << " by " << xpre->n << 
+        else *selog << "xpre is " << xpre->m << " by " << xpre->n <<
             " with " << xpre->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1366,7 +1365,7 @@ class SELoopWorker {
         *selog << "P4 time -- " << std::flush;
         startTime = getWallTime();
 #endif
-        cs *P4 = cs_multiply(Kupd,J); cs_spfree(Kupd); cs_spfree(J);
+        cs *P4 = cs_multiply(Kupd,Jmat); cs_spfree(Kupd); cs_spfree(Jmat);
         if ( !P4 ) *selog << "ERROR: P4 null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         *selog << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
@@ -1382,7 +1381,7 @@ class SELoopWorker {
         cs *P5 = cs_add(eyex,P4,1,-1); cs_spfree(P4);
         if ( !P5 ) *selog << "ERROR: P5 null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else *selog << "P5 is " << P5->m << " by " << P5->n << 
+        else *selog << "P5 is " << P5->m << " by " << P5->n <<
                 " with " << P5->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1393,7 +1392,7 @@ class SELoopWorker {
         cs *Pupd = cs_multiply(P5,Ppre); cs_spfree(P5); cs_spfree(Ppre);
         if ( !Pupd ) *selog << "ERROR: P updated null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else *selog << "P updated is " << Pupd->m << " by " << Pupd->n << 
+        else *selog << "P updated is " << Pupd->m << " by " << Pupd->n <<
                 " with " << Pupd->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
@@ -1402,11 +1401,11 @@ class SELoopWorker {
 
 #else
         // re-allocate P for the updated state
-        P = cs_multiply(P5,Ppre); cs_spfree(P5); cs_spfree(Ppre);
-        if ( !P ) *selog << "ERROR: P updated null\n" << std::flush;
+        Pmat = cs_multiply(P5,Ppre); cs_spfree(P5); cs_spfree(Ppre);
+        if ( !Pmat ) *selog << "ERROR: P updated null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        else *selog << "P updated is " << P->m << " by " << P->n << 
-                " with " << P->nzmax << " entries\n" << std::flush;
+        else *selog << "P updated is " << Pmat->m << " by " << Pmat->n <<
+                " with " << Pmat->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(P,tspath+"Pupd.csv");
@@ -1435,12 +1434,12 @@ class SELoopWorker {
             timestamp-timeZero << "\n" << std::flush;
 #ifdef DEBUG_SIZES
 #ifndef DIAGONAL_P
-        uint Psize = cs_size(P);
+        uint Psize = cs_size(Pmat);
         print_sizeof(Psize, "P");
 #endif
-        uint Fsize = cs_size(F);
+        uint Fsize = cs_size(Fmat);
         print_sizeof(Fsize, "F");
-        uint Rsize = cs_size(R);
+        uint Rsize = cs_size(Rmat);
         print_sizeof(Rsize, "R");
         uint eyexsize = cs_size(eyex);
         print_sizeof(eyexsize, "eyex");
@@ -1471,11 +1470,11 @@ class SELoopWorker {
 
 
     private:
-    void decompress_state(cs *&x) {
+    void decompress_state(cs *&xmat) {
         // copy state into vector (states, especially phase, can be 0)
-        vector<double> xvec(x->m,0.0);
-        for ( uint idx = 0 ; idx < x->nzmax ; idx++ )
-            xvec[x->i[idx]] = x->x[idx];
+        vector<double> xvec(xmat->m,0.0);
+        for ( uint idx = 0 ; idx < xmat->nzmax ; idx++ )
+            xvec[xmat->i[idx]] = xmat->x[idx];
         // update Vpu
         for ( auto& node_name : node_names ) {
             uint idx = node_idxs[node_name];
@@ -1562,11 +1561,11 @@ class SELoopWorker {
 
 
     private:
-    void prep_x(cs *&x) {
+    void prep_x(cs *&xmat) {
         // Prepare x
 #ifdef GS_OPTIMIZE
-        x = gs_spalloc_firstcol(xqty);
-        if (!x) *selog << "ERROR: null x\n" << std::flush;
+        xmat = gs_spalloc_firstcol(xqty);
+        if (!xmat) *selog << "ERROR: null x\n" << std::flush;
 #else
         cs* xraw = cs_spalloc(xqty, 1, xqty, 1, 1);
 #endif
@@ -1576,9 +1575,9 @@ class SELoopWorker {
             complex<double> Vi = Vpu[idx];
 #ifdef GS_OPTIMIZE
             // Add the voltage magnitude to x
-            gs_entry_firstcol_negl(x,idx-1,abs(Vi));
+            gs_entry_firstcol_negl(xmat,idx-1,abs(Vi));
             // Add the voltage angle to x
-            gs_entry_firstcol_negl(x,node_qty + idx-1,arg(Vi));
+            gs_entry_firstcol_negl(xmat,node_qty + idx-1,arg(Vi));
 #else
             // Add the voltage magnitude to x
             cs_entry_negl(xraw,idx-1,0,abs(Vi));
@@ -1587,7 +1586,7 @@ class SELoopWorker {
 #endif
         }
 #ifndef GS_OPTIMIZE
-        x = cs_compress(xraw);
+        xmat = cs_compress(xraw);
         cs_spfree(xraw);
 #endif
     }
@@ -1710,23 +1709,23 @@ class SELoopWorker {
 
 
     private:
-    void sample_z(cs *&z) {
+    void sample_z(cs *&zmat) {
         // measurements have been loaded from the sim output message to zary
 #ifdef GS_OPTIMIZE
-        z = gs_spalloc_firstcol(zqty);
-        if (!z) *selog << "ERROR: null z\n" << std::flush;
+        zmat = gs_spalloc_firstcol(zqty);
+        if (!zmat) *selog << "ERROR: null z\n" << std::flush;
 #else
         cs* zraw = cs_spalloc(zqty, 1, zqty, 1, 1);
 #endif
         for ( auto& zid : zary.zids ) {
 #ifdef GS_OPTIMIZE
-            gs_entry_firstcol_negl(z,zary.zidxs[zid],zary.zvals[zid]);
+            gs_entry_firstcol_negl(zmat,zary.zidxs[zid],zary.zvals[zid]);
 #else
             cs_entry_negl(zraw,zary.zidxs[zid],0,zary.zvals[zid]);
 #endif
         }
 #ifndef GS_OPTIMIZE
-        z = cs_compress(zraw);
+        zmat = cs_compress(zraw);
         cs_spfree(zraw);
 #endif
 
