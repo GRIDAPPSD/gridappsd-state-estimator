@@ -204,12 +204,14 @@ class SELoopWorker {
 
                 if (jmessage.find("message") != jmessage.end()) {
                     timestamp = jmessage["message"]["timestamp"];
-#ifdef DEBUG_PRIMARY
                     if (firstEstimateFlag) {
                         timeZero = timestamp;
-                        timestampLastEstimate = timestamp;
+                        // set flag value to increase uncertainty in first
+                        // estimate call
+                        timestampLastEstimate = 0;
                         firstEstimateFlag = false;
                     }
+#ifdef DEBUG_PRIMARY
                     *selog << "Draining workQueue size: " << workQueue->size() << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
 #endif
                     // do z summation here
@@ -269,6 +271,7 @@ class SELoopWorker {
 #endif
             try {
                 estimate(timestamp, timestampLastEstimate, timeZero);
+                // not the first estimate call so set to actual value
                 timestampLastEstimate = timestamp;
                 //sleep(30); // delay to let queue refill for testing
                 publish(timestamp);
@@ -284,6 +287,9 @@ class SELoopWorker {
 
                 // things went bad so reset what was previously updated
                 initVoltagesAndCovariance();
+
+                // set flag value to increase uncertainty in first estimate call
+                timestampLastEstimate = 0;
 
                 // start fresh with new estimates from the top of the loop
             }
@@ -1043,7 +1049,7 @@ class SELoopWorker {
         print_cs_compress(P3,tspath+"P3.csv");
 #endif
 
-       cs *Qmat; this->prep_Q(Qmat, timestamp-timestampLastEstimate);
+       cs *Qmat; this->prep_Q(Qmat, timestamp, timestampLastEstimate);
 #ifdef DEBUG_PRIMARY
         *selog << "Q is " << Qmat->m << " by " << Qmat->n << " with " << Qmat->nzmax << " entries\n" << std::flush;
 #endif
@@ -1214,7 +1220,7 @@ class SELoopWorker {
         cs_spfree(Supd);
 
 #if 000
-        if (estimateExitCount == 20) {
+        if (estimateExitCount == 40) {
             estimateExitCount = 0;
             throw "klu_error";
         }
@@ -1612,7 +1618,8 @@ class SELoopWorker {
 
 
     private:
-    void prep_Q(cs *&Qmat, const uint& timeSinceLastEstimate) {
+    void prep_Q(cs *&Qmat, const uint& timestamp,
+                           const uint& timestampLastEstimate) {
         // update process covariance matrix
 
         // Set scale factor to determine weighting of previous system state
@@ -1627,9 +1634,21 @@ class SELoopWorker {
         // Within 1 standard deviation, change is 0.01 p.u. in a
         // 1 second interval as a high-end estimate for likely voltage change
         // so 0.01^2 is the variance for that voltage change estimate
-        double factor = 0.0001 * timeSinceLastEstimate;
-        //double factor = 0.03;
-        // Previously, the scale factor was hardwired to 0.03 for all models
+
+        double factor;
+        // for first estimate calls, either from start or after a restart
+        // triggered by an exception, hardwire the uncertainty to be large
+        // afterwards, set it to a smaller value based on time between estimates
+        if ( timestampLastEstimate == 0 )
+            factor = 0.1;
+        else
+            factor = 0.0001 * (timestamp - timestampLastEstimate);
+#ifdef DEBUG_PRIMARY
+        *selog << "Q uncertainty scale factor: " << factor << "\n" << std::flush;
+#endif
+
+        // Previously, the scale factor was hardwired for all models
+        // factor = 0.03;
 
 #ifdef GS_OPTIMIZE
         Qmat = gs_doubleval_diagonal(node_qty, factor, factor*PI);

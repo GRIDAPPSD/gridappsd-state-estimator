@@ -301,9 +301,11 @@ int main(int argc, char** argv) {
         // system base power, functionally arbitrary -- can be tweaked
         // for better numerical stability if needed
         // all values in the approximate range 1e-140 to 1e+150 converge
-        // and only numeric overflow/underflow results in failures
+        // and only numeric overflow/underflow results in failures for the
+        // 3 models tested (ieee13nodecktassets, ieee123, test9500new)
         // values in the 1e+6 to 1e+12 range result in minimum Supd condition
-        // numbers with the range for lowest condition varying somewhat by model
+        // numbers with the range for lowest condition varying somewhat between
+        // the 3 models tested
 #ifdef SBASE_TESTING
         double spower = (double)std::stoi(argv[3]);
 		const double sbase = pow(10.0, spower);
