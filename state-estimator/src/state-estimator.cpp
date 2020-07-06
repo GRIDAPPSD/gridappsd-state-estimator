@@ -79,6 +79,7 @@ using gridappsd_requests::sparql_query;
 #define SDMAP std::unordered_map<std::string,double>
 #define SCMAP std::unordered_map<std::string,std::complex<double>>
 #define SSMAP std::unordered_map<std::string,std::string>
+#define SSLISTMAP std::unordered_map<std::string,SLIST>
 
 // reverse lookup of nodenames by index
 #define ISMAP std::unordered_map<unsigned int,std::string>
@@ -258,15 +259,16 @@ int main(int argc, char** argv) {
 		// --------------------------------------------------------------------
 		// SENSOR INITILIZER
 		// --------------------------------------------------------------------
-	    // map conducting equipment terminals to bus names	
-//      SSMAP term_bus_map;
-//      state_estimator_util::build_term_bus_map(gad, term_bus_map);
+        // map conducting equipment to bus names
+        SSLISTMAP cemrid_busnames_map;
+        state_estimator_util::build_cemrid_busnames_map(gad,
+                cemrid_busnames_map);
 
 		// Set up the sensors consumer
 		string sensTopic = "goss.gridappsd.se.response."+gad.simid+".cimdict";
 		SensorDefConsumer sensConsumer(gad.brokerURI,gad.username,gad.password, 
-                reg_cemrid_primbus_map,reg_cemrid_regbus_map,
-                sensTopic,"queue");
+               cemrid_busnames_map,reg_cemrid_primbus_map,reg_cemrid_regbus_map,
+               sensTopic,"queue");
 		Thread sensConsumerThread(&sensConsumer);
 		sensConsumerThread.start();		// execute sensConsumer.run()
 		sensConsumer.waitUntilReady();	// wait for latch release

@@ -15,6 +15,7 @@ using sparql_queries::sparq_energy_consumer_pq;
 using sparql_queries::sparq_ratio_tap_changer_nodes;
 using sparql_queries::sparq_energy_source_buses;
 using sparql_queries::sparq_term_bus;
+using sparql_queries::sparq_cemrid_busnames;
 
 #include <string>
 #define SLIST std::list<std::string>
@@ -24,6 +25,7 @@ using sparql_queries::sparq_term_bus;
 #define SSMAP std::unordered_map<std::string,std::string>
 #define IDMAP std::unordered_map<unsigned int,double>
 #define IMDMAP std::unordered_map<unsigned int,IDMAP>
+#define SSLISTMAP std::unordered_map<std::string,SLIST>
 
 namespace state_estimator_util{
 
@@ -241,12 +243,13 @@ namespace state_estimator_util{
 	void build_A_matrix(gridappsd_session& gad, IMDMAP& A, SIMAP& node_idxs,
             SSMAP& reg_cemrid_primbus_map, SSMAP& reg_cemrid_regbus_map,
             SSMAP& regid_primnode_map, SSMAP& regid_regnode_map) {
-		json jregs = sparql_query(gad,"regs",sparq_ratio_tap_changer_nodes(gad.modelID));
+
+		json jregs = sparql_query(gad,"regs",
+                sparq_ratio_tap_changer_nodes(gad.modelID));
             
 //        *selog << jregs.dump(2);
 
 		for ( auto& reg : jregs["data"]["results"]["bindings"] ) {
-
 
 			// Get the primary node
 			string primbus = reg["primbus"]["value"];
@@ -280,8 +283,8 @@ namespace state_estimator_util{
 //                "\tregph: " << regph << "\n" << std::flush;
 
 			// initialize the A matrix
-			A[primidx][regidx] = 1;		// this will change
-			A[regidx][primidx] = 1;		// this stays unity and may not be required
+			A[primidx][regidx] = 1;	// this will change
+			A[regidx][primidx] = 1;	// this stays unity and may not be required
 
             // map the power transformer mrid to prim and reg nodes
             // NOTE: This is over-written when multiple single-phase regulators
@@ -298,11 +301,22 @@ namespace state_estimator_util{
 	}
 
     void build_term_bus_map(gridappsd_session& gad, SSMAP& term_bus_map) {
-        json j_term_bus = sparql_query(gad,"terms", sparq_term_bus(gad.modelID));
-        for ( auto& item : j_term_bus["data"]["results"]["bindings"] ) {
+        json jterms = sparql_query(gad,"terms",sparq_term_bus(gad.modelID));
+        for ( auto& item : jterms["data"]["results"]["bindings"] ) {
             string termid = item["termid"]["value"];
             string busname = item["busname"]["value"];
             term_bus_map[termid] = busname;
+        }
+    }
+
+    void build_cemrid_busnames_map(gridappsd_session& gad,
+            SSLISTMAP& cemrid_busnames_map) {
+        json jbusnames = sparql_query(gad,"busnames",sparq_cemrid_busnames(gad.modelID));
+        for ( auto& item : jbusnames["data"]["results"]["bindings"] ) {
+            string cemrid = item["cemrid"]["value"];
+            string busname = item["busname"]["value"];
+            cemrid_busnames_map[cemrid].push_back(busname);
+            *selog << "cemrid_busnames query results cemrid: " << cemrid << ", busname: " << busname << "\n" << std::flush;
         }
     }
 

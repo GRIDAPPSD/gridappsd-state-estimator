@@ -843,7 +843,7 @@ class SELoopWorker {
             }
            
             // Check for "Pos" measurement
-            if ( !m_type.compare("Pos") ) {
+            else if ( !m_type.compare("Pos") ) {
                 if ( !mmrid_pos_type_map[mmrid].compare("regulator_tap") ) {
                     // update the tap ratio
                     string zid = mmrid+"_tap";
@@ -885,6 +885,21 @@ class SELoopWorker {
                         Amat[j][i] = tap_ratio;
                     }
                 }
+#if 000
+                else if ( !mmrid_pos_type_map[mmrid].compare("load_break_switch") ) {
+                    // START HERE new switch measurement handling
+                    string zid = mmrid+"_switch";
+                    double switch_state = m["value"];
+                    *selog << "measurement load_break_switch zid: " << zid << "\n";
+                    *selog << "measurement load_break_switch value: " << switch_state << "\n";
+                    uint i = node_idxs[zary.znode1s[zid]];
+                    uint j = node_idxs[zary.znode2s[zid]];
+                    *selog << "measurement load_break_switch znode1s: " << zary.znode1s[zid] << "\n";
+                    *selog << "measurement load_break_switch znode2s: " << zary.znode2s[zid] << "\n";
+                    *selog << "measurement load_break_switch Ypu: " << Ypu[i][j] << "\n";
+                    *selog << "measurement load_break_switch Yphys: " << Yphys[i][j] << "\n";
+                }
+#endif
             }
 
             //else if ( !m_type.compare("") ) {

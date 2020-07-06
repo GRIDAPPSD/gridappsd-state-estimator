@@ -116,7 +116,7 @@ namespace sparql_queries {
 	}
 
 	string sparq_energy_consumer_pq(string fdrid) {
-		string sparq = 
+		string sparq =
 		"PREFIX r:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
 		"PREFIX c: <http://iec.ch/TC57/CIM100#>\n"
 		"SELECT ?loadname ?busname ?conn ?phase ?p_3p ?q_3p ?p_phase ?q_phase WHERE {\n"
@@ -186,7 +186,7 @@ namespace sparql_queries {
 
 
     string sparq_energy_source_buses(string fdrid) {
-        string sparq = 
+        string sparq =
             "# substation source - DistSubstation\n"
             "PREFIX r:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
             "PREFIX c:  <http://iec.ch/TC57/CIM100#>\n"
@@ -205,7 +205,7 @@ namespace sparql_queries {
     }
 
     string sparq_term_bus(string fdrid) {
-        string sparq = 
+        string sparq =
             "PREFIX r:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
             "PREFIX c:  <http://iec.ch/TC57/CIM100#> "
             "SELECT ?termid ?busname "
@@ -226,5 +226,23 @@ namespace sparql_queries {
         return sparq;
     }
 
+    string sparq_cemrid_busnames(string fdrid) {
+        string sparq =
+            "PREFIX r:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
+            "PREFIX c:  <http://iec.ch/TC57/CIM100#> "
+            "SELECT ?cemrid ?busname "
+            "WHERE { "
+            "?term c:Terminal.ConnectivityNode ?bus. "
+            "?bus c:IdentifiedObject.name ?busname. "
+            "?bus c:IdentifiedObject.mRID ?busid. "
+            "VALUES ?fdrid {\\\"" + fdrid + "\\\"} "
+            "?term c:Terminal.ConductingEquipment ?ce. "
+            "?ce c:Equipment.EquipmentContainer ?fdr. "
+            "?fdr c:IdentifiedObject.mRID ?fdrid. "
+            "?ce c:IdentifiedObject.mRID ?cemrid. "
+            " } "
+            "ORDER BY ?cemrid";
+        return sparq;
+    }
 }
 #endif

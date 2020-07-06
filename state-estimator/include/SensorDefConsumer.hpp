@@ -21,6 +21,14 @@ using json = nlohmann::json;
 #define SSMAP std::unordered_map<std::string,std::string>
 #endif
 
+#ifndef SLIST
+#define SLIST std::list<std::string>
+#endif
+
+#ifndef SSLISTMAP
+#define SSLISTMAP std::unordered_map<std::string,SLIST>
+#endif
+
 //#ifndef IDMAP
 //#define IDMAP std::unordered_map<unsigned int,double>
 //#endif
@@ -33,6 +41,7 @@ using json = nlohmann::json;
 class SensorDefConsumer : public SEConsumer {
     private:
     SSMAP term_bus_map; // terminal_mrid -> bus_name
+    SSLISTMAP cemrid_busnames_map; // ce_mrid -> bus_names
 
     private:
     SSMAP reg_cemrid_primbus_map;  // for regulator Pos measurement init
@@ -63,6 +72,7 @@ class SensorDefConsumer : public SEConsumer {
 				const string& username,
 				const string& password,
 //                const SSMAP& term_bus_map,
+                const SSLISTMAP& cemrid_busnames_map,
                 const SSMAP& reg_cemrid_primbus_map,
                 const SSMAP& reg_cemrid_regbus_map,
 				const string& target,
@@ -71,6 +81,7 @@ class SensorDefConsumer : public SEConsumer {
 		this->username = username;
 		this->password = password;
 //        this->term_bus_map = term_bus_map;
+        this->cemrid_busnames_map = cemrid_busnames_map;
         this->reg_cemrid_primbus_map = reg_cemrid_primbus_map;
         this->reg_cemrid_regbus_map = reg_cemrid_regbus_map;
 		this->target = target;
@@ -170,8 +181,57 @@ class SensorDefConsumer : public SEConsumer {
 //                        *selog << m.dump(2);
 //                        *selog << "primnode: " << primnode << std::endl;
 //                        *selog << "regnode: " << regnode << std::endl;
-                    }
-                    else {
+#if 000
+                    } else if ( !ce_type.compare("LoadBreakSwitch") ) {
+                        // START HERE see TODO below and get rid of debug logging
+#ifdef DEBUG_PRIMARY
+                        *selog << "Dumping Switch Ybus measurement\n";
+                        *selog << m.dump(2);
+                        *selog << "\n" << std::flush;
+#endif
+
+                        // regulator tap measurement
+                        mmrid_pos_type_map[mmrid] = "load_break_switch";
+
+                        // look up the prim and reg nodes
+                        string cemrid = m["ConductingEquipment_mRID"];
+
+                        // add the switch measurement
+                        string zid = mmrid + "_switch";
+                        zary.zids.push_back( zid );
+                        zary.zidxs[zid] = zary.zqty++;
+                        zary.ztypes[zid] = "switch_ij";
+                        // TODO figure out better confidence value for switches
+                        zary.zsigs[zid] = 0.001; // 1% of span
+                        zary.zvals[zid] = 1.0;
+
+                        // cemrid_busnames_map[cemrid] contains 2 buses
+                        // adjacent to a switch for cemrid
+                        string phase = m["phases"];
+                        uint node_count = 0;
+                        for (auto it=cemrid_busnames_map[cemrid].begin();
+                                it!=cemrid_busnames_map[cemrid].end(); ++it) {
+                            string node = *it;
+                            if (!phase.compare("A")) node += ".1";
+                            if (!phase.compare("B")) node += ".2";
+                            if (!phase.compare("C")) node += ".3";
+                            if (!phase.compare("s1")) node += ".1";
+                            if (!phase.compare("s2")) node += ".2";
+                            node_count++;
+                            if (node_count == 1) {
+                                zary.znode1s[zid] = node;
+#ifdef DEBUG_PRIMARY
+                               *selog << "switch cemrid: " << cemrid << ", zid: " << zid << ", znode1s: " << node << "\n" << std::endl;
+#endif
+                            } else if (node_count == 2) {
+                                zary.znode2s[zid] = node;
+#ifdef DEBUG_PRIMARY
+                               *selog << "switch cemrid: " << cemrid << ", zid: " << zid << ", znode2s: " << node << "\n" << std::endl;
+#endif
+                            }
+                        }
+#endif
+                    } else {
                         mmrid_pos_type_map[mmrid] = "other";
                     }
                 } else {
