@@ -885,7 +885,6 @@ class SELoopWorker {
                         Amat[j][i] = tap_ratio;
                     }
                 }
-#if 000
                 else if ( !mmrid_pos_type_map[mmrid].compare("load_break_switch") ) {
                     // START HERE new switch measurement handling
                     string zid = mmrid+"_switch";
@@ -899,7 +898,6 @@ class SELoopWorker {
                     *selog << "measurement load_break_switch Ypu: " << Ypu[i][j] << "\n";
                     *selog << "measurement load_break_switch Yphys: " << Yphys[i][j] << "\n";
                 }
-#endif
             }
 
             //else if ( !m_type.compare("") ) {

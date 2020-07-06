@@ -181,7 +181,6 @@ class SensorDefConsumer : public SEConsumer {
 //                        *selog << m.dump(2);
 //                        *selog << "primnode: " << primnode << std::endl;
 //                        *selog << "regnode: " << regnode << std::endl;
-#if 000
                     } else if ( !ce_type.compare("LoadBreakSwitch") ) {
                         // START HERE see TODO below and get rid of debug logging
 #ifdef DEBUG_PRIMARY
@@ -230,7 +229,6 @@ class SensorDefConsumer : public SEConsumer {
 #endif
                             }
                         }
-#endif
                     } else {
                         mmrid_pos_type_map[mmrid] = "other";
                     }
