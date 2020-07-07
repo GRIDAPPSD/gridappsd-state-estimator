@@ -860,7 +860,7 @@ class SELoopWorker {
                     
 
                     // Update the A matrix with the latest tap ratio measurement
-                    // TODO: Consider averaging for queued measturements
+                    // TODO: Consider averaging for queued measurements
                     string primnode = zary.znode1s[zid];
                     uint i = node_idxs[primnode];
 
@@ -1929,6 +1929,9 @@ class SELoopWorker {
 #else
                 cs_entry_negl(hraw,zidx,0,arg(Vpu[i]));
 #endif
+            }
+            else if ( !zary.ztypes[zid].compare("switch_ij") ) {
+                // START HERE
             }
             else { 
                 *selog << "WARNING: Undefined measurement type " + ztype + "\n" << std::flush;
