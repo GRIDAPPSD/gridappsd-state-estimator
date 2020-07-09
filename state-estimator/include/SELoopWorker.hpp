@@ -374,10 +374,7 @@ class SELoopWorker {
                         Jshapemap.insert(A5PAIR(node_qty+j-1, {zidx,node_qty+j-1,i,j,dPi_dTj}));
                     }
                 }
-            }
-
-            else
-            if ( !ztype.compare("Qi") ) {
+            } else if ( !ztype.compare("Qi") ) {
                 for ( auto& row_pair : Yphys[i] ) {
                     uint j = row_pair.first;
                     if ( j == i ) {
@@ -390,10 +387,7 @@ class SELoopWorker {
                         Jshapemap.insert(A5PAIR(node_qty+j-1, {zidx,node_qty+j-1,i,j,dQi_dTj}));
                     }
                 }
-            }
-
-            else
-            if ( !ztype.compare("aji") ) {
+            } else if ( !ztype.compare("aji") ) {
                 // note: the regulation node, j, is assigned to znode2s
                 //       the primary node, i, is assigned to znode1s
                 uint j = node_idxs[zary.znode2s[zid]];
@@ -404,24 +398,17 @@ class SELoopWorker {
                 // daja/dvi exists: -vj/vi^2
                 Jshapemap.insert(A5PAIR(i-1, {zidx, i-1, i, j, daji_dvi}));
 
-            }
-
-            else
-            if
-            ( !ztype.compare("vi") ) {
+            } else if ( !ztype.compare("vi") ) {
                 // dvi/dvi is the only partial that exists
                 Jshapemap.insert(A5PAIR(i-1, {zidx,i-1,i,i,dvi_dvi}));
-            }
-
-            else
-            if ( !ztype.compare("Ti") ) {
+            } else if ( !ztype.compare("Ti") ) {
                 // dTi/dTi is the only partial that exists
                 Jshapemap.insert(A5PAIR(node_qty+i-1, {zidx,node_qty+i-1,i,i,dTi_dTi}));
-            }
-
-            else { 
+            } else if ( !ztype.compare("switch_ij") ) {
+                // START HERE
+            } else { 
                 *selog << "ERROR: Unrecognized measurement type " << 
-                    ztype << std::flush;
+                    ztype << "\n" << std::flush;
             }
         }
 #ifdef DEBUG_PRIMARY
