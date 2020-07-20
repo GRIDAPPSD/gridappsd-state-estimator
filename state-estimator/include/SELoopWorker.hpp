@@ -102,7 +102,6 @@ class SELoopWorker {
     SSMAP              mmrid_pos_type_map; // type of position measurement
 
     SEProducer *statePublisher = 0;
-    json jstate;       // object holding the output message
 
     // system topology definition
     uint xqty;          // number of states
@@ -316,9 +315,6 @@ class SELoopWorker {
         }
         ofh.close();
 #endif
-
-        // set up the output message json object
-        jstate["simulation_id"] = gad->simid;
 
 #ifdef DEBUG_FILES
         // create the output directory if needed
@@ -915,26 +911,27 @@ class SELoopWorker {
             //  exactly what the message should look like
             //  - best guess is node and phase as commented out below
             //  - this would require a new sparql query and data flows
-            json state;
-            state["ConnectivityNode"] = node_bmrids[node_name];
-            state["phase"] = node_phs[node_name];
+            json node_state;
+            node_state["ConnectivityNode"] = node_bmrids[node_name];
+            node_state["phase"] = node_phs[node_name];
 
             // add the state values
             uint idx = node_idxs[node_name];
             complex<double> vnom = node_vnoms[node_name];
-            state["v"] = abs ( vnom * Vpu[idx] );
+            node_state["v"] = abs ( vnom * Vpu[idx] );
 
             double degrees = 180.0/PI * arg ( vnom * Vpu[idx] );
             // -165 <= degrees <= 195
             while (degrees > 195.0) degrees -= 360.0;
             while (degrees < -165.0) degrees += 360.0;
-            state["angle"] = degrees;
+            node_state["angle"] = degrees;
 
             // TODO: Add v and angle variance values
-            state["vVariance"] = 0;         // This comes from P
-            state["angleVariance"] = 0;     // This comes from P
+            node_state["vVariance"] = 0;         // This comes from P
+            node_state["angleVariance"] = 0;     // This comes from P
+
             // append this state to the measurement array
-            jstate["message"]["Estimate"]["SvEstVoltages"].push_back(state);
+            jstate["message"]["Estimate"]["SvEstVoltages"].push_back(node_state);
         }
 
 //      for ( auto& reg_name : reg_names ) {}
