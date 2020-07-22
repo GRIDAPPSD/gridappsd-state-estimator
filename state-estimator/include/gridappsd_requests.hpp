@@ -39,7 +39,9 @@ namespace gridappsd_requests {
 		return json::parse(resultText);
 	}
 
-	json config_request(const session&s, const string&t) {}
+	// GDB 7/22/20 generates a compiler warning with no return statement
+	// on my Ubuntu 20 VM, probably a newer g++ compiler
+	//json config_request(const session&s, const string&t) {}
 }
 
 
