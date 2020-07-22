@@ -91,6 +91,7 @@ sudo apt-get install cmake
 sudo apt-get install m4
 sudo apt-get install liblapack-dev libblas-dev
 sudo apt-get install libapr1 libapr1-dev
+sudo apt-get install libssl-dev
 ````
 
 5. From the state-estimator directory, run the following commands to build the prerequisite libraries and then the state-estimator executable:
