@@ -26,8 +26,11 @@ AMQLIBDIR1=/gridappsd/lib
 AMQLIBDIR2=/usr/local/lib
 AMQLIBPATH=-L$(AMQLIBDIR1) -L$(AMQLIBDIR2)
 
-CXXFLAGS=-Ofast
-#CXXFLAGS=-g
+# Changed from -Ofast to -O2 on 7/30/20 because under an Ubuntu 20 VM with
+# g++ version 9.3.0 -Ofast was giving bad numerical results in terms of
+# intermittent very high Supd condition numbers and incorrect state estimates
+CXXFLAGS=-O2
+#CXXFLAGS=-Ofast
 
 bin/state-estimator: obj/state-estimator.o
 	mkdir -p bin
