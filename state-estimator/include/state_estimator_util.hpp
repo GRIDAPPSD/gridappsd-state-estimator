@@ -89,7 +89,8 @@ namespace state_estimator_util{
 
 		// Add nominal load injections
 		for ( auto& load : jpsm["data"]["results"]["bindings"] ) {
-		 	string bus = load["busname"]["value"]; for ( char& c : bus ) c = toupper(c);
+		 	string bus = load["busname"]["value"];
+            for ( char& c : bus ) c = toupper(c);
 
 			if ( !load.count("phase") ) {
 				// This is a 3-phase balanced load (handle D and Y the same)
@@ -170,7 +171,7 @@ namespace state_estimator_util{
         }
 
         string sourcebus = source_buses[0]["bus"]["value"]; 
-        std::transform( sourcebus.begin(), sourcebus.end(), sourcebus.begin(), ::toupper );
+        for ( auto& c : sourcebus ) c = toupper(c);
         string source_node_prefix = sourcebus + ".";
 
 
@@ -305,6 +306,7 @@ namespace state_estimator_util{
         for ( auto& item : jterms["data"]["results"]["bindings"] ) {
             string termid = item["termid"]["value"];
             string busname = item["busname"]["value"];
+			for ( auto& c : busname ) c = toupper(c);
             term_bus_map[termid] = busname;
         }
     }
@@ -315,6 +317,7 @@ namespace state_estimator_util{
         for ( auto& item : jbusnames["data"]["results"]["bindings"] ) {
             string cemrid = item["cemrid"]["value"];
             string busname = item["busname"]["value"];
+			for ( auto& c : busname ) c = toupper(c);
             cemrid_busnames_map[cemrid].push_back(busname);
             *selog << "cemrid_busnames query results cemrid: " << cemrid << ", busname: " << busname << "\n" << std::flush;
         }
