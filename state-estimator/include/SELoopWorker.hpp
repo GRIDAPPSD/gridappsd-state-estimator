@@ -125,6 +125,7 @@ class SELoopWorker {
 #else
     cs *Pmat=NULL;      // x comes from V and A but P is persistent 
 #endif
+    IMDMAP Bmat;         // binary switch state matrix
 
     cs *Fmat;           // process model
     cs *Rmat;           // measurement covariance (diagonal)
@@ -401,7 +402,9 @@ class SELoopWorker {
                 // dTi/dTi is the only partial that exists
                 Jshapemap.insert(A5PAIR(node_qty+i-1, {zidx,node_qty+i-1,i,i,dTi_dTi}));
             } else if ( !ztype.compare("switch_ij") ) {
-                // START HERE
+                // if switch is open, possibility of distributed generation
+                // means the relationship between vi and vj is indeterminant
+                // this piecewise relationship is not differentiable for calc_J
             } else { 
                 *selog << "ERROR: Unrecognized measurement type " << 
                     ztype << "\n" << std::flush;
@@ -415,7 +418,7 @@ class SELoopWorker {
         double thresh = 1e+3;
 #ifdef DEBUG_PRIMARY
         uint ctr = 0;
-        *selog << "Yphys scaling started...\n" << std::flush;
+        //*selog << "Yphys scaling started...\n" << std::flush;
 #endif
         for ( auto& inode : node_names ) {
             uint i = node_idxs[inode];
@@ -431,15 +434,15 @@ class SELoopWorker {
                     continue;
 #ifdef DEBUG_PRIMARY
                 ctr++;
-                *selog << "Yphys scaling down row: " << i << ", col: " << j << "\n" << std::flush;
+                //*selog << "Yphys scaling down row: " << i << ", col: " << j << "\n" << std::flush;
 #endif
                 double scaler = thresh / term_mag;
                 // update the term
                 complex<double> new_term_val = term_val * scaler;
 #ifdef DEBUG_PRIMARY
-                *selog << "\tYphys scaler: " << scaler << "\n" << std::flush;
-                *selog << "\tYphys term_val: " << abs(term_val) << "(" << 180/PI*arg(term_val) << ")\n" << std::flush;
-                *selog << "\tYphys new_term_val: " << abs(new_term_val) << "(" << 180/PI*arg(new_term_val) << ")\n" << std::flush;
+                //*selog << "\tYphys scaler: " << scaler << "\n" << std::flush;
+                //*selog << "\tYphys term_val: " << abs(term_val) << "(" << 180/PI*arg(term_val) << ")\n" << std::flush;
+                //*selog << "\tYphys new_term_val: " << abs(new_term_val) << "(" << 180/PI*arg(new_term_val) << ")\n" << std::flush;
 #endif
                 Yphys[i][j] = new_term_val;
 
@@ -718,7 +721,7 @@ class SELoopWorker {
             Vpu[node_idxs[node_name]] = 1.0;
         }
 #ifdef DEBUG_PRIMARY
-        *selog << "Voltages Initialized.\n\n" << std::flush;
+        *selog << "Voltages Initialized.\n" << std::flush;
 #endif
 
 #ifdef DEBUG_FILES
@@ -869,17 +872,12 @@ class SELoopWorker {
                     }
                 }
                 else if ( !mmrid_pos_type_map[mmrid].compare("load_break_switch") ) {
-                    // START HERE new switch measurement handling
                     string zid = mmrid+"_switch";
                     double switch_state = m["value"];
-                    *selog << "measurement load_break_switch zid: " << zid << "\n";
-                    *selog << "measurement load_break_switch value: " << switch_state << "\n";
                     uint i = node_idxs[zary.znode1s[zid]];
                     uint j = node_idxs[zary.znode2s[zid]];
-                    *selog << "measurement load_break_switch znode1s: " << zary.znode1s[zid] << "\n";
-                    *selog << "measurement load_break_switch znode2s: " << zary.znode2s[zid] << "\n";
-                    *selog << "measurement load_break_switch Ypu: " << Ypu[i][j] << "\n";
-                    *selog << "measurement load_break_switch Yphys: " << Yphys[i][j] << "\n";
+
+                    Bmat[i][j] = Bmat[j][i] = switch_state;
                 }
             }
 
@@ -1469,7 +1467,7 @@ class SELoopWorker {
         for ( auto& node_name : node_names ) {
             uint idx = node_idxs[node_name];
             uint vidx = idx-1;
-            uint Tidx = node_qty + idx-1;
+            uint Tidx = node_qty + vidx;
             double vrei = xvec[vidx] * cos(xvec[Tidx]);
             double vimi = xvec[vidx] * sin(xvec[Tidx]);
             Vpu[idx] = complex<double>(vrei,vimi);
@@ -1746,7 +1744,7 @@ class SELoopWorker {
     double b;
     double ai;
     double aj;
-
+    double bij; // switch status multiplier between nodes i and j
 
     private:
     void set_n(uint i, uint j) {
@@ -1761,6 +1759,7 @@ class SELoopWorker {
             T = arg(Vpu[i]);
             ai = 1;
             aj = 1;
+            bij = 1;
             complex<double> Yi0;
             try {
                 auto& Yrow = Ypu.at(i);
@@ -1778,6 +1777,7 @@ class SELoopWorker {
             complex<double> Yij;
             ai = 0;
             aj = 0;
+            bij = 1;
             try {
                 auto& Yrow = Ypu.at(i);
                 try {
@@ -1802,16 +1802,27 @@ class SELoopWorker {
 //                            *selog << "|||||||||||||||||| aj assigned to: " << aj << std::endl;
                         } catch ( const std::out_of_range& oor ) {}
                     } catch ( const std::out_of_range& oor ) {}
+                    // We know the nodes are coupled; check for Bij
+                    // Bij = Bji by definition
+                    try {
+                        auto Brow = Bmat.at(i);
+                        try {
+                            bij = real(Brow.at(j));
+//                            *selog << "|||||||||||||||||| bij assigned to: " << bij << ", for i: " << i << ", j: " << j << std::endl;
+                        } catch ( const std::out_of_range& oor ) {}
+                    } catch ( const std::out_of_range& oor ) {}
                 } catch ( const std::out_of_range& oor ) {
                     *selog << "ERROR: set_n catch on Yrow.at(j) lookup\n" << std::flush;
                     exit(1);
                 }
+
             } catch ( const std::out_of_range& oor ) {
                 *selog << "ERROR: set_n catch on Ypu.at(i) lookup\n" << std::flush;
                 exit(1);
             }
-            g = real(-1.0*Yij);
-            b = imag(-1.0*Yij);
+            g = real(-Yij);
+            b = imag(-Yij);
+
         }
     }
     
@@ -1837,6 +1848,7 @@ class SELoopWorker {
                 // Real power injection into node i
                 uint i = node_idxs[zary.znode1s[zid]];
                 double Pi = 0;
+                double term;
                 try {
                     auto& Yrow = Ypu.at(i);
                     for ( auto& rowpair : Yrow ) {
@@ -1844,8 +1856,10 @@ class SELoopWorker {
                         if (j != i) {
                             set_n(i,j);
                             // Add the real power component flowing from i to j
-                            Pi = Pi + vi*vi/ai/ai * g - 
-                                vi*vj/ai/aj * (g*cos(T) + b*sin(T));
+                            term = (vi*vi/(ai*ai) * g) -
+                                   (vi*vj/(ai*aj) * (g*cos(T) + b*sin(T)));
+                            // bij--switch status multiplier between i and j
+                            Pi += bij*term;
                         }
                     }
                     // Add the real power component flowing from i to 0
@@ -1863,6 +1877,7 @@ class SELoopWorker {
                 // Reactive power injection into node i
                 uint i = node_idxs[zary.znode1s[zid]];
                 double Qi = 0;
+                double term;
                 try {
                     auto& Yrow = Ypu.at(i);
                     for ( auto& rowpair : Yrow ) {
@@ -1870,13 +1885,15 @@ class SELoopWorker {
                         if (j != i) {
                             set_n(i,j);
                             // Add the reactive power component flowing from i to j
-                            Qi = Qi - vi*vi/ai/ai * b - 
-                                vi*vj/ai/aj * (g*sin(T) - b*cos(T));
+                            term = - (vi*vi/(ai*ai) * b) -
+                                     (vi*vj/(ai*aj) * (g*sin(T) - b*cos(T)));
+                            // bij--switch status multiplier between i and j
+                            Qi += bij*term;
                         }
                     }
                     // Add the reactive power component flowing from i to 0
                     set_n(i,0);
-                    Qi -= vi*vi * b;
+                    Qi += - vi*vi * b;
                 } catch ( const std::out_of_range& oor ) {}
 #ifdef GS_OPTIMIZE
                 gs_entry_firstcol_negl(h,zidx,Qi);
@@ -1915,7 +1932,11 @@ class SELoopWorker {
 #endif
             }
             else if ( !zary.ztypes[zid].compare("switch_ij") ) {
-                // START HERE
+                // if switch is closed, vi = vj
+
+                // if switch is open, possibility of distributed generation
+                // means the relationship between vi and vj is indeterminant
+                // this piecewise relationship is not differentiable for calc_J
             }
             else { 
                 *selog << "WARNING: Undefined measurement type " + ztype + "\n" << std::flush;
@@ -1955,19 +1976,22 @@ class SELoopWorker {
             if ( entry_type == dPi_dvi ) {
                 // --- compute dPi/dvi
                 double dP = 0;
+                double term;
                 // loop over adjacent nodes
                 auto& Yrow = Ypu.at(i);
                 for ( auto& rowpair : Yrow ) {
                     j = rowpair.first;
                     if (j != i) {
                         set_n(i,j);
-                        dP = dP + 2*vi/ai/ai * g - 
-                            vj/ai/aj * (g*cos(T) + b*sin(T));
+                        term = (2*vi/(ai*ai) * g) -
+                                 (vj/(ai*aj) * (g*cos(T) + b*sin(T)));
+                        // bij--switch status multiplier between i and j
+                        dP += bij*term;
                     }
                 }
                 // consider the reference node
                 set_n(i,0);
-                dP = dP + 2*vi * g;
+                dP += 2*vi * g;
 #ifdef GS_OPTIMIZE
                 gs_entry_colorder_negl(J,zidx,xidx,dP);
 #else
@@ -1982,7 +2006,8 @@ class SELoopWorker {
                 complex<double> Yij = Yrow.at(j);
 
                 set_n(i,j);
-                double dP = -1.0 * vi/ai/aj * (g*cos(T) + b*sin(T));
+                // bij--switch status multiplier between i and j
+                double dP = bij * - vi/ai/aj * (g*cos(T) + b*sin(T));
 #ifdef GS_OPTIMIZE
                 gs_entry_colorder_negl(J,zidx,xidx,dP);
 #else
@@ -1994,19 +2019,22 @@ class SELoopWorker {
             if ( entry_type == dQi_dvi ) {
                 // --- compute dQi/dvi
                 double dQ = 0;
+                double term;
                 // loop over adjacent nodes
                 auto& Yrow = Ypu.at(i);
                 for ( auto& rowpair : Yrow ) {
                     uint j = rowpair.first;
                     if (j != i ) {
                         set_n(i,j);
-                        dQ = dQ - 2*vi/ai/ai * b - 
-                            vj/ai/aj * (g*sin(T) - b*cos(T));
+                        term = - (2*vi/(ai*ai) * b) -
+                                   (vj/(ai*aj) * (g*sin(T) - b*cos(T)));
+                        // bij--switch status multiplier between i and j
+                        dQ += bij*term;
                     }
                 }
                 // consider the reference node
                 set_n(i,0);
-                dQ = dQ - 2*vi*b;
+                dQ += - 2*vi*b;
 #ifdef GS_OPTIMIZE
                 gs_entry_colorder_negl(J,zidx,xidx,dQ);
 #else
@@ -2021,7 +2049,8 @@ class SELoopWorker {
                 complex<double> Yij = Yrow.at(j);
 
                 set_n(i,j);
-                double dQ = -1.0 * vi/ai/aj * (g*sin(T) - b*cos(T));
+                // bij--switch status multiplier between i and j
+                double dQ = bij * - vi/ai/aj * (g*sin(T) - b*cos(T));
 #ifdef GS_OPTIMIZE
                 gs_entry_colorder_negl(J,zidx,xidx,dQ);
 #else
@@ -2033,9 +2062,9 @@ class SELoopWorker {
             if ( entry_type == dvi_dvi ) {
                  // --- compute dvi/dvi
 #ifdef GS_OPTIMIZE
-                 gs_entry_colorder_negl(J,zidx,xidx,1.0);
+                 gs_entry_colorder_negl(J,zidx,xidx,1);
 #else
-                 cs_entry_negl(Jraw,zidx,xidx,1.0);
+                 cs_entry_negl(Jraw,zidx,xidx,1);
 #endif
             }
             
@@ -2043,13 +2072,16 @@ class SELoopWorker {
             if ( entry_type == dPi_dTi ) {
                 // --- compute dPi/dTi
                 double dP = 0;
+                double term;
                 // loop over adjacent nodes
                 auto &Yrow = Ypu.at(i);
                 for ( auto& rowpair : Yrow ) {
                     uint j = rowpair.first;
                     if (j != i) {
                         set_n(i,j);
-                        dP = dP + vi*vj/ai/aj * (g*sin(T) - b*cos(T));
+                        term = vi*vj/(ai*aj) * (g*sin(T) - b*cos(T));
+                        // bij--switch status multiplier between i and j
+                        dP += bij*term;
                     }
                 }
                 // reference node component is 0
@@ -2067,7 +2099,8 @@ class SELoopWorker {
                 complex<double> Yij = Yrow.at(j);
  
                 set_n(i,j);
-                double dP = -1.0 * vi*vj/ai/aj * (g*sin(T) - b*cos(T));
+                // bij--switch status multiplier between i and j
+                double dP = bij * - vi*vj/ai/aj * (g*sin(T) - b*cos(T));
 #ifdef GS_OPTIMIZE
                  gs_entry_colorder_negl(J,zidx,xidx,dP);
 #else
@@ -2079,13 +2112,16 @@ class SELoopWorker {
             if ( entry_type == dQi_dTi ) {
                 // compute dQi/dTi
                 double dQ = 0;
+                double term;
                 // loop over adjacent nodes
                 auto& Yrow = Ypu.at(i);
                 for ( auto& rowpair : Yrow ) {
                     uint j = rowpair.first;
                     if (j != i) {
                         set_n(i,j);
-                        dQ = dQ - vi*vj/ai/aj * (g*cos(T) + b*sin(T));
+                        term = - vi*vj/(ai*aj) * (g*cos(T) + b*sin(T));
+                        // bij--switch status multiplier between i and j
+                        dQ += bij*term;
                     }
                 }
                 // reference component is 0
@@ -2103,7 +2139,8 @@ class SELoopWorker {
                 complex<double> Yij = Yrow.at(j);
 
                 set_n(i,j);
-                double dQ = vi*vj/ai/aj * (g*cos(T) + b*sin(T));
+                // bij--switch status multiplier between i and j
+                double dQ = bij * vi*vj/(ai*aj) * (g*cos(T) + b*sin(T));
 #ifdef GS_OPTIMIZE
                 gs_entry_colorder_negl(J,zidx,xidx,dQ);
 #else
