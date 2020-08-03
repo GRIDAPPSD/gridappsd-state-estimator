@@ -2,6 +2,7 @@
 #define DEBUG_PRIMARY
 //#define DEBUG_FILES
 #define GS_OPTIMIZE
+#define SWITCHES
 //#define SBASE_TESTING
 
 #define PI 3.1415926535

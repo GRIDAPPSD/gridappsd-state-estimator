@@ -1858,8 +1858,12 @@ class SELoopWorker {
                             // Add the real power component flowing from i to j
                             term = (vi*vi/(ai*ai) * g) -
                                    (vi*vj/(ai*aj) * (g*cos(T) + b*sin(T)));
+#ifdef SWITCHES
                             // bij--switch status multiplier between i and j
                             Pi += bij*term;
+#else
+                            Pi += term;
+#endif
                         }
                     }
                     // Add the real power component flowing from i to 0
@@ -1887,8 +1891,12 @@ class SELoopWorker {
                             // Add the reactive power component flowing from i to j
                             term = - (vi*vi/(ai*ai) * b) -
                                      (vi*vj/(ai*aj) * (g*sin(T) - b*cos(T)));
+#ifdef SWITCHES
                             // bij--switch status multiplier between i and j
                             Qi += bij*term;
+#else
+                            Qi += term;
+#endif
                         }
                     }
                     // Add the reactive power component flowing from i to 0
@@ -1985,8 +1993,12 @@ class SELoopWorker {
                         set_n(i,j);
                         term = (2*vi/(ai*ai) * g) -
                                  (vj/(ai*aj) * (g*cos(T) + b*sin(T)));
+#ifdef SWITCHES
                         // bij--switch status multiplier between i and j
                         dP += bij*term;
+#else
+                        dP += term;
+#endif
                     }
                 }
                 // consider the reference node
@@ -2006,8 +2018,12 @@ class SELoopWorker {
                 complex<double> Yij = Yrow.at(j);
 
                 set_n(i,j);
+#ifdef SWITCHES
                 // bij--switch status multiplier between i and j
                 double dP = bij * - vi/ai/aj * (g*cos(T) + b*sin(T));
+#else
+                double dP = - vi/ai/aj * (g*cos(T) + b*sin(T));
+#endif
 #ifdef GS_OPTIMIZE
                 gs_entry_colorder_negl(J,zidx,xidx,dP);
 #else
@@ -2028,8 +2044,12 @@ class SELoopWorker {
                         set_n(i,j);
                         term = - (2*vi/(ai*ai) * b) -
                                    (vj/(ai*aj) * (g*sin(T) - b*cos(T)));
+#ifdef SWITCHES
                         // bij--switch status multiplier between i and j
                         dQ += bij*term;
+#else
+                        dQ += term;
+#endif
                     }
                 }
                 // consider the reference node
@@ -2049,8 +2069,12 @@ class SELoopWorker {
                 complex<double> Yij = Yrow.at(j);
 
                 set_n(i,j);
+#ifdef SWITCHES
                 // bij--switch status multiplier between i and j
                 double dQ = bij * - vi/ai/aj * (g*sin(T) - b*cos(T));
+#else
+                double dQ = - vi/ai/aj * (g*sin(T) - b*cos(T));
+#endif
 #ifdef GS_OPTIMIZE
                 gs_entry_colorder_negl(J,zidx,xidx,dQ);
 #else
@@ -2080,8 +2104,12 @@ class SELoopWorker {
                     if (j != i) {
                         set_n(i,j);
                         term = vi*vj/(ai*aj) * (g*sin(T) - b*cos(T));
+#ifdef SWITCHES
                         // bij--switch status multiplier between i and j
                         dP += bij*term;
+#else
+                        dP += term;
+#endif
                     }
                 }
                 // reference node component is 0
@@ -2099,8 +2127,12 @@ class SELoopWorker {
                 complex<double> Yij = Yrow.at(j);
  
                 set_n(i,j);
+#ifdef SWITCHES
                 // bij--switch status multiplier between i and j
                 double dP = bij * - vi*vj/ai/aj * (g*sin(T) - b*cos(T));
+#else
+                double dP = - vi*vj/ai/aj * (g*sin(T) - b*cos(T));
+#endif
 #ifdef GS_OPTIMIZE
                  gs_entry_colorder_negl(J,zidx,xidx,dP);
 #else
@@ -2120,8 +2152,12 @@ class SELoopWorker {
                     if (j != i) {
                         set_n(i,j);
                         term = - vi*vj/(ai*aj) * (g*cos(T) + b*sin(T));
+#ifdef SWITCHES
                         // bij--switch status multiplier between i and j
                         dQ += bij*term;
+#else
+                        dQ += term;
+#endif
                     }
                 }
                 // reference component is 0
@@ -2139,8 +2175,12 @@ class SELoopWorker {
                 complex<double> Yij = Yrow.at(j);
 
                 set_n(i,j);
+#ifdef SWITCHES
                 // bij--switch status multiplier between i and j
                 double dQ = bij * vi*vj/(ai*aj) * (g*cos(T) + b*sin(T));
+#else
+                double dQ = vi*vj/(ai*aj) * (g*cos(T) + b*sin(T));
+#endif
 #ifdef GS_OPTIMIZE
                 gs_entry_colorder_negl(J,zidx,xidx,dQ);
 #else
