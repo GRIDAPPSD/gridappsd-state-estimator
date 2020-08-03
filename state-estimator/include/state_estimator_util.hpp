@@ -319,7 +319,6 @@ namespace state_estimator_util{
             string busname = item["busname"]["value"];
 			for ( auto& c : busname ) c = toupper(c);
             cemrid_busnames_map[cemrid].push_back(busname);
-            *selog << "cemrid_busnames query results cemrid: " << cemrid << ", busname: " << busname << "\n" << std::flush;
         }
     }
 

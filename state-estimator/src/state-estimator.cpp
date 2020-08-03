@@ -320,10 +320,10 @@ int main(int argc, char** argv) {
 				node_names,node_vnoms,sbase);
 
 #ifdef DEBUG_PRIMARY
-        *selog << "\nzsigs/zvals after adding pseudo-measurements:\n" << std::flush;
-        for ( auto& zid : zary.zids ) {
-            *selog << "\tzid: " << zid << ", ztype: " << zary.ztypes[zid] << ", zsig: " << zary.zsigs[zid] << ", zvals: " << zary.zvals[zid] << "\n" << std::flush;
-        }
+        //*selog << "\nzsigs/zvals after adding pseudo-measurements:\n" << std::flush;
+        //for ( auto& zid : zary.zids ) {
+        //    *selog << "\tzid: " << zid << ", ztype: " << zary.ztypes[zid] << ", zsig: " << zary.zsigs[zid] << ", zvals: " << zary.zvals[zid] << "\n" << std::flush;
+        //}
 #endif
 
         // Initialize class that does the state estimates

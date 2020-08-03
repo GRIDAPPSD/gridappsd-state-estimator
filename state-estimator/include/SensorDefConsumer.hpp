@@ -182,13 +182,6 @@ class SensorDefConsumer : public SEConsumer {
 //                        *selog << "primnode: " << primnode << std::endl;
 //                        *selog << "regnode: " << regnode << std::endl;
                     } else if ( !ce_type.compare("LoadBreakSwitch") ) {
-                        // START HERE see TODO below and get rid of debug logging
-#ifdef DEBUG_PRIMARY
-                        *selog << "Dumping Switch Ybus measurement\n";
-                        *selog << m.dump(2);
-                        *selog << "\n" << std::flush;
-#endif
-
                         // regulator tap measurement
                         mmrid_pos_type_map[mmrid] = "load_break_switch";
 
@@ -219,14 +212,10 @@ class SensorDefConsumer : public SEConsumer {
                             node_count++;
                             if (node_count == 1) {
                                 zary.znode1s[zid] = node;
-#ifdef DEBUG_PRIMARY
-                               *selog << "switch cemrid: " << cemrid << ", zid: " << zid << ", znode1s: " << node << "\n" << std::endl;
-#endif
+                                //*selog << "switch cemrid: " << cemrid << ", zid: " << zid << ", znode1s: " << node << "\n" << std::endl;
                             } else if (node_count == 2) {
                                 zary.znode2s[zid] = node;
-#ifdef DEBUG_PRIMARY
-                               *selog << "switch cemrid: " << cemrid << ", zid: " << zid << ", znode2s: " << node << "\n" << std::endl;
-#endif
+                                //*selog << "switch cemrid: " << cemrid << ", zid: " << zid << ", znode2s: " << node << "\n" << std::endl;
                             }
                         }
                     } else {
