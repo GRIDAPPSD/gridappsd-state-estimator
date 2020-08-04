@@ -216,6 +216,7 @@ class SensorDefConsumer : public SEConsumer {
                             } else if (node_count == 2) {
                                 zary.znode2s[zid] = node;
                                 //*selog << "switch cemrid: " << cemrid << ", zid: " << zid << ", znode2s: " << node << "\n" << std::endl;
+                                break; // no reason to keep checking
                             }
                         }
                     } else {
