@@ -286,6 +286,8 @@ int main(int argc, char** argv) {
 		// Initialize sensors
 		SensorArray zary;
         SSMAP mmrid_pos_type_map;
+        SSMAP switch_node1s;
+        SSMAP switch_node2s;
 //		uint numms; 	// number of sensors
 //		SLIST mns;		// sensor name [list of strings]
 //		SSMAP mts;		// sensor type [sn->str]
@@ -298,7 +300,8 @@ int main(int argc, char** argv) {
 		sensConsumerThread.join();
 
         // Add Sensors
-		sensConsumer.fillSens(zary, mmrid_pos_type_map);
+		sensConsumer.fillSens(zary, mmrid_pos_type_map,
+                              switch_node1s, switch_node2s);
 		sensConsumer.close();
 
         // system base power, functionally arbitrary -- can be tweaked
@@ -331,7 +334,7 @@ int main(int argc, char** argv) {
         SELoopWorker loopWorker(&workQueue, &gad, zary, node_qty, node_names,
             node_idxs, node_vnoms, node_bmrids, node_phs, node_name_lookup,
             sbase, Y, Amat, regid_primnode_map, regid_regnode_map,
-            mmrid_pos_type_map);
+            mmrid_pos_type_map, switch_node1s, switch_node2s);
 
 #ifdef DEBUG_PRIMARY
 		*selog << "\nStarting the SE work loop\n" << std::flush;

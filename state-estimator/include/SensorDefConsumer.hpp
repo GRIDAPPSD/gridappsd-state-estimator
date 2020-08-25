@@ -50,6 +50,8 @@ class SensorDefConsumer : public SEConsumer {
 	private:
 	SensorArray zary;
     SSMAP mmrid_pos_type_map;
+    SSMAP switch_node1s;
+    SSMAP switch_node2s;
 //	SLIST mmids;
 //	SLIST zids;		// measurement id [mrid_ztype] [list of strings]
 //	SSMAP ztypes;	// measurement types [str->str]
@@ -89,9 +91,12 @@ class SensorDefConsumer : public SEConsumer {
 	}
 
 	public:
-	void fillSens(SensorArray &zary, SSMAP& mmrid_pos_type_map) {
+	void fillSens(SensorArray &zary, SSMAP& mmrid_pos_type_map,
+                  SSMAP& switch_node1s, SSMAP& switch_node2s) {
 		zary = this->zary;
         mmrid_pos_type_map = this->mmrid_pos_type_map;
+        switch_node1s = this->switch_node1s;
+        switch_node2s = this->switch_node2s;
 	}
 	
 	public:
@@ -182,20 +187,9 @@ class SensorDefConsumer : public SEConsumer {
 //                        *selog << "primnode: " << primnode << std::endl;
 //                        *selog << "regnode: " << regnode << std::endl;
                     } else if ( !ce_type.compare("LoadBreakSwitch") ) {
-                        // regulator tap measurement
                         mmrid_pos_type_map[mmrid] = "load_break_switch";
-
-                        // look up the prim and reg nodes
                         string cemrid = m["ConductingEquipment_mRID"];
-
-                        // add the switch measurement
                         string zid = mmrid + "_switch";
-                        zary.zids.push_back( zid );
-                        zary.zidxs[zid] = zary.zqty++;
-                        zary.ztypes[zid] = "switch_ij";
-                        // TODO figure out better confidence value for switches
-                        zary.zsigs[zid] = 0.001; // 1% of span
-                        zary.zvals[zid] = 1.0;
 
                         // cemrid_busnames_map[cemrid] contains 2 buses
                         // adjacent to a switch for cemrid
@@ -211,10 +205,10 @@ class SensorDefConsumer : public SEConsumer {
                             if (!phase.compare("s2")) node += ".2";
                             node_count++;
                             if (node_count == 1) {
-                                zary.znode1s[zid] = node;
+                                switch_node1s[zid] = node;
                                 //*selog << "switch cemrid: " << cemrid << ", zid: " << zid << ", znode1s: " << node << "\n" << std::endl;
                             } else if (node_count == 2) {
-                                zary.znode2s[zid] = node;
+                                switch_node2s[zid] = node;
                                 //*selog << "switch cemrid: " << cemrid << ", zid: " << zid << ", znode2s: " << node << "\n" << std::endl;
                                 break; // no reason to keep checking
                             }
