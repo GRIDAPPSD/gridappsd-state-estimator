@@ -819,39 +819,7 @@ class SELoopWorker {
             for (auto& ent2 : ent1.second)
                 ent2.second = 1;
 
-        // --------------------------------------------------------------------
-        // Initialize Voltages (complex per-unit)
-        // --------------------------------------------------------------------
-        // clear previous values if this was called before
-        if ( Vpu.size() > 0 ) Vpu.clear();
-
-        for ( auto& node_name : node_names ) {
-            // Important: V is indexed by node index like A and Y
-            // V[node_idxs[node_name]] = node_vnoms[node_name];
-            Vpu[node_idxs[node_name]] = 1.0;
-        }
-
-        // --------------------------------------------------------------------
-        // Initialize State Covariance Matrix
-        // --------------------------------------------------------------------
-        double span_vmag = 1.0;
-        double span_varg = 1.0/3.0*PI;
-        double span_taps = 0.2;
-
-        // scaling factor for state uncertainty initialization
-        double span_multiplier = 0.02;
-#ifdef DIAGONAL_P
-        // clear previous values if this was called before
-        if ( Uvmag.size() > 0 ) Uvmag.clear();
-        if ( Uvarg.size() > 0 ) Uvarg.clear();
-
-        for ( auto& node_name : node_names ) {
-            uint idx = node_idxs[node_name];
-            Uvmag[idx] = span_multiplier*span_vmag;
-            Uvarg[idx] = span_multiplier*span_varg;
-        }
-#else
-#endif
+        initVoltagesAndCovariance();
     }
 
 
@@ -1100,15 +1068,11 @@ class SELoopWorker {
         } ofh.close();
 #endif
 
-
         // --------------------------------------------------------------------
         // Predict Step
         // --------------------------------------------------------------------
         // -- compute x_predict = F*x | F=I (skipping to improve performance)
         // -- compute p_predict = F*P*F' + Q | F=I (can be simplified)
-
-        // TODO GARY HACK first spot for smart/soft reset
-        // Need to minimally modify Uvmag/Uvarg
 
 #ifdef DIAGONAL_P
         cs *Pmat; this->prep_P(Pmat);
@@ -1433,8 +1397,7 @@ class SELoopWorker {
         print_cs_compress(x1,tspath+"x1.csv");
 #endif
 
-        // TODO GARY HACK potential future spot for smart/soft reset
-        // Need to at most modify Vpu here
+        // TODO: potential future spot for more targeted smart/soft reset
 
         cs *xmat; this->prep_x(xmat);
 #ifdef DEBUG_PRIMARY
@@ -1753,16 +1716,15 @@ class SELoopWorker {
         // for first estimate calls, either from start or after a restart
         // triggered by an exception, hardwire the uncertainty to be large
         // afterwards, set it to a smaller value based on time between estimates
-#if 000
+
+        // smaller, variable factor value results in slower convergence,
+        // heavier damped initial estimates after closing switches
+        // i.e., "rounded corners" in estimate plots
+        //factor = 0.1;
         if ( timestampLastEstimate == 0 )
             factor = 0.1;
         else
             factor = 0.0001 * (timestamp - timestampLastEstimate);
-#else
-        // Gary HACK
-        factor = 0.1;
-        //factor = 1e+5;
-#endif
 #ifdef DEBUG_PRIMARY
         *selog << "Q uncertainty scale factor: " << factor << "\n" << std::flush;
 #endif
@@ -1899,7 +1861,7 @@ class SELoopWorker {
             vj = abs(Vpu[j]);
             T = arg(Vpu[i]) - arg(Vpu[j]);
             // make sure not to reduce sparcity of Y; if Y exists, we can try A
-            complex<double> Yij;
+            complex<double> Yij = 0;
             ai = 0;
             aj = 0;
             bij = 1;
@@ -1947,7 +1909,6 @@ class SELoopWorker {
             }
             g = real(-Yij);
             b = imag(-Yij);
-
         }
     }
     
@@ -2110,6 +2071,7 @@ class SELoopWorker {
                 // loop over adjacent nodes
                 auto& Yrow = Ypu.at(i);
                 for ( auto& rowpair : Yrow ) {
+                    // intentionally redeclares j
                     uint j = rowpair.first;
                     if (j != i) {
                         set_n(i,j);
@@ -2136,9 +2098,6 @@ class SELoopWorker {
             else
             if ( entry_type == dPi_dvj ) {
                 // --- compute dPi/dvj
-                auto& Yrow = Ypu.at(i);
-                complex<double> Yij = Yrow.at(j);
-
                 set_n(i,j);
 #ifdef SWITCHES
                 // bij--switch status multiplier between i and j
@@ -2160,6 +2119,7 @@ class SELoopWorker {
                 // loop over adjacent nodes
                 auto& Yrow = Ypu.at(i);
                 for ( auto& rowpair : Yrow ) {
+                    // intentionally redeclares j
                     uint j = rowpair.first;
                     if (j != i ) {
                         set_n(i,j);
@@ -2186,9 +2146,6 @@ class SELoopWorker {
             else
             if ( entry_type == dQi_dvj ) {
                 // --- compute dQi/dvj
-                auto& Yrow = Ypu.at(i);
-                complex<double> Yij = Yrow.at(j);
-
                 set_n(i,j);
 #ifdef SWITCHES
                 // bij--switch status multiplier between i and j
@@ -2220,6 +2177,7 @@ class SELoopWorker {
                 // loop over adjacent nodes
                 auto &Yrow = Ypu.at(i);
                 for ( auto& rowpair : Yrow ) {
+                    // intentionally redeclares j
                     uint j = rowpair.first;
                     if (j != i) {
                         set_n(i,j);
@@ -2243,9 +2201,6 @@ class SELoopWorker {
             else
             if ( entry_type == dPi_dTj ) {
                 // --- compute dPi/dTj
-                auto& Yrow = Ypu.at(i);
-                complex<double> Yij = Yrow.at(j);
- 
                 set_n(i,j);
 #ifdef SWITCHES
                 // bij--switch status multiplier between i and j
@@ -2267,6 +2222,7 @@ class SELoopWorker {
                 // loop over adjacent nodes
                 auto& Yrow = Ypu.at(i);
                 for ( auto& rowpair : Yrow ) {
+                    // intentionally redeclares j
                     uint j = rowpair.first;
                     if (j != i) {
                         set_n(i,j);
@@ -2290,9 +2246,6 @@ class SELoopWorker {
             else
             if ( entry_type == dQi_dTj ) {
                 // --- compute dQi/dTj
-                auto& Yrow = Ypu.at(i);
-                complex<double> Yij = Yrow.at(j);
-
                 set_n(i,j);
 #ifdef SWITCHES
                 // bij--switch status multiplier between i and j
