@@ -100,6 +100,8 @@ class SELoopWorker {
     SSMAP              regid_primnode_map;
     SSMAP              regid_regnode_map;
     SSMAP              mmrid_pos_type_map; // type of position measurement
+    SSMAP              switch_node1s;
+    SSMAP              switch_node2s;
 
     SEProducer *statePublisher = 0;
 
@@ -157,7 +159,9 @@ class SELoopWorker {
             const IMDMAP& Amat,
             const SSMAP& regid_primnode_map,
             const SSMAP& regid_regnode_map,
-            const SSMAP& mmrid_pos_type_map) {
+            const SSMAP& mmrid_pos_type_map,
+            const SSMAP& switch_node1s,
+            const SSMAP& switch_node2s) {
         this->workQueue = workQueue;
         this->gad = gad;
         this->zary = zary;
@@ -174,7 +178,10 @@ class SELoopWorker {
         this->regid_primnode_map = regid_primnode_map;
         this->regid_regnode_map = regid_regnode_map;
         this->mmrid_pos_type_map = mmrid_pos_type_map;
+        this->switch_node1s = switch_node1s;
+        this->switch_node2s = switch_node2s;
     }
+
 
 
     public:
@@ -183,6 +190,7 @@ class SELoopWorker {
         uint timestamp, timestampLastEstimate, timeZero;
         bool exitAfterEstimateFlag = false;
         bool doEstimateFlag;
+        bool reclosedFlag;
 
         // do one-time-only processing
         init();
@@ -196,6 +204,7 @@ class SELoopWorker {
             // Reset the new measurement counter for each node
             // ----------------------------------------------------------------
             doEstimateFlag = false;
+            reclosedFlag = false;
             for ( auto& zid : zary.zids ) zary.znew[zid] = 0;
 
             // drain the queue with quick z-averaging
@@ -215,7 +224,8 @@ class SELoopWorker {
                     *selog << "Draining workQueue size: " << workQueue->size() << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
 #endif
                     // do z summation here
-                    add_zvals(jmessage);
+                    if (add_zvals(jmessage))
+                        reclosedFlag = true;
 
                     // set flag to indicate a full estimate can be done
                     // if a COMPLETED/CLOSED log message is received
@@ -261,6 +271,19 @@ class SELoopWorker {
 //             }
 // #endif
 
+            if (reclosedFlag) {
+#ifdef DEBUG_PRIMARY
+                // friendly reset of selected matrices analogous to klu_error
+                *selog << "\nSwitch reclosed--soft reset for state estimation\n" << std::flush;
+#endif
+
+                // things went bad so reset what was previously updated
+                softReset();
+
+                // set flag value to increase uncertainty in next estimate call
+                timestampLastEstimate = 0;
+            }
+
             // do the core "estimate" processing here since the queue is,
             // for the moment, empty
             // ----------------------------------------------------------------
@@ -277,16 +300,12 @@ class SELoopWorker {
                 publish(timestamp);
 
             } catch(const char* msg) {
-                *selog << "\nCaught klu_error exception--resetting state estimation\n" << std::flush;
-
-                // reset Amat to where it started
-                // iterate over map of maps setting all entries back to 1
-                for (auto& ent1 : Amat)
-                    for (auto& ent2 : ent1.second)
-                        ent2.second = 1;
+#ifdef DEBUG_PRIMARY
+                *selog << "\nCaught klu_error exception--soft reset for state estimation\n" << std::flush;
+#endif
 
                 // things went bad so reset what was previously updated
-                initVoltagesAndCovariance();
+                softReset();
 
                 // set flag value to increase uncertainty in first estimate call
                 timestampLastEstimate = 0;
@@ -312,7 +331,7 @@ class SELoopWorker {
         ofstream ofh;
         ofh.open("zary.csv",ofstream::out);
         for ( auto& zid: zary.zids ) {
-            ofh << zary.ztypes[zid] << ", " << zary.znode1s[zid] << "\n";
+            ofh << "ztypes: " << zary.ztypes[zid] << ", znode1s: " << zary.znode1s[zid] << ", zvals@init: " << zary.zvals[zid] << "\n";
         }
         ofh.close();
 #endif
@@ -755,7 +774,7 @@ class SELoopWorker {
         double span_varg = 1.0/3.0*PI;
         double span_taps = 0.2;
 
-        // TODO: finalize scaling for state uncertainty initialization
+        // scaling factor for state uncertainty initialization
         double span_multiplier = 0.02;
 #ifdef DIAGONAL_P
         // clear previous values if this was called before
@@ -793,13 +812,59 @@ class SELoopWorker {
 
 
     private:
-    void add_zvals(const json& jmessage) {
+    void softReset() {
+        // reset Amat to where it started
+        // iterate over map of maps setting all entries back to 1
+        for (auto& ent1 : Amat)
+            for (auto& ent2 : ent1.second)
+                ent2.second = 1;
+
+        // --------------------------------------------------------------------
+        // Initialize Voltages (complex per-unit)
+        // --------------------------------------------------------------------
+        // clear previous values if this was called before
+        if ( Vpu.size() > 0 ) Vpu.clear();
+
+        for ( auto& node_name : node_names ) {
+            // Important: V is indexed by node index like A and Y
+            // V[node_idxs[node_name]] = node_vnoms[node_name];
+            Vpu[node_idxs[node_name]] = 1.0;
+        }
+
+        // --------------------------------------------------------------------
+        // Initialize State Covariance Matrix
+        // --------------------------------------------------------------------
+        double span_vmag = 1.0;
+        double span_varg = 1.0/3.0*PI;
+        double span_taps = 0.2;
+
+        // scaling factor for state uncertainty initialization
+        double span_multiplier = 0.02;
+#ifdef DIAGONAL_P
+        // clear previous values if this was called before
+        if ( Uvmag.size() > 0 ) Uvmag.clear();
+        if ( Uvarg.size() > 0 ) Uvarg.clear();
+
+        for ( auto& node_name : node_names ) {
+            uint idx = node_idxs[node_name];
+            Uvmag[idx] = span_multiplier*span_vmag;
+            Uvarg[idx] = span_multiplier*span_varg;
+        }
+#else
+#endif
+    }
+
+
+    private:
+    bool add_zvals(const json& jmessage) {
         // --------------------------------------------------------------------
         // Use the simulation output to update the states
         // --------------------------------------------------------------------
         // This needs to translate simulation output into zary.zvals[zid]
         //  - We need to iterate over the "measurements" in the simoutput
         //  - As in SensorDefConsumer.hpp, measurements can have multiple z's
+
+        bool ret = false;
 
         // Next, update new measurements
         for ( auto& m : jmessage["message"]["measurements"] ) {
@@ -874,16 +939,50 @@ class SELoopWorker {
                 else if ( !mmrid_pos_type_map[mmrid].compare("load_break_switch") ) {
                     string zid = mmrid+"_switch";
                     double switch_state = m["value"];
-                    uint i = node_idxs[zary.znode1s[zid]];
-                    uint j = node_idxs[zary.znode2s[zid]];
+                    uint i = node_idxs[switch_node1s[zid]];
+                    uint j = node_idxs[switch_node2s[zid]];
+
+                    // detect switch reclosing to trigger soft reset
+                    if (switch_state > 0) {
+                        try {
+                            auto Brow = Bmat.at(i);
+                            try {
+                                double bval = real(Brow.at(j));
+                                if (bval < 1) {
+#ifdef DEBUG_PRIMARY
+//                                    *selog << "\tJUST CLOSED SWITCH Bmat[" << i << "][" << j << "] = " << switch_state << ", switch_node1s: " << switch_node1s[zid] << ", switch_node2s: " << switch_node2s[zid] << "\n" << std::flush;
+#endif
+                                    ret = true;
+                                }
+                            } catch ( const std::out_of_range& oor ) {}
+                        } catch ( const std::out_of_range& oor ) {}
+                    }
+#if 000
+                    else {
+                        try {
+                            auto Brow = Bmat.at(i);
+                            try {
+                                double beeij = real(Brow.at(j));
+                                if (beeij > 0) {
+#ifdef DEBUG_PRIMARY
+                                    *selog << "\tJUST OPENED SWITCH Bmat[" << i << "][" << j << "] = " << switch_state << ", switch_node1s: " << switch_node1s[zid] << ", switch_node2s: " << switch_node2s[zid] << "\n" << std::flush;
+#endif
+                                }
+                            } catch ( const std::out_of_range& oor ) {}
+                        } catch ( const std::out_of_range& oor ) {}
+                    }
+#endif
 
                     Bmat[i][j] = Bmat[j][i] = switch_state;
+//                    *selog << "\t***Setting Bmat[" << i << "][" << j << "] = " << Bmat[i][j] << ", switch_node1s: " << switch_node1s[zid] << ", switch_node2s: " << switch_node2s[zid] << "\n" << std::flush;
                 }
             }
 
             //else if ( !m_type.compare("") ) {
             //}
         }
+
+        return ret;
     }
 
 
@@ -924,9 +1023,14 @@ class SELoopWorker {
             while (degrees < -165.0) degrees += 360.0;
             node_state["angle"] = degrees;
 
-            // TODO: Add v and angle variance values
-            node_state["vVariance"] = 0;         // This comes from P
-            node_state["angleVariance"] = 0;     // This comes from P
+            // Add v and angle variance values
+            node_state["vVariance"] = Uvmag[idx];
+
+            degrees = 180.0/PI * Uvarg[idx];
+            // -165 <= degrees <= 195
+            while (degrees > 195.0) degrees -= 360.0;
+            while (degrees < -165.0) degrees += 360.0;
+            node_state["angleVariance"] = degrees;
 
             // append this state to the measurement array
             jstate["message"]["Estimate"]["SvEstVoltages"].push_back(node_state);
@@ -1002,6 +1106,9 @@ class SELoopWorker {
         // --------------------------------------------------------------------
         // -- compute x_predict = F*x | F=I (skipping to improve performance)
         // -- compute p_predict = F*P*F' + Q | F=I (can be simplified)
+
+        // TODO GARY HACK first spot for smart/soft reset
+        // Need to minimally modify Uvmag/Uvarg
 
 #ifdef DIAGONAL_P
         cs *Pmat; this->prep_P(Pmat);
@@ -1303,11 +1410,20 @@ class SELoopWorker {
 #ifdef DEBUG_FILES
         print_cs_compress(yupd,tspath+"yupd.csv");
         //print_cs_colvec("yupd_sbase1e6_prec8.csv", yupd);
+
 #endif
 
         // -- compute x_update = x_predict + K * y
 
+#if 000
+        // damp gain matrix
+        cs *damptemp = gs_singleval_diagonal(1, 0.2);
+        cs *ytemp = cs_multiply(yupd,damptemp); cs_spfree(yupd); cs_spfree(damptemp);
+        cs *x1 = cs_multiply(Kupd,ytemp); cs_spfree(ytemp);
+#else
         cs *x1 = cs_multiply(Kupd,yupd); cs_spfree(yupd);
+#endif
+
         if ( !x1 ) *selog << "ERROR: x1 null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         else *selog << "x1 is " << x1->m << " by " << x1->n <<
@@ -1316,6 +1432,9 @@ class SELoopWorker {
 #ifdef DEBUG_FILES
         print_cs_compress(x1,tspath+"x1.csv");
 #endif
+
+        // TODO GARY HACK potential future spot for smart/soft reset
+        // Need to at most modify Vpu here
 
         cs *xmat; this->prep_x(xmat);
 #ifdef DEBUG_PRIMARY
@@ -1396,7 +1515,7 @@ class SELoopWorker {
                 " with " << Pmat->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
-        print_cs_compress(P,tspath+"Pupd.csv");
+        print_cs_compress(Pmat,tspath+"Pupd.csv");
 #endif
 #endif
 
@@ -1634,10 +1753,16 @@ class SELoopWorker {
         // for first estimate calls, either from start or after a restart
         // triggered by an exception, hardwire the uncertainty to be large
         // afterwards, set it to a smaller value based on time between estimates
+#if 000
         if ( timestampLastEstimate == 0 )
             factor = 0.1;
         else
             factor = 0.0001 * (timestamp - timestampLastEstimate);
+#else
+        // Gary HACK
+        factor = 0.1;
+        //factor = 1e+5;
+#endif
 #ifdef DEBUG_PRIMARY
         *selog << "Q uncertainty scale factor: " << factor << "\n" << std::flush;
 #endif
@@ -1760,7 +1885,7 @@ class SELoopWorker {
             ai = 1;
             aj = 1;
             bij = 1;
-            complex<double> Yi0;
+            complex<double> Yi0 = 0;
             try {
                 auto& Yrow = Ypu.at(i);
                 for ( auto& yij_pair : Yrow )
@@ -1848,7 +1973,6 @@ class SELoopWorker {
                 // Real power injection into node i
                 uint i = node_idxs[zary.znode1s[zid]];
                 double Pi = 0;
-                double term;
                 try {
                     auto& Yrow = Ypu.at(i);
                     for ( auto& rowpair : Yrow ) {
@@ -1856,7 +1980,7 @@ class SELoopWorker {
                         if (j != i) {
                             set_n(i,j);
                             // Add the real power component flowing from i to j
-                            term = (vi*vi/(ai*ai) * g) -
+                            double term = (vi*vi/(ai*ai) * g) -
                                    (vi*vj/(ai*aj) * (g*cos(T) + b*sin(T)));
 #ifdef SWITCHES
                             // bij--switch status multiplier between i and j
@@ -1868,7 +1992,7 @@ class SELoopWorker {
                     }
                     // Add the real power component flowing from i to 0
                     set_n(i,0);
-                    Pi += vi*vi * g; // times cos(T) ????
+                    Pi += vi*vi * g; // TODO: times cos(T) ????
                 } catch ( const std::out_of_range& oor ) {}
                 // Insert the measurement component
 #ifdef GS_OPTIMIZE
@@ -1881,7 +2005,6 @@ class SELoopWorker {
                 // Reactive power injection into node i
                 uint i = node_idxs[zary.znode1s[zid]];
                 double Qi = 0;
-                double term;
                 try {
                     auto& Yrow = Ypu.at(i);
                     for ( auto& rowpair : Yrow ) {
@@ -1889,8 +2012,8 @@ class SELoopWorker {
                         if (j != i) {
                             set_n(i,j);
                             // Add the reactive power component flowing from i to j
-                            term = - (vi*vi/(ai*ai) * b) -
-                                     (vi*vj/(ai*aj) * (g*sin(T) - b*cos(T)));
+                            double term = ((vi*vi/(ai*ai)) * (-b)) -
+                                       (vi*vj/(ai*aj) * (g*sin(T) - b*cos(T)));
 #ifdef SWITCHES
                             // bij--switch status multiplier between i and j
                             Qi += bij*term;
@@ -1984,15 +2107,14 @@ class SELoopWorker {
             if ( entry_type == dPi_dvi ) {
                 // --- compute dPi/dvi
                 double dP = 0;
-                double term;
                 // loop over adjacent nodes
                 auto& Yrow = Ypu.at(i);
                 for ( auto& rowpair : Yrow ) {
-                    j = rowpair.first;
+                    uint j = rowpair.first;
                     if (j != i) {
                         set_n(i,j);
-                        term = (2*vi/(ai*ai) * g) -
-                                 (vj/(ai*aj) * (g*cos(T) + b*sin(T)));
+                        double term = (2*vi/(ai*ai) * g) -
+                                       (vj/(ai*aj) * (g*cos(T) + b*sin(T)));
 #ifdef SWITCHES
                         // bij--switch status multiplier between i and j
                         dP += bij*term;
@@ -2020,9 +2142,9 @@ class SELoopWorker {
                 set_n(i,j);
 #ifdef SWITCHES
                 // bij--switch status multiplier between i and j
-                double dP = bij * - vi/ai/aj * (g*cos(T) + b*sin(T));
+                double dP = bij * (-vi/(ai*aj)) * (g*cos(T) + b*sin(T));
 #else
-                double dP = - vi/ai/aj * (g*cos(T) + b*sin(T));
+                double dP = (-vi/(ai*aj)) * (g*cos(T) + b*sin(T));
 #endif
 #ifdef GS_OPTIMIZE
                 gs_entry_colorder_negl(J,zidx,xidx,dP);
@@ -2035,15 +2157,14 @@ class SELoopWorker {
             if ( entry_type == dQi_dvi ) {
                 // --- compute dQi/dvi
                 double dQ = 0;
-                double term;
                 // loop over adjacent nodes
                 auto& Yrow = Ypu.at(i);
                 for ( auto& rowpair : Yrow ) {
                     uint j = rowpair.first;
                     if (j != i ) {
                         set_n(i,j);
-                        term = - (2*vi/(ai*ai) * b) -
-                                   (vj/(ai*aj) * (g*sin(T) - b*cos(T)));
+                        double term = (2*vi/(ai*ai) * (-b)) -
+                                       (vj/(ai*aj) * (g*sin(T) - b*cos(T)));
 #ifdef SWITCHES
                         // bij--switch status multiplier between i and j
                         dQ += bij*term;
@@ -2054,7 +2175,7 @@ class SELoopWorker {
                 }
                 // consider the reference node
                 set_n(i,0);
-                dQ += - 2*vi*b;
+                dQ += -2*vi*b;
 #ifdef GS_OPTIMIZE
                 gs_entry_colorder_negl(J,zidx,xidx,dQ);
 #else
@@ -2071,9 +2192,9 @@ class SELoopWorker {
                 set_n(i,j);
 #ifdef SWITCHES
                 // bij--switch status multiplier between i and j
-                double dQ = bij * - vi/ai/aj * (g*sin(T) - b*cos(T));
+                double dQ = bij * (-vi/(ai*aj)) * (g*sin(T) - b*cos(T));
 #else
-                double dQ = - vi/ai/aj * (g*sin(T) - b*cos(T));
+                double dQ = (-vi/(ai*aj)) * (g*sin(T) - b*cos(T));
 #endif
 #ifdef GS_OPTIMIZE
                 gs_entry_colorder_negl(J,zidx,xidx,dQ);
@@ -2096,14 +2217,13 @@ class SELoopWorker {
             if ( entry_type == dPi_dTi ) {
                 // --- compute dPi/dTi
                 double dP = 0;
-                double term;
                 // loop over adjacent nodes
                 auto &Yrow = Ypu.at(i);
                 for ( auto& rowpair : Yrow ) {
                     uint j = rowpair.first;
                     if (j != i) {
                         set_n(i,j);
-                        term = vi*vj/(ai*aj) * (g*sin(T) - b*cos(T));
+                        double term = (vi*vj/(ai*aj)) * (g*sin(T) - b*cos(T));
 #ifdef SWITCHES
                         // bij--switch status multiplier between i and j
                         dP += bij*term;
@@ -2122,16 +2242,16 @@ class SELoopWorker {
 
             else
             if ( entry_type == dPi_dTj ) {
-                // --- compute dP/dTj
+                // --- compute dPi/dTj
                 auto& Yrow = Ypu.at(i);
                 complex<double> Yij = Yrow.at(j);
  
                 set_n(i,j);
 #ifdef SWITCHES
                 // bij--switch status multiplier between i and j
-                double dP = bij * - vi*vj/ai/aj * (g*sin(T) - b*cos(T));
+                double dP = bij * (-vi*vj/(ai*aj)) * (g*sin(T) - b*cos(T));
 #else
-                double dP = - vi*vj/ai/aj * (g*sin(T) - b*cos(T));
+                double dP = (-vi*vj/(ai*aj)) * (g*sin(T) - b*cos(T));
 #endif
 #ifdef GS_OPTIMIZE
                  gs_entry_colorder_negl(J,zidx,xidx,dP);
@@ -2144,14 +2264,13 @@ class SELoopWorker {
             if ( entry_type == dQi_dTi ) {
                 // compute dQi/dTi
                 double dQ = 0;
-                double term;
                 // loop over adjacent nodes
                 auto& Yrow = Ypu.at(i);
                 for ( auto& rowpair : Yrow ) {
                     uint j = rowpair.first;
                     if (j != i) {
                         set_n(i,j);
-                        term = - vi*vj/(ai*aj) * (g*cos(T) + b*sin(T));
+                        double term = (-vi*vj/(ai*aj)) * (g*cos(T) + b*sin(T));
 #ifdef SWITCHES
                         // bij--switch status multiplier between i and j
                         dQ += bij*term;
@@ -2170,16 +2289,16 @@ class SELoopWorker {
 
             else
             if ( entry_type == dQi_dTj ) {
-                // --- compute dQ/dTj
+                // --- compute dQi/dTj
                 auto& Yrow = Ypu.at(i);
                 complex<double> Yij = Yrow.at(j);
 
                 set_n(i,j);
 #ifdef SWITCHES
                 // bij--switch status multiplier between i and j
-                double dQ = bij * vi*vj/(ai*aj) * (g*cos(T) + b*sin(T));
+                double dQ = bij * (vi*vj/(ai*aj)) * (g*cos(T) + b*sin(T));
 #else
-                double dQ = vi*vj/(ai*aj) * (g*cos(T) + b*sin(T));
+                double dQ = (vi*vj/(ai*aj)) * (g*cos(T) + b*sin(T));
 #endif
 #ifdef GS_OPTIMIZE
                 gs_entry_colorder_negl(J,zidx,xidx,dQ);
