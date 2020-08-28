@@ -1,6 +1,7 @@
 #define DIAGONAL_P
 #define DEBUG_PRIMARY
 //#define DEBUG_FILES
+//#define DEBUG_SIZES
 #define GS_OPTIMIZE
 #define SWITCHES
 //#define SBASE_TESTING
