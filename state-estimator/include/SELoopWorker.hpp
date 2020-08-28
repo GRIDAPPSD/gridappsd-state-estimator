@@ -191,6 +191,8 @@ class SELoopWorker {
         bool exitAfterEstimateFlag = false;
         bool doEstimateFlag;
         bool reclosedFlag;
+        bool keepZvalsFlag = false;
+        uint estimatesSinceReset = 0;
 
         // do one-time-only processing
         init();
@@ -205,7 +207,12 @@ class SELoopWorker {
             // ----------------------------------------------------------------
             doEstimateFlag = false;
             reclosedFlag = false;
-            for ( auto& zid : zary.zids ) zary.znew[zid] = 0;
+
+            // check whether to preserve zvals from last queue draining
+            if ( !keepZvalsFlag )
+                for ( auto& zid : zary.zids ) zary.znew[zid] = 0;
+            else
+                keepZvalsFlag = false;
 
             // drain the queue with quick z-averaging
             do {
@@ -265,10 +272,10 @@ class SELoopWorker {
             }
 
 // #ifdef DEBUG_PRIMARY
-//             *selog << "zvals before estimate\n" << std::flush;
-//             for ( auto& zid : zary.zids ) {
-//                 *selog << "measurement of type: " << zary.ztypes[zid] << "\t" << zid << ": " << zary.zvals[zid] << "\t(" << zary.znew[zid] << ")\n" << std::flush;
-//             }
+//            *selog << "zvals before estimate\n" << std::flush;
+//            for ( auto& zid : zary.zids ) {
+//                *selog << "measurement of type: " << zary.ztypes[zid] << "\t" << zid << ": " << zary.zvals[zid] << "\t(" << zary.znew[zid] << ")\n" << std::flush;
+//            }
 // #endif
 
             if (reclosedFlag) {
@@ -293,12 +300,40 @@ class SELoopWorker {
             *selog << "\nEstimating state for timestep: " << timestamp-timeZero << "\n" << std::flush;
 #endif
             try {
-                estimate(timestamp, timestampLastEstimate, timeZero);
-                // not the first estimate call so set to actual value
-                timestampLastEstimate = timestamp;
-                //sleep(30); // delay to let queue refill for testing
-                publish(timestamp);
+                if ( estimate(timestamp, timestampLastEstimate, timeZero,
+                              estimatesSinceReset) ) {
+                    // successful estimate call so increment counter
+                    estimatesSinceReset++;
 
+                    // not the first estimate call so set to actual value
+                    timestampLastEstimate = timestamp;
+                    //sleep(30); // delay to let queue refill for testing
+                    publish(timestamp);
+                } else {
+                    // unsuccessful estimate call so reset counter
+                    estimatesSinceReset = 0;
+
+#ifdef DEBUG_PRIMARY
+                    // friendly reset of selected matrices
+                    *selog << "\nResidual exceeded threshold--soft reset for state estimation\n" << std::flush;
+#endif
+                    // things went bad so reset what was previously updated
+                    softReset();
+
+                    // set flag value to increase uncertainty in next estimate
+                    timestampLastEstimate = 0;
+
+                    // undo the zvals averaging because we'll drain what's been
+                    // added before the next estimate call and average those
+                    // with what's been drained already
+                    for ( auto& zid : zary.zids ) {
+                        if ( zary.znew[zid] > 1 )
+                            zary.zvals[zid] *= zary.znew[zid];
+                    }
+
+                    // set flag to indicate not to clear previous zvals
+                    keepZvalsFlag = true;
+                }
             } catch(const char* msg) {
 #ifdef DEBUG_PRIMARY
                 *selog << "\nCaught klu_error exception--soft reset for state estimation\n" << std::flush;
@@ -1025,8 +1060,8 @@ class SELoopWorker {
 
 
     private:
-    void estimate(const uint& timestamp, const uint& timestampLastEstimate,
-                  const uint& timeZero) {
+    bool estimate(const uint& timestamp, const uint& timestampLastEstimate,
+                  const uint& timeZero, const uint& estimatesSinceReset) {
 #ifdef DEBUG_PRIMARY
         double estimateStartTime = getWallTime();
 #endif
@@ -1377,6 +1412,52 @@ class SELoopWorker {
 
 #endif
 
+        // Residual calculation needs further investigation to be
+        // properly formulated before inclusion in released SE code
+#if 000
+        // calculate residual of estimate with yupd to check if it exceeds
+        // a threshold justifying soft reset
+
+        // normalize yupd by dividing each entry by the square root of the
+        // corresponding Rmat and Supd product
+        double ressum = 0;
+
+        for ( auto& zid : zary.zids ) {
+            uint zidx = zary.zidxs[zid];
+            double yval = yupd->x[zidx];
+            double rval = Rmat->x[zidx];
+
+            // iterate over Supd compressed-column data in column zidx
+            for ( uint p = Supd->p[zidx] ; p < Supd->p[zidx+1] ; p++ ) {
+                // get the row index for existing data
+                if ( Supd->i[p] == zidx ) {
+                    // if this is the diagonal entry, extract it
+                    double sval = Supd->x[p];
+                    // TODO: sometimes sval is negative so need abs() below
+                    // so sqrt is defined
+                    double residual = abs(yval)/sqrt(rval*abs(sval));
+                    ressum += residual;
+                    *selog << "\nresidual intermediate yval: " << yval << ", sval: " << sval << ", rval: " << rval << ", residual: " << residual << "\n" << std::flush;
+                    break;
+                }
+            }
+        }
+
+        double resmean = ressum/zary.zqty;
+        *selog << "\nRESIDUAL resmean: " << resmean << ", ressum: " << ressum << ", zqty: " << zary.zqty << "\n" << std::flush;
+
+#if 111
+        // when residual is added back in, don't free Supd higher up in
+        // estimate call
+        cs_spfree(Supd);
+#endif
+
+        if ( resmean>200.0 && estimatesSinceReset>5)
+            // trigger soft reset back in work loop
+            return false;
+#endif
+
+
         // -- compute x_update = x_predict + K * y
 
 #if 000
@@ -1536,6 +1617,8 @@ class SELoopWorker {
             exit(0);
 #endif
 #endif
+
+        return true;
     }
 
 
