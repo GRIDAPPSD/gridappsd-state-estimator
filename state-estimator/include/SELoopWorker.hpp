@@ -1,5 +1,6 @@
 #ifndef SELOOPWORKER_HPP
 #define SELOOPWORKER_HPP
+#include <cfloat>
 
 #include "state_estimator_gridappsd.hpp"
 using state_estimator_gridappsd::gridappsd_session;
@@ -443,10 +444,10 @@ class SELoopWorker {
                 //       the primary node, i, is assigned to znode1s
                 uint j = node_idxs[zary.znode2s[zid]];
 
-                // daji/dvj exists: 1/viV
+                // daji/dvj exists: 1/vi
                 Jshapemap.insert(A5PAIR(j-1, {zidx, j-1, i, j, daji_dvj}));
 
-                // daja/dvi exists: -vj/vi^2
+                // daji/dvi exists: -vj/vi^2
                 Jshapemap.insert(A5PAIR(i-1, {zidx, i-1, i, j, daji_dvi}));
 
             } else if ( !ztype.compare("vi") ) {
@@ -512,6 +513,44 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
         *selog << "Yphys # of scaled terms: " << ctr << "\n\n" << std::flush;
 #endif
+
+        // Overwrite Yphys entries for switches to (-500,500)
+        complex<double> Yover = complex<double>(-500,500);
+        for (auto& switch_node1_pair : switch_node1s) {
+            string zid = switch_node1_pair.first;
+            uint i = node_idxs[switch_node1_pair.second];
+            uint j = node_idxs[switch_node2s[zid]];
+
+            try {
+                auto& Yrow = Yphys.at(i);
+                complex<double> yij = Yrow.at(j);
+                *selog << "EXISTING Yphys[" << i << "][" << j << "] = " << yij << ", switch_node1: " << switch_node1_pair.second << ", switch_node2: " << switch_node2s[zid] << "\n" << std::flush;
+
+            } catch ( const std::out_of_range& oor ) {
+                *selog << "MISSING Yphys[" << i << "][" << j << "], switch_node1: " << switch_node1_pair.second << ", switch_node2: " << switch_node2s[zid] << "\n" << std::flush;
+                Yphys[i][j] = Yphys[j][i] = Yover;
+                complex<double> new_term_val = Yover;
+                complex<double> term_val = 0;
+
+                // common terms for updating diagonals
+                string inode = node_name_lookup[i];
+                string jnode = node_name_lookup[j];
+                complex<double> delta_term_val = new_term_val - term_val;
+                complex<double> diag_term_val, delta_diag_val,new_diag_term_val;
+
+                // update the i,i diagonal
+                diag_term_val = Yphys[i][i];
+                delta_diag_val = -1.0 * delta_term_val * node_vnoms[jnode]/node_vnoms[inode];
+                new_diag_term_val = diag_term_val + delta_diag_val;
+                Yphys[i][i] = new_diag_term_val;
+
+                // update the j,j diagonal
+                diag_term_val = Yphys[j][j];
+                delta_diag_val = -1.0 * delta_term_val * node_vnoms[inode]/node_vnoms[jnode];
+                new_diag_term_val = diag_term_val + delta_diag_val;
+                Yphys[j][j] = new_diag_term_val;
+            }
+        }
 
         // --------------------------------------------------------------------
         // Compute Ypu
@@ -978,6 +1017,14 @@ class SELoopWorker {
 
                     Bmat[i][j] = Bmat[j][i] = switch_state;
 //                    *selog << "\t***Setting Bmat[" << i << "][" << j << "] = " << Bmat[i][j] << ", switch_node1s: " << switch_node1s[zid] << ", switch_node2s: " << switch_node2s[zid] << "\n" << std::flush;
+#if 000
+                    *selog << "measurement load_break_switch zid: " << zid << "\n";
+                    *selog << "measurement load_break_switch value: " << switch_state << "\n";
+                    *selog << "measurement load_break_switch_node1s: " << switch_node1s[zid] << "\n";
+                    *selog << "measurement load_break_switch_node2s: " << switch_node2s[zid] << "\n";
+                    *selog << "measurement load_break_switch Ypu: " << Ypu[i][j] << "\n";
+                    *selog << "measurement load_break_switch Yphys: " << Yphys[i][j] << "\n\n";
+#endif
                 }
             }
 
@@ -1318,7 +1365,9 @@ class SELoopWorker {
             *selog << "KLU ERROR: " << msg << "\n" << std::flush;
             throw "klu_error";
         }
+#if 100
         cs_spfree(Supd);
+#endif
 
 #if 000
         if (estimateExitCount == 40) {
@@ -1334,6 +1383,10 @@ class SELoopWorker {
         for (uint j=0; j<zqty; j++)
             for (uint i=0; i<zqty; i++)
                 cs_entry_negl(K3raw,i,j,rhs[j*zqty + i]);
+                // transposing i and j gives the same result with either
+                // of the following calls
+                //cs_entry_negl(K3raw,i,j,rhs[i*zqty + j]);
+                //cs_entry_negl(K3raw,j,i,rhs[j*zqty + i]);
 
         cs *K3 = cs_compress(K3raw);
         cs_spfree(K3raw);
@@ -1421,6 +1474,20 @@ class SELoopWorker {
         // normalize yupd by dividing each entry by the square root of the
         // corresponding Rmat and Supd product
         double ressum = 0;
+        double ysum = 0;
+        double rsum = 0;
+        double ssum = 0;
+        double dsum = 0;
+        double resmin = DBL_MAX;
+        double resmax = -DBL_MAX;
+        double ymin = DBL_MAX;
+        double ymax = -DBL_MAX;
+        double rmin = DBL_MAX;
+        double rmax = -DBL_MAX;
+        double smin = DBL_MAX;
+        double smax = -DBL_MAX;
+        double dmin = DBL_MAX;
+        double dmax = -DBL_MAX;
 
         for ( auto& zid : zary.zids ) {
             uint zidx = zary.zidxs[zid];
@@ -1433,18 +1500,35 @@ class SELoopWorker {
                 if ( Supd->i[p] == zidx ) {
                     // if this is the diagonal entry, extract it
                     double sval = Supd->x[p];
-                    // TODO: sometimes sval is negative so need abs() below
-                    // so sqrt is defined
                     double residual = abs(yval)/sqrt(rval*abs(sval));
                     ressum += residual;
-                    *selog << "\nresidual intermediate yval: " << yval << ", sval: " << sval << ", rval: " << rval << ", residual: " << residual << "\n" << std::flush;
+                    resmin = min(resmin, residual);
+                    resmax = max(resmax, residual);
+                    ysum += abs(yval);
+                    ymin = min(ymin, abs(yval));
+                    ymax = max(ymax, abs(yval));
+                    rsum += rval;
+                    rmin = min(rmin, rval);
+                    rmax = max(rmax, rval);
+                    ssum += abs(sval);
+                    smin = min(smin, abs(sval));
+                    smax = max(smax, abs(sval));
+                    double denom = sqrt(rval*abs(sval));
+                    dsum += denom;
+                    dmin = min(dmin, denom);
+                    dmax = max(dmax, denom);
+                    //*selog << "\nresidual intermediate yval: " << yval << ", sval: " << sval << ", rval: " << rval << ", residual: " << residual << "\n" << std::flush;
                     break;
                 }
             }
         }
 
         double resmean = ressum/zary.zqty;
-        *selog << "\nRESIDUAL resmean: " << resmean << ", ressum: " << ressum << ", zqty: " << zary.zqty << "\n" << std::flush;
+        *selog << "\nRESIDUAL resmean: " << resmean << ", resmin: " << resmin << ", resmax: " << resmax << "\n" << std::flush;
+        *selog << "RESIDUAL ymean: " << ysum/zary.zqty << ", ymin: " << ymin << ", ymax: " << ymax << "\n" << std::flush;
+        *selog << "RESIDUAL rmean: " << rsum/zary.zqty << ", rmin: " << rmin << ", rmax: " << rmax << "\n" << std::flush;
+        *selog << "RESIDUAL smean: " << ssum/zary.zqty << ", smin: " << smin << ", smax: " << smax << "\n" << std::flush;
+        *selog << "RESIDUAL denommean: " << dsum/zary.zqty << ", denommin: " << dmin << ", denommax: " << dmax << "\n" << std::flush;
 
 #if 111
         // when residual is added back in, don't free Supd higher up in
@@ -1907,94 +1991,88 @@ class SELoopWorker {
 
 
     private:
-    double vi;
-    double vj;
-    double T;
-    double g;
-    double b;
-    double ai;
-    double aj;
-    double bij; // switch status multiplier between nodes i and j
+    void set_ni(const uint& i, double& vi, double& g, double& b) {
+        // from node i to the reference node
+        vi = abs(Vpu[i]);
 
-    private:
-    void set_n(uint i, uint j) {
-        if ( !i ) {
-            *selog << "ERROR: Unexpected call to set_n with i=0\n" << std::flush;
-            return;
-        }
-        if ( !j ) {
-            // from node i to the reference node
-            vi = abs(Vpu[i]);
-            vj = 0;
-            T = arg(Vpu[i]);
-            ai = 1;
-            aj = 1;
-            bij = 1;
-            complex<double> Yi0 = 0;
+        complex<double> Yi0 = 0;
+        try {
+            auto& Yrow = Ypu.at(i);
+            for ( auto& yij_pair : Yrow )
+                Yi0 += yij_pair.second;
+        } catch ( const std::out_of_range& oor ) {}
+
+        g = real(Yi0);
+        b = imag(Yi0);
+    }
+
+
+    void set_nij(const uint& i, const uint& j, double& vi, double& vj,
+                 double& T, double& ai, double& aj, double& bij, 
+                 double& g, double& b) {
+        vi = abs(Vpu[i]);
+        vj = abs(Vpu[j]);
+        T = arg(Vpu[i]) - arg(Vpu[j]);
+
+        // make sure not to reduce sparcity of Y; if Y exists, we can try A
+        complex<double> Yij = complex<double>(0,0);
+        ai = 1;
+        aj = 1;
+        bij = 1;
+        try {
+            auto& Yrow = Ypu.at(i);
             try {
-                auto& Yrow = Ypu.at(i);
-                for ( auto& yij_pair : Yrow )
-                    Yi0 += yij_pair.second;
-            } catch ( const std::out_of_range& oor ) {}
-            g = real(Yi0);
-            b = imag(Yi0);
-        }
-        else {
-            vi = abs(Vpu[i]);
-            vj = abs(Vpu[j]);
-            T = arg(Vpu[i]) - arg(Vpu[j]);
-            // make sure not to reduce sparcity of Y; if Y exists, we can try A
-            complex<double> Yij = 0;
-            ai = 0;
-            aj = 0;
-            bij = 1;
-            try {
-                auto& Yrow = Ypu.at(i);
+                Yij = Yrow.at(j);
+
+                // We know the nodes are coupled; check for Aij
+                // NOTE: A is never iterated over - we don't need at()
                 try {
-                    Yij = Yrow.at(j);
-                    // We know the nodes are coupled; check for Aij
-                    // NOTE: A is never iterated over - we don't need at()
-                    ai = 1;
+                    auto Arow = Amat.at(i);
                     try {
-                        auto Arow = Amat.at(i);
-                        try {
-                            ai = real(Arow.at(j));
-//                            *selog << "|||||||||||||||||| ai assigned to: " << ai << std::endl;
-                        } catch ( const std::out_of_range& oor ) {}
+                        ai = Arow.at(j);
+//                        *selog << "|||||||||||||||||| ai assigned to: " << ai << std::endl;
                     } catch ( const std::out_of_range& oor ) {}
-                    // We know the nodes are coupled; check for Aji
-                    // NOTE: A is never iterated over - we don't need at()
-                    aj = 1;
-                    try {
-                        auto Arow = Amat.at(j);
-                        try {
-                            aj = real(Arow.at(i));
-//                            *selog << "|||||||||||||||||| aj assigned to: " << aj << std::endl;
-                        } catch ( const std::out_of_range& oor ) {}
-                    } catch ( const std::out_of_range& oor ) {}
-                    // We know the nodes are coupled; check for Bij
-                    // Bij = Bji by definition
-                    try {
-                        auto Brow = Bmat.at(i);
-                        try {
-                            bij = real(Brow.at(j));
-//                            *selog << "|||||||||||||||||| bij assigned to: " << bij << ", for i: " << i << ", j: " << j << std::endl;
-                        } catch ( const std::out_of_range& oor ) {}
-                    } catch ( const std::out_of_range& oor ) {}
-                } catch ( const std::out_of_range& oor ) {
-                    *selog << "ERROR: set_n catch on Yrow.at(j) lookup\n" << std::flush;
-                    exit(1);
-                }
+                } catch ( const std::out_of_range& oor ) {}
 
+                // We know the nodes are coupled; check for Aji
+                // NOTE: A is never iterated over - we don't need at()
+                try {
+                    auto Arow = Amat.at(j);
+                    try {
+                        aj = Arow.at(i);
+//                        *selog << "|||||||||||||||||| aj assigned to: " << aj << std::endl;
+                    } catch ( const std::out_of_range& oor ) {}
+                } catch ( const std::out_of_range& oor ) {}
+
+                // We know the nodes are coupled; check for Bij
+                // Bij = Bji by definition
+                try {
+                    auto Brow = Bmat.at(i);
+                    try {
+                        bij = Brow.at(j);
+//                        *selog << "|||||||||||||||||| bij assigned to: " << bij << ", for i: " << i << ", j: " << j << std::endl;
+                        // GARY HACK HACK HACK
+#if 0
+                        if (bij < 1) {
+                            *selog << "|||||||||||||||||| bij assigned to: " << bij << ", for i: " << i << ", j: " << j << ", zeroing Yij HACK" << std::endl;
+                            Yij = complex<double>(0,0);
+                        }
+#endif
+                    } catch ( const std::out_of_range& oor ) {}
+                } catch ( const std::out_of_range& oor ) {}
             } catch ( const std::out_of_range& oor ) {
-                *selog << "ERROR: set_n catch on Ypu.at(i) lookup\n" << std::flush;
+                *selog << "ERROR: set_nij catch on Ypu[i].at(j) lookup\n" << std::flush;
                 exit(1);
             }
-            g = real(-Yij);
-            b = imag(-Yij);
+        } catch ( const std::out_of_range& oor ) {
+            *selog << "ERROR: set_nij catch on Ypu.at(i) lookup\n" << std::flush;
+            exit(1);
         }
+
+        g = real(-Yij);
+        b = imag(-Yij);
     }
-    
+
 
     private:
     void calc_h(cs *&h) {
@@ -2022,7 +2100,8 @@ class SELoopWorker {
                     for ( auto& rowpair : Yrow ) {
                         uint j = rowpair.first;
                         if (j != i) {
-                            set_n(i,j);
+                            double vi, vj, T, ai, aj, bij, g, b;
+                            set_nij(i, j, vi, vj, T, ai, aj, bij, g, b);
                             // Add the real power component flowing from i to j
                             double term = (vi*vi/(ai*ai) * g) -
                                    (vi*vj/(ai*aj) * (g*cos(T) + b*sin(T)));
@@ -2035,8 +2114,9 @@ class SELoopWorker {
                         }
                     }
                     // Add the real power component flowing from i to 0
-                    set_n(i,0);
-                    Pi += vi*vi * g; // TODO: times cos(T) ????
+                    double vi, g, b;
+                    set_ni(i, vi, g, b);
+                    Pi += vi*vi * g;
                 } catch ( const std::out_of_range& oor ) {}
                 // Insert the measurement component
 #ifdef GS_OPTIMIZE
@@ -2054,7 +2134,8 @@ class SELoopWorker {
                     for ( auto& rowpair : Yrow ) {
                         uint j = rowpair.first;
                         if (j != i) {
-                            set_n(i,j);
+                            double vi, vj, T, ai, aj, bij, g, b;
+                            set_nij(i, j, vi, vj, T, ai, aj, bij, g, b);
                             // Add the reactive power component flowing from i to j
                             double term = ((vi*vi/(ai*ai)) * (-b)) -
                                        (vi*vj/(ai*aj) * (g*sin(T) - b*cos(T)));
@@ -2067,7 +2148,8 @@ class SELoopWorker {
                         }
                     }
                     // Add the reactive power component flowing from i to 0
-                    set_n(i,0);
+                    double vi, g, b;
+                    set_ni(i, vi, g, b);
                     Qi += - vi*vi * b;
                 } catch ( const std::out_of_range& oor ) {}
 #ifdef GS_OPTIMIZE
@@ -2080,7 +2162,8 @@ class SELoopWorker {
                 // aji = vj/vi
                 uint i = node_idxs[zary.znode1s[zid]];
                 uint j = node_idxs[zary.znode2s[zid]];
-                set_n(i,j);
+                double vi, vj, T, ai, aj, bij, g, b;
+                set_nij(i, j, vi, vj, T, ai, aj, bij, g, b);
                 double aji = vj/vi;
 #ifdef GS_OPTIMIZE
                 gs_entry_firstcol_negl(h,zidx,aji);
@@ -2157,7 +2240,8 @@ class SELoopWorker {
                     // intentionally redeclares j
                     uint j = rowpair.first;
                     if (j != i) {
-                        set_n(i,j);
+                        double vi, vj, T, ai, aj, bij, g, b;
+                        set_nij(i, j, vi, vj, T, ai, aj, bij, g, b);
                         double term = (2*vi/(ai*ai) * g) -
                                        (vj/(ai*aj) * (g*cos(T) + b*sin(T)));
 #ifdef SWITCHES
@@ -2169,7 +2253,8 @@ class SELoopWorker {
                     }
                 }
                 // consider the reference node
-                set_n(i,0);
+                double vi, g, b;
+                set_ni(i, vi, g, b);
                 dP += 2*vi * g;
 #ifdef GS_OPTIMIZE
                 gs_entry_colorder_negl(J,zidx,xidx,dP);
@@ -2181,7 +2266,8 @@ class SELoopWorker {
             else
             if ( entry_type == dPi_dvj ) {
                 // --- compute dPi/dvj
-                set_n(i,j);
+                double vi, vj, T, ai, aj, bij, g, b;
+                set_nij(i, j, vi, vj, T, ai, aj, bij, g, b);
 #ifdef SWITCHES
                 // bij--switch status multiplier between i and j
                 double dP = bij * (-vi/(ai*aj)) * (g*cos(T) + b*sin(T));
@@ -2205,7 +2291,8 @@ class SELoopWorker {
                     // intentionally redeclares j
                     uint j = rowpair.first;
                     if (j != i ) {
-                        set_n(i,j);
+                        double vi, vj, T, ai, aj, bij, g, b;
+                        set_nij(i, j, vi, vj, T, ai, aj, bij, g, b);
                         double term = (2*vi/(ai*ai) * (-b)) -
                                        (vj/(ai*aj) * (g*sin(T) - b*cos(T)));
 #ifdef SWITCHES
@@ -2217,7 +2304,8 @@ class SELoopWorker {
                     }
                 }
                 // consider the reference node
-                set_n(i,0);
+                double vi, g, b;
+                set_ni(i, vi, g, b);
                 dQ += -2*vi*b;
 #ifdef GS_OPTIMIZE
                 gs_entry_colorder_negl(J,zidx,xidx,dQ);
@@ -2229,7 +2317,8 @@ class SELoopWorker {
             else
             if ( entry_type == dQi_dvj ) {
                 // --- compute dQi/dvj
-                set_n(i,j);
+                double vi, vj, T, ai, aj, bij, g, b;
+                set_nij(i, j, vi, vj, T, ai, aj, bij, g, b);
 #ifdef SWITCHES
                 // bij--switch status multiplier between i and j
                 double dQ = bij * (-vi/(ai*aj)) * (g*sin(T) - b*cos(T));
@@ -2263,7 +2352,8 @@ class SELoopWorker {
                     // intentionally redeclares j
                     uint j = rowpair.first;
                     if (j != i) {
-                        set_n(i,j);
+                        double vi, vj, T, ai, aj, bij, g, b;
+                        set_nij(i, j, vi, vj, T, ai, aj, bij, g, b);
                         double term = (vi*vj/(ai*aj)) * (g*sin(T) - b*cos(T));
 #ifdef SWITCHES
                         // bij--switch status multiplier between i and j
@@ -2284,7 +2374,8 @@ class SELoopWorker {
             else
             if ( entry_type == dPi_dTj ) {
                 // --- compute dPi/dTj
-                set_n(i,j);
+                double vi, vj, T, ai, aj, bij, g, b;
+                set_nij(i, j, vi, vj, T, ai, aj, bij, g, b);
 #ifdef SWITCHES
                 // bij--switch status multiplier between i and j
                 double dP = bij * (-vi*vj/(ai*aj)) * (g*sin(T) - b*cos(T));
@@ -2292,9 +2383,9 @@ class SELoopWorker {
                 double dP = (-vi*vj/(ai*aj)) * (g*sin(T) - b*cos(T));
 #endif
 #ifdef GS_OPTIMIZE
-                 gs_entry_colorder_negl(J,zidx,xidx,dP);
+                gs_entry_colorder_negl(J,zidx,xidx,dP);
 #else
-                 cs_entry_negl(Jraw,zidx,xidx,dP);
+                cs_entry_negl(Jraw,zidx,xidx,dP);
 #endif
             }
 
@@ -2308,7 +2399,8 @@ class SELoopWorker {
                     // intentionally redeclares j
                     uint j = rowpair.first;
                     if (j != i) {
-                        set_n(i,j);
+                        double vi, vj, T, ai, aj, bij, g, b;
+                        set_nij(i, j, vi, vj, T, ai, aj, bij, g, b);
                         double term = (-vi*vj/(ai*aj)) * (g*cos(T) + b*sin(T));
 #ifdef SWITCHES
                         // bij--switch status multiplier between i and j
@@ -2329,7 +2421,8 @@ class SELoopWorker {
             else
             if ( entry_type == dQi_dTj ) {
                 // --- compute dQi/dTj
-                set_n(i,j);
+                double vi, vj, T, ai, aj, bij, g, b;
+                set_nij(i, j, vi, vj, T, ai, aj, bij, g, b);
 #ifdef SWITCHES
                 // bij--switch status multiplier between i and j
                 double dQ = bij * (vi*vj/(ai*aj)) * (g*cos(T) + b*sin(T));
@@ -2355,7 +2448,8 @@ class SELoopWorker {
             else
             if ( entry_type == daji_dvj) {
                 // daji/dvj = 1/vi
-                set_n(i,j);
+                double vi, vj, T, ai, aj, bij, g, b;
+                set_nij(i, j, vi, vj, T, ai, aj, bij, g, b);
                 double daji = 1.0/vi;
 #ifdef GS_OPTIMIZE
                 gs_entry_colorder_negl(J, zidx, xidx, daji);
@@ -2367,7 +2461,8 @@ class SELoopWorker {
             else
             if ( entry_type == daji_dvi) {
                 // daja/dvi -vj/vi^2
-                set_n(i,j);
+                double vi, vj, T, ai, aj, bij, g, b;
+                set_nij(i, j, vi, vj, T, ai, aj, bij, g, b);
                 double daji = -vj/(vi*vi);
 #ifdef GS_OPTIMIZE
                 gs_entry_colorder_negl(J, zidx, xidx, daji);
