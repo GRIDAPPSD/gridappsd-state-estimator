@@ -931,7 +931,7 @@ class SELoopWorker {
                     zary.zvals[zid] +=
                         vmag_phys / abs(node_vnoms[zary.znode1s[zid]]);
                 zary.znew[zid]++;
-                zary.zlast[zid] = timestamp;
+                zary.ztime[zid] = timestamp;
 
                 // update the voltage phase
                 // --- LATER ---
@@ -953,7 +953,7 @@ class SELoopWorker {
                     else
                         zary.zvals[zid] += tap_ratio;
                     zary.znew[zid]++;
-                    zary.zlast[zid] = timestamp;
+                    zary.ztime[zid] = timestamp;
                     
 
                     // Update the A matrix with the latest tap ratio measurement
@@ -1927,19 +1927,28 @@ class SELoopWorker {
     private:
     void prep_R(cs *&Rmat, const uint& timestamp, const uint& timeZero) {
         for ( auto& zid : zary.zids ) {
-            if (zid.rfind("_Vmag")==zid.size()-5 ||
-                zid.rfind("_tap")==zid.size()-4) {
+            // check whether to use time-based uncertainty based on flag
+            // related to measurement type
+            if (!zary.znotime[zid]) {
                 // TODO: describe choices for considering queued measurements,
                 // i.e. a weighted average instead of just looking at the last
                 // measurement
 
-                // TODO: if zlast==0, need a special timeUncertainty value
-                uint lastTime = (zary.zlast[zid]==0)? timeZero: zary.zlast[zid];
+                // TODO: if ztime==0, need a special timeUncertainty value
+                uint lastTime = (zary.ztime[zid]==0)? timeZero: zary.ztime[zid];
                 // TODO: 0.0001, zsigs are not correct scale factors
+                // Some measurement types like _Vmag and _tap have uniform
+                // nominal values and a constant scale factor is appropriate.
+                // Other measurement types like Pi and Qi do no have uniform
+                // nominal values
+                // Here's how you recognized _Vmag from zid:
+                // if (zid.rfind("_Vmag")==zid.size()-5)
+                // Here's how you recognized _tap from zid:
+                // if (zid.rfind("_tap")==zid.size()-4)
                 double timeUncertainty = zary.zsigs[zid]*(timestamp - lastTime);
 #ifdef DEBUG_PRIMARY
                 if (timestamp != lastTime)
-                    *selog << "Rmat non-zero timeUncertainty, zid: " << zid << ", timestamp: " << timestamp << ", lastTime: " << lastTime << ", zlast: " << zary.zlast[zid] << ", timeUncertainty: " << timeUncertainty << "\n" << std::flush;
+                    *selog << "Rmat non-zero timeUncertainty, zid: " << zid << ", timestamp: " << timestamp << ", lastTime: " << lastTime << ", ztime: " << zary.ztime[zid] << ", timeUncertainty: " << timeUncertainty << "\n" << std::flush;
 #endif
 
                 // variance of R[i,i] is sigma[i]^2 + timeUncertainty

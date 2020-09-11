@@ -11,6 +11,7 @@
 // store object names and hash names to different pieces of information
 #define SLIST std::list<std::string>
 #define SDMAP std::unordered_map<std::string,double>
+#define SBMAP std::unordered_map<std::string,bool>
 #define SSMAP std::unordered_map<std::string,std::string>
 
 class SensorArray {
@@ -25,7 +26,8 @@ class SensorArray {
 	SSMAP znode2s;	// point node or to node for flow measurements
 	SDMAP zvals;	// value of the latest measurement
 	SIMAP znew;     // counter for new measurements
-	SIMAP zlast;	// timestamp of last measurement
+	SIMAP ztime;	// timestamp of last measurement
+	SBMAP znotime;  // flag indicating not to apply time-based uncertainty
 	uint zqty = 0;	// number of measurement components
 };
 
