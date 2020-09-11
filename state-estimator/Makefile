@@ -29,7 +29,14 @@ AMQLIBPATH=-L$(AMQLIBDIR1) -L$(AMQLIBDIR2)
 # Changed from -Ofast to -O2 on 7/30/20 because under an Ubuntu 20 VM with
 # g++ version 9.3.0 -Ofast was giving bad numerical results in terms of
 # intermittent very high Supd condition numbers and incorrect state estimates
-CXXFLAGS=-O2
+# Then on 9/11/20, when adding the Rmat code for uncertainty based on time
+# since last measurement, it happened again where it would give KLU errors
+# right away every few times SE was started.  Just some very innocuous code
+# adding zlast to zary and not even using it caused the issue.  So now -O
+# seems to be the one that produces reliable results.  Benchmarking on the 9500
+# node model shows no discernable loss in performance fortunately.
+CXXFLAGS=-O
+#CXXFLAGS=-O2
 #CXXFLAGS=-Ofast
 
 bin/state-estimator: obj/state-estimator.o

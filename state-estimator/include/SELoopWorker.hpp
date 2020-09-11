@@ -232,7 +232,7 @@ class SELoopWorker {
                     *selog << "Draining workQueue size: " << workQueue->size() << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
 #endif
                     // do z summation here
-                    if (add_zvals(jmessage))
+                    if (add_zvals(jmessage, timestamp))
                         reclosedFlag = true;
 
                     // set flag to indicate a full estimate can be done
@@ -898,7 +898,7 @@ class SELoopWorker {
 
 
     private:
-    bool add_zvals(const json& jmessage) {
+    bool add_zvals(const json& jmessage, const uint& timestamp) {
         // --------------------------------------------------------------------
         // Use the simulation output to update the states
         // --------------------------------------------------------------------
@@ -929,6 +929,7 @@ class SELoopWorker {
                     zary.zvals[zid] +=
                         vmag_phys / abs(node_vnoms[zary.znode1s[zid]]);
                 zary.znew[zid]++;
+                zary.zlast[zid] = timestamp;
 
                 // update the voltage phase
                 // --- LATER ---
@@ -950,6 +951,7 @@ class SELoopWorker {
                     else
                         zary.zvals[zid] += tap_ratio;
                     zary.znew[zid]++;
+                    zary.zlast[zid] = timestamp;
                     
 
                     // Update the A matrix with the latest tap ratio measurement
@@ -1262,6 +1264,9 @@ class SELoopWorker {
 #ifdef DEBUG_FILES
         print_cs_compress(S3,tspath+"S3.csv");
 #endif
+
+        // update time uncertainty since last measurement values
+        this->prep_R(Rmat, timestamp, timeZero);
 
         cs *Supd = cs_add(Rmat,S3,1,1); cs_spfree(S3);
         if (!Supd) *selog << "ERROR: null Supd\n" << std::flush;
@@ -1910,6 +1915,32 @@ class SELoopWorker {
         Qmat = cs_compress(Qraw);
         cs_spfree(Qraw);
 #endif
+    }
+
+
+    private:
+    void prep_R(cs *&Rmat, const uint& timestamp, const uint& timeZero) {
+        for ( auto& zid : zary.zids ) {
+            if (zid.rfind("_Vmag")==zid.size()-5 ||
+                zid.rfind("_tap")==zid.size()-4) {
+                // TODO: describe choices for considering queued measurements,
+                // i.e. a weighted average instead of just looking at the last
+                // measurement
+
+                // TODO: if zlast==0, need a special timeUncertainty value
+                uint lastTime = (zary.zlast[zid]==0)? timeZero: zary.zlast[zid];
+                // TODO: 0.0001, zsigs are not correct scale factors
+                double timeUncertainty = zary.zsigs[zid]*(timestamp - lastTime);
+#ifdef DEBUG_PRIMARY
+                if (timestamp != lastTime)
+                    *selog << "Rmat non-zero timeUncertainty, zid: " << zid << ", timestamp: " << timestamp << ", lastTime: " << lastTime << ", zlast: " << zary.zlast[zid] << ", timeUncertainty: " << timeUncertainty << "\n" << std::flush;
+#endif
+
+                // variance of R[i,i] is sigma[i]^2 + timeUncertainty
+                gs_entry_diagonal_negl(Rmat,zary.zidxs[zid],
+                         zary.zsigs[zid]*zary.zsigs[zid] + timeUncertainty);
+            }
+        }
     }
 
 
