@@ -514,6 +514,7 @@ class SELoopWorker {
         *selog << "Yphys # of scaled terms: " << ctr << "\n\n" << std::flush;
 #endif
 
+#if 000
         // Overwrite Yphys entries for switches to (-500,500)
         complex<double> Yover = complex<double>(-500,500);
         for (auto& switch_node1_pair : switch_node1s) {
@@ -551,6 +552,7 @@ class SELoopWorker {
                 Yphys[j][j] = new_diag_term_val;
             }
         }
+#endif
 
         // --------------------------------------------------------------------
         // Compute Ypu
@@ -1020,12 +1022,16 @@ class SELoopWorker {
                     Bmat[i][j] = Bmat[j][i] = switch_state;
 //                    *selog << "\t***Setting Bmat[" << i << "][" << j << "] = " << Bmat[i][j] << ", switch_node1s: " << switch_node1s[zid] << ", switch_node2s: " << switch_node2s[zid] << "\n" << std::flush;
 #if 000
-                    *selog << "measurement load_break_switch zid: " << zid << "\n";
-                    *selog << "measurement load_break_switch value: " << switch_state << "\n";
-                    *selog << "measurement load_break_switch_node1s: " << switch_node1s[zid] << "\n";
-                    *selog << "measurement load_break_switch_node2s: " << switch_node2s[zid] << "\n";
-                    *selog << "measurement load_break_switch Ypu: " << Ypu[i][j] << "\n";
-                    *selog << "measurement load_break_switch Yphys: " << Yphys[i][j] << "\n\n";
+                    string match="";
+                    if (switch_state>0 && abs(Yphys[i][j])==0)
+                        match = "MISMATCH: ";
+
+                    *selog << match << "measurement load_break_switch zid: " << zid << ", i: " << i << ", j: " << j << "\n";
+                    *selog << match << "measurement load_break_switch value: " << switch_state << "\n";
+                    *selog << match << "measurement load_break_switch node1s: " << switch_node1s[zid] << "\n";
+                    *selog << match << "measurement load_break_switch node2s: " << switch_node2s[zid] << "\n";
+                    *selog << match << "measurement load_break_switch Ypu: " << Ypu[i][j] << "\n";
+                    *selog << match << "measurement load_break_switch Yphys: " << Yphys[i][j] << "\n\n";
 #endif
                 }
             }
