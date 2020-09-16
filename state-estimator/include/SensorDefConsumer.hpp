@@ -52,22 +52,6 @@ class SensorDefConsumer : public SEConsumer {
     SSMAP mmrid_pos_type_map;
     SSMAP switch_node1s;
     SSMAP switch_node2s;
-//	SLIST mmids;
-//	SLIST zids;		// measurement id [mrid_ztype] [list of strings]
-//	SSMAP ztypes;	// measurement types [str->str]
-//	SDMAP zsigs;	// measurement sigma: standard deviation [str->double]
-//	SSMAP znode1s;	// point node or from node for flow measurements [str->str]
-//	SSMAP znode2s;	// point node or to node for flow measurements [str->str]
-//	SDMAP zvals;	// value of the latest measurement [str->double]
-//	SIMAP znew;		// counter for new measurement [str->uint]
-//	uint zqty = 0;	// number of measurements
-//	// to add to z
-//	//	-- zids.push_back(zid);
-//	//	-- ztypes[zid] = ztype;
-//	//	-- ssigs[zid] = zsig;
-//	//	-- snd1s[zid] = znode1;
-//	//	-- snd2s[sn] = znode2;
-//	//	-- svals[sn] = zval;
 	
 	public:
 	SensorDefConsumer(const string& brokerURI, 
@@ -145,6 +129,7 @@ class SensorDefConsumer : public SEConsumer {
                     // TODO switch to sensor service uncertainty
 					zary.zsigs[zid] = 0.01;	// 1 sigma = 1%
                     zary.zvals[zid] = 1.0;
+                    zary.znomvals[zid] = zary.zvals[zid];
 
 					// add the voltage phase measurement
 					// --- LATER ---
@@ -182,6 +167,7 @@ class SensorDefConsumer : public SEConsumer {
                         //zary.zsigs[zid] = 0.0000625; // 1% of 1 tap
                         zary.zsigs[zid] = 0.001; // 1% of span
                         zary.zvals[zid] = 1.0;
+                        zary.znomvals[zid] = zary.zvals[zid];
 
 //                        *selog << m.dump(2);
 //                        *selog << "primnode: " << primnode << std::endl;

@@ -184,15 +184,16 @@ namespace state_estimator_util{
 				// Add sourcebus voltage magnitude
 				string vmag_zid = "source_V_"+node;
 				zary.zids.push_back(vmag_zid);
-				zary.zidxs  [vmag_zid] = zary.zqty++;
-				zary.ztypes [vmag_zid] = "vi";
-				zary.zsigs  [vmag_zid] = 0.001; // 1 sigma = 0.1%
-				zary.znode1s[vmag_zid] = node;
-				zary.znode2s[vmag_zid] = node;
-				zary.zvals  [vmag_zid] = 1.00;
-				zary.znew   [vmag_zid] = 0;
-				zary.ztime  [vmag_zid] = 0;
-				zary.znotime[vmag_zid] = true;
+				zary.zidxs   [vmag_zid] = zary.zqty++;
+				zary.ztypes  [vmag_zid] = "vi";
+				zary.znode1s [vmag_zid] = node;
+				zary.znode2s [vmag_zid] = node;
+				zary.zvals   [vmag_zid] = 1.00;
+				zary.zsigs   [vmag_zid] = 0.001; // 1 sigma = 0.1%
+				zary.znews   [vmag_zid] = 0;
+				zary.ztimes  [vmag_zid] = 0;
+				zary.zpseudos[vmag_zid] = true;
+				zary.znomvals[vmag_zid] = zary.zvals[vmag_zid];
 
 //                *selog << "**Source Bus node: " << node << '\n' << std::flush;
 //                *selog << "\tsource_node_prefix: " << source_node_prefix << '\n' << std::flush;
@@ -200,15 +201,16 @@ namespace state_estimator_util{
 				// Add sourcebus voltage phase
 				string varg_zid = "source_T_"+node;
 				zary.zids.push_back(varg_zid);
-				zary.zidxs  [varg_zid] = zary.zqty++;
-				zary.ztypes [varg_zid] = "Ti";
-				zary.zsigs  [varg_zid] = 0.01;
-				zary.znode1s[varg_zid] = node;
-				zary.znode2s[varg_zid] = node;
-				zary.zvals  [varg_zid] = 0.0;
-				zary.znew   [varg_zid] = 0;
-				zary.ztime  [varg_zid] = 0;
-				zary.znotime[varg_zid] = true;
+				zary.zidxs   [varg_zid] = zary.zqty++;
+				zary.ztypes  [varg_zid] = "Ti";
+				zary.znode1s [varg_zid] = node;
+				zary.znode2s [varg_zid] = node;
+				zary.zvals   [varg_zid] = 0.0;
+				zary.zsigs   [varg_zid] = 0.01;
+				zary.znews   [varg_zid] = 0;
+				zary.ztimes  [varg_zid] = 0;
+				zary.zpseudos[varg_zid] = true;
+				zary.znomvals[varg_zid] = zary.zvals[varg_zid];
 			}
 
 			else {
@@ -217,16 +219,17 @@ namespace state_estimator_util{
 				// Add the P injection
 				string pinj_zid = "pseudo_P_"+node;
 				zary.zids.push_back(pinj_zid);
-				zary.zidxs  [pinj_zid] = zary.zqty++;
-				zary.ztypes	[pinj_zid] = "Pi";
-				zary.znode1s[pinj_zid] = node;
-				zary.znode2s[pinj_zid] = node;
-				zary.znew   [pinj_zid] = 0;
-				zary.ztime  [pinj_zid] = 0;
-				zary.znotime[pinj_zid] = true;
-				zary.zvals  [pinj_zid] = pseudoP[node]/sbase;
-                zary.zsigs  [pinj_zid] = std::abs(pseudoP[node]/sbase) +
+				zary.zidxs   [pinj_zid] = zary.zqty++;
+				zary.ztypes	 [pinj_zid] = "Pi";
+				zary.znode1s [pinj_zid] = node;
+				zary.znode2s [pinj_zid] = node;
+				zary.zvals   [pinj_zid] = pseudoP[node]/sbase;
+                zary.zsigs   [pinj_zid] = std::abs(pseudoP[node]/sbase) +
                     loss_ratio*(nominal_systemP/sbase)/node_names.size(); // load + leakage
+				zary.znews   [pinj_zid] = 0;
+				zary.ztimes  [pinj_zid] = 0;
+				zary.zpseudos[pinj_zid] = true;
+				zary.znomvals[pinj_zid] = zary.zvals[pinj_zid];
 
 //                *selog << "NON-Source Bus node: " << node << '\n' << std::flush;
 //                *selog << "\tsource_node_prefix: " << source_node_prefix << '\n' << std::flush;
@@ -234,16 +237,17 @@ namespace state_estimator_util{
                 // Add the Q injection
 				string qinj_zid = "pseudo_Q_"+node;
 				zary.zids.push_back(qinj_zid);
-				zary.zidxs  [qinj_zid] = zary.zqty++;
-				zary.ztypes	[qinj_zid] = "Qi";
-				zary.znode1s[qinj_zid] = node;
-				zary.znode2s[qinj_zid] = node;
-				zary.znew   [qinj_zid] = 0;
-				zary.ztime  [qinj_zid] = 0;
-				zary.znotime[qinj_zid] = true;
-				zary.zvals  [qinj_zid] = pseudoQ[node]/sbase;
-                zary.zsigs  [qinj_zid] = std::abs(pseudoQ[node]/sbase) +
+				zary.zidxs   [qinj_zid] = zary.zqty++;
+				zary.ztypes	 [qinj_zid] = "Qi";
+				zary.znode1s [qinj_zid] = node;
+				zary.znode2s [qinj_zid] = node;
+				zary.zvals   [qinj_zid] = pseudoQ[node]/sbase;
+                zary.zsigs   [qinj_zid] = std::abs(pseudoQ[node]/sbase) +
                     loss_ratio*(nominal_systemQ/sbase)/node_names.size(); // load + leakage
+				zary.znews   [qinj_zid] = 0;
+				zary.ztimes  [qinj_zid] = 0;
+				zary.zpseudos[qinj_zid] = true;
+				zary.znomvals[qinj_zid] = zary.zvals[qinj_zid];
 			}
 		}
 	}

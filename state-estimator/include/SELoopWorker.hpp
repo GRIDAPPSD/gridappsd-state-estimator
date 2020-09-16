@@ -211,7 +211,7 @@ class SELoopWorker {
 
             // check whether to preserve zvals from last queue draining
             if ( !keepZvalsFlag )
-                for ( auto& zid : zary.zids ) zary.znew[zid] = 0;
+                for ( auto& zid : zary.zids ) zary.znews[zid] = 0;
             else
                 keepZvalsFlag = false;
 
@@ -268,14 +268,14 @@ class SELoopWorker {
 // #endif
 
             for ( auto& zid : zary.zids ) {
-                if ( zary.znew[zid] > 1 )
-                    zary.zvals[zid] /= zary.znew[zid];
+                if ( zary.znews[zid] > 1 )
+                    zary.zvals[zid] /= zary.znews[zid];
             }
 
 // #ifdef DEBUG_PRIMARY
 //            *selog << "zvals before estimate\n" << std::flush;
 //            for ( auto& zid : zary.zids ) {
-//                *selog << "measurement of type: " << zary.ztypes[zid] << "\t" << zid << ": " << zary.zvals[zid] << "\t(" << zary.znew[zid] << ")\n" << std::flush;
+//                *selog << "measurement of type: " << zary.ztypes[zid] << "\t" << zid << ": " << zary.zvals[zid] << "\t(" << zary.znews[zid] << ")\n" << std::flush;
 //            }
 // #endif
 
@@ -328,8 +328,8 @@ class SELoopWorker {
                     // added before the next estimate call and average those
                     // with what's been drained already
                     for ( auto& zid : zary.zids ) {
-                        if ( zary.znew[zid] > 1 )
-                            zary.zvals[zid] *= zary.znew[zid];
+                        if ( zary.znews[zid] > 1 )
+                            zary.zvals[zid] *= zary.znews[zid];
                     }
 
                     // set flag to indicate not to clear previous zvals
@@ -461,8 +461,9 @@ class SELoopWorker {
                 // means the relationship between vi and vj is indeterminant
                 // this piecewise relationship is not differentiable for calc_J
             } else { 
-                *selog << "ERROR: Unrecognized measurement type " << 
-                    ztype << "\n" << std::flush;
+                *selog << "ERROR: Jshapemap unrecognized measurement type: " <<
+                          ztype << "\n" << std::flush;
+                exit(1);
             }
         }
 #ifdef DEBUG_PRIMARY
@@ -514,7 +515,6 @@ class SELoopWorker {
         *selog << "Yphys # of scaled terms: " << ctr << "\n\n" << std::flush;
 #endif
 
-#if 000
         // Overwrite Yphys entries for switches to (-500,500)
         complex<double> Yover = complex<double>(-500,500);
         for (auto& switch_node1_pair : switch_node1s) {
@@ -552,7 +552,6 @@ class SELoopWorker {
                 Yphys[j][j] = new_diag_term_val;
             }
         }
-#endif
 
         // --------------------------------------------------------------------
         // Compute Ypu
@@ -851,7 +850,7 @@ class SELoopWorker {
         double span_taps = 0.2;
 
         // scaling factor for state uncertainty initialization
-        double span_multiplier = 0.02;
+        double span_multiplier = 0.2*0.2;
 #ifdef DIAGONAL_P
         // clear previous values if this was called before
         if ( Uvmag.size() > 0 ) Uvmag.clear();
@@ -924,14 +923,14 @@ class SELoopWorker {
                 double vmag_phys = m["magnitude"];
                 // TODO: This uses vnom filled from OpenDSS values, but needs
                 // to use GridLAB-D values
-                if (zary.znew[zid] == 0)
+                if (zary.znews[zid] == 0)
                     zary.zvals[zid] = 
                         vmag_phys / abs(node_vnoms[zary.znode1s[zid]]);
                 else
                     zary.zvals[zid] +=
                         vmag_phys / abs(node_vnoms[zary.znode1s[zid]]);
-                zary.znew[zid]++;
-                zary.ztime[zid] = timestamp;
+                zary.znews[zid]++;
+                zary.ztimes[zid] = timestamp;
 
                 // update the voltage phase
                 // --- LATER ---
@@ -948,12 +947,12 @@ class SELoopWorker {
 //                    *selog << "tap_position: " << tap_position 
 //                        << "\ttap_ratio: " << tap_ratio << std::endl;
 
-                    if (zary.znew[zid] == 0)
+                    if (zary.znews[zid] == 0)
                         zary.zvals[zid] = tap_ratio;
                     else
                         zary.zvals[zid] += tap_ratio;
-                    zary.znew[zid]++;
-                    zary.ztime[zid] = timestamp;
+                    zary.znews[zid]++;
+                    zary.ztimes[zid] = timestamp;
                     
 
                     // Update the A matrix with the latest tap ratio measurement
@@ -1272,7 +1271,7 @@ class SELoopWorker {
 #endif
 
         // update time uncertainty since last measurement values
-        this->prep_R(Rmat, timestamp, timeZero);
+        this->prep_R(Rmat, timestamp);
 
         cs *Supd = cs_add(Rmat,S3,1,1); cs_spfree(S3);
         if (!Supd) *selog << "ERROR: null Supd\n" << std::flush;
@@ -1925,31 +1924,71 @@ class SELoopWorker {
 
 
     private:
-    void prep_R(cs *&Rmat, const uint& timestamp, const uint& timeZero) {
+    void prep_R(cs *&Rmat, const uint& timestamp) {
         for ( auto& zid : zary.zids ) {
-            // check whether to use time-based uncertainty based on flag
-            // related to measurement type
-            if (!zary.znotime[zid]) {
+            // check whether to apply some form of time-based uncertainty by
+            // checking a measurement type related flag
+            if (!zary.zpseudos[zid]) {
                 // TODO: describe choices for considering queued measurements,
                 // i.e. a weighted average instead of just looking at the last
                 // measurement
 
-                // TODO: if ztime==0, need a special timeUncertainty value
-                uint lastTime = (zary.ztime[zid]==0)? timeZero: zary.ztime[zid];
-                // TODO: 0.0001, zsigs are not correct scale factors
-                // Some measurement types like _Vmag and _tap have uniform
-                // nominal values and a constant scale factor is appropriate.
-                // Other measurement types like Pi and Qi do no have uniform
-                // nominal values
-                // Here's how you recognized _Vmag from zid:
-                // if (zid.rfind("_Vmag")==zid.size()-5)
-                // Here's how you recognized _tap from zid:
-                // if (zid.rfind("_tap")==zid.size()-4)
-                double timeUncertainty = zary.zsigs[zid]*(timestamp - lastTime);
+                double timeUncertainty;
+
+                // consider no measurements yet for node so uncertainty
+                // isn't based on time since last measurement
+                if (zary.ztimes[zid] == 0) {
+                    if (zary.ztypes[zid] == "vi")
+                        // standard deviation of expected initial voltage
+                        // magnitude
+                        timeUncertainty = 0.2*0.2;
+                    else if (zary.ztypes[zid] == "Ti")
+                        // standard deviation of expected initial voltage
+                        // angle
+                        timeUncertainty = 0.01*PI*PI;
+                    else if (zary.ztypes[zid] == "aji")
+                        // standard deviation of expected initial tap ratio
+                        timeUncertainty = 0.2*0.2;
+                    else if (zary.ztypes[zid]=="Pi" || zary.ztypes[zid]=="Qi")
+                        // standard deviation of expected initial complex power
+                        timeUncertainty = zary.znomvals[zid]*zary.znomvals[zid]*0.25;
+                    else {
+                        *selog << "ERROR: prep_R unrecognized measurement type: " <<
+                                  zary.ztypes[zid] << "\n" << std::flush;
+                        exit(1);
+                    }
+
+                // consider when there is an existing measurement so uncertainty
+                // is based on time since last measurement
+                } else {
+                    double factor;
+                    if (zary.ztypes[zid] == "vi")
+                        // standard deviation of expected change in voltage
+                        // magnitude per second
+                        factor = 0.0001;
+                    else if (zary.ztypes[zid] == "Ti")
+                        // standard deviation of expected change in voltage
+                        // angle per second
+                        factor = 0.0001*PI*PI;
+                    else if (zary.ztypes[zid] == "aji")
+                        // standard deviation of expected change in tap ratio
+                        // per second
+                        factor = 0.00625*0.00625;
+                    else if (zary.ztypes[zid]=="Pi" || zary.ztypes[zid]=="Qi")
+                        // standard deviation of expected change in complex
+                        // power per second
+                        factor = zary.znomvals[zid]*zary.znomvals[zid]*0.0001;
+                    else {
+                        *selog << "ERROR: prep_R unrecognized measurement type: " <<
+                                  zary.ztypes[zid] << "\n" << std::flush;
+                        exit(1);
+                    }
+
+                    timeUncertainty = factor*(timestamp - zary.ztimes[zid]);
 #ifdef DEBUG_PRIMARY
-                if (timestamp != lastTime)
-                    *selog << "Rmat non-zero timeUncertainty, zid: " << zid << ", timestamp: " << timestamp << ", lastTime: " << lastTime << ", ztime: " << zary.ztime[zid] << ", timeUncertainty: " << timeUncertainty << "\n" << std::flush;
+                    *selog << "Rmat non-zero timeUncertainty, zid: " << zid << ", timestamp: " << timestamp << ", ztimes: " << zary.ztimes[zid] << ", factor: " << factor << ", timeUncertainty: " << timeUncertainty << "\n" << std::flush;
 #endif
+                }
 
                 // variance of R[i,i] is sigma[i]^2 + timeUncertainty
                 gs_entry_diagonal_negl(Rmat,zary.zidxs[zid],

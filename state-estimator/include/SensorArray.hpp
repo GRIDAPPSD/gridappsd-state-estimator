@@ -25,9 +25,10 @@ class SensorArray {
 	SSMAP znode1s;	// point node or from node for flow measurements
 	SSMAP znode2s;	// point node or to node for flow measurements
 	SDMAP zvals;	// value of the latest measurement
-	SIMAP znew;     // counter for new measurements
-	SIMAP ztime;	// timestamp of last measurement
-	SBMAP znotime;  // flag indicating not to apply time-based uncertainty
+	SIMAP znews;    // counter for new measurements
+	SIMAP ztimes;	// timestamp of last measurement
+	SBMAP zpseudos; // flag indicating a pseudo-measrement
+	SDMAP znomvals;	// nominal value of measurement
 	uint zqty = 0;	// number of measurement components
 };
 
