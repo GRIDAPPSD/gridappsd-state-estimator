@@ -923,10 +923,11 @@ class SELoopWorker {
                 double vmag_phys = m["magnitude"];
                 // TODO: This uses vnom filled from OpenDSS values, but needs
                 // to use GridLAB-D values
-                if (zary.znews[zid] == 0)
+                if (zary.znews[zid] == 0) {
                     zary.zvals[zid] = 
                         vmag_phys / abs(node_vnoms[zary.znode1s[zid]]);
-                else
+                    zary.znomvals[zid] = zary.zvals[zid];
+                } else
                     zary.zvals[zid] +=
                         vmag_phys / abs(node_vnoms[zary.znode1s[zid]]);
                 zary.znews[zid]++;
@@ -947,9 +948,10 @@ class SELoopWorker {
 //                    *selog << "tap_position: " << tap_position 
 //                        << "\ttap_ratio: " << tap_ratio << std::endl;
 
-                    if (zary.znews[zid] == 0)
+                    if (zary.znews[zid] == 0) {
                         zary.zvals[zid] = tap_ratio;
-                    else
+                        zary.znomvals[zid] = zary.zvals[zid];
+                    } else
                         zary.zvals[zid] += tap_ratio;
                     zary.znews[zid]++;
                     zary.ztimes[zid] = timestamp;
