@@ -1929,9 +1929,17 @@ class SELoopWorker {
             // check whether to apply some form of time-based uncertainty by
             // checking a measurement type related flag
             if (!zary.zpseudos[zid]) {
-                // TODO: describe choices for considering queued measurements,
-                // i.e. a weighted average instead of just looking at the last
-                // measurement
+                // We are currently using the time since last measurement
+                // for a node to determine a time-based uncertainty value.
+                // The time since last measurement approach was chosen because
+                // measurement uncertainty is expected to be dominated by the
+                // most recent existing measurement.
+
+                // This approach does not consider how many measurements did
+                // or didn't come through prior to the last measurement since
+                // the last estimate call, which could be determined using znew.
+                // An approach that would accumulate uncertainty for both
+                // missing and existing measurements could be considered.
 
                 double timeUncertainty;
 
