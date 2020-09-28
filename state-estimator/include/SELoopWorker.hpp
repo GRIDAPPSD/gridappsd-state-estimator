@@ -1035,6 +1035,49 @@ class SELoopWorker {
                 }
             }
 
+            else if ( !m_type.compare("VA") ) {
+                if ( !zary.mcetypes[mmrid].compare("EnergyConsumer") ) {
+                    // P and Q injection measurements are composed of physical
+                    // measurements of all devices at the node.
+
+                    // TODO: it would be possible to have physical measurements
+                    // from a subset of devices at a node so we need to figure
+                    // out how to combine the physical and pseudo-measurements
+                    // (existing and/or new).
+                    // We have one existing Pi and one existing Qi measurement
+                    // for every node.  Assuming we have physical measurements
+                    // for all existing devices at a node, we could overwrite
+                    // the pseudo-measurement with an accumulator over physical
+                    // measurements at that node.
+
+                    string meas_node = zary.mnodes[mmrid];
+                    string pinj_zid = meas_node+"_Pinj";
+                    string qinj_zid = meas_node+"_Qinj";
+
+                    // assumes pinj and qinj are updated in pairs only
+                    // or we would have to check qinj_zid as well
+                    if (zary.ztimes[pinj_zid] != timestamp) {
+                        zary.zvals[pinj_zid] = 0;
+                        zary.zvals[qinj_zid] = 0;
+                        zary.znews[pinj_zid]++;
+                        zary.znews[qinj_zid]++;
+                        zary.ztimes[pinj_zid] = timestamp;
+                        zary.ztimes[qinj_zid] = timestamp;
+                    }
+
+                    double vmag_phys = m["magnitude"];
+                    double vang_phys = m["angle"];
+                    double vang_rad = vang_phys*PI/180.0;
+
+                    // convert from polar to rectangular coordinates
+                    zary.zvals[pinj_zid] += vmag_phys*cos(vang_rad);
+                    zary.zvals[qinj_zid] += vmag_phys*sin(vang_rad);
+                }
+                // check other conducting equipment types
+                // else if ( !zary.mcetypes[mmrid].compare("") ) {
+                // }
+            }
+
             //else if ( !m_type.compare("") ) {
             //}
         }

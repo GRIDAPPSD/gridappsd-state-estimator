@@ -266,11 +266,17 @@ int main(int argc, char** argv) {
         state_estimator_util::build_cemrid_busnames_map(gad,
                 cemrid_busnames_map);
 
+		// Add Pseudo-Measurements
+        SDMAP node_nominal_Pinj_map;
+        SDMAP node_nominal_Qinj_map;
+		state_estimator_util::get_nominal_energy_consumer_injections(gad,
+				node_vnoms,node_nominal_Pinj_map,node_nominal_Qinj_map);
+
 		// Set up the sensors consumer
 		string sensTopic = "goss.gridappsd.se.response."+gad.simid+".cimdict";
 		SensorDefConsumer sensConsumer(gad.brokerURI,gad.username,gad.password, 
                cemrid_busnames_map,reg_cemrid_primbus_map,reg_cemrid_regbus_map,
-               sensTopic,"queue");
+               node_nominal_Pinj_map,node_nominal_Qinj_map,sensTopic,"queue");
 		Thread sensConsumerThread(&sensConsumer);
 		sensConsumerThread.start();		// execute sensConsumer.run()
 		sensConsumer.waitUntilReady();	// wait for latch release

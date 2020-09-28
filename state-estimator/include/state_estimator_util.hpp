@@ -85,7 +85,8 @@ namespace state_estimator_util{
 
 		// Initialize containers to hold pseudo-measurements
 		SDMAP pseudoP, pseudoQ;
-        double nominal_systemP, nominal_systemQ;
+        double nominal_systemP = 0;
+        double nominal_systemQ = 0;
 
 		// Add nominal load injections
 		for ( auto& load : jpsm["data"]["results"]["bindings"] ) {
@@ -248,6 +249,71 @@ namespace state_estimator_util{
 				zary.ztimes  [qinj_zid] = 0;
 				zary.zpseudos[qinj_zid] = true;
 				zary.znomvals[qinj_zid] = zary.zvals[qinj_zid];
+			}
+		}
+	}
+
+
+	void get_nominal_energy_consumer_injections(gridappsd_session& gad,
+				SCMAP& node_vnoms, SDMAP& node_nominal_Pinj_map,
+                SDMAP& node_nominal_Qinj_map) {
+		json jpsm = sparql_query(gad,"psm",sparq_energy_consumer_pq(gad.modelID));
+		// Add nominal load injections
+		for ( auto& load : jpsm["data"]["results"]["bindings"] ) {
+		 	string bus = load["busname"]["value"];
+            for ( char& c : bus ) c = toupper(c);
+
+			if ( !load.count("phase") ) {
+				// This is a 3-phase balanced load (handle D and Y the same)
+				string sptot = load["p_3p"]["value"]; double ptot = stod(sptot);
+				string sqtot = load["q_3p"]["value"]; double qtot = stod(sqtot);
+				// Add injection to phase A
+				node_nominal_Pinj_map[bus+".1"] -= ptot/3.0;
+				node_nominal_Qinj_map[bus+".1"] -= qtot/3.0;
+				// Add injection to phase B
+				node_nominal_Pinj_map[bus+".2"] -= ptot/3.0;
+				node_nominal_Qinj_map[bus+".2"] -= qtot/3.0;
+				// Add injection to phase C
+				node_nominal_Pinj_map[bus+".3"] -= ptot/3.0;
+				node_nominal_Qinj_map[bus+".3"] -= qtot/3.0;
+
+			} else {
+				// This is a 1-phase load
+				string spph = load["p_phase"]["value"]; double pph = stod(spph);
+				string sqph = load["q_phase"]["value"]; double qph = stod(sqph);
+				string phase = load["phase"]["value"];
+				// determine the node
+				string node = bus;
+				if (!phase.compare("A")) node += ".1";
+				if (!phase.compare("B")) node += ".2";
+				if (!phase.compare("C")) node += ".3";
+				if (!phase.compare("s1")) node += ".1";
+				if (!phase.compare("s2")) node += ".2";
+				// Handle Wye or Delta load
+				string conn = load["conn"]["value"];
+				if ( !conn.compare("Y") ) {
+					// Wye-connected load - injections are 
+					node_nominal_Pinj_map[node] -= pph;
+					node_nominal_Qinj_map[node] -= qph;
+				}
+				if ( !conn.compare("D") ) {
+					// Delta-connected load - injections depend on load current
+					complex<double> sload = complex<double>(pph,qph);
+					// Find the nominal voltage across the load
+					string n2 = bus;
+					if (!phase.compare("A")) n2 += ".2";
+					if (!phase.compare("B")) n2 += ".3";
+					if (!phase.compare("C")) n2 += ".1";
+					if (!phase.compare("s1")) n2 += ".2";
+					if (!phase.compare("s2")) n2 += ".1";
+					complex<double> vload = node_vnoms[node] - node_vnoms[n2];
+					// Positive load at the named node
+					node_nominal_Pinj_map[node] -= real(sload/vload*node_vnoms[node]);
+					node_nominal_Qinj_map[node] -= imag(sload/vload*node_vnoms[node]);
+					// Negative load at the second node
+					node_nominal_Pinj_map[n2] += real(sload/vload*node_vnoms[n2]);
+					node_nominal_Qinj_map[n2] += imag(sload/vload*node_vnoms[n2]);
+				}
 			}
 		}
 	}

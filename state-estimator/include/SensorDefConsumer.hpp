@@ -46,6 +46,10 @@ class SensorDefConsumer : public SEConsumer {
     private:
     SSMAP reg_cemrid_primbus_map;  // for regulator Pos measurement init
     SSMAP reg_cemrid_regbus_map;   // for regulator Pos measurement init
+
+    private:
+    SDMAP node_nominal_Pinj_map;
+    SDMAP node_nominal_Qinj_map;
     
 	private:
 	SensorArray zary;
@@ -61,6 +65,8 @@ class SensorDefConsumer : public SEConsumer {
                 const SSLISTMAP& cemrid_busnames_map,
                 const SSMAP& reg_cemrid_primbus_map,
                 const SSMAP& reg_cemrid_regbus_map,
+                const SDMAP& node_nominal_Pinj_map,
+                const SDMAP& node_nominal_Qinj_map,
 				const string& target,
 				const string& mode) {
 		this->brokerURI = brokerURI;
@@ -70,6 +76,8 @@ class SensorDefConsumer : public SEConsumer {
         this->cemrid_busnames_map = cemrid_busnames_map;
         this->reg_cemrid_primbus_map = reg_cemrid_primbus_map;
         this->reg_cemrid_regbus_map = reg_cemrid_regbus_map;
+        this->node_nominal_Pinj_map = node_nominal_Pinj_map;
+        this->node_nominal_Qinj_map = node_nominal_Qinj_map;
 		this->target = target;
 		this->mode = mode;
 	}
@@ -93,6 +101,7 @@ class SensorDefConsumer : public SEConsumer {
 #endif
 
 		json jtext = json::parse(text);
+        //cout << jtext.dump(2) << endl;
 
 		// --------------------------------------------------------------------
 		// LOAD THE SENSORS -- sensors will deliver measurements
@@ -104,29 +113,33 @@ class SensorDefConsumer : public SEConsumer {
 				// store the necessary measurement information
 				string mmrid = m["mRID"];
 				string tmeas = m["measurementType"];
+                string ce_type = m["ConductingEquipment_type"];
 				zary.mmrids.push_back( mmrid );
 				zary.mtypes[mmrid] = tmeas;
+                zary.mcetypes[mmrid] = ce_type;
+
+                // The node is [bus].[phase_num];
+                string meas_node = m["ConnectivityNode"];
+                for ( auto& c : meas_node ) c = std::toupper(c);
+                string phase = m["phases"];
+                if ( !phase.compare("A") ) meas_node += ".1";
+                if ( !phase.compare("B") ) meas_node += ".2";
+                if ( !phase.compare("C") ) meas_node += ".3";
+                if ( !phase.compare("s1") ) meas_node += ".1";	// secondary
+                if ( !phase.compare("s2") ) meas_node += ".2";	// secondary
+				zary.mnodes[mmrid] = meas_node;
 
 				// build z and supporting structures
 				if ( !tmeas.compare("PNV") ) {
-					// The node is [bus].[phase_num];
-					string node = m["ConnectivityNode"];
-					for ( auto& c : node ) c = std::toupper(c);
-					string phase = m["phases"];
-					if ( !phase.compare("A") ) node += ".1";
-					if ( !phase.compare("B") ) node += ".2";
-					if ( !phase.compare("C") ) node += ".3";
-					if ( !phase.compare("s1") ) node += ".1";	// secondary
-					if ( !phase.compare("s2") ) node += ".2";	// secondary
 
 					// add the voltage magnitude measurement
 					string zid = mmrid + "_Vmag";
 					zary.zids.push_back( zid );
 					zary.zidxs[zid] = zary.zqty++;
 					zary.ztypes[zid] = "vi";
-					zary.znode1s[zid] = node;
-					zary.znode2s[zid] = node;
-                    // TODO switch to sensor service uncertainty
+					zary.znode1s[zid] = meas_node;
+					zary.znode2s[zid] = meas_node;
+                    // TODO use sensor service uncertainty when implemented
 					zary.zsigs[zid] = 0.01;	// 1 sigma = 1%
                     zary.zvals[zid] = 1.0;
                     zary.znomvals[zid] = zary.zvals[zid];
@@ -136,9 +149,9 @@ class SensorDefConsumer : public SEConsumer {
 					// -------------
 
 				} else if ( !tmeas.compare("Pos") ) {
-                    string ce_type = m["ConductingEquipment_type"];
                     if ( !ce_type.compare("PowerTransformer") ) {
                         // regulator tap measurement
+                        // TODO: use zary.mcetypes instead of mmrid_pos_type_map
                         mmrid_pos_type_map[mmrid] = "regulator_tap";
 
                         // look up the prim and reg nodes
@@ -173,6 +186,7 @@ class SensorDefConsumer : public SEConsumer {
 //                        *selog << "primnode: " << primnode << std::endl;
 //                        *selog << "regnode: " << regnode << std::endl;
                     } else if ( !ce_type.compare("LoadBreakSwitch") ) {
+                        // TODO: use zary.mcetypes instead of mmrid_pos_type_map
                         mmrid_pos_type_map[mmrid] = "load_break_switch";
                         string cemrid = m["ConductingEquipment_mRID"];
                         string zid = mmrid + "_switch";
@@ -180,21 +194,21 @@ class SensorDefConsumer : public SEConsumer {
                         // cemrid_busnames_map[cemrid] contains 2 buses
                         // adjacent to a switch for cemrid
                         string phase = m["phases"];
-                        uint node_count = 0;
+                        uint switch_node_count = 0;
                         for (auto it=cemrid_busnames_map[cemrid].begin();
                                 it!=cemrid_busnames_map[cemrid].end(); ++it) {
-                            string node = *it;
-                            if (!phase.compare("A")) node += ".1";
-                            if (!phase.compare("B")) node += ".2";
-                            if (!phase.compare("C")) node += ".3";
-                            if (!phase.compare("s1")) node += ".1";
-                            if (!phase.compare("s2")) node += ".2";
-                            node_count++;
-                            if (node_count == 1) {
-                                switch_node1s[zid] = node;
+                            string switch_node = *it;
+                            if (!phase.compare("A")) switch_node += ".1";
+                            if (!phase.compare("B")) switch_node += ".2";
+                            if (!phase.compare("C")) switch_node += ".3";
+                            if (!phase.compare("s1")) switch_node += ".1";
+                            if (!phase.compare("s2")) switch_node += ".2";
+                            switch_node_count++;
+                            if (switch_node_count == 1) {
+                                switch_node1s[zid] = switch_node;
                                 //*selog << "switch cemrid: " << cemrid << ", zid: " << zid << ", znode1s: " << node << "\n" << std::endl;
-                            } else if (node_count == 2) {
-                                switch_node2s[zid] = node;
+                            } else if (switch_node_count == 2) {
+                                switch_node2s[zid] = switch_node;
                                 //*selog << "switch cemrid: " << cemrid << ", zid: " << zid << ", znode2s: " << node << "\n" << std::endl;
                                 break; // no reason to keep checking
                             }
@@ -202,8 +216,63 @@ class SensorDefConsumer : public SEConsumer {
                     } else {
                         mmrid_pos_type_map[mmrid] = "other";
                     }
+				} else if ( !tmeas.compare("VA") ) {
+                    // TODO: figure out whether to create another structure to
+                    // track many physical measurement to one state measurement
+                    // mapping
+                    // Relevant component types in CIM dictionary:
+                    //     energyconsumers
+                    //     synchronousmachines
+                    //     solarpanels
+
+                    if (!ce_type.compare("EnergyConsumer")) {
+    					string pinj_zid = meas_node + "_Pinj";
+     				    string qinj_zid = meas_node + "_Qinj";
+
+                        // instead of poor performing n^2 complexity find,
+                        // we could create a map from node name to aggregate
+                        // injection while processing CIM dictionary and then
+                        // after processing add these to zary
+                        if (std::find(zary.zids.begin(),zary.zids.end(),pinj_zid) != zary.zids.end()) {
+    					    // add the real power injection measurement
+    					    zary.zids.push_back( pinj_zid );
+        					zary.zidxs[pinj_zid] = zary.zqty++;
+    					    zary.ztypes[pinj_zid] = "Pi";
+        					zary.znode1s[pinj_zid] = meas_node;
+        					zary.znode2s[pinj_zid] = meas_node;
+
+                            // assumes pinj and qinj are only added together
+                            // allowing a second find() call to be eliminated
+       					    // add the reactive power injection measurement
+    					    zary.zids.push_back( qinj_zid );
+    					    zary.zidxs[qinj_zid] = zary.zqty++;
+    					    zary.ztypes[qinj_zid] = "Qi";
+    					    zary.znode1s[qinj_zid] = meas_node;
+    					    zary.znode2s[qinj_zid] = meas_node;
+                        }
+
+                        // use nominal load for node from SPARQL query for zvals
+                        zary.zvals[pinj_zid] += node_nominal_Pinj_map[meas_node]/2.0;
+                        double zsig_Pinj = node_nominal_Pinj_map[meas_node]*0.01;
+    					zary.zsigs[pinj_zid] = sqrt(zary.zsigs[pinj_zid]*zary.zsigs[pinj_zid] + zsig_Pinj*zsig_Pinj);	// 1 sigma = 1% of nominal
+                        zary.znomvals[pinj_zid] += zary.zvals[pinj_zid];
+
+                        zary.zvals[qinj_zid] += node_nominal_Qinj_map[meas_node]/2.0;
+                        double zsig_Qinj = node_nominal_Qinj_map[meas_node]*0.01;
+    					zary.zsigs[qinj_zid] = sqrt(zary.zsigs[qinj_zid]*zary.zsigs[qinj_zid] + zsig_Qinj*zsig_Qinj);	// 1 sigma = 1% of nominal
+                        zary.znomvals[qinj_zid] += zary.zvals[qinj_zid];
+    
+                    } else if (!ce_type.compare("LinearShuntCompensator")) {
+                    }
+                    // other injection equipment types we will handle include
+                    // PV systems and synchronous machines
+                    // there are also flow types include ACLineSegment (and
+                    // probably also transformers)
+                    else {
+                    }
+
                 } else {
-					// we only care about PNV and Pos measurements for now
+					// we only care about PNV, Pos, and VA measurements for now
 				}
 			}
 		}

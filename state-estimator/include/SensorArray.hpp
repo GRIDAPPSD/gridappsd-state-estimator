@@ -18,6 +18,8 @@ class SensorArray {
 	public:
 	SLIST mmrids;	// list of measurement mrids
 	SSMAP mtypes;	// measurement types (e.g. "PNV")
+    SSMAP mnodes;   // mmrid to measurement node map
+    SSMAP mcetypes; // mmrid to conducting equipment type map
 	SLIST zids;		// list of measurement component IDs mmrid+"_"+ztype
 	SIMAP zidxs;	// indexes for vectors like z and h
 	SSMAP ztypes;	// measurement component types (e.g. "Vmag")
