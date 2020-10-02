@@ -1034,7 +1034,6 @@ class SELoopWorker {
 #endif
                 }
             }
-
             else if ( !m_type.compare("VA") ) {
                 if ( !zary.mcetypes[mmrid].compare("EnergyConsumer") ) {
                     // P and Q injection measurements are composed of physical
@@ -1070,14 +1069,13 @@ class SELoopWorker {
                     double vang_rad = vang_phys*PI/180.0;
 
                     // convert from polar to rectangular coordinates
-                    zary.zvals[pinj_zid] += vmag_phys*cos(vang_rad);
-                    zary.zvals[qinj_zid] += vmag_phys*sin(vang_rad);
+                    zary.zvals[pinj_zid] -= vmag_phys*cos(vang_rad)/sbase;
+                    zary.zvals[qinj_zid] -= vmag_phys*sin(vang_rad)/sbase;
                 }
                 // check other conducting equipment types
                 // else if ( !zary.mcetypes[mmrid].compare("") ) {
                 // }
             }
-
             //else if ( !m_type.compare("") ) {
             //}
         }

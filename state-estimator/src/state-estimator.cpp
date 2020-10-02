@@ -259,8 +259,24 @@ int main(int argc, char** argv) {
                 regid_primnode_map,regid_regnode_map);
 
 		// --------------------------------------------------------------------
-		// SENSOR INITILIZER
+		// SENSOR INITIALIZER
 		// --------------------------------------------------------------------
+
+        // system base power, functionally arbitrary -- can be tweaked
+        // for better numerical stability if needed
+        // all values in the approximate range 1e-140 to 1e+150 converge
+        // and only numeric overflow/underflow results in failures for the
+        // 3 models tested (ieee13nodecktassets, ieee123, test9500new)
+        // values in the 1e+6 to 1e+12 range result in minimum Supd condition
+        // numbers with the range for lowest condition varying somewhat between
+        // the 3 models tested
+#ifdef SBASE_TESTING
+        double spower = (double)std::stoi(argv[3]);
+		const double sbase = pow(10.0, spower);
+#else
+		const double sbase = 1.0e+6;
+#endif
+
         // map conducting equipment to bus names
         SSLISTMAP cemrid_busnames_map;
         state_estimator_util::build_cemrid_busnames_map(gad,
@@ -276,7 +292,8 @@ int main(int argc, char** argv) {
 		string sensTopic = "goss.gridappsd.se.response."+gad.simid+".cimdict";
 		SensorDefConsumer sensConsumer(gad.brokerURI,gad.username,gad.password, 
                cemrid_busnames_map,reg_cemrid_primbus_map,reg_cemrid_regbus_map,
-               node_nominal_Pinj_map,node_nominal_Qinj_map,sensTopic,"queue");
+               node_nominal_Pinj_map,node_nominal_Qinj_map,
+               sbase,sensTopic,"queue");
 		Thread sensConsumerThread(&sensConsumer);
 		sensConsumerThread.start();		// execute sensConsumer.run()
 		sensConsumer.waitUntilReady();	// wait for latch release
@@ -310,21 +327,6 @@ int main(int argc, char** argv) {
 		sensConsumer.fillSens(zary, mmrid_pos_type_map,
                               switch_node1s, switch_node2s);
 		sensConsumer.close();
-
-        // system base power, functionally arbitrary -- can be tweaked
-        // for better numerical stability if needed
-        // all values in the approximate range 1e-140 to 1e+150 converge
-        // and only numeric overflow/underflow results in failures for the
-        // 3 models tested (ieee13nodecktassets, ieee123, test9500new)
-        // values in the 1e+6 to 1e+12 range result in minimum Supd condition
-        // numbers with the range for lowest condition varying somewhat between
-        // the 3 models tested
-#ifdef SBASE_TESTING
-        double spower = (double)std::stoi(argv[3]);
-		const double sbase = pow(10.0, spower);
-#else
-		const double sbase = 1.0e+6;
-#endif
 
 		// Add Pseudo-Measurements
 		state_estimator_util::insert_pseudo_measurements(gad,zary,

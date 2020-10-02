@@ -56,6 +56,9 @@ class SensorDefConsumer : public SEConsumer {
     SSMAP mmrid_pos_type_map;
     SSMAP switch_node1s;
     SSMAP switch_node2s;
+
+    private:
+    double sbase;
 	
 	public:
 	SensorDefConsumer(const string& brokerURI, 
@@ -67,6 +70,7 @@ class SensorDefConsumer : public SEConsumer {
                 const SSMAP& reg_cemrid_regbus_map,
                 const SDMAP& node_nominal_Pinj_map,
                 const SDMAP& node_nominal_Qinj_map,
+				const double& sbase,
 				const string& target,
 				const string& mode) {
 		this->brokerURI = brokerURI;
@@ -78,6 +82,7 @@ class SensorDefConsumer : public SEConsumer {
         this->reg_cemrid_regbus_map = reg_cemrid_regbus_map;
         this->node_nominal_Pinj_map = node_nominal_Pinj_map;
         this->node_nominal_Qinj_map = node_nominal_Qinj_map;
+        this->sbase = sbase;
 		this->target = target;
 		this->mode = mode;
 	}
@@ -233,7 +238,7 @@ class SensorDefConsumer : public SEConsumer {
                         // we could create a map from node name to aggregate
                         // injection while processing CIM dictionary and then
                         // after processing add these to zary
-                        if (std::find(zary.zids.begin(),zary.zids.end(),pinj_zid) != zary.zids.end()) {
+                        if (std::find(zary.zids.begin(),zary.zids.end(),pinj_zid) == zary.zids.end()) {
     					    // add the real power injection measurement
     					    zary.zids.push_back( pinj_zid );
         					zary.zidxs[pinj_zid] = zary.zqty++;
@@ -252,13 +257,13 @@ class SensorDefConsumer : public SEConsumer {
                         }
 
                         // use nominal load for node from SPARQL query for zvals
-                        zary.zvals[pinj_zid] += node_nominal_Pinj_map[meas_node]/2.0;
-                        double zsig_Pinj = node_nominal_Pinj_map[meas_node]*0.01;
+                        zary.zvals[pinj_zid] -= node_nominal_Pinj_map[meas_node]/(2.0*sbase);
+                        double zsig_Pinj = node_nominal_Pinj_map[meas_node]*0.01/sbase;
     					zary.zsigs[pinj_zid] = sqrt(zary.zsigs[pinj_zid]*zary.zsigs[pinj_zid] + zsig_Pinj*zsig_Pinj);	// 1 sigma = 1% of nominal
                         zary.znomvals[pinj_zid] += zary.zvals[pinj_zid];
 
-                        zary.zvals[qinj_zid] += node_nominal_Qinj_map[meas_node]/2.0;
-                        double zsig_Qinj = node_nominal_Qinj_map[meas_node]*0.01;
+                        zary.zvals[qinj_zid] -= node_nominal_Qinj_map[meas_node]/(2.0*sbase);
+                        double zsig_Qinj = node_nominal_Qinj_map[meas_node]*0.01/sbase;
     					zary.zsigs[qinj_zid] = sqrt(zary.zsigs[qinj_zid]*zary.zsigs[qinj_zid] + zsig_Qinj*zsig_Qinj);	// 1 sigma = 1% of nominal
                         zary.znomvals[qinj_zid] += zary.zvals[qinj_zid];
     
@@ -270,7 +275,6 @@ class SensorDefConsumer : public SEConsumer {
                     // probably also transformers)
                     else {
                     }
-
                 } else {
 					// we only care about PNV, Pos, and VA measurements for now
 				}
