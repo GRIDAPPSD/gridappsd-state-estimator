@@ -390,7 +390,7 @@ class SELoopWorker {
 #endif
 
         // Construct the producer that will be used to publish the state estimate
-        string sePubTopic = "goss.gridappsd.state-estimator.out."+gad->simid;
+        string sePubTopic = "goss.gridappsd.simulation.state-estimator."+gad->simid+".output";
         statePublisher = new SEProducer(gad->brokerURI,gad->username,gad->password,sePubTopic,"topic");
 
         // --------------------------------------------------------------------
