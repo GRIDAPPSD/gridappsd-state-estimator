@@ -917,20 +917,21 @@ class SELoopWorker {
 
             // Check for "PNV" measurement
             if ( !m_type.compare("PNV") ) {
-
-                // update the voltage magnitude (in per-unit)
-                string zid = mmrid+"_Vmag";
-                double vmag_phys = m["magnitude"];
-                // TODO: This uses vnom filled from OpenDSS values, but needs
-                // to use GridLAB-D values
-                if (zary.znews[zid] == 0)
-                    zary.zvals[zid] = 
-                        vmag_phys / abs(node_vnoms[zary.znode1s[zid]]);
-                else
-                    zary.zvals[zid] +=
-                        vmag_phys / abs(node_vnoms[zary.znode1s[zid]]);
-                zary.znews[zid]++;
-                zary.ztimes[zid] = timestamp;
+                if (m.find("magnitude") != m.end()) {
+                    // update the voltage magnitude (in per-unit)
+                    string zid = mmrid+"_Vmag";
+                    double vmag_phys = m["magnitude"];
+                    // TODO: This uses vnom filled from OpenDSS values, but needs
+                    // to use GridLAB-D values
+                    if (zary.znews[zid] == 0)
+                        zary.zvals[zid] =
+                            vmag_phys / abs(node_vnoms[zary.znode1s[zid]]);
+                    else
+                        zary.zvals[zid] +=
+                            vmag_phys / abs(node_vnoms[zary.znode1s[zid]]);
+                    zary.znews[zid]++;
+                    zary.ztimes[zid] = timestamp;
+                }
 
                 // update the voltage phase
                 // --- LATER ---
@@ -1034,6 +1035,7 @@ class SELoopWorker {
 #endif
                 }
             }
+#if 111
             else if ( !m_type.compare("VA") ) {
                 if ( !zary.mcetypes[mmrid].compare("EnergyConsumer") ) {
                     // P and Q injection measurements are composed of physical
@@ -1076,6 +1078,7 @@ class SELoopWorker {
                 // else if ( !zary.mcetypes[mmrid].compare("") ) {
                 // }
             }
+#endif
             //else if ( !m_type.compare("") ) {
             //}
         }

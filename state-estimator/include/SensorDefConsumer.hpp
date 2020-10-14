@@ -222,6 +222,7 @@ class SensorDefConsumer : public SEConsumer {
                         mmrid_pos_type_map[mmrid] = "other";
                     }
 				} else if ( !tmeas.compare("VA") ) {
+#if 111
                     // TODO: figure out whether to create another structure to
                     // track many physical measurement to one state measurement
                     // mapping
@@ -275,6 +276,7 @@ class SensorDefConsumer : public SEConsumer {
                     // probably also transformers)
                     else {
                     }
+#endif
                 } else {
 					// we only care about PNV, Pos, and VA measurements for now
 				}
