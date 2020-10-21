@@ -1066,13 +1066,16 @@ class SELoopWorker {
                         zary.ztimes[qinj_zid] = timestamp;
                     }
 
-                    double vmag_phys = m["magnitude"];
-                    double vang_phys = m["angle"];
-                    double vang_rad = vang_phys*PI/180.0;
+                    if (m.find("magnitude")!=m.end() &&
+                        m.find("angle")!=m.end()) {
+                        double vmag_phys = m["magnitude"];
+                        double vang_phys = m["angle"];
+                        double vang_rad = vang_phys*PI/180.0;
 
-                    // convert from polar to rectangular coordinates
-                    zary.zvals[pinj_zid] -= vmag_phys*cos(vang_rad)/sbase;
-                    zary.zvals[qinj_zid] -= vmag_phys*sin(vang_rad)/sbase;
+                        // convert from polar to rectangular coordinates
+                        zary.zvals[pinj_zid] -= vmag_phys*cos(vang_rad)/sbase;
+                        zary.zvals[qinj_zid] -= vmag_phys*sin(vang_rad)/sbase;
+                    }
                 }
                 // check other conducting equipment types
                 // else if ( !zary.mcetypes[mmrid].compare("") ) {
