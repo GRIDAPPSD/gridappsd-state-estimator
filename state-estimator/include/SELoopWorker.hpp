@@ -1035,7 +1035,7 @@ class SELoopWorker {
 #endif
                 }
             }
-#if 111
+#ifdef NET_INJECTION
             else if ( !m_type.compare("VA") ) {
                 if ( !zary.mcetypes[mmrid].compare("EnergyConsumer") ) {
                     // P and Q injection measurements are composed of physical

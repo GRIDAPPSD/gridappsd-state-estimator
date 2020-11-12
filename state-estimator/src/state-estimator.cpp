@@ -5,6 +5,7 @@
 #define GS_OPTIMIZE
 #define SWITCHES
 //#define SBASE_TESTING
+//#define NET_INJECTION
 
 #define PI 3.1415926535
 
