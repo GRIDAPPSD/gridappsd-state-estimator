@@ -323,10 +323,11 @@ namespace state_estimator_util{
             SSMAP& reg_cemrid_primbus_map, SSMAP& reg_cemrid_regbus_map,
             SSMAP& regid_primnode_map, SSMAP& regid_regnode_map) {
 
+#ifndef TEST_HARNESS_DIR
 		json jregs = sparql_query(gad,"regs",
                 sparq_ratio_tap_changer_nodes(gad.modelID));
             
-//        *selog << jregs.dump(2);
+        // *selog << jregs.dump(2);
 
 		for ( auto& reg : jregs["data"]["results"]["bindings"] ) {
 
@@ -377,6 +378,34 @@ namespace state_estimator_util{
             regid_primnode_map[regid] = primnode;
             regid_regnode_map[regid] = regnode;
 		}
+#else
+
+        string filename = TEST_HARNESS_DIR;
+        filename += "/regid.csv";
+#ifdef DEBUG_PRIMARY
+        *selog << "Reading regulator mappings from test harness file: " << filename << "\n\n" << std::flush;
+#endif
+        std::ifstream ifs(filename);
+        string line;
+        getline(ifs, line); // throwaway header line
+
+        while ( getline(ifs, line) ) {
+            std::stringstream lineStream(line);
+            string regid, primnode, regnode;
+            getline(lineStream, regid, ',');
+            getline(lineStream, primnode, ',');
+            getline(lineStream, regnode, ',');
+
+            regid_primnode_map[regid] = primnode;
+            regid_regnode_map[regid] = regnode;
+
+			uint primidx = node_idxs[primnode];
+			uint regidx = node_idxs[regnode];
+			// initialize the A matrix
+			A[primidx][regidx] = 1;	// this will change
+			A[regidx][primidx] = 1;	// this stays unity and may not be required
+        }
+#endif
 	}
 
     void build_term_bus_map(gridappsd_session& gad, SSMAP& term_bus_map) {

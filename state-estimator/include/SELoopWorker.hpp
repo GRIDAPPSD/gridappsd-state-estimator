@@ -143,6 +143,13 @@ class SELoopWorker {
     ofstream state_fh;  // file to record states
 #endif
 
+#ifdef TEST_HARNESS_DIR
+    ifstream meas_fh;   // test harness measurement file
+    string meas_line;
+    std::vector<string> meas_zids;
+    ofstream results_fh;  // file to record results
+#endif
+
 
     public:
     SELoopWorker(SharedQueue<json>* workQueue,
@@ -202,6 +209,26 @@ class SELoopWorker {
         // (if things go bad we'll need to reset these)
         initVoltagesAndCovariance();
 
+#ifdef TEST_HARNESS_DIR
+        string filename = TEST_HARNESS_DIR;
+        filename += "/measurement_data.csv";
+#ifdef DEBUG_PRIMARY
+        *selog << "Reading measurements from test harness file: " << filename << "\n\n" << std::flush;
+#endif
+        meas_fh.open(filename);
+
+        // header line is an ordered list of zids
+        // parse measurement file header to get the zids into an STL vector
+        getline(meas_fh, meas_line);
+        string cell;
+        std::stringstream headerStream(meas_line);
+#ifdef TIMESTAMP_FROM_FILE
+        getline(headerStream, cell, ','); // throwaway the timestamp header
+#endif
+        while ( getline(headerStream, cell, ',') )
+            meas_zids.push_back(cell);
+#endif
+
         for (;;) {
             // ----------------------------------------------------------------
             // Reset the new measurement counter for each node
@@ -220,6 +247,7 @@ class SELoopWorker {
                 jmessage = workQueue->pop();
 
                 if (jmessage.find("message") != jmessage.end()) {
+#ifndef TIMESTAMP_FROM_FILE
                     timestamp = jmessage["message"]["timestamp"];
                     if (firstEstimateFlag) {
                         timeZero = timestamp;
@@ -231,13 +259,35 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
                     *selog << "Draining workQueue size: " << workQueue->size() << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
 #endif
+#endif
                     // do z summation here
+#ifndef TEST_HARNESS_DIR
                     if (add_zvals(jmessage, timestamp))
                         reclosedFlag = true;
 
                     // set flag to indicate a full estimate can be done
                     // if a COMPLETED/CLOSED log message is received
                     doEstimateFlag = true;
+#else
+                    if ( getline(meas_fh, meas_line) ) {
+                        if (add_zvals(jmessage, timestamp))
+                            reclosedFlag = true;
+#ifdef TIMESTAMP_FROM_FILE
+                        if (firstEstimateFlag) {
+                            timeZero = timestamp;
+                            // set flag value to increase uncertainty in
+                            // first estimate call
+                            timestampLastEstimate = 0;
+                            firstEstimateFlag = false;
+                        }
+#endif
+                    } else {
+#ifdef DEBUG_PRIMARY
+                        *selog << "Reached end of measurement_data.csv file, normal exit\n" << std::flush;
+#endif
+                        exit(0);
+                    }
+#endif
 
                 } else if (jmessage.find("processStatus") != jmessage.end()) {
                     // only COMPLETE/CLOSED log messages are put on the queue
@@ -259,18 +309,23 @@ class SELoopWorker {
                         exit(0);
                     }
                 }
+#ifndef TEST_HARNESS_DIR
             } while (!workQueue->empty()); // uncomment this to drain queue
-            //} while (false); // uncomment this to fully process all messages
+#else
+            } while (false); // uncomment this to fully process all messages
+#endif
 
             // do z averaging here by dividing sum by # of items
 // #ifdef DEBUG_PRIMARY
 //             *selog << "===========> z-averaging being done after draining queue\n" << std::flush;
 // #endif
 
+#ifndef TEST_HARNESS_DIR
             for ( auto& zid : zary.zids ) {
                 if ( zary.znews[zid] > 1 )
                     zary.zvals[zid] /= zary.znews[zid];
             }
+#endif
 
 // #ifdef DEBUG_PRIMARY
 //            *selog << "zvals before estimate\n" << std::flush;
@@ -381,11 +436,11 @@ class SELoopWorker {
         }
 
         // create simulation parent directory
-        std::string simpath = "output/sim_" + gad->simid + "/";
+        string simpath = "output/sim_" + gad->simid + "/";
         mkdir(simpath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
         // create init directory
-        std::string initpath = simpath + "init/";
+        string initpath = simpath + "init/";
         mkdir(initpath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 #endif
 
@@ -793,10 +848,23 @@ class SELoopWorker {
         // --------------------------------------------------------------------
         state_fh.open(simpath+"vmag_per-unit.csv",ofstream::out);
         state_fh << "timestamp,";
-        uint ctr = 0;
+        uint nctr = 0;
         for ( auto& node_name : node_names )
-            state_fh << "\'"+node_name+"\'" << ( ++ctr < node_qty ? "," : "\n" );
+            state_fh << "\'"+node_name+"\'" << ( ++nctr < node_qty ? "," : "\n" );
         state_fh.close();
+#endif
+#ifdef TEST_HARNESS_DIR
+        string filename = TEST_HARNESS_DIR;
+        filename += "/results_data.csv";
+#ifdef DEBUG_PRIMARY
+        *selog << "Writing results to test harness file: " << filename << "\n\n" << std::flush;
+#endif
+        results_fh.open(filename,ofstream::out);
+        results_fh << "timestamp,";
+        uint nctr2 = 0;
+        for ( auto& node_name : node_names )
+            results_fh << "vmag_"+node_name+",varg_"+node_name << ( ++nctr2 < node_qty ? "," : "\n" );
+        results_fh.close();
 #endif
     }
 
@@ -820,6 +888,9 @@ class SELoopWorker {
 
 #ifdef DEBUG_FILES
         // print initial state vector
+        ofstream ofh;
+        string simpath = "output/sim_" + gad->simid + "/";
+        string initpath = simpath + "init/";
         ofh.open(initpath+"Vpu.csv",ofstream::out);
         ofh << std::setprecision(16);
         *selog << "writing " << initpath+"Vpu.csv\n\n" << std::flush;
@@ -899,7 +970,11 @@ class SELoopWorker {
 
 
     private:
+#ifdef TIMESTAMP_FROM_FILE
+    bool add_zvals(const json& jmessage, uint& timestamp) {
+#else
     bool add_zvals(const json& jmessage, const uint& timestamp) {
+#endif
         // --------------------------------------------------------------------
         // Use the simulation output to update the states
         // --------------------------------------------------------------------
@@ -909,6 +984,42 @@ class SELoopWorker {
 
         bool ret = false;
 
+#ifdef TEST_HARNESS_DIR
+        std::stringstream lineStream(meas_line);
+        string cell, zid;
+        uint idx = 0;
+#ifdef TIMESTAMP_FROM_FILE
+        getline(lineStream, cell, ',');
+        double doubletime = stod(cell);
+        timestamp = (uint)doubletime;
+#endif
+        while ( getline(lineStream, cell, ',') ) {
+            zid = meas_zids[idx++];
+            zary.zvals[zid] = stod(cell);
+            zary.znews[zid] = 1;
+            zary.ztimes[zid] = timestamp;
+
+            if (zid.substr(zid.length()-4, string::npos) == "_tap") {
+                // Update the A matrix with the latest tap ratio measurement
+                double tap_ratio = stod(cell);
+
+                string primnode = zary.znode1s[zid];
+                uint i = node_idxs[primnode];
+
+                string regnode = zary.znode2s[zid];
+                uint j = node_idxs[regnode];
+
+                if ( ( Amat[j][i] - tap_ratio ) > 0.00625 )
+                    Amat[j][i] -= 0.00625;
+                else if ( ( Amat[j][i] - tap_ratio ) < -0.00625 )
+                    Amat[j][i] += 0.00625;
+                else
+                    Amat[j][i] = tap_ratio;
+            }
+        }
+        // TODO: support switches
+
+#else
         // Next, update new measurements
         for ( auto& m : jmessage["message"]["measurements"] ) {
             // link back to information about the measurement using its mRID
@@ -954,7 +1065,6 @@ class SELoopWorker {
                         zary.zvals[zid] += tap_ratio;
                     zary.znews[zid]++;
                     zary.ztimes[zid] = timestamp;
-                    
 
                     // Update the A matrix with the latest tap ratio measurement
                     // TODO: Consider averaging for queued measurements
@@ -1086,6 +1196,40 @@ class SELoopWorker {
             //}
         }
 
+#if 000
+        // write measurement_data files from a running simulation for use
+        // with test harness after manually concatenating them
+        static bool firstTimeFlag = true;
+        ofstream ofh_header, ofh_data;
+        string filename;
+
+        if (firstTimeFlag) {
+            filename = "test/measurement_header.csv";
+            ofh_header.open(filename, ofstream::out);
+        }
+
+        filename = "test/measurement_data_" + std::to_string(timestamp) + ".csv";
+        ofh_data.open(filename, ofstream::out);
+        ofh_data << std::setprecision(16);
+
+        for ( auto& zid : zary.zids ) {
+            if (firstTimeFlag)
+                ofh_header << zid << ",";
+
+            ofh_data << zary.zvals[zid] << ",";
+        }
+
+        if (firstTimeFlag) {
+            firstTimeFlag = false;
+            ofh_header << "\n" << std::flush;
+            ofh_header.close();
+        }
+
+        ofh_data << "\n" << std::flush;
+        ofh_data.close();
+#endif
+#endif
+
         return ret;
     }
 
@@ -1147,7 +1291,7 @@ class SELoopWorker {
 
 #ifdef DEBUG_FILES
         // write to file
-        std::string simpath = "output/sim_" + gad->simid + "/";
+        string simpath = "output/sim_" + gad->simid + "/";
         state_fh.open(simpath+"vmag_per-unit.csv",ofstream::app);
         state_fh << timestamp << ',';
         uint ctr = 0;
@@ -1156,6 +1300,22 @@ class SELoopWorker {
             state_fh << vmag_pu << ( ++ctr < node_qty ? "," : "\n" );
         }
         state_fh.close();
+#endif
+#ifdef TEST_HARNESS_DIR
+        string filename = TEST_HARNESS_DIR;
+        filename += "/results_data.csv";
+        results_fh.open(filename,ofstream::app);
+
+        results_fh << timestamp << ',';
+        results_fh << std::fixed;
+        results_fh << std::setprecision(10);
+        uint ctr2 = 0;
+        for ( auto& node_name : node_names ) {
+            double vmag_pu = abs( Vpu[ node_idxs[node_name] ] );
+            double varg_pu = arg( Vpu[ node_idxs[node_name] ] );
+            results_fh << vmag_pu << "," << varg_pu << ( ++ctr2 < node_qty ? "," : "\n" );
+        }
+        results_fh.close();
 #endif
     }
 
@@ -1171,10 +1331,10 @@ class SELoopWorker {
 
 #ifdef DEBUG_FILES
         // set filename path based on timestamp
-        std::string simpath = "output/sim_" + gad->simid + "/ts_";
+        string simpath = "output/sim_" + gad->simid + "/ts_";
         std::ostringstream out;
         out << simpath << timestamp << "/";
-        std::string tspath = out.str();
+        string tspath = out.str();
 
         // create timestamp directory
         mkdir(tspath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
@@ -1319,6 +1479,9 @@ class SELoopWorker {
 
         // update time uncertainty since last measurement values
         this->prep_R(Rmat, timestamp);
+#ifdef DEBUG_FILES
+        print_cs_compress(Rmat,tspath+"R.csv");
+#endif
 
         cs *Supd = cs_add(Rmat,S3,1,1); cs_spfree(S3);
         if (!Supd) *selog << "ERROR: null Supd\n" << std::flush;
@@ -1342,7 +1505,7 @@ class SELoopWorker {
         cs *K3 = gs_spalloc_fullsquare(zqty);
         double *rhs = K3->x;
 #else
-#if 000
+#if 111
         double *rhs = (double *)calloc(zqty*zqty, sizeof(double));
 #else
         cs *K3 = gs_spalloc_fullsquare(zqty);
@@ -1433,7 +1596,6 @@ class SELoopWorker {
         }
 #endif
 
-#if 000
 #ifndef GS_OPTIMIZE
         cs *K3raw = cs_spalloc(zqty, zqty, zqty*zqty, 1, 1);
 
@@ -1448,7 +1610,6 @@ class SELoopWorker {
         cs *K3 = cs_compress(K3raw);
         cs_spfree(K3raw);
         free(rhs);
-#endif
 #endif
 
 #ifdef DEBUG_PRIMARY
@@ -1972,6 +2133,9 @@ class SELoopWorker {
 
     private:
     void prep_R(cs *&Rmat, const uint& timestamp) {
+#ifndef GS_OPTIMIZE
+        cs* Rraw = cs_spalloc(zqty, zqty, zqty, 1, 1);
+#endif
         for ( auto& zid : zary.zids ) {
             // check whether to apply some form of time-based uncertainty by
             // checking a measurement type related flag
@@ -1988,6 +2152,7 @@ class SELoopWorker {
                 // An approach that would accumulate uncertainty for both
                 // missing and existing measurements could be considered.
 
+#ifndef TEST_HARNESS_DIR
                 double timeUncertainty;
 
                 // consider no measurements yet for node so uncertainty
@@ -2041,15 +2206,35 @@ class SELoopWorker {
 
                     timeUncertainty = factor*(timestamp - zary.ztimes[zid]);
 #ifdef DEBUG_PRIMARY
-                    *selog << "Rmat non-zero timeUncertainty, zid: " << zid << ", timestamp: " << timestamp << ", ztimes: " << zary.ztimes[zid] << ", factor: " << factor << ", timeUncertainty: " << timeUncertainty << "\n" << std::flush;
+                    if (timeUncertainty > 0.0)
+                        *selog << "Rmat non-zero timeUncertainty, zid: " << zid << ", timestamp: " << timestamp << ", ztimes: " << zary.ztimes[zid] << ", factor: " << factor << ", timeUncertainty: " << timeUncertainty << "\n" << std::flush;
 #endif
                 }
 
                 // variance of R[i,i] is sigma[i]^2 + timeUncertainty
+#ifdef GS_OPTIMIZE
                 gs_entry_diagonal_negl(Rmat,zary.zidxs[zid],
-                         zary.zsigs[zid]*zary.zsigs[zid] + timeUncertainty);
+                             zary.zsigs[zid]*zary.zsigs[zid] + timeUncertainty);
+#else
+                cs_entry_negl(Rraw,zary.zidxs[zid],zary.zidxs[zid],
+                             zary.zsigs[zid]*zary.zsigs[zid] + timeUncertainty);
+#endif
+
+#else
+#ifdef GS_OPTIMIZE
+                gs_entry_diagonal_negl(Rmat,zary.zidxs[zid],
+                             zary.zsigs[zid]*zary.zsigs[zid]);
+#else
+                cs_entry_negl(Rraw,zary.zidxs[zid],zary.zidxs[zid],
+                             zary.zsigs[zid]*zary.zsigs[zid]);
+#endif
+#endif
             }
         }
+#ifndef GS_OPTIMIZE
+        Rmat = cs_compress(Rraw);
+        cs_spfree(Rraw);
+#endif
     }
 
 
@@ -2694,7 +2879,6 @@ class SELoopWorker {
         A->nzmax++;
         A->p[1] = A->nzmax;
     }
-#endif
 
     private:
     cs *gs_spalloc_fullsquare(uint mn) {
@@ -2717,7 +2901,6 @@ class SELoopWorker {
         return (A);
     }
 
-#ifdef GS_OPTIMIZE
     private:
     void gs_entry_fullsquare(cs *A, uint ii, uint jj, double value) {
         A->x[jj*A->n + ii] = value;
@@ -2745,14 +2928,33 @@ class SELoopWorker {
 
     private:
     void gs_entry_colorder(cs *A, uint ii, uint jj, double value) {
-        if (jj>0 && A->p[jj]==0) A->p[jj] = gsidx;
+        if (jj>0 && A->p[jj]==0)
+            A->p[jj] = gsidx;
         A->i[gsidx] = ii;
         A->x[gsidx++] = value;
-        if (jj+1 == A->n) A->p[jj+1] = gsidx;
+        for (uint idx=jj+1; idx <= A->n; idx++)
+            A->p[idx] = gsidx;
     }
 #endif
 
 #ifdef DEBUG_FILES
+    private:
+    void stdout_cs_compress(cs *&a, const uint &precision=16) {
+        // First copy into a map
+        unordered_map<uint,unordered_map<uint,double>> mat;
+        for ( uint i = 0 ; i < a->n ; i++ ) {
+            for ( uint j = a->p[i] ; j < a->p[i+1] ; j++ ) {
+                mat[a->i[j]][i] = a->x[j];
+            }
+        }
+        // write to stdout
+        *selog << "printing CS compressed matrix:\n" << std::flush;
+        for ( uint i = 0 ; i < a->m ; i++ )
+            for ( uint j = 0 ; j < a->n ; j++ )
+                *selog << mat[i][j] << ( j == a->n-1 ? "\n" : "," );
+        *selog << "done printing CS compressed matrix\n" << std::flush;
+    }
+
     private:
     void print_cs_compress(cs *&a, const string &filename="cs.csv",
                            const uint &precision=16) {

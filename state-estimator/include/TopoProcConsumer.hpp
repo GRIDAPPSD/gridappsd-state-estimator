@@ -87,8 +87,21 @@ class TopoProcConsumer : public SEConsumer {
 		// --------------------------------------------------------------------
 		// PARSE THE MESSAGE AND PROCESS THE TOPOLOGY
 		// --------------------------------------------------------------------
+        string line;
+		bool firstline = true;
+
+#ifndef TEST_HARNESS_DIR
 #ifdef DEBUG_PRIMARY
 		*selog << "Received ybus message of " << text.length() << " bytes\n\n" << std::flush;
+#endif
+
+#if 000
+        // dump message into file to use to be able to manually create the
+        // ysparse.csv and nodelist.csv files for test harness testing
+        std::ofstream ofs("ybus_test.json");
+        ofs << text << '\n';
+        ofs.close();
+        exit(0);
 #endif
 
 		json jtext = json::parse(text);
@@ -98,36 +111,60 @@ class TopoProcConsumer : public SEConsumer {
 #endif
 		// This is actually a list of lines from ysparse
 		json jlines_ysparse = jtext["data"]["yParse"];
-		bool firstline = true;
 		for ( auto& jline : jlines_ysparse ) {
+            line = jline;
+#else
+        string filename = TEST_HARNESS_DIR;
+        filename += "/ysparse.csv";
+#ifdef DEBUG_PRIMARY
+		*selog << "Reading ybus from test harness file: " << filename << "\n\n" << std::flush;
+#endif
+        std::ifstream ifs(filename);
+
+#ifdef DEBUG_PRIMARY
+        *selog << "Parsing ybus from file -- " << std::flush;
+#endif
+		while ( getline(ifs, line) ) {
+#endif
 			if (firstline) firstline = false;
 			else {
-				string tmpline = jline;
 				// split the line {Row,Col,G,B}
-				size_t pos = tmpline.find(",");
-				int i = stoi( tmpline.substr(0,pos) );
-					tmpline.erase(0,pos+1); pos = tmpline.find(",");
-				int j = stoi( tmpline.substr(0,pos) );
-					tmpline.erase(0,pos+1); pos = tmpline.find(",");
-				double G = stod( tmpline.substr(0,pos) );
-					tmpline.erase(0,pos+1); pos = tmpline.find(",");
-				double B = stod( tmpline.substr(0,pos) );
+				size_t pos = line.find(",");
+				int i = stoi( line.substr(0,pos) );
+					line.erase(0,pos+1); pos = line.find(",");
+				int j = stoi( line.substr(0,pos) );
+					line.erase(0,pos+1); pos = line.find(",");
+				double G = stod( line.substr(0,pos) );
+					line.erase(0,pos+1); pos = line.find(",");
+				double B = stod( line.substr(0,pos) );
 
 				Y[i][j] = complex<double>(G,B);
 				if ( i != j ) Y[j][i] = complex<double>(G,B);
-
 			}
 		}
+#ifdef TEST_HARNESS_DIR
+        ifs.close();
+#endif
+
 #ifdef DEBUG_PRIMARY
         *selog << "complete.\n\n" << std::flush;
         *selog << "Parsing nodelist -- " << std::flush;
 #endif
-		// This is actually the list of nodes from nodelist
-		json jlines_nodelist = jtext["data"]["nodeList"];
 		int idx = 0;
+#ifndef TEST_HARNESS_DIR
+		json jlines_nodelist = jtext["data"]["nodeList"];
 		for ( auto& jline : jlines_nodelist ) {
-			// Extract the node name
 			string line = jline;
+#else
+        filename = TEST_HARNESS_DIR;
+        filename += "/nodelist.csv";
+#ifdef DEBUG_PRIMARY
+		*selog << "Reading nodelist from test harness file: " << filename << "\n\n" << std::flush;
+#endif
+        ifs.open(filename);
+		while ( getline(ifs, line) ) {
+#endif
+			// Extract the node name
 			string node_name = regex_replace(line,regex("\""),"");
 			// Store the node information
 			numns++;
@@ -135,6 +172,9 @@ class TopoProcConsumer : public SEConsumer {
 			nodem[node_name] = ++idx;
             node_name_lookup[idx] = node_name;
 		}
+#ifdef TEST_HARNESS_DIR
+        ifs.close();
+#endif
 #ifdef DEBUG_PRIMARY
         *selog << "complete.\n\n" << std::flush;
 #endif

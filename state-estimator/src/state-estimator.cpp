@@ -1,11 +1,33 @@
 #define DIAGONAL_P
+#define SWITCHES
+//#define NET_INJECTION
 #define DEBUG_PRIMARY
 //#define DEBUG_FILES
 //#define DEBUG_SIZES
-#define GS_OPTIMIZE
-#define SWITCHES
 //#define SBASE_TESTING
-//#define NET_INJECTION
+#define GS_OPTIMIZE
+//#define TEST_HARNESS_DIR "test_4"
+//#define TEST_HARNESS_DIR "test_13assets"
+
+// some subtle conditional compilation logic to properly synchronize test
+// harness related symbols
+// VNOM_FROM_FILE indicates whether to read a vnom.csv file or not, which is
+// needed if the test harness is being used with files produced from an
+// actual simulation like ieee13nodecktassets. It is not needed for a
+// standalone test harness invocation without a synchronized simulation
+// like the 4-bus MATLAB reference model
+// TIMESTAMP_FROM_FILE indicates whether to get the timestamp from the
+// measurement_data.csv file or to get it from a running simulation that is
+// synchronized with reading from measurement_data.csv. This is related to
+// VNOM_FROM_FILE so setting that should properly set TIMESTAMP_FROM_FILE
+#ifdef TEST_HARNESS_DIR
+//#define VNOM_FROM_FILE
+#ifndef VNOM_FROM_FILE
+// timestamp should always be from file when not reading a vnom.csv file
+// so this should not need to be updated in normal circumstances
+#define TIMESTAMP_FROM_FILE
+#endif
+#endif
 
 #define PI 3.1415926535
 
@@ -245,9 +267,15 @@ int main(int argc, char** argv) {
 		SCMAP node_vnoms;
 		
 		// Wait for the vnom processor and retrive vnom
+#if !defined (TEST_HARNESS_DIR) || defined (VNOM_FROM_FILE)
         vnomConsumerThread.join();
-		vnomConsumer.fillVnom(node_vnoms);
+        vnomConsumer.fillVnom(node_vnoms);
         vnomConsumer.close();
+#else
+        for ( auto& node_name : node_names ) {
+            node_vnoms[node_name] = 1;
+        }
+#endif
         
 		// BUILD THE A-MATRIX
 		IMDMAP Amat;
@@ -275,7 +303,11 @@ int main(int argc, char** argv) {
         double spower = (double)std::stoi(argv[3]);
 		const double sbase = pow(10.0, spower);
 #else
+#if !defined (TEST_HARNESS_DIR) || defined (VNOM_FROM_FILE)
 		const double sbase = 1.0e+6;
+#else
+		const double sbase = 1;
+#endif
 #endif
 
         // map conducting equipment to bus names
@@ -329,9 +361,13 @@ int main(int argc, char** argv) {
                               switch_node1s, switch_node2s);
 		sensConsumer.close();
 
+        // For the test harness, SensorDefConsumer reads the file for all
+        // measurements so no need to do anything for pseudo-measurements
+#ifndef TEST_HARNESS_DIR
 		// Add Pseudo-Measurements
 		state_estimator_util::insert_pseudo_measurements(gad,zary,
 				node_names,node_vnoms,sbase);
+#endif
 
 #ifdef DEBUG_PRIMARY
         //*selog << "\nzsigs/zvals after adding pseudo-measurements:\n" << std::flush;
