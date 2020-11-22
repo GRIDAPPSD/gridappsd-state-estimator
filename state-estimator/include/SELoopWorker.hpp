@@ -257,7 +257,7 @@ class SELoopWorker {
                         timeZero = timestamp;
                         // set flag value to increase uncertainty in first
                         // estimate call
-                        timestampLastEstimate = 0;
+                        timestampLastEstimate = UINT_MAX;
                         firstEstimateFlag = false;
                     }
 #ifdef DEBUG_PRIMARY
@@ -281,7 +281,7 @@ class SELoopWorker {
                             timeZero = timestamp;
                             // set flag value to increase uncertainty in
                             // first estimate call
-                            timestampLastEstimate = 0;
+                            timestampLastEstimate = UINT_MAX;
                             firstEstimateFlag = false;
                         }
 #endif
@@ -348,7 +348,7 @@ class SELoopWorker {
                 softReset();
 
                 // set flag value to increase uncertainty in next estimate call
-                timestampLastEstimate = 0;
+                timestampLastEstimate = UINT_MAX;
             }
 
             // do the core "estimate" processing here since the queue is,
@@ -2103,7 +2103,7 @@ class SELoopWorker {
         // heavier damped initial estimates after closing switches
         // i.e., "rounded corners" in estimate plots
         //factor = 0.1;
-        if ( timestampLastEstimate == 0 )
+        if ( timestampLastEstimate == UINT_MAX )
             factor = 0.1;
         else
             factor = 0.0001 * (timestamp - timestampLastEstimate);
