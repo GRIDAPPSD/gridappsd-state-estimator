@@ -129,14 +129,12 @@ class TopoProcConsumer : public SEConsumer {
 			if (firstline) firstline = false;
 			else {
 				// split the line {Row,Col,G,B}
-				size_t pos = line.find(",");
-				int i = stoi( line.substr(0,pos) );
-					line.erase(0,pos+1); pos = line.find(",");
-				int j = stoi( line.substr(0,pos) );
-					line.erase(0,pos+1); pos = line.find(",");
-				double G = stod( line.substr(0,pos) );
-					line.erase(0,pos+1); pos = line.find(",");
-				double B = stod( line.substr(0,pos) );
+                std::stringstream lineStream(line);
+                string cell;
+                getline(lineStream, cell, ','); int i = stoi(cell);
+                getline(lineStream, cell, ','); int j = stoi(cell);
+                getline(lineStream, cell, ','); double G = stod(cell);
+                getline(lineStream, cell, ','); double B = stod(cell);
 
 				Y[i][j] = complex<double>(G,B);
 				if ( i != j ) Y[j][i] = complex<double>(G,B);
