@@ -6,7 +6,7 @@
 //#define DEBUG_SIZES
 //#define SBASE_TESTING
 #define GS_OPTIMIZE
-//#define TEST_HARNESS_DIR "test_4"
+#define TEST_HARNESS_DIR "test_4"
 //#define TEST_HARNESS_DIR "test_13assets"
 
 // some subtle conditional compilation logic to properly synchronize test
@@ -267,14 +267,36 @@ int main(int argc, char** argv) {
 		SCMAP node_vnoms;
 		
 		// Wait for the vnom processor and retrive vnom
-#if !defined (TEST_HARNESS_DIR) || defined (VNOM_FROM_FILE)
+#ifndef TEST_HARNESS_DIR
         vnomConsumerThread.join();
         vnomConsumer.fillVnom(node_vnoms);
         vnomConsumer.close();
 #else
+#ifdef VNOM_FROM_FILE
+        string filename = TEST_HARNESS_DIR;
+        filename += "/vnom.csv";
+#ifdef DEBUG_PRIMARY
+        *selog << "Reading vnom from test harness file: " << filename << "\n" << std::flush;
+#endif
+        std::ifstream ifs(filename);
+        string line;
+        getline(ifs, line);  // throwaway header line
+        while (getline(ifs, line)) {
+            std::stringstream lineStream(line);
+            string node, cell;
+            getline(lineStream, node, ',');
+            getline(lineStream, cell, ','); double mag = stod(cell);
+            getline(lineStream, cell, ','); double arg = stod(cell);
+            double vre = mag * cos( arg * PI/180 );
+            double vim = mag * sin( arg * PI/180);
+            complex<double> vnom = complex<double>(vre,vim);
+            node_vnoms[node] = vnom;
+        }
+#else
         for ( auto& node_name : node_names ) {
             node_vnoms[node_name] = 1;
         }
+#endif
 #endif
         
 		// BUILD THE A-MATRIX
@@ -303,11 +325,7 @@ int main(int argc, char** argv) {
         double spower = (double)std::stoi(argv[3]);
 		const double sbase = pow(10.0, spower);
 #else
-#if !defined (TEST_HARNESS_DIR) || defined (VNOM_FROM_FILE)
 		const double sbase = 1.0e+6;
-#else
-		const double sbase = 1;
-#endif
 #endif
 
         // map conducting equipment to bus names

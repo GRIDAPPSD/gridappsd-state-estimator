@@ -87,28 +87,6 @@ class VnomConsumer: public SEConsumer {
 		// --------------------------------------------------------------------
 		// PARSE THE MESSAGE AND PROCESS THE TOPOLOGY
 		// --------------------------------------------------------------------
-#ifdef VNOM_FROM_FILE
-        string filename = TEST_HARNESS_DIR;
-        filename += "/vnom.csv";
-#ifdef DEBUG_PRIMARY
-		*selog << "Reading vnom from test harness file: " << filename << "\n" << std::flush;
-#endif
-
-        std::ifstream ifs(filename);
-        string line;
-        getline(ifs, line);  // throwaway header line
-        while (getline(ifs, line)) {
-            std::stringstream lineStream(line);
-            string node, cell;
-            getline(lineStream, node, ',');
-            getline(lineStream, cell, ','); double mag = stod(cell);
-            getline(lineStream, cell, ','); double arg = stod(cell);
-            double vre = mag * cos( arg * PI/180 );
-            double vim = mag * sin( arg * PI/180);
-            complex<double> vnom = complex<double>(vre,vim);
-            node_vnoms[node] = vnom;
-        }
-#else
 #ifdef DEBUG_PRIMARY
 		*selog << "Received vnom message of " << text.length() << " bytes\n\n" << std::flush;
 #endif
@@ -195,7 +173,6 @@ class VnomConsumer: public SEConsumer {
 
 			}
 		}
-#endif
 
 		// --------------------------------------------------------------------
 		// TOPOLOGY PROCESSING COMPLETE
