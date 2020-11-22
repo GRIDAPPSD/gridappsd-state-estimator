@@ -6,7 +6,7 @@
 //#define DEBUG_SIZES
 //#define SBASE_TESTING
 #define GS_OPTIMIZE
-#define TEST_HARNESS_DIR "test_4"
+//#define TEST_HARNESS_DIR "test_4"
 //#define TEST_HARNESS_DIR "test_13assets"
 
 // some subtle conditional compilation logic to properly synchronize test
@@ -219,6 +219,22 @@ int main(int argc, char** argv) {
 		// TOPOLOGY PROCESSOR
 		// --------------------------------------------------------------------
 
+		// Initialize topology
+		uint node_qty;      // number of nodes
+		SLIST node_names;   // list of node names
+		SIMAP node_idxs;    // map from node name to unit-indexed position
+        ISMAP node_name_lookup;
+		IMMAP Y;            // double map from indices to complex admittance
+		// G, B, g, and b are derived from Y:
+		//	-- Gij = std::real(Y[i][j]);
+		//	-- Bij = std::imag(Y[i][j]);
+		//	-- gij = std::real(-1.0*Y[i][j]);
+		//	-- bij = std::imag(-1.0*Y[i][j]);
+
+		// Initialize nominal voltages
+		SCMAP node_vnoms;
+
+#ifndef TEST_HARNESS_DIR
 		// Set up the ybus consumer
 		string ybusTopic = "goss.gridappsd.se.response."+gad.simid+".ybus";
 		TopoProcConsumer ybusConsumer(gad.brokerURI,gad.username,gad.password,ybusTopic,"queue");
@@ -239,47 +255,69 @@ int main(int argc, char** argv) {
 		string ybusRequestText = 
 			"{\"configurationType\":\"YBus Export\",\"parameters\":{\"simulation_id\":\"" 
 			+ gad.simid + "\"}}";
+		topoRequester.send(ybusRequestText,ybusTopic);
 		string vnomRequestText = 
 			"{\"configurationType\":\"Vnom Export\",\"parameters\":{\"simulation_id\":\""
 			+ gad.simid + "\"}}";
-		topoRequester.send(ybusRequestText,ybusTopic);
 		topoRequester.send(vnomRequestText,vnomTopic);
 		topoRequester.close();
 
-		// Initialize topology
-		uint node_qty;		// number of nodes
-		SLIST node_names;	// list of node names
-		SIMAP node_idxs;	// map from node name to unit-indexed position
-        ISMAP node_name_lookup;
-		IMMAP Y;			// double map from indices to complex admittance
-		// G, B, g, and b are derived from Y:
-		//	-- Gij = std::real(Y[i][j]);
-		//	-- Bij = std::imag(Y[i][j]);
-		//	-- gij = std::real(-1.0*Y[i][j]);
-		//	-- bij = std::imag(-1.0*Y[i][j]);
-		
 		// Wait for topological processor and retrieve topology
 		ybusConsumerThread.join();
 		ybusConsumer.fillTopo(node_qty,node_names,node_idxs,node_name_lookup,Y);
 		ybusConsumer.close();
 
-		// Initialize nominal voltages
-		SCMAP node_vnoms;
-		
 		// Wait for the vnom processor and retrive vnom
-#ifndef TEST_HARNESS_DIR
         vnomConsumerThread.join();
         vnomConsumer.fillVnom(node_vnoms);
         vnomConsumer.close();
 #else
-#ifdef VNOM_FROM_FILE
         string filename = TEST_HARNESS_DIR;
+        filename += "/ysparse.csv";
+#ifdef DEBUG_PRIMARY
+        *selog << "Reading ybus from test harness file: " << filename << "\n\n" << std::flush;
+#endif
+        std::ifstream ifs(filename);
+        string line;
+        getline(ifs, line);  // throwaway header line
+        while ( getline(ifs, line) ) {
+            std::stringstream lineStream(line);
+            string cell;
+            getline(lineStream, cell, ','); int i = stoi(cell);
+            getline(lineStream, cell, ','); int j = stoi(cell);
+            getline(lineStream, cell, ','); double G = stod(cell);
+            getline(lineStream, cell, ','); double B = stod(cell);
+
+            Y[i][j] = complex<double>(G,B);
+            if ( i != j ) Y[j][i] = complex<double>(G,B);
+        }
+        ifs.close();
+
+        filename = TEST_HARNESS_DIR;
+        filename += "/nodelist.csv";
+#ifdef DEBUG_PRIMARY
+        *selog << "Reading nodelist from test harness file: " << filename << "\n\n" << std::flush;
+#endif
+        ifs.open(filename);
+
+        node_qty = 0;
+        while ( getline(ifs, line) ) {
+            // Extract the node name
+            string node_name = regex_replace(line,regex("\""),"");
+            // Store the node information
+            node_names.push_back(node_name);
+            node_idxs[node_name] = ++node_qty;
+            node_name_lookup[node_qty] = node_name;
+        }
+        ifs.close();
+
+#ifdef VNOM_FROM_FILE
+        filename = TEST_HARNESS_DIR;
         filename += "/vnom.csv";
 #ifdef DEBUG_PRIMARY
         *selog << "Reading vnom from test harness file: " << filename << "\n" << std::flush;
 #endif
-        std::ifstream ifs(filename);
-        string line;
+        ifs.open(filename);
         getline(ifs, line);  // throwaway header line
         while (getline(ifs, line)) {
             std::stringstream lineStream(line);
@@ -292,6 +330,7 @@ int main(int argc, char** argv) {
             complex<double> vnom = complex<double>(vre,vim);
             node_vnoms[node] = vnom;
         }
+        ifs.close();
 #else
         for ( auto& node_name : node_names ) {
             node_vnoms[node_name] = 1;
