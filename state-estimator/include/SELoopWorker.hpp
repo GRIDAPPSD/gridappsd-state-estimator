@@ -1509,12 +1509,7 @@ class SELoopWorker {
         cs *K3 = gs_spalloc_fullsquare(zqty);
         double *rhs = K3->x;
 #else
-#if 111
         double *rhs = (double *)calloc(zqty*zqty, sizeof(double));
-#else
-        cs *K3 = gs_spalloc_fullsquare(zqty);
-        double *rhs = K3->x;
-#endif
 #endif
 
         try {
@@ -1552,10 +1547,10 @@ class SELoopWorker {
 
             // initialize an identity right-hand side
 #if 000
-            rhs = new double[zqty*zqty];
             for ( uint ii = 0 ; ii < zqty*zqty ; ii++ )
                 rhs[ii] = ii/zqty == ii%zqty ? 1 : 0;
 #else
+            // assumes all non-diagonal entries are 0 through calloc call
             for ( uint ii = 0 ; ii < zqty ; ii++ )
                 rhs[ii*zqty + ii] = 1.0;
 #endif
@@ -1589,9 +1584,7 @@ class SELoopWorker {
             *selog << "KLU ERROR: " << msg << "\n" << std::flush;
             throw "klu_error";
         }
-#if 100
         cs_spfree(Supd);
-#endif
 
 #if 000
         if (estimateExitCount == 40) {
