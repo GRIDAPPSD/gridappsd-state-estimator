@@ -205,6 +205,10 @@ class SELoopWorker {
         // do one-time-only processing
         init();
 
+        // initialize "last timestamp" map to a "no measurements" flag value
+        for ( auto& zid : zary.zids )
+            zary.ztimes[zid] = UINT_MAX;
+
         // initialize what's updated during processing
         // (if things go bad we'll need to reset these)
         initVoltagesAndCovariance();
@@ -2136,6 +2140,7 @@ class SELoopWorker {
 #ifndef GS_OPTIMIZE
         cs* Rraw = cs_spalloc(zqty, zqty, zqty, 1, 1);
 #endif
+
         for ( auto& zid : zary.zids ) {
             // check whether to apply some form of time-based uncertainty by
             // checking a measurement type related flag
@@ -2152,36 +2157,45 @@ class SELoopWorker {
                 // An approach that would accumulate uncertainty for both
                 // missing and existing measurements could be considered.
 
-#ifndef TEST_HARNESS_DIR
-                double timeUncertainty;
-
                 // consider no measurements yet for node so uncertainty
                 // isn't based on time since last measurement
-                if (zary.ztimes[zid] == 0) {
+                if (zary.ztimes[zid] == UINT_MAX) {
+                    double uncertainty;
+
                     if (zary.ztypes[zid] == "vi")
                         // standard deviation of expected initial voltage
                         // magnitude
-                        timeUncertainty = 0.2*0.2;
+                        uncertainty = 0.2*0.2;
                     else if (zary.ztypes[zid] == "Ti")
                         // standard deviation of expected initial voltage
                         // angle
-                        timeUncertainty = 0.01*PI*PI;
+                        uncertainty = 0.01*PI*PI;
                     else if (zary.ztypes[zid] == "aji")
                         // standard deviation of expected initial tap ratio
-                        timeUncertainty = 0.2*0.2;
+                        uncertainty = 0.2*0.2;
                     else if (zary.ztypes[zid]=="Pi" || zary.ztypes[zid]=="Qi")
                         // standard deviation of expected initial complex power
-                        timeUncertainty = zary.znomvals[zid]*zary.znomvals[zid]*0.25;
+                        uncertainty = zary.znomvals[zid]*zary.znomvals[zid]*0.25;
                     else {
                         *selog << "ERROR: prep_R unrecognized measurement type: " <<
                                   zary.ztypes[zid] << "\n" << std::flush;
                         exit(1);
                     }
 
+                    // variance of R[i,i] is sigma[i]^2 + uncertainty
+#ifdef GS_OPTIMIZE
+                    gs_entry_diagonal_negl(Rmat,zary.zidxs[zid],
+                                 zary.zsigs[zid]*zary.zsigs[zid] + uncertainty);
+#else
+                    cs_entry_negl(Rraw,zary.zidxs[zid],zary.zidxs[zid],
+                                 zary.zsigs[zid]*zary.zsigs[zid] + uncertainty);
+#endif
+
                 // consider when there is an existing measurement so uncertainty
                 // is based on time since last measurement
-                } else {
+                } else if (timestamp - zary.ztimes[zid] > 0) {
                     double factor;
+
                     if (zary.ztypes[zid] == "vi")
                         // standard deviation of expected change in voltage
                         // magnitude per second
@@ -2204,33 +2218,32 @@ class SELoopWorker {
                         exit(1);
                     }
 
-                    timeUncertainty = factor*(timestamp - zary.ztimes[zid]);
+                    double timeUncertainty = factor*(timestamp - zary.ztimes[zid]);
 #ifdef DEBUG_PRIMARY
                     if (timeUncertainty > 0.0)
-                        *selog << "Rmat non-zero timeUncertainty, zid: " << zid << ", timestamp: " << timestamp << ", ztimes: " << zary.ztimes[zid] << ", factor: " << factor << ", timeUncertainty: " << timeUncertainty << "\n" << std::flush;
+                        *selog << "Rmat non-zero timeUncertainty value, zid: " << zid << ", timestamp: " << timestamp << ", ztimes: " << zary.ztimes[zid] << ", factor: " << factor << ", timeUncertainty: " << timeUncertainty << "\n" << std::flush;
+#endif
+                    // variance of R[i,i] is sigma[i]^2 + timeUncertainty
+#ifdef GS_OPTIMIZE
+                    gs_entry_diagonal_negl(Rmat,zary.zidxs[zid],
+                             zary.zsigs[zid]*zary.zsigs[zid] + timeUncertainty);
+#else
+                    cs_entry_negl(Rraw,zary.zidxs[zid],zary.zidxs[zid],
+                             zary.zsigs[zid]*zary.zsigs[zid] + timeUncertainty);
+#endif
+                } else {
+                // variance of R[i,i] is sigma[i]^2
+#ifdef GS_OPTIMIZE
+                    gs_entry_diagonal_negl(Rmat,zary.zidxs[zid],
+                                           zary.zsigs[zid]*zary.zsigs[zid]);
+#else
+                    cs_entry_negl(Rraw,zary.zidxs[zid],zary.zidxs[zid],
+                                  zary.zsigs[zid]*zary.zsigs[zid]);
 #endif
                 }
-
-                // variance of R[i,i] is sigma[i]^2 + timeUncertainty
-#ifdef GS_OPTIMIZE
-                gs_entry_diagonal_negl(Rmat,zary.zidxs[zid],
-                             zary.zsigs[zid]*zary.zsigs[zid] + timeUncertainty);
-#else
-                cs_entry_negl(Rraw,zary.zidxs[zid],zary.zidxs[zid],
-                             zary.zsigs[zid]*zary.zsigs[zid] + timeUncertainty);
-#endif
-
-#else
-#ifdef GS_OPTIMIZE
-                gs_entry_diagonal_negl(Rmat,zary.zidxs[zid],
-                             zary.zsigs[zid]*zary.zsigs[zid]);
-#else
-                cs_entry_negl(Rraw,zary.zidxs[zid],zary.zidxs[zid],
-                             zary.zsigs[zid]*zary.zsigs[zid]);
-#endif
-#endif
             }
         }
+
 #ifndef GS_OPTIMIZE
         Rmat = cs_compress(Rraw);
         cs_spfree(Rraw);

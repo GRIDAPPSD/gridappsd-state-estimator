@@ -191,8 +191,6 @@ namespace state_estimator_util{
 				zary.znode2s [vmag_zid] = node;
 				zary.zvals   [vmag_zid] = 1.00;
 				zary.zsigs   [vmag_zid] = 0.001; // 1 sigma = 0.1%
-				zary.znews   [vmag_zid] = 0;
-				zary.ztimes  [vmag_zid] = 0;
 				zary.zpseudos[vmag_zid] = true;
 				zary.znomvals[vmag_zid] = zary.zvals[vmag_zid];
 
@@ -208,8 +206,6 @@ namespace state_estimator_util{
 				zary.znode2s [varg_zid] = node;
 				zary.zvals   [varg_zid] = 0.0;
 				zary.zsigs   [varg_zid] = 0.01;
-				zary.znews   [varg_zid] = 0;
-				zary.ztimes  [varg_zid] = 0;
 				zary.zpseudos[varg_zid] = true;
 				zary.znomvals[varg_zid] = zary.zvals[varg_zid];
 			}
@@ -227,8 +223,6 @@ namespace state_estimator_util{
 				zary.zvals   [pinj_zid] = pseudoP[node]/sbase;
                 zary.zsigs   [pinj_zid] = std::abs(pseudoP[node]/sbase) +
                     loss_ratio*(nominal_systemP/sbase)/node_names.size(); // load + leakage
-				zary.znews   [pinj_zid] = 0;
-				zary.ztimes  [pinj_zid] = 0;
 				zary.zpseudos[pinj_zid] = true;
 				zary.znomvals[pinj_zid] = zary.zvals[pinj_zid];
 
@@ -245,8 +239,6 @@ namespace state_estimator_util{
 				zary.zvals   [qinj_zid] = pseudoQ[node]/sbase;
                 zary.zsigs   [qinj_zid] = std::abs(pseudoQ[node]/sbase) +
                     loss_ratio*(nominal_systemQ/sbase)/node_names.size(); // load + leakage
-				zary.znews   [qinj_zid] = 0;
-				zary.ztimes  [qinj_zid] = 0;
 				zary.zpseudos[qinj_zid] = true;
 				zary.znomvals[qinj_zid] = zary.zvals[qinj_zid];
 			}
