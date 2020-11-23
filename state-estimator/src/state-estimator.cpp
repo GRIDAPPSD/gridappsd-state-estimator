@@ -226,12 +226,12 @@ int main(int argc, char** argv) {
 		SLIST node_names;   // list of node names
 		SIMAP node_idxs;    // map from node name to unit-indexed position
         ISMAP node_name_lookup;
-		IMMAP Y;            // double map from indices to complex admittance
-		// G, B, g, and b are derived from Y:
-		//	-- Gij = std::real(Y[i][j]);
-		//	-- Bij = std::imag(Y[i][j]);
-		//	-- gij = std::real(-1.0*Y[i][j]);
-		//	-- bij = std::imag(-1.0*Y[i][j]);
+		IMMAP Yphys;        // double map from indices to complex admittance
+		// G, B, g, and b are derived from Yphys:
+		//	-- Gij = std::real(Yphys[i][j]);
+		//	-- Bij = std::imag(Yphys[i][j]);
+		//	-- gij = std::real(-1.0*Yphys[i][j]);
+		//	-- bij = std::imag(-1.0*Yphys[i][j]);
 
 		// Initialize nominal voltages
 		SCMAP node_vnoms;
@@ -266,7 +266,8 @@ int main(int argc, char** argv) {
 
 		// Wait for topological processor and retrieve topology
 		ybusConsumerThread.join();
-		ybusConsumer.fillTopo(node_qty,node_names,node_idxs,node_name_lookup,Y);
+		ybusConsumer.fillTopo(node_qty,node_names,node_idxs,
+                              node_name_lookup,Yphys);
 		ybusConsumer.close();
 
 		// Wait for the vnom processor and retrive vnom
@@ -290,8 +291,8 @@ int main(int argc, char** argv) {
             getline(lineStream, cell, ','); double G = stod(cell);
             getline(lineStream, cell, ','); double B = stod(cell);
 
-            Y[i][j] = complex<double>(G,B);
-            if ( i != j ) Y[j][i] = complex<double>(G,B);
+            Yphys[i][j] = complex<double>(G,B);
+            if ( i != j ) Yphys[j][i] = complex<double>(G,B);
         }
         ifs.close();
 
@@ -340,20 +341,6 @@ int main(int argc, char** argv) {
 #endif
 #endif
         
-		// BUILD THE A-MATRIX
-		IMDMAP Amat;
-        SSMAP reg_cemrid_primbus_map;
-        SSMAP reg_cemrid_regbus_map;
-        SSMAP regid_primnode_map;
-        SSMAP regid_regnode_map;
-		state_estimator_util::build_A_matrix(gad,Amat,node_idxs,
-                reg_cemrid_primbus_map,reg_cemrid_regbus_map,
-                regid_primnode_map,regid_regnode_map);
-
-		// --------------------------------------------------------------------
-		// SENSOR INITIALIZER
-		// --------------------------------------------------------------------
-
         // system base power, functionally arbitrary -- can be tweaked
         // for better numerical stability if needed
         // all values in the approximate range 1e-140 to 1e+150 converge
@@ -369,13 +356,28 @@ int main(int argc, char** argv) {
 		const double sbase = 1.0e+6;
 #endif
 
-        // Initialize sensors
+		// --------------------------------------------------------------------
+		// SENSOR INITIALIZATION
+		// --------------------------------------------------------------------
+
+		// A matrix data structures
+		IMDMAP Amat;
+        SSMAP regid_primnode_map;
+        SSMAP regid_regnode_map;
+
+        // Sensors data structures
         SensorArray zary;
         SSMAP mmrid_pos_type_map;
         SSMAP switch_node1s;
         SSMAP switch_node2s;
 
 #ifndef TEST_HARNESS_DIR
+        SSMAP reg_cemrid_primbus_map;
+        SSMAP reg_cemrid_regbus_map;
+		state_estimator_util::build_A_matrix(gad,Amat,node_idxs,
+                reg_cemrid_primbus_map,reg_cemrid_regbus_map,
+                regid_primnode_map,regid_regnode_map);
+
         // map conducting equipment to bus names
         SSLISTMAP cemrid_busnames_map;
         state_estimator_util::build_cemrid_busnames_map(gad,
@@ -427,6 +429,32 @@ int main(int argc, char** argv) {
 #endif
 #else
         filename = TEST_HARNESS_DIR;
+        filename += "/regid.csv";
+#ifdef DEBUG_PRIMARY
+        *selog << "Reading regulator mappings from test harness file: " << filename << "\n\n" << std::flush;
+#endif
+        ifs.open(filename);
+        getline(ifs, line); // throwaway header line
+
+        while ( getline(ifs, line) ) {
+            std::stringstream lineStream(line);
+            string regid, primnode, regnode;
+            getline(lineStream, regid, ',');
+            getline(lineStream, primnode, ',');
+            getline(lineStream, regnode, ',');
+
+            regid_primnode_map[regid] = primnode;
+            regid_regnode_map[regid] = regnode;
+
+            uint primidx = node_idxs[primnode];
+            uint regidx = node_idxs[regnode];
+            // initialize the A matrix
+            Amat[primidx][regidx] = 1; // this will change
+            Amat[regidx][primidx] = 1; // this stays unity and may not be required
+        }
+        ifs.close();
+
+        filename = TEST_HARNESS_DIR;
         filename += "/measurements.csv";
 #ifdef DEBUG_PRIMARY
         *selog << "Reading sensor measurements from test harness file: " << filename << "\n\n" << std::flush;
@@ -448,12 +476,13 @@ int main(int argc, char** argv) {
             getline(lineStream, cell, ','); zary.zpseudos[zid] = cell=="1";
             getline(lineStream, cell, ','); zary.znomvals[zid] = stod(cell);
         }
+        ifs.close();
 #endif
 
         // Initialize class that does the state estimates
         SELoopWorker loopWorker(&workQueue, &gad, zary, node_qty, node_names,
             node_idxs, node_vnoms, node_bmrids, node_phs, node_name_lookup,
-            sbase, Y, Amat, regid_primnode_map, regid_regnode_map,
+            sbase, Yphys, Amat, regid_primnode_map, regid_regnode_map,
             mmrid_pos_type_map, switch_node1s, switch_node2s);
 
 #ifdef DEBUG_PRIMARY
