@@ -34,6 +34,12 @@ class SELoopConsumer : public SEConsumer {
     public:
     virtual void process() {
 
+#ifdef DEBUG_PRIMARY
+        // this is used for command line invocations to hold up initialization
+        // until the simulation is running
+        extern bool blockedFlag;
+#endif
+
         jtext = json::parse(text);
 
         if (jtext.find("message") != jtext.end()) {
@@ -51,9 +57,7 @@ class SELoopConsumer : public SEConsumer {
             workQueue->push(jtext);
 
 #ifdef DEBUG_PRIMARY
-            // this is only needed for command line invocations, but
-            // easier to just do it than check if it's needed
-            extern bool blockedFlag;
+            // just in case this wasn't cleared with a STARTED log message
             blockedFlag = false;
 #endif
         } else if (jtext.find("processStatus") != jtext.end()) {
@@ -64,6 +68,12 @@ class SELoopConsumer : public SEConsumer {
 #endif
                 workQueue->push(jtext);
             }
+#ifdef DEBUG_PRIMARY
+            else if (!status.compare("STARTED") && blockedFlag) {
+                *selog << "\nSELoopConsumer received STARTED log message\n" << std::flush;
+                blockedFlag = false;
+            }
+#endif
         }
     }
 };

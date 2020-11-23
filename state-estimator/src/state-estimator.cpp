@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
         // LISTEN FOR SIMULATION LOG MESSAGES
         // --------------------------------------------------------------------
 
-        // measurements come from the simulation output
+        // simulation status (running, complete) comes from log messages
         string simlogTopic = "goss.gridappsd.simulation.log."+gad.simid;
 
         SELoopConsumer simLogConsumer(&workQueue, gad.brokerURI, gad.username,
@@ -137,9 +137,9 @@ int main(int argc, char** argv) {
         // only block initialization for command line invocations
         //if (false) {
         if (!gad.stateEstimatorFromPlatformFlag) {
-            *selog << "\nWaiting for measurement before continuing with initialization\n" << std::flush;
+            *selog << "\nWaiting for simulation to start before continuing with initialization\n" << std::flush;
             while (blockedFlag) sleep(1);
-            *selog << "\nGot measurement--continuing with initialization\n" << std::flush;
+            *selog << "\nSimulation started--continuing with initialization\n" << std::flush;
         } else {
             *selog << "\nNOT waiting before continuing with initialization\n" << std::flush;
         }
