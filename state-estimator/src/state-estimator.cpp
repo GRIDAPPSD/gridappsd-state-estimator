@@ -9,24 +9,24 @@
 //#define TEST_HARNESS_DIR "test_4"
 //#define TEST_HARNESS_DIR "test_13assets"
 
-// some subtle conditional compilation logic to properly synchronize test
-// harness related symbols
-// VNOM_FROM_FILE indicates whether to read a vnom.csv file or not, which is
-// needed if the test harness is being used with files produced from an
-// actual simulation like ieee13nodecktassets. It is not needed for a
-// standalone test harness invocation without a synchronized simulation
-// like the 4-bus MATLAB reference model
-// TIMESTAMP_FROM_FILE indicates whether to get the timestamp from the
-// measurement_data.csv file or to get it from a running simulation that is
-// synchronized with reading from measurement_data.csv. This is related to
-// VNOM_FROM_FILE so setting that should properly set TIMESTAMP_FROM_FILE
+// conditional compilation logic to properly synchronize test harness
+// related symbols
+// TEST_HARNESS_SIM_SYNC indicates whether there is a synchronized simulation
+// running along with reading test harness files so that results can be
+// published and plotted to match running simulation measurements.
+// Setting this indicates that some data is initialized from query responses
+// like node_vnoms, node_bmrids, and node_phs because it is needed to publish
+// data for plotting.  The ieee13nodecktassets model supports this while
+// the 4-bus MATLAB reference model does not because there is not a
+// corresponding GridAPPS-D model.  The value of TEST_HARNESS_SIM_SYNC also
+// indicates whether to read the timestamp for measurement data from file
+// or get it from running simulation message even though the rest of the
+// measurement data is read from the file. It should only be set when
+// TEST_HARNESS_DIR is also set and thus is should remain in the ifdef
+// block below and then TEST_HARNESS_SIM_SYNC should be uncommented and
+// commented out as needed.
 #ifdef TEST_HARNESS_DIR
-//#define VNOM_FROM_FILE
-#ifndef VNOM_FROM_FILE
-// timestamp should always be from file when not reading a vnom.csv file
-// so this should not need to be updated in normal circumstances
-#define TIMESTAMP_FROM_FILE
-#endif
+//#define TEST_HARNESS_SIM_SYNC
 #endif
 
 #define PI 3.1415926535
@@ -213,7 +213,9 @@ int main(int argc, char** argv) {
 		// get nodes, bus mRIDs and phases
 		SSMAP node_bmrids;
 		SSMAP node_phs;
+#if !defined( TEST_HARNESS_DIR ) || defined( TEST_HARNESS_SIM_SYNC )
 		state_estimator_util::get_nodes(gad,node_bmrids,node_phs);
+#endif
 
 		// --------------------------------------------------------------------
 		// TOPOLOGY PROCESSOR
@@ -311,7 +313,7 @@ int main(int argc, char** argv) {
         }
         ifs.close();
 
-#ifdef VNOM_FROM_FILE
+#ifdef TEST_HARNESS_SIM_SYNC
         filename = TEST_HARNESS_DIR;
         filename += "/vnom.csv";
 #ifdef DEBUG_PRIMARY

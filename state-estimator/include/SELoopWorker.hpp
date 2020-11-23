@@ -226,8 +226,8 @@ class SELoopWorker {
         getline(meas_fh, meas_line);
         string cell;
         std::stringstream headerStream(meas_line);
-#ifdef TIMESTAMP_FROM_FILE
-        getline(headerStream, cell, ','); // throwaway the timestamp header
+#ifndef TEST_HARNESS_SIM_SYNC
+        getline(headerStream, cell, ','); // throwaway timestamp header token
 #endif
         while ( getline(headerStream, cell, ',') )
             meas_zids.push_back(cell);
@@ -251,7 +251,7 @@ class SELoopWorker {
                 jmessage = workQueue->pop();
 
                 if (jmessage.find("message") != jmessage.end()) {
-#ifndef TIMESTAMP_FROM_FILE
+#if !defined( TEST_HARNESS_DIR ) || defined( TEST_HARNESS_SIM_SYNC )
                     timestamp = jmessage["message"]["timestamp"];
                     if (firstEstimateFlag) {
                         timeZero = timestamp;
@@ -276,7 +276,7 @@ class SELoopWorker {
                     if ( getline(meas_fh, meas_line) ) {
                         if (add_zvals(jmessage, timestamp))
                             reclosedFlag = true;
-#ifdef TIMESTAMP_FROM_FILE
+#ifndef TEST_HARNESS_SIM_SYNC
                         if (firstEstimateFlag) {
                             timeZero = timestamp;
                             // set flag value to increase uncertainty in
@@ -974,7 +974,7 @@ class SELoopWorker {
 
 
     private:
-#ifdef TIMESTAMP_FROM_FILE
+#if defined( TEST_HARNESS_DIR) && !defined( TEST_HARNESS_SIM_SYNC )
     bool add_zvals(const json& jmessage, uint& timestamp) {
 #else
     bool add_zvals(const json& jmessage, const uint& timestamp) {
@@ -992,7 +992,7 @@ class SELoopWorker {
         std::stringstream lineStream(meas_line);
         string cell, zid;
         uint idx = 0;
-#ifdef TIMESTAMP_FROM_FILE
+#ifndef TEST_HARNESS_SIM_SYNC
         getline(lineStream, cell, ',');
         double doubletime = stod(cell);
         timestamp = (uint)doubletime;
@@ -1244,7 +1244,10 @@ class SELoopWorker {
         // Package and publish the state
         // --------------------------------------------------------------------
         
-        // Initializae json
+        // Don't publish test harness results because node_bmrids and node_phs
+        // weren't initialized
+#if !defined( TEST_HARNESS_DIR ) || defined( TEST_HARNESS_SIM_SYNC )
+        // Initialize json
         json jstate;
         jstate["simulation_id"] = gad->simid;
         jstate["message"] = json::object();
@@ -1252,7 +1255,6 @@ class SELoopWorker {
         jstate["message"]["Estimate"] = json::object();
         jstate["message"]["Estimate"]["timeStamp"] = timestamp;
         jstate["message"]["Estimate"]["SvEstVoltages"] = json::array();
-//      jstate["message"]["measurements"] = json::array();
 
         for ( auto& node_name : node_names ) {
             // build a json object for each node
@@ -1288,10 +1290,9 @@ class SELoopWorker {
             jstate["message"]["Estimate"]["SvEstVoltages"].push_back(node_state);
         }
 
-//      for ( auto& reg_name : reg_names ) {}
-
         // Publish the message
         statePublisher->send(jstate.dump());
+#endif
 
 #ifdef DEBUG_FILES
         // write to file
