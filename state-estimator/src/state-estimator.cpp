@@ -59,7 +59,7 @@ using gridappsd_requests::sparql_query;
 
 #ifdef DEBUG_PRIMARY
 // temporary flag to hold up initialization until the platform has finished
-// its own initialization for the simulation based on producing measurements
+// its own initialization for the simulation based on sending a STARTED message
 bool blockedFlag = true;
 #endif
 
@@ -75,6 +75,16 @@ int main(int argc, char** argv) {
     // INITIALIZE THE GRIDAPPS SESSION
     // ------------------------------------------------------------------------
     state_estimator_gridappsd::gridappsd_session gad(se);
+
+#ifdef DEBUG_PRIMARY
+    // determine whether to write to a log file or stdout based on whether
+    // this is a platform vs. command line invocation
+    static std::ofstream logfile;
+    if (gad.stateEstimatorFromPlatformFlag) {
+        logfile.open("/tmp/state-estimator.log");
+        selog = &logfile;
+    }
+#endif
 
     // declare the thread-safe queue shared between SELoopConsumer (writer)
     // and SELoopWorker (reader)
@@ -96,26 +106,16 @@ int main(int argc, char** argv) {
         SELoopConsumer simLogConsumer(&workQueue, gad.brokerURI, gad.username,
             gad.password, simlogTopic, "topic");
         Thread simLogConsumerThread(&simLogConsumer);
-        simLogConsumerThread.start();    // execute simLogConsumer.run()
-        simLogConsumer.waitUntilReady();    // wait for the startup latch release
-
+        simLogConsumerThread.start();    // execute simLogConsumer.run
+        simLogConsumer.waitUntilReady(); // wait for the startup latch release
 #ifdef DEBUG_PRIMARY
-        // determine whether to write to a log file or stdout based on whether
-        // this is a platform vs. command line invocation
-        static std::ofstream logfile;
-        if (gad.stateEstimatorFromPlatformFlag) {
-            logfile.open("/tmp/state-estimator.log");
-            selog = &logfile;
-        }
-
-        *selog << "\nListening for simulation log messages on "+simlogTopic+'\n' << std::flush;
+        *selog << "Listening for simulation log messages on "+simlogTopic+'\n' << std::flush;
 #endif
-
         // --------------------------------------------------------------------
         // LISTEN FOR SIMULATION MEASUREMENTS
         // --------------------------------------------------------------------
 
-        // measurements come from either simulation output or sensors
+        // measurements come from either simulation output or sensor-simulator
         string topic = gad.useSensorsForEstimatesFlag?
             "goss.gridappsd.simulation.gridappsd-sensor-simulator."+gad.simid+".output":
             "goss.gridappsd.simulation.output."+gad.simid;
@@ -123,14 +123,13 @@ int main(int argc, char** argv) {
         SELoopConsumer measurementConsumer(&workQueue, gad.brokerURI,
                                 gad.username, gad.password, topic, "topic");
         Thread measurementConsumerThread(&measurementConsumer);
-        measurementConsumerThread.start();    // execute measurementConsumer.run()
-        measurementConsumer.waitUntilReady();    // wait for the startup latch release
-
+        measurementConsumerThread.start();    // execute measurementConsumer.run
+        measurementConsumer.waitUntilReady(); // wait for the startup latch release
 #ifdef DEBUG_PRIMARY
         if (gad.useSensorsForEstimatesFlag)
-            *selog << "\nListening for sensor-simulator output on "+topic+'\n' << std::flush;
+            *selog << "Listening for sensor-simulator output on "+topic+'\n' << std::flush;
         else
-            *selog << "\nListening for simulation output on "+topic+'\n' << std::flush;
+            *selog << "Listening for simulation output on "+topic+'\n' << std::flush;
 #endif
 
 #ifdef DEBUG_PRIMARY
@@ -430,7 +429,7 @@ int main(int argc, char** argv) {
             mmrid_pos_type_map, switch_node1s, switch_node2s);
 
 #ifdef DEBUG_PRIMARY
-        *selog << "\nStarting the SE work loop\n" << std::flush;
+        *selog << "Starting the SE work loop\n" << std::flush;
 #endif
         loopWorker.workLoop();
 

@@ -593,7 +593,7 @@ class SELoopWorker {
             }
         }
 #ifdef DEBUG_PRIMARY
-        *selog << "Yphys # of scaled terms: " << ctr << "\n\n" << std::flush;
+        *selog << "Yphys # of scaled terms: " << ctr << "\n" << std::flush;
 #endif
 
         // Overwrite Yphys entries for switches to (-500,500)
@@ -606,10 +606,8 @@ class SELoopWorker {
             try {
                 auto& Yrow = Yphys.at(i);
                 complex<double> yij = Yrow.at(j);
-                *selog << "EXISTING Yphys[" << i << "][" << j << "] = " << yij << ", switch_node1: " << switch_node1_pair.second << ", switch_node2: " << switch_node2s[zid] << "\n" << std::flush;
 
             } catch ( const std::out_of_range& oor ) {
-                *selog << "MISSING Yphys[" << i << "][" << j << "], switch_node1: " << switch_node1_pair.second << ", switch_node2: " << switch_node2s[zid] << "\n" << std::flush;
                 Yphys[i][j] = Yphys[j][i] = Yover;
                 complex<double> new_term_val = Yover;
                 complex<double> term_val = 0;
