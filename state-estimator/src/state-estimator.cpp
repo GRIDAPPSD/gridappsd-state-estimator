@@ -369,6 +369,13 @@ int main(int argc, char** argv) {
 		const double sbase = 1.0e+6;
 #endif
 
+        // Initialize sensors
+        SensorArray zary;
+        SSMAP mmrid_pos_type_map;
+        SSMAP switch_node1s;
+        SSMAP switch_node2s;
+
+#ifndef TEST_HARNESS_DIR
         // map conducting equipment to bus names
         SSLISTMAP cemrid_busnames_map;
         state_estimator_util::build_cemrid_busnames_map(gad,
@@ -399,19 +406,6 @@ int main(int argc, char** argv) {
 		sensRequester.send(sensRequestText,sensTopic);
 		sensRequester.close();
 
-		// Initialize sensors
-		SensorArray zary;
-        SSMAP mmrid_pos_type_map;
-        SSMAP switch_node1s;
-        SSMAP switch_node2s;
-//		uint numms; 	// number of sensors
-//		SLIST mns;		// sensor name [list of strings]
-//		SSMAP mts;		// sensor type [sn->str]
-//		SDMAP msigs;	// sensor sigma: standard deviation [sn->double]
-//		SSMAP mnd1s;	// point node or from node for flow sensors [sn->str]
-//		SSMAP mnd2s;	// point node or to node for flow sensors [sn->str]
-//		SDMAP mvals;	// value of the latest measurement [sn->double]
-		
 		// Wait for sensor initializer and retrieve sensors
 		sensConsumerThread.join();
 
@@ -422,17 +416,38 @@ int main(int argc, char** argv) {
 
         // For the test harness, SensorDefConsumer reads the file for all
         // measurements so no need to do anything for pseudo-measurements
-#ifndef TEST_HARNESS_DIR
 		// Add Pseudo-Measurements
 		state_estimator_util::insert_pseudo_measurements(gad,zary,
 				node_names,node_vnoms,sbase);
-#endif
-
 #ifdef DEBUG_PRIMARY
         //*selog << "\nzsigs/zvals after adding pseudo-measurements:\n" << std::flush;
         //for ( auto& zid : zary.zids ) {
         //    *selog << "\tzid: " << zid << ", ztype: " << zary.ztypes[zid] << ", zsig: " << zary.zsigs[zid] << ", zvals: " << zary.zvals[zid] << "\n" << std::flush;
         //}
+#endif
+#else
+        filename = TEST_HARNESS_DIR;
+        filename += "/measurements.csv";
+#ifdef DEBUG_PRIMARY
+        *selog << "Reading sensor measurements from test harness file: " << filename << "\n\n" << std::flush;
+#endif
+        ifs.open(filename);
+        getline(ifs, line); // throwaway header line
+
+        while ( getline(ifs, line) ) {
+            std::stringstream lineStream(line);
+            string cell, zid;
+            getline(lineStream, cell, ',');
+            getline(lineStream, zid, ','); zary.zids.push_back(zid);
+            zary.zidxs[zid] = zary.zqty++;
+            zary.ztypes[zid] = cell;
+            getline(lineStream, cell, ','); zary.znode1s[zid] = cell;
+            getline(lineStream, cell, ','); zary.znode2s[zid] = cell;
+            getline(lineStream, cell, ','); zary.zvals[zid] = stod(cell);
+            getline(lineStream, cell, ','); zary.zsigs[zid] = stod(cell);
+            getline(lineStream, cell, ','); zary.zpseudos[zid] = cell=="1";
+            getline(lineStream, cell, ','); zary.znomvals[zid] = stod(cell);
+        }
 #endif
 
         // Initialize class that does the state estimates

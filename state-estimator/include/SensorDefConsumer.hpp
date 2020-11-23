@@ -101,31 +101,6 @@ class SensorDefConsumer : public SEConsumer {
 		// --------------------------------------------------------------------
 		// PARSE THE MESSAGE AND INITIALIZE SENSORS
 		// --------------------------------------------------------------------
-#ifdef TEST_HARNESS_DIR
-        string filename = TEST_HARNESS_DIR;
-        filename += "/measurements.csv";
-#ifdef DEBUG_PRIMARY
-        *selog << "Reading sensor measurements from test harness file: " << filename << "\n\n" << std::flush;
-#endif
-        std::ifstream ifs(filename);
-        string line;
-        getline(ifs, line); // throwaway header line
-
-        while ( getline(ifs, line) ) {
-            std::stringstream lineStream(line);
-            string cell, zid;
-            getline(lineStream, cell, ',');
-            getline(lineStream, zid, ','); zary.zids.push_back(zid);
-            zary.zidxs[zid] = zary.zqty++;
-            zary.ztypes[zid] = cell;
-            getline(lineStream, cell, ','); zary.znode1s[zid] = cell;
-            getline(lineStream, cell, ','); zary.znode2s[zid] = cell;
-            getline(lineStream, cell, ','); zary.zvals[zid] = stod(cell);
-            getline(lineStream, cell, ','); zary.zsigs[zid] = stod(cell);
-            getline(lineStream, cell, ','); zary.zpseudos[zid] = cell=="1";
-            getline(lineStream, cell, ','); zary.znomvals[zid] = stod(cell);
-        }
-#else
 #ifdef DEBUG_PRIMARY
 		*selog << "Received sensor message of " << text.length() << " bytes\n\n" << std::flush;
 #endif
@@ -307,9 +282,7 @@ class SensorDefConsumer : public SEConsumer {
 				}
 			}
 		}
-#endif
-        
-		
+
 		// --------------------------------------------------------------------
 		// SENSOR INITIALIZATION COMPLETE
 		// --------------------------------------------------------------------
