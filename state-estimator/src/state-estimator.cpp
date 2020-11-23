@@ -206,22 +206,11 @@ int main(int argc, char** argv) {
         }
 #endif
 
-		// --------------------------------------------------------------------
-		// MAKE SOME SPARQL QUERIES
-		// --------------------------------------------------------------------
-
-		// get nodes, bus mRIDs and phases
+		// Node bus mRIDs and phases data structures
 		SSMAP node_bmrids;
 		SSMAP node_phs;
-#if !defined( TEST_HARNESS_DIR ) || defined( TEST_HARNESS_SIM_SYNC )
-		state_estimator_util::get_nodes(gad,node_bmrids,node_phs);
-#endif
 
-		// --------------------------------------------------------------------
-		// TOPOLOGY PROCESSOR
-		// --------------------------------------------------------------------
-
-		// Initialize topology
+		// Topology data structures
 		uint node_qty;      // number of nodes
 		SLIST node_names;   // list of node names
 		SIMAP node_idxs;    // map from node name to unit-indexed position
@@ -233,10 +222,21 @@ int main(int argc, char** argv) {
 		//	-- gij = std::real(-1.0*Yphys[i][j]);
 		//	-- bij = std::imag(-1.0*Yphys[i][j]);
 
-		// Initialize nominal voltages
+		// Node nominal voltages data structure
 		SCMAP node_vnoms;
 
 #ifndef TEST_HARNESS_DIR
+		// --------------------------------------------------------------------
+		// MAKE SOME SPARQL QUERIES
+		// --------------------------------------------------------------------
+
+		// get node bus mRIDs and phases needed to publish results
+		state_estimator_util::get_nodes(gad,node_bmrids,node_phs);
+
+		// --------------------------------------------------------------------
+		// TOPOLOGY PROCESSOR
+		// --------------------------------------------------------------------
+
 		// Set up the ybus consumer
 		string ybusTopic = "goss.gridappsd.se.response."+gad.simid+".ybus";
 		TopoProcConsumer ybusConsumer(gad.brokerURI,gad.username,gad.password,ybusTopic,"queue");
@@ -275,6 +275,11 @@ int main(int argc, char** argv) {
         vnomConsumer.fillVnom(node_vnoms);
         vnomConsumer.close();
 #else
+#ifdef TEST_HARNESS_SIM_SYNC
+		// get node bus mRIDs and phases needed to publish results
+		state_estimator_util::get_nodes(gad,node_bmrids,node_phs);
+#endif
+
         string filename = TEST_HARNESS_DIR;
         filename += "/ysparse.csv";
 #ifdef DEBUG_PRIMARY
