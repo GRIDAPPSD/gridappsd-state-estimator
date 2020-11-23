@@ -1,11 +1,18 @@
 #define DIAGONAL_P
 #define SWITCHES
 //#define NET_INJECTION
+
 #define DEBUG_PRIMARY
 //#define DEBUG_FILES
 //#define DEBUG_SIZES
+
 //#define SBASE_TESTING
+
 #define GS_OPTIMIZE
+// whether to store negligable values in sparse matrices or not
+// defining USE_NEGL indicates not to store negligable values
+//#define USE_NEGL
+
 //#define TEST_HARNESS_DIR "test_4"
 //#define TEST_HARNESS_DIR "test_13assets"
 
@@ -31,30 +38,6 @@
 
 #define PI 3.1415926535
 
-// negligable macros
-//#define USE_NEGL
-
-#ifdef USE_NEGL
-#define NEGL 1.0e-16
-#ifdef GS_OPTIMIZE
-#define gs_entry_diagonal_negl(A,ij,val) if (val>NEGL || -val>NEGL) gs_entry_diagonal(A,ij,val)
-#define gs_entry_firstcol_negl(A,i,val) if (val>NEGL || -val>NEGL) gs_entry_firstcol(A,i,val)
-#define gs_entry_fullsquare_negl(A,i,j,val) if (val>NEGL || -val>NEGL) gs_entry_fullsquare(A,i,j,val)
-#define gs_entry_colorder_negl(A,i,j,val) if (val>NEGL || -val>NEGL) gs_entry_colorder(A,i,j,val)
-#else
-#define cs_entry_negl(A,i,j,val) if (val>NEGL || -val>NEGL) cs_entry(A,i,j,val)
-#endif
-#else
-#ifdef GS_OPTIMIZE
-#define gs_entry_diagonal_negl(A,ij,val) gs_entry_diagonal(A,ij,val)
-#define gs_entry_firstcol_negl(A,i,val) gs_entry_firstcol(A,i,val)
-#define gs_entry_fullsquare_negl(A,i,j,val) gs_entry_fullsquare(A,i,j,val)
-#define gs_entry_colorder_negl(A,i,j,val) gs_entry_colorder(A,i,j,val)
-#else
-#define cs_entry_negl(A,i,j,val) cs_entry(A,i,j,val)
-#endif
-#endif
-
 #include <iostream>
 
 // global logging stream--either a file or stdout based on invocation
@@ -69,53 +52,10 @@ std::ostream* selog = &std::cout;
 #include "SharedQueue.hpp"
 #include "SELoopConsumer.hpp"
 #include "SELoopWorker.hpp"
-
+#include "state_estimator_util.hpp"
+#include "SensorArray.hpp"
 #include "gridappsd_requests.hpp"
 using gridappsd_requests::sparql_query;
-
-////#include "sparql_queries.hpp"
-//#include "sparql_queries_CIM100.hpp"
-//using sparql_queries::sparq_nodes;
-//using sparql_queries::sparq_conducting_equipment_vbase;
-//using sparql_queries::sparq_transformer_end_vbase;
-//using sparql_queries::sparq_energy_consumer_pq;
-//using sparql_queries::sparq_ratio_tap_changer_nodes;
-
-#include "state_estimator_util.hpp"
-
-#include "State.hpp"
-#include "SensorArray.hpp"
-
-// standard data types
-#include <string>
-#include <complex>
-#include <list>
-#include <unordered_map>
-
-// macro for unsigned int
-#define uint unsigned int
-
-// Store node names in a linked list and hash node name to their position
-// Iterate over the linked list to access all nodes or states
-// Note that positions are one-indexed
-// Store sensor names in a linked list and hash node names to various params
-#define SLIST std::list<std::string>
-#define SIMAP std::unordered_map<std::string,unsigned int>
-#define SDMAP std::unordered_map<std::string,double>
-#define SCMAP std::unordered_map<std::string,std::complex<double>>
-#define SSMAP std::unordered_map<std::string,std::string>
-#define SSLISTMAP std::unordered_map<std::string,SLIST>
-
-// reverse lookup of nodenames by index
-#define ISMAP std::unordered_map<unsigned int,std::string>
-
-// Hash address (i,j) to the index of a sparse matrix vector
-#define ICMAP std::unordered_map<unsigned int,std::complex<double>>
-#define IMMAP std::unordered_map<unsigned int,ICMAP>
-
-// Store x and z in a list one-indexed by position
-#define IDMAP std::unordered_map<unsigned int,double>
-#define IMDMAP std::unordered_map<unsigned int,IDMAP>
 
 #ifdef DEBUG_PRIMARY
 // temporary flag to hold up initialization until the platform has finished
@@ -124,41 +64,40 @@ bool blockedFlag = true;
 #endif
 
 int main(int argc, char** argv) {
-	
-	// ------------------------------------------------------------------------
-	// INITIALIZE THE STATE ESTIMATOR SESSION WITH RUNTIME ARGS
-	// ------------------------------------------------------------------------
-	state_estimator_gridappsd::state_estimator_session se;
-	if ( !se.init(argc,argv) ) return 0;
 
-	// ------------------------------------------------------------------------
-	// INITIALIZE THE GRIDAPPS SESSION
-	// ------------------------------------------------------------------------
-	state_estimator_gridappsd::gridappsd_session gad(se);
+    // ------------------------------------------------------------------------
+    // INITIALIZE THE STATE ESTIMATOR SESSION WITH RUNTIME ARGS
+    // ------------------------------------------------------------------------
+    state_estimator_gridappsd::state_estimator_session se;
+    if ( !se.init(argc,argv) ) return 0;
+
+    // ------------------------------------------------------------------------
+    // INITIALIZE THE GRIDAPPS SESSION
+    // ------------------------------------------------------------------------
+    state_estimator_gridappsd::gridappsd_session gad(se);
 
     // declare the thread-safe queue shared between SELoopConsumer (writer)
     // and SELoopWorker (reader)
     SharedQueue<json> workQueue;
 
-	// ------------------------------------------------------------------------
-	// START THE AMQ INTERFACE
-	// ------------------------------------------------------------------------
+    // ------------------------------------------------------------------------
+    // START THE AMQ INTERFACE
+    // ------------------------------------------------------------------------
+    try {
+        activemq::library::ActiveMQCPP::initializeLibrary();
 
-	try {
-		activemq::library::ActiveMQCPP::initializeLibrary();
+        // --------------------------------------------------------------------
+        // LISTEN FOR SIMULATION LOG MESSAGES
+        // --------------------------------------------------------------------
 
-		// --------------------------------------------------------------------
-		// LISTEN FOR SIMULATION LOG MESSAGES
-		// --------------------------------------------------------------------
+        // measurements come from the simulation output
+        string simlogTopic = "goss.gridappsd.simulation.log."+gad.simid;
 
-		// measurements come from the simulation output
-		string simlogTopic = "goss.gridappsd.simulation.log."+gad.simid;
-
-		SELoopConsumer simLogConsumer(&workQueue, gad.brokerURI, gad.username,
+        SELoopConsumer simLogConsumer(&workQueue, gad.brokerURI, gad.username,
             gad.password, simlogTopic, "topic");
-		Thread simLogConsumerThread(&simLogConsumer);
-		simLogConsumerThread.start();	// execute simLogConsumer.run()
-		simLogConsumer.waitUntilReady();	// wait for the startup latch release
+        Thread simLogConsumerThread(&simLogConsumer);
+        simLogConsumerThread.start();    // execute simLogConsumer.run()
+        simLogConsumer.waitUntilReady();    // wait for the startup latch release
 
 #ifdef DEBUG_PRIMARY
         // determine whether to write to a log file or stdout based on whether
@@ -169,23 +108,23 @@ int main(int argc, char** argv) {
             selog = &logfile;
         }
 
-		*selog << "\nListening for simulation log messages on "+simlogTopic+'\n' << std::flush;
+        *selog << "\nListening for simulation log messages on "+simlogTopic+'\n' << std::flush;
 #endif
 
-		// --------------------------------------------------------------------
-		// LISTEN FOR SIMULATION MEASUREMENTS
-		// --------------------------------------------------------------------
+        // --------------------------------------------------------------------
+        // LISTEN FOR SIMULATION MEASUREMENTS
+        // --------------------------------------------------------------------
 
-		// measurements come from either simulation output or sensors
+        // measurements come from either simulation output or sensors
         string topic = gad.useSensorsForEstimatesFlag?
             "goss.gridappsd.simulation.gridappsd-sensor-simulator."+gad.simid+".output":
             "goss.gridappsd.simulation.output."+gad.simid;
 
-		SELoopConsumer measurementConsumer(&workQueue, gad.brokerURI,
+        SELoopConsumer measurementConsumer(&workQueue, gad.brokerURI,
                                 gad.username, gad.password, topic, "topic");
-		Thread measurementConsumerThread(&measurementConsumer);
-		measurementConsumerThread.start();	// execute measurementConsumer.run()
-		measurementConsumer.waitUntilReady();	// wait for the startup latch release
+        Thread measurementConsumerThread(&measurementConsumer);
+        measurementConsumerThread.start();    // execute measurementConsumer.run()
+        measurementConsumer.waitUntilReady();    // wait for the startup latch release
 
 #ifdef DEBUG_PRIMARY
         if (gad.useSensorsForEstimatesFlag)
@@ -198,86 +137,86 @@ int main(int argc, char** argv) {
         // only block initialization for command line invocations
         //if (false) {
         if (!gad.stateEstimatorFromPlatformFlag) {
-		    *selog << "\nWaiting for measurement before continuing with initialization\n" << std::flush;
+            *selog << "\nWaiting for measurement before continuing with initialization\n" << std::flush;
             while (blockedFlag) sleep(1);
-		    *selog << "\nGot measurement--continuing with initialization\n" << std::flush;
+            *selog << "\nGot measurement--continuing with initialization\n" << std::flush;
         } else {
-		    *selog << "\nNOT waiting before continuing with initialization\n" << std::flush;
+            *selog << "\nNOT waiting before continuing with initialization\n" << std::flush;
         }
 #endif
 
-		// Node bus mRIDs and phases data structures
-		SSMAP node_bmrids;
-		SSMAP node_phs;
+        // Node bus mRIDs and phases data structures
+        SSMAP node_bmrids;
+        SSMAP node_phs;
 
-		// Topology data structures
-		uint node_qty;      // number of nodes
-		SLIST node_names;   // list of node names
-		SIMAP node_idxs;    // map from node name to unit-indexed position
+        // Topology data structures
+        uint node_qty;      // number of nodes
+        SLIST node_names;   // list of node names
+        SIMAP node_idxs;    // map from node name to unit-indexed position
         ISMAP node_name_lookup;
-		IMMAP Yphys;        // double map from indices to complex admittance
-		// G, B, g, and b are derived from Yphys:
-		//	-- Gij = std::real(Yphys[i][j]);
-		//	-- Bij = std::imag(Yphys[i][j]);
-		//	-- gij = std::real(-1.0*Yphys[i][j]);
-		//	-- bij = std::imag(-1.0*Yphys[i][j]);
+        IMMAP Yphys;        // double map from indices to complex admittance
+        // G, B, g, and b are derived from Yphys:
+        //    -- Gij = std::real(Yphys[i][j]);
+        //    -- Bij = std::imag(Yphys[i][j]);
+        //    -- gij = std::real(-1.0*Yphys[i][j]);
+        //    -- bij = std::imag(-1.0*Yphys[i][j]);
 
-		// Node nominal voltages data structure
-		SCMAP node_vnoms;
+        // Node nominal voltages data structure
+        SCMAP node_vnoms;
 
 #ifndef TEST_HARNESS_DIR
-		// --------------------------------------------------------------------
-		// MAKE SOME SPARQL QUERIES
-		// --------------------------------------------------------------------
+        // --------------------------------------------------------------------
+        // MAKE SOME SPARQL QUERIES
+        // --------------------------------------------------------------------
 
-		// get node bus mRIDs and phases needed to publish results
-		state_estimator_util::get_nodes(gad,node_bmrids,node_phs);
+        // get node bus mRIDs and phases needed to publish results
+        state_estimator_util::get_nodes(gad,node_bmrids,node_phs);
 
-		// --------------------------------------------------------------------
-		// TOPOLOGY PROCESSOR
-		// --------------------------------------------------------------------
+        // --------------------------------------------------------------------
+        // TOPOLOGY PROCESSOR
+        // --------------------------------------------------------------------
 
-		// Set up the ybus consumer
-		string ybusTopic = "goss.gridappsd.se.response."+gad.simid+".ybus";
-		TopoProcConsumer ybusConsumer(gad.brokerURI,gad.username,gad.password,ybusTopic,"queue");
-		Thread ybusConsumerThread(&ybusConsumer);
-		ybusConsumerThread.start();		// execute ybusConsumer.run()
-		ybusConsumer.waitUntilReady();	// wait for latch release
+        // Set up the ybus consumer
+        string ybusTopic = "goss.gridappsd.se.response."+gad.simid+".ybus";
+        TopoProcConsumer ybusConsumer(gad.brokerURI,gad.username,gad.password,ybusTopic,"queue");
+        Thread ybusConsumerThread(&ybusConsumer);
+        ybusConsumerThread.start();        // execute ybusConsumer.run()
+        ybusConsumer.waitUntilReady();    // wait for latch release
 
-		// Set up the vnom consumer
-		string vnomTopic = "goss.gridappsd.se.response."+gad.simid+".vnom";
-		VnomConsumer vnomConsumer(gad.brokerURI,gad.username,gad.password,vnomTopic,"queue");
-		Thread vnomConsumerThread(&vnomConsumer);
-		vnomConsumerThread.start();		// execute vnomConsumer.run()
-		vnomConsumer.waitUntilReady();	// wait for latch release
+        // Set up the vnom consumer
+        string vnomTopic = "goss.gridappsd.se.response."+gad.simid+".vnom";
+        VnomConsumer vnomConsumer(gad.brokerURI,gad.username,gad.password,vnomTopic,"queue");
+        Thread vnomConsumerThread(&vnomConsumer);
+        vnomConsumerThread.start();        // execute vnomConsumer.run()
+        vnomConsumer.waitUntilReady();    // wait for latch release
 
-		// Set up the producer to request the ybus and vnom
-		string topoRequestTopic = "goss.gridappsd.process.request.config";
-		SEProducer topoRequester(gad.brokerURI,gad.username,gad.password,topoRequestTopic,"queue");
-		string ybusRequestText = 
-			"{\"configurationType\":\"YBus Export\",\"parameters\":{\"simulation_id\":\"" 
-			+ gad.simid + "\"}}";
-		topoRequester.send(ybusRequestText,ybusTopic);
-		string vnomRequestText = 
-			"{\"configurationType\":\"Vnom Export\",\"parameters\":{\"simulation_id\":\""
-			+ gad.simid + "\"}}";
-		topoRequester.send(vnomRequestText,vnomTopic);
-		topoRequester.close();
+        // Set up the producer to request the ybus and vnom
+        string topoRequestTopic = "goss.gridappsd.process.request.config";
+        SEProducer topoRequester(gad.brokerURI,gad.username,gad.password,topoRequestTopic,"queue");
+        string ybusRequestText =
+            "{\"configurationType\":\"YBus Export\",\"parameters\":{\"simulation_id\":\""
+            + gad.simid + "\"}}";
+        topoRequester.send(ybusRequestText,ybusTopic);
+        string vnomRequestText =
+            "{\"configurationType\":\"Vnom Export\",\"parameters\":{\"simulation_id\":\""
+            + gad.simid + "\"}}";
+        topoRequester.send(vnomRequestText,vnomTopic);
+        topoRequester.close();
 
-		// Wait for topological processor and retrieve topology
-		ybusConsumerThread.join();
-		ybusConsumer.fillTopo(node_qty,node_names,node_idxs,
+        // Wait for topological processor and retrieve topology
+        ybusConsumerThread.join();
+        ybusConsumer.fillTopo(node_qty,node_names,node_idxs,
                               node_name_lookup,Yphys);
-		ybusConsumer.close();
+        ybusConsumer.close();
 
-		// Wait for the vnom processor and retrive vnom
+        // Wait for the vnom processor and retrive vnom
         vnomConsumerThread.join();
         vnomConsumer.fillVnom(node_vnoms);
         vnomConsumer.close();
 #else
 #ifdef TEST_HARNESS_SIM_SYNC
-		// get node bus mRIDs and phases needed to publish results
-		state_estimator_util::get_nodes(gad,node_bmrids,node_phs);
+        // get node bus mRIDs and phases needed to publish results
+        state_estimator_util::get_nodes(gad,node_bmrids,node_phs);
 #endif
 
         string filename = TEST_HARNESS_DIR;
@@ -356,17 +295,17 @@ int main(int argc, char** argv) {
         // the 3 models tested
 #ifdef SBASE_TESTING
         double spower = (double)std::stoi(argv[3]);
-		const double sbase = pow(10.0, spower);
+        const double sbase = pow(10.0, spower);
 #else
-		const double sbase = 1.0e+6;
+        const double sbase = 1.0e+6;
 #endif
 
-		// --------------------------------------------------------------------
-		// SENSOR INITIALIZATION
-		// --------------------------------------------------------------------
+        // --------------------------------------------------------------------
+        // SENSOR INITIALIZATION
+        // --------------------------------------------------------------------
 
-		// A matrix data structures
-		IMDMAP Amat;
+        // A matrix data structures
+        IMDMAP Amat;
         SSMAP regid_primnode_map;
         SSMAP regid_regnode_map;
 
@@ -379,7 +318,7 @@ int main(int argc, char** argv) {
 #ifndef TEST_HARNESS_DIR
         SSMAP reg_cemrid_primbus_map;
         SSMAP reg_cemrid_regbus_map;
-		state_estimator_util::build_A_matrix(gad,Amat,node_idxs,
+        state_estimator_util::build_A_matrix(gad,Amat,node_idxs,
                 reg_cemrid_primbus_map,reg_cemrid_regbus_map,
                 regid_primnode_map,regid_regnode_map);
 
@@ -388,44 +327,44 @@ int main(int argc, char** argv) {
         state_estimator_util::build_cemrid_busnames_map(gad,
                 cemrid_busnames_map);
 
-		// Add Pseudo-Measurements
+        // Add Pseudo-Measurements
         SDMAP node_nominal_Pinj_map;
         SDMAP node_nominal_Qinj_map;
-		state_estimator_util::get_nominal_energy_consumer_injections(gad,
-				node_vnoms,node_nominal_Pinj_map,node_nominal_Qinj_map);
+        state_estimator_util::get_nominal_energy_consumer_injections(gad,
+                node_vnoms,node_nominal_Pinj_map,node_nominal_Qinj_map);
 
-		// Set up the sensors consumer
-		string sensTopic = "goss.gridappsd.se.response."+gad.simid+".cimdict";
-		SensorDefConsumer sensConsumer(gad.brokerURI,gad.username,gad.password, 
+        // Set up the sensors consumer
+        string sensTopic = "goss.gridappsd.se.response."+gad.simid+".cimdict";
+        SensorDefConsumer sensConsumer(gad.brokerURI,gad.username,gad.password,
                cemrid_busnames_map,reg_cemrid_primbus_map,reg_cemrid_regbus_map,
                node_nominal_Pinj_map,node_nominal_Qinj_map,
                sbase,sensTopic,"queue");
-		Thread sensConsumerThread(&sensConsumer);
-		sensConsumerThread.start();		// execute sensConsumer.run()
-		sensConsumer.waitUntilReady();	// wait for latch release
+        Thread sensConsumerThread(&sensConsumer);
+        sensConsumerThread.start();        // execute sensConsumer.run()
+        sensConsumer.waitUntilReady();    // wait for latch release
 
-		// Set up the producer to request sensor data
-		string sensRequestTopic = "goss.gridappsd.process.request.config";
-		string sensRequestText = 
-			"{\"configurationType\":\"CIM Dictionary\",\"parameters\":{\"simulation_id\":\""
-			+ gad.simid + "\"}}";
-		SEProducer sensRequester(gad.brokerURI,gad.username,gad.password,sensRequestTopic,"queue");
-		sensRequester.send(sensRequestText,sensTopic);
-		sensRequester.close();
+        // Set up the producer to request sensor data
+        string sensRequestTopic = "goss.gridappsd.process.request.config";
+        string sensRequestText =
+            "{\"configurationType\":\"CIM Dictionary\",\"parameters\":{\"simulation_id\":\""
+            + gad.simid + "\"}}";
+        SEProducer sensRequester(gad.brokerURI,gad.username,gad.password,sensRequestTopic,"queue");
+        sensRequester.send(sensRequestText,sensTopic);
+        sensRequester.close();
 
-		// Wait for sensor initializer and retrieve sensors
-		sensConsumerThread.join();
+        // Wait for sensor initializer and retrieve sensors
+        sensConsumerThread.join();
 
         // Add Sensors
-		sensConsumer.fillSens(zary, mmrid_pos_type_map,
+        sensConsumer.fillSens(zary, mmrid_pos_type_map,
                               switch_node1s, switch_node2s);
-		sensConsumer.close();
+        sensConsumer.close();
 
         // For the test harness, SensorDefConsumer reads the file for all
         // measurements so no need to do anything for pseudo-measurements
-		// Add Pseudo-Measurements
-		state_estimator_util::insert_pseudo_measurements(gad,zary,
-				node_names,node_vnoms,sbase);
+        // Add Pseudo-Measurements
+        state_estimator_util::insert_pseudo_measurements(gad,zary,
+                node_names,node_vnoms,sbase);
 #ifdef DEBUG_PRIMARY
         //*selog << "\nzsigs/zvals after adding pseudo-measurements:\n" << std::flush;
         //for ( auto& zid : zary.zids ) {
@@ -491,15 +430,15 @@ int main(int argc, char** argv) {
             mmrid_pos_type_map, switch_node1s, switch_node2s);
 
 #ifdef DEBUG_PRIMARY
-		*selog << "\nStarting the SE work loop\n" << std::flush;
+        *selog << "\nStarting the SE work loop\n" << std::flush;
 #endif
-		loopWorker.workLoop();
-		
-        // we'll never get here
-		return 0;
+        loopWorker.workLoop();
 
-	} catch (...) {
-		cerr << "Error: Unhandled Exception\n" << std::flush;
-		throw NULL;
-	}
+        // we'll never get here
+        return 0;
+
+    } catch (...) {
+        cerr << "Error: Unhandled Exception\n" << std::flush;
+        throw NULL;
+    }
 }
