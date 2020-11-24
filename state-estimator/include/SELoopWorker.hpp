@@ -270,10 +270,10 @@ class SELoopWorker {
 
             // drain the queue with quick z-averaging
             do {
+#if !defined( TEST_HARNESS_DIR ) || defined( TEST_HARNESS_SIM_SYNC )
                 jmessage = workQueue->pop();
 
                 if (jmessage.find("message") != jmessage.end()) {
-#if !defined( TEST_HARNESS_DIR ) || defined( TEST_HARNESS_SIM_SYNC )
                     timestamp = jmessage["message"]["timestamp"];
                     if (firstEstimateFlag) {
                         timeZero = timestamp;
@@ -286,8 +286,8 @@ class SELoopWorker {
                     *selog << "Draining workQueue size: " << workQueue->size() << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
 #endif
 #endif
-                    // do z summation here
 #ifndef TEST_HARNESS_DIR
+                    // do z summation here
                     if (add_zvals(jmessage, timestamp))
                         reclosedFlag = true;
 
@@ -315,6 +315,7 @@ class SELoopWorker {
                     }
 #endif
 
+#if !defined( TEST_HARNESS_DIR ) || defined( TEST_HARNESS_SIM_SYNC )
                 } else if (jmessage.find("processStatus") != jmessage.end()) {
                     // only COMPLETE/CLOSED log messages are put on the queue
                     // so process for that case only
@@ -335,7 +336,6 @@ class SELoopWorker {
                         exit(0);
                     }
                 }
-#ifndef TEST_HARNESS_DIR
             } while (!workQueue->empty()); // uncomment this to drain queue
 #else
             } while (false); // uncomment this to fully process all messages
