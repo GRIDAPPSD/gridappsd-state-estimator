@@ -12,19 +12,26 @@
 
 #SIMREQ={\"power_system_config\":{\"Line_name\":\"_49AD8E07-3BF9-A4E2-CB8F-C3722F837B62\"},\"service_configs\":[{\"id\":\"state-estimator\",\"user_options\":{\"use-sensors-for-estimates\":false}}]} # ieee13nodeckt using simulation
 
-if [ -z "$SIMREQ" ]; then
-#   main.py invocation when sim_starter.py will start the simulation
-    read -d "\n" SIMID SIMREQ <<< $(sim_starter/sim_starter.py $1)
+# no command line arguments means a test harness invocation so no simulation
+# or plotter to invoke
+if [ "$#" -gt 0 ]; then
+    if [ -z "$SIMREQ" ]; then
+    #   main.py invocation when sim_starter.py will start the simulation
+        read -d "\n" SIMID SIMREQ <<< $(sim_starter/sim_starter.py $1)
+    else
+    #   main.py invocation when simulation is already started from platform viz
+        SIMID=$1
+    fi
+
+    # comment out the following 5 lines to keep state-plotter from running
+    pushd .
+    cd ../../gridappsd-state-plotter/state-plotter
+    ./state-plotter.py $SIMID "$SIMREQ" -all 2>&1 > spmagdbg.log &
+    #./state-plotter.py $SIMID "$SIMREQ" -stats 2>&1 > spmagdbg.log &
+    popd
+
+    bin/state-estimator $SIMID "$SIMREQ" 2>&1 | tee sedbg.log
 else
-#   main.py invocation when simulation is already started from platform viz
-    SIMID=$1
+    bin/state-estimator 2>&1 | tee sedbg.log
 fi
-
-# comment out the following 4 lines to keep state-plotter from running
-pushd .
-cd ../../gridappsd-state-plotter/state-plotter
-./state-plotter.py $SIMID "$SIMREQ" -all 2>&1 > spmagdbg.log &
-popd
-
-bin/state-estimator $SIMID "$SIMREQ" 2>&1 | tee sedbg.log
 
