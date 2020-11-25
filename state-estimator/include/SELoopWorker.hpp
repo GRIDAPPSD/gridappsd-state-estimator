@@ -462,7 +462,11 @@ class SELoopWorker {
         }
 
         // create simulation parent directory
+#if !defined( TEST_HARNESS_DIR ) || defined( TEST_HARNESS_SIM_SYNC )
         string simpath = "output/sim_" + gad->simid + "/";
+#else
+        string simpath = "output/"; simpath += TEST_HARNESS_DIR; simpath += "/";
+#endif
         mkdir(simpath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
         // create init directory
@@ -470,9 +474,11 @@ class SELoopWorker {
         mkdir(initpath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 #endif
 
+#if !defined( TEST_HARNESS_DIR ) || defined( TEST_HARNESS_SIM_SYNC )
         // Construct the producer that will be used to publish the state estimate
         string sePubTopic = "goss.gridappsd.simulation.state-estimator."+gad->simid+".output";
         statePublisher = new SEProducer(gad->brokerURI,gad->username,gad->password,sePubTopic,"topic");
+#endif
 
         // --------------------------------------------------------------------
         // Establish Dimension of State Space and Measurement Space
@@ -913,7 +919,11 @@ class SELoopWorker {
 #ifdef DEBUG_FILES
         // print initial state vector
         ofstream ofh;
+#if !defined( TEST_HARNESS_DIR ) || defined( TEST_HARNESS_SIM_SYNC )
         string simpath = "output/sim_" + gad->simid + "/";
+#else
+        string simpath = "output/"; simpath += TEST_HARNESS_DIR; simpath += "/";
+#endif
         string initpath = simpath + "init/";
         ofh.open(initpath+"Vpu.csv",ofstream::out);
         ofh << std::setprecision(16);
@@ -1316,7 +1326,11 @@ class SELoopWorker {
 
 #ifdef DEBUG_FILES
         // write to file
+#if !defined( TEST_HARNESS_DIR ) || defined( TEST_HARNESS_SIM_SYNC )
         string simpath = "output/sim_" + gad->simid + "/";
+#else
+        string simpath = "output/"; simpath += TEST_HARNESS_DIR; simpath += "/";
+#endif
         state_fh.open(simpath+"vmag_per-unit.csv",ofstream::app);
         state_fh << timestamp << ',';
         uint ctr = 0;
@@ -1356,7 +1370,11 @@ class SELoopWorker {
 
 #ifdef DEBUG_FILES
         // set filename path based on timestamp
+#if !defined( TEST_HARNESS_DIR ) || defined( TEST_HARNESS_SIM_SYNC )
         string simpath = "output/sim_" + gad->simid + "/ts_";
+#else
+        string simpath = "output/"; simpath += TEST_HARNESS_DIR; simpath += "/ts_";
+#endif
         std::ostringstream out;
         out << simpath << timestamp << "/";
         string tspath = out.str();

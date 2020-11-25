@@ -65,6 +65,7 @@ bool blockedFlag = true;
 
 int main(int argc, char** argv) {
 
+#if !defined( TEST_HARNESS_DIR ) || defined (TEST_HARNESS_SIM_SYNC)
     // ------------------------------------------------------------------------
     // INITIALIZE THE STATE ESTIMATOR SESSION WITH RUNTIME ARGS
     // ------------------------------------------------------------------------
@@ -98,7 +99,6 @@ int main(int argc, char** argv) {
     // --------------------------------------------------------------------
     // LISTEN FOR SIMULATION LOG MESSAGES
     // --------------------------------------------------------------------
-
     // simulation status (running, complete) comes from log messages
     string simlogTopic = "goss.gridappsd.simulation.log."+gad.simid;
 
@@ -113,7 +113,6 @@ int main(int argc, char** argv) {
     // --------------------------------------------------------------------
     // LISTEN FOR SIMULATION MEASUREMENTS
     // --------------------------------------------------------------------
-
     // measurements come from either simulation output or sensor-simulator
     string topic = gad.useSensorsForEstimatesFlag?
         "goss.gridappsd.simulation.gridappsd-sensor-simulator."+gad.simid+".output":
@@ -142,6 +141,7 @@ int main(int argc, char** argv) {
         *selog << "\nNOT waiting before continuing with initialization\n" << std::flush;
     }
 #endif
+#endif
 
     // Node bus mRIDs and phases data structures
     SSMAP node_bmrids;
@@ -166,14 +166,12 @@ int main(int argc, char** argv) {
     // --------------------------------------------------------------------
     // MAKE SOME SPARQL QUERIES
     // --------------------------------------------------------------------
-
     // get node bus mRIDs and phases needed to publish results
     state_estimator_util::get_nodes(gad,node_bmrids,node_phs);
 
     // --------------------------------------------------------------------
     // TOPOLOGY PROCESSOR
     // --------------------------------------------------------------------
-
     // Set up the ybus consumer
     string ybusTopic = "goss.gridappsd.se.response."+gad.simid+".ybus";
     TopoProcConsumer ybusConsumer(gad.brokerURI,gad.username,gad.password,ybusTopic,"queue");
@@ -416,11 +414,19 @@ int main(int argc, char** argv) {
     ifs.close();
 #endif
 
+#if !defined( TEST_HARNESS_DIR ) || defined (TEST_HARNESS_SIM_SYNC)
     // Initialize class that does the state estimates
     SELoopWorker loopWorker(&workQueue, &gad, zary, node_qty, node_names,
         node_idxs, node_vnoms, node_bmrids, node_phs, node_name_lookup,
         sbase, Yphys, Amat, regid_primnode_map, regid_regnode_map,
         mmrid_pos_type_map, switch_node1s, switch_node2s);
+#else
+    // Initialize class that does the state estimates
+    SELoopWorker loopWorker(NULL, NULL, zary, node_qty, node_names,
+        node_idxs, node_vnoms, node_bmrids, node_phs, node_name_lookup,
+        sbase, Yphys, Amat, regid_primnode_map, regid_regnode_map,
+        mmrid_pos_type_map, switch_node1s, switch_node2s);
+#endif
 
 #ifdef DEBUG_PRIMARY
     *selog << "Starting the SE work loop\n" << std::flush;
