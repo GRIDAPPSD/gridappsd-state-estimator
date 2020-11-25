@@ -1225,30 +1225,26 @@ class SELoopWorker {
         static bool firstTimeFlag = true;
         ofstream ofh_header, ofh_data;
         string filename;
-
-        if (firstTimeFlag) {
-            filename = "test/measurement_header.csv";
-            ofh_header.open(filename, ofstream::out);
-        }
-
-        filename = "test/measurement_data_" + std::to_string(timestamp) + ".csv";
-        ofh_data.open(filename, ofstream::out);
-        ofh_data << std::setprecision(16);
-
-        for ( auto& zid : zary.zids ) {
-            if (firstTimeFlag)
-                ofh_header << zid << ",";
-
-            ofh_data << zary.zvals[zid] << ",";
-        }
+        uint zctr = 0;
 
         if (firstTimeFlag) {
             firstTimeFlag = false;
-            ofh_header << "\n" << std::flush;
-            ofh_header.close();
-        }
+            ofh_header.open("test/measurement_header.csv", ofstream::out);
 
-        ofh_data << "\n" << std::flush;
+            for ( auto& zid : zary.zids )
+                ofh_header << zid << ( ++zctr < zqty ? "," : "\n" );
+            ofh_header.close();
+
+        }
+        ofh_data.open("test/measurement_data.csv", ofstream::app);
+        ofh_data << std::setprecision(16);
+
+        ofh_data << timestamp << ",";
+
+        zctr = 0;
+        for ( auto& zid : zary.zids )
+            ofh_data << zary.zvals[zid] << ( ++zctr < zqty ? "," : "\n" );
+
         ofh_data.close();
 #endif
 #endif
