@@ -2355,7 +2355,7 @@ class SELoopWorker {
 #endif
 
 #ifdef DEBUG_FILES
-        print_zvals("zvals_sbase1e6_prec8.csv");
+        //print_zvals("zvals_sbase1e6_prec8.csv");
 #endif
     }
 
