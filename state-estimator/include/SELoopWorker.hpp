@@ -442,17 +442,6 @@ class SELoopWorker {
 
     private:
     void init() {
-
-#ifdef DEBUG_FILES
-        *selog << "writing zary ztypes,znodes1s values\n\n" << std::flush;
-        ofstream ofh;
-        ofh.open("zary.csv",ofstream::out);
-        for ( auto& zid: zary.zids ) {
-            ofh << "ztypes: " << zary.ztypes[zid] << ", znode1s: " << zary.znode1s[zid] << ", zvals@init: " << zary.zvals[zid] << "\n";
-        }
-        ofh.close();
-#endif
-
 #ifdef DEBUG_FILES
         // create the output directory if needed
         if (!opendir("output")) {
