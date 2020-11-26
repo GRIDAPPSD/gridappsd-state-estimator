@@ -30,44 +30,8 @@ using json = nlohmann::json;
 #include <time.h>
 #endif
 
-// SLIST holds the lists of node names and regulator names
-#ifndef SLIST
-#define SLIST std::list<std::string>
-#endif
-
-// SIMAP holds the one-indexed positions of nodes
-#ifndef SIMAP
-#define SIMAP std::unordered_map<std::string,unsigned int>
-#endif
-
-// SDMAP holds x, z, and the set of regulator taps
-//#ifndef SDMAP
-//#define SDMAP std::unordered_map<std::string,double>
-//#endif
-
-// SCMAP holds the complex node voltages
-#ifndef SCMAP
-#define SCMAP std::unordered_map<std::string,std::complex<double>>
-#endif
-
-// SSMAP holds the mapping between sensors and nodes
-#ifndef SSMAP
-#define SSMAP std::unordered_map<std::string,std::string>
-#endif
-
-// ICMAP holds the voltage state
-#ifndef ICMAP
-#define ICMAP std::unordered_map<unsigned int,std::complex<double>>
-#endif
-
-// IDMAP holds the state variances
 #ifndef IDMAP
 #define IDMAP std::unordered_map<unsigned int,double>
-#endif
-
-// ISMAP holds the node name lookup table
-#ifndef ISMAP
-#define ISMAP std::unordered_map<unsigned int,std::string>
 #endif
 
 #ifndef IMDMAP
@@ -167,7 +131,6 @@ class SELoopWorker {
 
 #ifdef TEST_HARNESS_DIR
     ifstream meas_fh;   // test harness measurement file
-    string meas_line;
     std::vector<string> meas_zids;
     ofstream results_fh;  // file to record results
 #endif
@@ -245,12 +208,11 @@ class SELoopWorker {
 
         // header line is an ordered list of zids
         // parse measurement file header to get the zids into an STL vector
+        string meas_line;
         getline(meas_fh, meas_line);
         string cell;
         std::stringstream headerStream(meas_line);
-#ifndef TEST_HARNESS_SIM_SYNC
         getline(headerStream, cell, ','); // throwaway timestamp header token
-#endif
         while ( getline(headerStream, cell, ',') )
             meas_zids.push_back(cell);
 #endif
@@ -270,7 +232,25 @@ class SELoopWorker {
 
             // drain the queue with quick z-averaging
             do {
-#if !defined( TEST_HARNESS_DIR ) || defined( TEST_HARNESS_SIM_SYNC )
+#ifdef TEST_HARNESS_DIR
+                if ( getline(meas_fh, meas_line) ) {
+                    if (add_zvals(meas_line, timestamp))
+                        reclosedFlag = true;
+
+                    if (firstEstimateFlag) {
+                        timeZero = timestamp;
+                        // set flag value to increase uncertainty in
+                        // first estimate call
+                        timestampLastEstimate = UINT_MAX;
+                        firstEstimateFlag = false;
+                    }
+                } else {
+#ifdef DEBUG_PRIMARY
+                    *selog << "Reached end of measurement_data.csv file, normal exit\n" << std::flush;
+#endif
+                    exit(0);
+                }
+#else
                 jmessage = workQueue->pop();
 
                 if (jmessage.find("message") != jmessage.end()) {
@@ -285,8 +265,7 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
                     *selog << "Draining workQueue size: " << workQueue->size() << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
 #endif
-#endif
-#ifndef TEST_HARNESS_DIR
+
                     // do z summation here
                     if (add_zvals(jmessage, timestamp))
                         reclosedFlag = true;
@@ -294,28 +273,7 @@ class SELoopWorker {
                     // set flag to indicate a full estimate can be done
                     // if a COMPLETED/CLOSED log message is received
                     doEstimateFlag = true;
-#else
-                    if ( getline(meas_fh, meas_line) ) {
-                        if (add_zvals(jmessage, timestamp))
-                            reclosedFlag = true;
-#ifndef TEST_HARNESS_SIM_SYNC
-                        if (firstEstimateFlag) {
-                            timeZero = timestamp;
-                            // set flag value to increase uncertainty in
-                            // first estimate call
-                            timestampLastEstimate = UINT_MAX;
-                            firstEstimateFlag = false;
-                        }
-#endif
-                    } else {
-#ifdef DEBUG_PRIMARY
-                        *selog << "Reached end of measurement_data.csv file, normal exit\n" << std::flush;
-#endif
-                        exit(0);
-                    }
-#endif
 
-#if !defined( TEST_HARNESS_DIR ) || defined( TEST_HARNESS_SIM_SYNC )
                 } else if (jmessage.find("processStatus") != jmessage.end()) {
                     // only COMPLETE/CLOSED log messages are put on the queue
                     // so process for that case only
@@ -336,9 +294,11 @@ class SELoopWorker {
                         exit(0);
                     }
                 }
-            } while (!workQueue->empty()); // uncomment this to drain queue
-#else
+#endif
+#ifdef TEST_HARNESS_DIR
             } while (false); // uncomment this to fully process all messages
+#else
+            } while (!workQueue->empty()); // uncomment this to drain queue
 #endif
 
             // do z averaging here by dividing sum by # of items
@@ -451,7 +411,7 @@ class SELoopWorker {
         }
 
         // create simulation parent directory
-#if !defined( TEST_HARNESS_DIR ) || defined( TEST_HARNESS_SIM_SYNC )
+#ifdef TEST_HARNESS_DIR
         string simpath = "output/sim_" + gad->simid + "/";
 #else
         string simpath = "output/"; simpath += TEST_HARNESS_DIR; simpath += "/";
@@ -463,7 +423,7 @@ class SELoopWorker {
         mkdir(initpath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 #endif
 
-#if !defined( TEST_HARNESS_DIR ) || defined( TEST_HARNESS_SIM_SYNC )
+#ifndef TEST_HARNESS_DIR
         // Construct the producer that will be used to publish the state estimate
         string sePubTopic = "goss.gridappsd.simulation.state-estimator."+gad->simid+".output";
         statePublisher = new SEProducer(gad->brokerURI,gad->username,gad->password,sePubTopic,"topic");
@@ -908,7 +868,7 @@ class SELoopWorker {
 #ifdef DEBUG_FILES
         // print initial state vector
         ofstream ofh;
-#if !defined( TEST_HARNESS_DIR ) || defined( TEST_HARNESS_SIM_SYNC )
+#ifndef TEST_HARNESS_DIR
         string simpath = "output/sim_" + gad->simid + "/";
 #else
         string simpath = "output/"; simpath += TEST_HARNESS_DIR; simpath += "/";
@@ -993,10 +953,10 @@ class SELoopWorker {
 
 
     private:
-#if defined( TEST_HARNESS_DIR) && !defined( TEST_HARNESS_SIM_SYNC )
-    bool add_zvals(const json& jmessage, uint& timestamp) {
-#else
+#ifndef TEST_HARNESS_DIR
     bool add_zvals(const json& jmessage, const uint& timestamp) {
+#else
+    bool add_zvals(const string& meas_line, uint& timestamp) {
 #endif
         // --------------------------------------------------------------------
         // Use the simulation output to update the states
@@ -1011,11 +971,11 @@ class SELoopWorker {
         std::stringstream lineStream(meas_line);
         string cell, zid;
         uint idx = 0;
-#ifndef TEST_HARNESS_SIM_SYNC
+
         getline(lineStream, cell, ',');
         double doubletime = stod(cell);
         timestamp = (uint)doubletime;
-#endif
+
         while ( getline(lineStream, cell, ',') ) {
             zid = meas_zids[idx++];
             zary.zvals[zid] = stod(cell);
@@ -1043,6 +1003,9 @@ class SELoopWorker {
         // TODO: support switches
 
 #else
+#ifdef TEST_HARNESS_WRITE_FILES
+        SDMAP node_mag, node_ang;
+#endif
         // Next, update new measurements
         for ( auto& m : jmessage["message"]["measurements"] ) {
             // link back to information about the measurement using its mRID
@@ -1055,14 +1018,22 @@ class SELoopWorker {
                     // update the voltage magnitude (in per-unit)
                     string zid = mmrid+"_Vmag";
                     double vmag_phys = m["magnitude"];
+                    double vmag_nom = vmag_phys / abs(node_vnoms[zary.znode1s[zid]]);
+#ifdef TEST_HARNESS_WRITE_FILES
+                    string meas_node = zary.mnodes[mmrid];
+                    node_mag[meas_node] = vmag_nom;
+                    // assumes there is always an angle with the magnitude,
+                    // which isn't the case with sensor simulator measurements
+                    double vang_phys = m["angle"];
+                    double vang_rad = vang_phys*PI/180.0;
+                    node_ang[meas_node] = vang_rad;
+#endif
                     // TODO: This uses vnom filled from OpenDSS values, but needs
                     // to use GridLAB-D values
                     if (zary.znews[zid] == 0)
-                        zary.zvals[zid] =
-                            vmag_phys / abs(node_vnoms[zary.znode1s[zid]]);
+                        zary.zvals[zid] = vmag_nom;
                     else
-                        zary.zvals[zid] +=
-                            vmag_phys / abs(node_vnoms[zary.znode1s[zid]]);
+                        zary.zvals[zid] += vmag_nom;
                     zary.znews[zid]++;
                     zary.ztimes[zid] = timestamp;
                 }
@@ -1079,8 +1050,6 @@ class SELoopWorker {
                     string zid = mmrid+"_tap";
                     double tap_position = m["value"];
                     double tap_ratio = 1.0 + 0.1*tap_position/16.0;
-//                    *selog << "tap_position: " << tap_position 
-//                        << "\ttap_ratio: " << tap_ratio << std::endl;
 
                     if (zary.znews[zid] == 0)
                         zary.zvals[zid] = tap_ratio;
@@ -1219,20 +1188,51 @@ class SELoopWorker {
             //}
         }
 
-#if 000
-        // write measurement_data files from a running simulation for use
+#ifdef TEST_HARNESS_WRITE_FILES
+        // write simulation_data files from a running simulation for use
         // with test harness after manually concatenating them
+        // The simulation_data file is used to plot directly against results
+        // in SE test harness runs without the platform
         static bool firstTimeFlag = true;
         ofstream ofh_header, ofh_data;
         string filename;
-        uint zctr = 0;
+        uint ctr = 0;
+        uint num_nodes = node_names.size();
+
+        if (firstTimeFlag) {
+            //firstTimeFlag = false;
+            ofh_header.open("test/simulation_header.csv", ofstream::out);
+
+            ofh_header << "timestamp,";
+            for ( auto& node_name : node_names )
+                ofh_header << "vmag_" << node_name << ",varg_" << node_name << ( ++ctr < num_nodes ? "," : "\n" );
+            ofh_header.close();
+
+        }
+        ofh_data.open("test/simulation_data.csv", ofstream::app);
+        ofh_data << std::setprecision(16);
+
+        ofh_data << timestamp << ",";
+
+        ctr = 0;
+        for ( auto& node_name : node_names )
+            ofh_data << node_mag[node_name] << "," << node_ang[node_name] << ( ++ctr < num_nodes ? "," : "\n" );
+
+        ofh_data.close();
+
+        // write measurement_data files from a running simulation for use
+        // with test harness after manually concatenating them
+        // The measurement_data file is used to generate estimate results
+        // in SE test harness runs without the platform
+        ctr = 0;
 
         if (firstTimeFlag) {
             firstTimeFlag = false;
             ofh_header.open("test/measurement_header.csv", ofstream::out);
 
+            ofh_header << "timestamp,";
             for ( auto& zid : zary.zids )
-                ofh_header << zid << ( ++zctr < zqty ? "," : "\n" );
+                ofh_header << zid << ( ++ctr < zqty ? "," : "\n" );
             ofh_header.close();
 
         }
@@ -1241,9 +1241,9 @@ class SELoopWorker {
 
         ofh_data << timestamp << ",";
 
-        zctr = 0;
+        ctr = 0;
         for ( auto& zid : zary.zids )
-            ofh_data << zary.zvals[zid] << ( ++zctr < zqty ? "," : "\n" );
+            ofh_data << zary.zvals[zid] << ( ++ctr < zqty ? "," : "\n" );
 
         ofh_data.close();
 #endif
@@ -1261,7 +1261,7 @@ class SELoopWorker {
         
         // Don't publish test harness results because node_bmrids and node_phs
         // weren't initialized
-#if !defined( TEST_HARNESS_DIR ) || defined( TEST_HARNESS_SIM_SYNC )
+#ifndef TEST_HARNESS_DIR
         // Initialize json
         json jstate;
         jstate["simulation_id"] = gad->simid;
@@ -1311,7 +1311,7 @@ class SELoopWorker {
 
 #ifdef DEBUG_FILES
         // write to file
-#if !defined( TEST_HARNESS_DIR ) || defined( TEST_HARNESS_SIM_SYNC )
+#ifndef TEST_HARNESS_DIR
         string simpath = "output/sim_" + gad->simid + "/";
 #else
         string simpath = "output/"; simpath += TEST_HARNESS_DIR; simpath += "/";
@@ -1355,7 +1355,7 @@ class SELoopWorker {
 
 #ifdef DEBUG_FILES
         // set filename path based on timestamp
-#if !defined( TEST_HARNESS_DIR ) || defined( TEST_HARNESS_SIM_SYNC )
+#ifndef TEST_HARNESS_DIR
         string simpath = "output/sim_" + gad->simid + "/ts_";
 #else
         string simpath = "output/"; simpath += TEST_HARNESS_DIR; simpath += "/ts_";

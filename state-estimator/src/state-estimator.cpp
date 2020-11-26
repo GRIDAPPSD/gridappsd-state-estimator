@@ -13,28 +13,13 @@
 // defining USE_NEGL indicates not to store negligable values
 //#define USE_NEGL
 
+// test harness related conditional compilation values
 //#define TEST_HARNESS_DIR "test_4"
 //#define TEST_HARNESS_DIR "test_13assets"
-
-// conditional compilation logic to properly synchronize test harness
-// related symbols
-// TEST_HARNESS_SIM_SYNC indicates whether there is a synchronized simulation
-// running along with reading test harness files so that results can be
-// published and plotted to match running simulation measurements.
-// Setting this indicates that some data is initialized from query responses
-// like node_vnoms, node_bmrids, and node_phs because it is needed to publish
-// data for plotting.  The ieee13nodecktassets model supports this while
-// the 4-bus MATLAB reference model does not because there is not a
-// corresponding GridAPPS-D model.  The value of TEST_HARNESS_SIM_SYNC also
-// indicates whether to read the timestamp for measurement data from file
-// or get it from running simulation message even though the rest of the
-// measurement data is read from the file. It should only be set when
-// TEST_HARNESS_DIR is also set and thus is should remain in the ifdef
-// block below and then TEST_HARNESS_SIM_SYNC should be uncommented and
-// commented out as needed.
 #ifdef TEST_HARNESS_DIR
-//#define TEST_HARNESS_SIM_SYNC
+//#define VNOM_FROM_FILE
 #endif
+//#define TEST_HARNESS_WRITE_FILES
 
 #define PI 3.1415926535
 
@@ -65,7 +50,7 @@ bool blockedFlag = true;
 
 int main(int argc, char** argv) {
 
-#if !defined( TEST_HARNESS_DIR ) || defined (TEST_HARNESS_SIM_SYNC)
+#ifndef TEST_HARNESS_DIR
     // ------------------------------------------------------------------------
     // INITIALIZE THE STATE ESTIMATOR SESSION WITH RUNTIME ARGS
     // ------------------------------------------------------------------------
@@ -209,11 +194,6 @@ int main(int argc, char** argv) {
     vnomConsumer.fillVnom(node_vnoms);
     vnomConsumer.close();
 #else
-#ifdef TEST_HARNESS_SIM_SYNC
-    // get node bus mRIDs and phases needed to publish results
-    state_estimator_util::get_nodes(gad,node_bmrids,node_phs);
-#endif
-
     string filename = TEST_HARNESS_DIR;
     filename += "/ysparse.csv";
 #ifdef DEBUG_PRIMARY
@@ -253,7 +233,7 @@ int main(int argc, char** argv) {
     }
     ifs.close();
 
-#ifdef TEST_HARNESS_SIM_SYNC
+#ifdef VNOM_FROM_FILE
     filename = TEST_HARNESS_DIR;
     filename += "/vnom.csv";
 #ifdef DEBUG_PRIMARY
@@ -414,7 +394,7 @@ int main(int argc, char** argv) {
     ifs.close();
 #endif
 
-#if !defined( TEST_HARNESS_DIR ) || defined (TEST_HARNESS_SIM_SYNC)
+#ifndef TEST_HARNESS_DIR
     // Initialize class that does the state estimates
     SELoopWorker loopWorker(&workQueue, &gad, zary, node_qty, node_names,
         node_idxs, node_vnoms, node_bmrids, node_phs, node_name_lookup,
