@@ -15,9 +15,13 @@
 
 // test harness related conditional compilation values
 //#define TEST_HARNESS_DIR "test_4"
+//#define TEST_HARNESS_DIR "test_4vinj"
 //#define TEST_HARNESS_DIR "test_13assets"
 #ifdef TEST_HARNESS_DIR
+// whether to get node_vnoms from file or hardwire to 1
 //#define VNOM_FROM_FILE
+// "simple" means a model outside GridAPPS-D like the 4-bus MATLAB model
+#define TEST_HARNESS_SIMPLE
 #endif
 //#define TEST_HARNESS_WRITE_FILES
 
@@ -271,7 +275,11 @@ int main(int argc, char** argv) {
     double spower = (double)std::stoi(argv[3]);
     const double sbase = pow(10.0, spower);
 #else
+#ifdef TEST_HARNESS_SIMPLE
+    const double sbase = 1;
+#else
     const double sbase = 1.0e+6;
+#endif
 #endif
 
     // --------------------------------------------------------------------

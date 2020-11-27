@@ -411,7 +411,7 @@ class SELoopWorker {
         }
 
         // create simulation parent directory
-#ifdef TEST_HARNESS_DIR
+#ifndef TEST_HARNESS_DIR
         string simpath = "output/sim_" + gad->simid + "/";
 #else
         string simpath = "output/"; simpath += TEST_HARNESS_DIR; simpath += "/";
@@ -611,7 +611,7 @@ class SELoopWorker {
 #endif
 #ifdef DEBUG_FILES
         // write to file
-        //ofstream ofh;
+        ofstream ofh;
         ofh.open(initpath+"Ypu.csv",ofstream::out);
         ofh << std::setprecision(16);
 
