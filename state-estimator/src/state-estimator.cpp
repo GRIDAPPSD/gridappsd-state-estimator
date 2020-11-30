@@ -24,6 +24,7 @@
 #define TEST_HARNESS_SIMPLE
 #endif
 //#define TEST_HARNESS_WRITE_FILES
+//#define TEST_HARNESS_DEBUG
 
 #define PI 3.1415926535
 
