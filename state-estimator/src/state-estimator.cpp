@@ -16,6 +16,7 @@
 // test harness related conditional compilation values
 //#define TEST_HARNESS_DIR "test_4"
 //#define TEST_HARNESS_DIR "test_4vinj"
+//#define TEST_HARNESS_DIR "test_4net"
 //#define TEST_HARNESS_DIR "test_13assets"
 #ifdef TEST_HARNESS_DIR
 // whether to get node_vnoms from file or hardwire to 1
@@ -26,7 +27,7 @@
 //#define TEST_HARNESS_WRITE_FILES
 //#define TEST_HARNESS_DEBUG
 
-#define PI 3.1415926535
+#define PI 3.141592653589793
 
 #include <iostream>
 

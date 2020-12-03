@@ -1525,6 +1525,7 @@ class SELoopWorker {
 #endif
 
         // -- compute K = P_predict*J'*S^-1
+        // TODO December 21, 2020 CHECK Supd, Kupd between C++ and MATLAB
 
 #ifdef DEBUG_PRIMARY
         double startTime;
@@ -2271,6 +2272,14 @@ class SELoopWorker {
 #endif
                 }
             }
+#ifndef GS_OPTIMIZE
+            // for psuedo-measurements when not using the GS optimized
+            // C-sparse functions, Rraw is created from scratch to need
+            // to re-initialize those values every prep_R call
+            else
+                cs_entry_negl(Rraw,zary.zidxs[zid],zary.zidxs[zid],
+                              zary.zsigs[zid]*zary.zsigs[zid]);
+#endif
         }
 
 #ifndef GS_OPTIMIZE
