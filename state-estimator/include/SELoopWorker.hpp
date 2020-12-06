@@ -65,8 +65,19 @@ using json = nlohmann::json;
 #endif
 #endif
 
+#ifdef TEST_HARNESS_DIR
 // macro to set precision of value to a fixed number of decimal digits
 #define SET_PRECISION(val) round(val*1e+12)/1e+12
+//#define SET_PRECISION(val) round(val*1e+6)/1e+6
+
+double SET_SIGNIFICANT(double value, uint digits) {
+    if (value == 0.0)
+        return 0.0;
+
+    double factor = pow(10.0, digits - ceil(log10(fabs(value))));
+    return round(value*factor)/factor;
+}
+#endif
 
 // This class listens for system state messages
 class SELoopWorker {
@@ -1538,6 +1549,9 @@ class SELoopWorker {
 #else
         double *rhs = (double *)calloc(zqty*zqty, sizeof(double));
 #endif
+#ifdef TEST_HARNESS_DIR
+        double condnum;
+#endif
 
         try {
             // Initialize klusolve variables
@@ -1570,6 +1584,10 @@ class SELoopWorker {
             // KLU condition number estimation
             (void)klu_condest(Supd->p,Supd->x,klusym,klunum,&klucom);
             *selog << "klu_condest Supd condition number estimate: " << klucom.condest << "\n" << std::flush;
+#ifdef TEST_HARNESS_DIR
+            condnum = klucom.condest;
+            *selog << timestamp << "," << condnum << ",SupdCondNum\n" << std::flush;
+#endif
 #endif
 
             // initialize an identity right-hand side
@@ -1634,6 +1652,15 @@ class SELoopWorker {
         cs *K3 = cs_compress(K3raw);
         cs_spfree(K3raw);
         free(rhs);
+#endif
+
+#ifdef TEST_HARNESS_DIR
+       // determine number of significant digits based on condition number
+       uint digits = 15 - floor(log10(condnum));
+       // set all elements of Supd^-1 to the desired number of significant
+       // figures for MATLAB comparison
+       for (uint i=0; i<K3->nzmax; i++)
+           K3->x[i] = SET_SIGNIFICANT(K3->x[i], digits);
 #endif
 
 #ifdef DEBUG_PRIMARY

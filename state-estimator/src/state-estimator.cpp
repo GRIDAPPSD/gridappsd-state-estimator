@@ -17,6 +17,7 @@
 //#define TEST_HARNESS_DIR "test_4"
 //#define TEST_HARNESS_DIR "test_4vinj"
 //#define TEST_HARNESS_DIR "test_4net"
+//#define TEST_HARNESS_DIR "test_4sbase"
 //#define TEST_HARNESS_DIR "test_13assets"
 #ifdef TEST_HARNESS_DIR
 // whether to get node_vnoms from file or hardwire to 1
