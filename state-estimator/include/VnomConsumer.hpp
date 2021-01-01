@@ -91,6 +91,11 @@ class VnomConsumer: public SEConsumer {
         *selog << "Received vnom message of " << text.length() << " bytes\n\n" << std::flush;
 #endif
 
+#ifdef TEST_HARNESS_WRITE_FILES
+        std::ofstream ofs("test/vnom.csv", ofstream::out);
+        ofs << "Nodename,Mag,Arg\n";
+#endif
+
         json jtext = json::parse(text);
 
         bool firstline = true;
@@ -109,34 +114,47 @@ class VnomConsumer: public SEConsumer {
                 string bus = s.substr(0,pos);
                 bus.erase( remove ( bus.begin(), bus.end(), '"' ), bus.end() );
                     s.erase(0,pos+1); pos = s.find(",");
-                double basekv = stod( s.substr(0,pos) );
+                string basekv_str = s.substr(0,pos);
+                double basekv = stod(basekv_str);
                     s.erase(0,pos+1); pos = s.find(",");
 
-                int node1 = stoi( s.substr(0,pos) );
+                string node1_str = s.substr(0,pos);
+                int node1 = stoi(node1_str);
                     s.erase(0,pos+1); pos = s.find(",");
-                double mag1 = stod( s.substr(0,pos) );
+                string mag1_str = s.substr(0,pos);
+                double mag1 = stod(mag1_str);
                     s.erase(0,pos+1); pos = s.find(",");
-                double arg1 = stod( s.substr(0,pos) );
+                string arg1_str = s.substr(0,pos);
+                double arg1 = stod(arg1_str);
                     s.erase(0,pos+1); pos = s.find(",");
-                double vpu1 = stod( s.substr(0,pos) );
-                    s.erase(0,pos+1); pos = s.find(",");
-
-                int node2 = stoi( s.substr(0,pos) );
-                    s.erase(0,pos+1); pos = s.find(",");
-                double mag2 = stod( s.substr(0,pos) );
-                    s.erase(0,pos+1); pos = s.find(",");
-                double arg2 = stod( s.substr(0,pos) );
-                    s.erase(0,pos+1); pos = s.find(",");
-                double vpu2 = stod( s.substr(0,pos) );
+                string vpu1_str = s.substr(0,pos);
+                double vpu1 = stod(vpu1_str);
                     s.erase(0,pos+1); pos = s.find(",");
 
-                int node3 = stoi( s.substr(0,pos) );
+                string node2_str = s.substr(0,pos);
+                int node2 = stoi(node2_str);
                     s.erase(0,pos+1); pos = s.find(",");
-                double mag3 = stod( s.substr(0,pos) );
+                string mag2_str = s.substr(0,pos);
+                double mag2 = stod(mag2_str);
                     s.erase(0,pos+1); pos = s.find(",");
-                double arg3 = stod( s.substr(0,pos) );
+                string arg2_str = s.substr(0,pos);
+                double arg2 = stod(arg2_str);
                     s.erase(0,pos+1); pos = s.find(",");
-                double vpu3 = stod( s.substr(0,pos) );
+                string vpu2_str = s.substr(0,pos);
+                double vpu2 = stod(vpu2_str);
+                    s.erase(0,pos+1); pos = s.find(",");
+
+                string node3_str = s.substr(0,pos);
+                int node3 = stoi(node3_str);
+                    s.erase(0,pos+1); pos = s.find(",");
+                string mag3_str = s.substr(0,pos);
+                double mag3 = stod(mag3_str);
+                    s.erase(0,pos+1); pos = s.find(",");
+                string arg3_str = s.substr(0,pos);
+                double arg3 = stod(arg3_str);
+                    s.erase(0,pos+1); pos = s.find(",");
+                string vpu3_str = s.substr(0,pos);
+                double vpu3 = stod(vpu3_str);
                     s.erase(0,pos+1); pos = s.find(",");
 
                 // Each of the the three nodes is a potential entry
@@ -146,33 +164,45 @@ class VnomConsumer: public SEConsumer {
 
                 // check node1
                 if ( node1 ) {
-                    node = bus + '.' + to_string(node1);
+                    node = bus + '.' + node1_str;
                     vre = mag1 * cos( arg1 * PI/180 );
                     vim = mag1 * sin( arg1 * PI/180);
                     vnom = complex<double>(vre,vim);
                     node_vnoms[node] = vnom;
+#ifdef TEST_HARNESS_WRITE_FILES
+                    ofs << node << "," << mag1_str << "," << arg1_str << "\n";
+#endif
                 }
                 
                 // check node 2
                 if ( node2 ) {
-                    node = bus + '.' + to_string(node2);
+                    node = bus + '.' + node2_str;
                     vre = mag2 * cos( arg2 * PI/180 );
                     vim = mag2 * sin( arg2 * PI/180 );
                     vnom = complex<double>(vre,vim);
                     node_vnoms[node] = vnom;
+#ifdef TEST_HARNESS_WRITE_FILES
+                    ofs << node << "," << mag2_str << "," << arg2_str << "\n";
+#endif
                 }
                 
                 // check node 3
                 if ( node3 ) {
-                    node = bus + '.' + to_string(node3);
+                    node = bus + '.' + node3_str;
                     vre = mag3 * cos( arg3 * PI/180 );
                     vim = mag3 * sin( arg3 * PI/180 );
                     vnom = complex<double>(vre,vim);
                     node_vnoms[node] = vnom;
+#ifdef TEST_HARNESS_WRITE_FILES
+                    ofs << node << "," << mag3_str << "," << arg3_str << "\n";
+#endif
                 }
 
             }
         }
+#ifdef TEST_HARNESS_WRITE_FILES
+        ofs.close();
+#endif
 
         // --------------------------------------------------------------------
         // TOPOLOGY PROCESSING COMPLETE
