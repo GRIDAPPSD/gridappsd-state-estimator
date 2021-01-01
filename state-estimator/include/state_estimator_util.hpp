@@ -318,6 +318,10 @@ namespace state_estimator_util{
                 sparq_ratio_tap_changer_nodes(gad.modelID));
             
         // *selog << jregs.dump(2);
+#ifdef TEST_HARNESS_WRITE_FILES
+        std::ofstream ofs("test/regid.csv", ofstream::out);
+        ofs << "Regid,Primnode,Regnode\n";
+#endif
 
         for ( auto& reg : jregs["data"]["results"]["bindings"] ) {
 
@@ -367,7 +371,14 @@ namespace state_estimator_util{
             string regid = reg["rtcid"]["value"];
             regid_primnode_map[regid] = primnode;
             regid_regnode_map[regid] = regnode;
+
+#ifdef TEST_HARNESS_WRITE_FILES
+            ofs << regid << "," << primnode << "," << regnode << "\n";
+#endif
         }
+#ifdef TEST_HARNESS_WRITE_FILES
+        ofs.close();
+#endif
     }
 
     void build_term_bus_map(gridappsd_session& gad, SSMAP& term_bus_map) {
