@@ -94,13 +94,8 @@ class TopoProcConsumer : public SEConsumer {
         *selog << "Received ybus message of " << text.length() << " bytes\n\n" << std::flush;
 #endif
 
-#if 000
-        // dump message into file to use to be able to manually create the
-        // ysparse.csv and nodelist.csv files for test harness testing
-        std::ofstream ofs("ybus_test.json");
-        ofs << text << '\n';
-        ofs.close();
-        exit(0);
+#ifdef TEST_HARNESS_WRITE_FILES
+        std::ofstream ofs("test/ysparse.csv", ofstream::out);
 #endif
 
         json jtext = json::parse(text);
@@ -111,9 +106,12 @@ class TopoProcConsumer : public SEConsumer {
         // This is actually a list of lines from ysparse
         json jlines_ysparse = jtext["data"]["yParse"];
         for ( auto& jline : jlines_ysparse ) {
+            line = jline;
+#ifdef TEST_HARNESS_WRITE_FILES
+            ofs << line << "\n";
+#endif
             if (firstline) firstline = false;
             else {
-                line = jline;
                 // split the line {Row,Col,G,B}
                 std::stringstream lineStream(line);
                 string cell;
@@ -130,9 +128,17 @@ class TopoProcConsumer : public SEConsumer {
         *selog << "complete.\n\n" << std::flush;
         *selog << "Parsing nodelist -- " << std::flush;
 #endif
+#ifdef TEST_HARNESS_WRITE_FILES
+        ofs.close();
+        ofs.open("test/nodelist.csv", ofstream::out);
+#endif
+
         json jlines_nodelist = jtext["data"]["nodeList"];
         for ( auto& jline : jlines_nodelist ) {
-            string line = jline;
+            line = jline;
+#ifdef TEST_HARNESS_WRITE_FILES
+            ofs << line << "\n";
+#endif
             // Extract the node name
             string node_name = regex_replace(line,regex("\""),"");
             // Store the node information
@@ -142,6 +148,9 @@ class TopoProcConsumer : public SEConsumer {
         }
 #ifdef DEBUG_PRIMARY
         *selog << "complete.\n\n" << std::flush;
+#endif
+#ifdef TEST_HARNESS_WRITE_FILES
+        ofs.close();
 #endif
 //        // print
 //        for ( auto& inode : node_names ) {
