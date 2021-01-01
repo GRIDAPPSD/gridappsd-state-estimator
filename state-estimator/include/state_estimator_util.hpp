@@ -174,6 +174,10 @@ namespace state_estimator_util{
         for ( auto& c : sourcebus ) c = toupper(c);
         string source_node_prefix = sourcebus + ".";
 
+#ifdef TEST_HARNESS_WRITE_FILES
+        // append to the existing measurements.csv started by SensorDefConsumer
+        std::ofstream ofs("test/measurements.csv", ofstream::app);
+#endif
 
         for ( auto& node : node_names ) {
 
@@ -192,6 +196,9 @@ namespace state_estimator_util{
                 zary.zsigs   [vmag_zid] = 0.001; // 1 sigma = 0.1%
                 zary.zpseudos[vmag_zid] = true;
                 zary.znomvals[vmag_zid] = zary.zvals[vmag_zid];
+#ifdef TEST_HARNESS_WRITE_FILES
+                ofs << zary.ztypes[vmag_zid] << "," << vmag_zid << "," << zary.znode1s[vmag_zid] << "," << zary.znode2s[vmag_zid] << "," << zary.zvals[vmag_zid] << "," << zary.zsigs[vmag_zid] << ",1," << zary.znomvals[vmag_zid] << "\n";
+#endif
 
 //                *selog << "**Source Bus node: " << node << '\n' << std::flush;
 //                *selog << "\tsource_node_prefix: " << source_node_prefix << '\n' << std::flush;
@@ -207,6 +214,9 @@ namespace state_estimator_util{
                 zary.zsigs   [varg_zid] = 0.01;
                 zary.zpseudos[varg_zid] = true;
                 zary.znomvals[varg_zid] = zary.zvals[varg_zid];
+#ifdef TEST_HARNESS_WRITE_FILES
+                ofs << zary.ztypes[varg_zid] << "," << varg_zid << "," << zary.znode1s[varg_zid] << "," << zary.znode2s[varg_zid] << "," << zary.zvals[varg_zid] << "," << zary.zsigs[varg_zid] << ",1," << zary.znomvals[varg_zid] << "\n";
+#endif
             }
 
             else {
@@ -224,6 +234,9 @@ namespace state_estimator_util{
                     loss_ratio*(nominal_systemP/sbase)/node_names.size(); // load + leakage
                 zary.zpseudos[pinj_zid] = true;
                 zary.znomvals[pinj_zid] = zary.zvals[pinj_zid];
+#ifdef TEST_HARNESS_WRITE_FILES
+                ofs << zary.ztypes[pinj_zid] << "," << pinj_zid << "," << zary.znode1s[pinj_zid] << "," << zary.znode2s[pinj_zid] << "," << zary.zvals[pinj_zid] << "," << zary.zsigs[pinj_zid] << ",1," << zary.znomvals[pinj_zid] << "\n";
+#endif
 
 //                *selog << "NON-Source Bus node: " << node << '\n' << std::flush;
 //                *selog << "\tsource_node_prefix: " << source_node_prefix << '\n' << std::flush;
@@ -240,8 +253,14 @@ namespace state_estimator_util{
                     loss_ratio*(nominal_systemQ/sbase)/node_names.size(); // load + leakage
                 zary.zpseudos[qinj_zid] = true;
                 zary.znomvals[qinj_zid] = zary.zvals[qinj_zid];
+#ifdef TEST_HARNESS_WRITE_FILES
+                ofs << zary.ztypes[qinj_zid] << "," << qinj_zid << "," << zary.znode1s[qinj_zid] << "," << zary.znode2s[qinj_zid] << "," << zary.zvals[qinj_zid] << "," << zary.zsigs[qinj_zid] << ",1," << zary.znomvals[qinj_zid] << "\n";
+#endif
             }
         }
+#ifdef TEST_HARNESS_WRITE_FILES
+        ofs.close();
+#endif
     }
 
 

@@ -105,6 +105,11 @@ class SensorDefConsumer : public SEConsumer {
         *selog << "Received sensor message of " << text.length() << " bytes\n\n" << std::flush;
 #endif
 
+#ifdef TEST_HARNESS_WRITE_FILES
+        std::ofstream ofs("test/measurements.csv", ofstream::out);
+        ofs << "ztype,zid,znode1,znode2,zval,zsig,zpseudo,znomval\n";
+#endif
+
         json jtext = json::parse(text);
         //cout << jtext.dump(2) << endl;
 
@@ -148,6 +153,10 @@ class SensorDefConsumer : public SEConsumer {
                     zary.zsigs[zid] = 0.01;    // 1 sigma = 1%
                     zary.zvals[zid] = 1.0;
                     zary.znomvals[zid] = zary.zvals[zid];
+#ifdef TEST_HARNESS_WRITE_FILES
+                    ofs << zary.ztypes[zid] << "," << zid << "," << zary.znode1s[zid] << "," << zary.znode2s[zid] << "," << zary.zvals[zid] << "," << zary.zsigs[zid] << ",0," << zary.znomvals[zid] << "\n";
+#endif
+
 
                     // add the voltage phase measurement
                     // --- LATER ---
@@ -186,6 +195,9 @@ class SensorDefConsumer : public SEConsumer {
                         zary.zsigs[zid] = 0.001; // 1% of span
                         zary.zvals[zid] = 1.0;
                         zary.znomvals[zid] = zary.zvals[zid];
+#ifdef TEST_HARNESS_WRITE_FILES
+                        ofs << zary.ztypes[zid] << "," << zid << "," << zary.znode1s[zid] << "," << zary.znode2s[zid] << "," << zary.zvals[zid] << "," << zary.zsigs[zid] << ",0," << zary.znomvals[zid] << "\n";
+#endif
 
 //                        *selog << m.dump(2);
 //                        *selog << "primnode: " << primnode << std::endl;
@@ -267,6 +279,11 @@ class SensorDefConsumer : public SEConsumer {
                         double zsig_Qinj = node_nominal_Qinj_map[meas_node]*0.01/sbase;
                         zary.zsigs[qinj_zid] = sqrt(zary.zsigs[qinj_zid]*zary.zsigs[qinj_zid] + zsig_Qinj*zsig_Qinj);    // 1 sigma = 1% of nominal
                         zary.znomvals[qinj_zid] += zary.zvals[qinj_zid];
+
+#ifdef TEST_HARNESS_WRITE_FILES
+                        ofs << zary.ztypes[pinj_zid] << "," << pinj_zid << "," << zary.znode1s[pinj_zid] << "," << zary.znode2s[pinj_zid] << "," << zary.zvals[pinj_zid] << "," << zary.zsigs[pinj_zid] << ",0," << zary.znomvals[pinj_zid] << "\n";
+                        ofs << zary.ztypes[qinj_zid] << "," << qinj_zid << "," << zary.znode1s[qinj_zid] << "," << zary.znode2s[qinj_zid] << "," << zary.zvals[qinj_zid] << "," << zary.zsigs[qinj_zid] << ",0," << zary.znomvals[qinj_zid] << "\n";
+#endif
     
                     } else if (!ce_type.compare("LinearShuntCompensator")) {
                     }
@@ -282,6 +299,9 @@ class SensorDefConsumer : public SEConsumer {
                 }
             }
         }
+#ifdef TEST_HARNESS_WRITE_FILES
+        ofs.close();
+#endif
 
         // --------------------------------------------------------------------
         // SENSOR INITIALIZATION COMPLETE
