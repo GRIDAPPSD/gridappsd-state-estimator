@@ -67,8 +67,9 @@ using json = nlohmann::json;
 
 #ifdef TEST_HARNESS_DIR
 // macro to set precision of value to a fixed number of decimal digits
-#define SET_PRECISION(val) round(val*1e+12)/1e+12
-//#define SET_PRECISION(val) round(val*1e+6)/1e+6
+#define SET_PRECISION12(val) round(val*1e+12)/1e+12
+#define SET_PRECISION8(val) round(val*1e+8)/1e+8
+//#define SET_PRECISION6(val) round(val*1e+6)/1e+6
 
 double SET_SIGNIFICANT(double value, uint digits) {
     if (value == 0.0)
@@ -1207,19 +1208,19 @@ class SELoopWorker {
         // The simulation_data file is used to plot directly against results
         // in SE test harness runs without the platform
         static bool firstTimeFlag = true;
-        ofstream ofh_header, ofh_data;
+        ofstream ofh_data;
         string filename;
         uint ctr = 0;
         uint num_nodes = node_names.size();
 
         if (firstTimeFlag) {
             //firstTimeFlag = false;
-            ofh_header.open("test/simulation_header.csv", ofstream::out);
+            ofh_data.open("test/simulation_data.csv", ofstream::out);
 
-            ofh_header << "timestamp,";
+            ofh_data << "timestamp,";
             for ( auto& node_name : node_names )
-                ofh_header << "vmag_" << node_name << ",varg_" << node_name << ( ++ctr < num_nodes ? "," : "\n" );
-            ofh_header.close();
+                ofh_data << "vmag_" << node_name << ",varg_" << node_name << ( ++ctr < num_nodes ? "," : "\n" );
+            ofh_data.close();
 
         }
         ofh_data.open("test/simulation_data.csv", ofstream::app);
@@ -1241,12 +1242,12 @@ class SELoopWorker {
 
         if (firstTimeFlag) {
             firstTimeFlag = false;
-            ofh_header.open("test/measurement_header.csv", ofstream::out);
+            ofh_data.open("test/measurement_data.csv", ofstream::out);
 
-            ofh_header << "timestamp,";
+            ofh_data << "timestamp,";
             for ( auto& zid : zary.zids )
-                ofh_header << zid << ( ++ctr < zqty ? "," : "\n" );
-            ofh_header.close();
+                ofh_data << zid << ( ++ctr < zqty ? "," : "\n" );
+            ofh_data.close();
 
         }
         ofh_data.open("test/measurement_data.csv", ofstream::app);
@@ -1695,6 +1696,10 @@ class SELoopWorker {
         if ( Kupd ) *selog << "Kupd is " << Kupd->m << " by " << Kupd->n <<
                 " with " << Kupd->nzmax << " entries\n" << std::flush;
 #endif
+#ifdef TEST_HARNESS_DIR
+       for (uint i=0; i<Kupd->nzmax; i++)
+           Kupd->x[i] = SET_PRECISION8(Kupd->x[i]);
+#endif
 #ifdef DEBUG_FILES
         print_cs_compress(Kupd,tspath+"Kupd.csv");
         //print_cs_compress_triples(Kupd, "Kupd_sbase1e12_trip.csv", 4);
@@ -1727,6 +1732,10 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
         else *selog << "yupd is " << yupd->m << " by " << yupd->n <<
             " with " << yupd->nzmax << " entries\n" << std::flush;
+#endif
+#ifdef TEST_HARNESS_DIR
+       for (uint i=0; i<yupd->nzmax; i++)
+           yupd->x[i] = SET_PRECISION8(yupd->x[i]);
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(yupd,tspath+"yupd.csv");
@@ -1988,9 +1997,9 @@ class SELoopWorker {
             uint Tidx = node_qty + vidx;
             double vrei = xvec[vidx] * cos(xvec[Tidx]);
             double vimi = xvec[vidx] * sin(xvec[Tidx]);
-#ifdef SET_PRECISION
-            vrei = SET_PRECISION(vrei);
-            vimi = SET_PRECISION(vimi);
+#ifdef SET_PRECISION12
+            vrei = SET_PRECISION12(vrei);
+            vimi = SET_PRECISION12(vimi);
 #endif
             Vpu[idx] = complex<double>(vrei,vimi);
         }
@@ -2054,9 +2063,9 @@ class SELoopWorker {
             uint idx = node_idxs[node_name];
             double uvmag = uvec[idx-1];
             double uvarg = uvec[node_qty + idx-1];
-#ifdef SET_PRECISION
-            uvmag = SET_PRECISION(uvmag);
-            uvarg = SET_PRECISION(uvarg);
+#ifdef SET_PRECISION12
+            uvmag = SET_PRECISION12(uvmag);
+            uvarg = SET_PRECISION12(uvarg);
 #endif
             Uvmag[idx] = uvmag;
             Uvarg[idx] = uvarg;
