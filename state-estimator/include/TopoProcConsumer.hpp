@@ -136,11 +136,11 @@ class TopoProcConsumer : public SEConsumer {
         json jlines_nodelist = jtext["data"]["nodeList"];
         for ( auto& jline : jlines_nodelist ) {
             line = jline;
-#ifdef TEST_HARNESS_WRITE_FILES
-            ofs << line << "\n";
-#endif
             // Extract the node name
-            string node_name = regex_replace(line,regex("\""),"");
+            string node_name = line.substr(1, line.size()-2);
+#ifdef TEST_HARNESS_WRITE_FILES
+            ofs << node_name << "\n";
+#endif
             // Store the node information
             node_names.push_back(node_name);
             node_idxs[node_name] = ++node_qty;
