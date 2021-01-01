@@ -68,7 +68,7 @@ using json = nlohmann::json;
 #ifdef TEST_HARNESS_DIR
 // macro to set precision of value to a fixed number of decimal digits
 #define SET_PRECISION12(val) round(val*1e+12)/1e+12
-#define SET_PRECISION8(val) round(val*1e+8)/1e+8
+//#define SET_PRECISION8(val) round(val*1e+8)/1e+8
 //#define SET_PRECISION6(val) round(val*1e+6)/1e+6
 
 double SET_SIGNIFICANT(double value, uint digits) {
@@ -1697,8 +1697,9 @@ class SELoopWorker {
                 " with " << Kupd->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef TEST_HARNESS_DIR
-       for (uint i=0; i<Kupd->nzmax; i++)
-           Kupd->x[i] = SET_PRECISION8(Kupd->x[i]);
+       // Commented out this precision limiting code per Andy request 2/3/21
+       //for (uint i=0; i<Kupd->nzmax; i++)
+       //    Kupd->x[i] = SET_PRECISION8(Kupd->x[i]);
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(Kupd,tspath+"Kupd.csv");
@@ -1734,8 +1735,9 @@ class SELoopWorker {
             " with " << yupd->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef TEST_HARNESS_DIR
-       for (uint i=0; i<yupd->nzmax; i++)
-           yupd->x[i] = SET_PRECISION8(yupd->x[i]);
+       // Commented out this precision limiting code per Andy request 2/3/21
+       //for (uint i=0; i<yupd->nzmax; i++)
+       //    yupd->x[i] = SET_PRECISION8(yupd->x[i]);
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(yupd,tspath+"yupd.csv");
