@@ -95,7 +95,7 @@ class TopoProcConsumer : public SEConsumer {
 #endif
 
 #ifdef TEST_HARNESS_WRITE_FILES
-        std::ofstream ofs("test/ysparse.csv", ofstream::out);
+        std::ofstream ofs("test_files/ysparse.csv", ofstream::out);
 #endif
 
         json jtext = json::parse(text);
@@ -130,7 +130,7 @@ class TopoProcConsumer : public SEConsumer {
 #endif
 #ifdef TEST_HARNESS_WRITE_FILES
         ofs.close();
-        ofs.open("test/nodelist.csv", ofstream::out);
+        ofs.open("test_files/nodelist.csv", ofstream::out);
 #endif
 
         json jlines_nodelist = jtext["data"]["nodeList"];

@@ -176,7 +176,7 @@ namespace state_estimator_util{
 
 #ifdef TEST_HARNESS_WRITE_FILES
         // append to the existing measurements.csv started by SensorDefConsumer
-        std::ofstream ofs("test/measurements.csv", ofstream::app);
+        std::ofstream ofs("test_files/measurements.csv", ofstream::app);
 #endif
 
         for ( auto& node : node_names ) {
@@ -338,7 +338,7 @@ namespace state_estimator_util{
             
         // *selog << jregs.dump(2);
 #ifdef TEST_HARNESS_WRITE_FILES
-        std::ofstream ofs("test/regid.csv", ofstream::out);
+        std::ofstream ofs("test_files/regid.csv", ofstream::out);
         ofs << "Regid,Primnode,Regnode\n";
 #endif
 

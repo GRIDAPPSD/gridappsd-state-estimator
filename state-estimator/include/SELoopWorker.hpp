@@ -1215,7 +1215,7 @@ class SELoopWorker {
 
         if (firstTimeFlag) {
             //firstTimeFlag = false;
-            ofh_data.open("test/simulation_data.csv", ofstream::out);
+            ofh_data.open("test_files/simulation_data.csv", ofstream::out);
 
             ofh_data << "timestamp,";
             for ( auto& node_name : node_names )
@@ -1223,7 +1223,7 @@ class SELoopWorker {
             ofh_data.close();
 
         }
-        ofh_data.open("test/simulation_data.csv", ofstream::app);
+        ofh_data.open("test_files/simulation_data.csv", ofstream::app);
         ofh_data << std::setprecision(16);
 
         ofh_data << timestamp << ",";
@@ -1242,7 +1242,7 @@ class SELoopWorker {
 
         if (firstTimeFlag) {
             firstTimeFlag = false;
-            ofh_data.open("test/measurement_data.csv", ofstream::out);
+            ofh_data.open("test_files/measurement_data.csv", ofstream::out);
 
             ofh_data << "timestamp,";
             for ( auto& zid : zary.zids )
@@ -1250,7 +1250,7 @@ class SELoopWorker {
             ofh_data.close();
 
         }
-        ofh_data.open("test/measurement_data.csv", ofstream::app);
+        ofh_data.open("test_files/measurement_data.csv", ofstream::app);
         ofh_data << std::setprecision(16);
 
         ofh_data << timestamp << ",";

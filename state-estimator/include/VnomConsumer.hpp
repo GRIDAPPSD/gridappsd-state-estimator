@@ -92,7 +92,7 @@ class VnomConsumer: public SEConsumer {
 #endif
 
 #ifdef TEST_HARNESS_WRITE_FILES
-        std::ofstream ofs("test/vnom.csv", ofstream::out);
+        std::ofstream ofs("test_files/vnom.csv", ofstream::out);
         ofs << "Nodename,Mag,Arg\n";
 #endif
 
