@@ -82,6 +82,10 @@ namespace state_estimator_util{
                 SLIST& node_names, SCMAP& node_vnoms, const double sbase) {
         json jpsm = sparql_query(gad,"psm",sparq_energy_consumer_pq(gad.modelID));
 
+#ifdef DEBUG_PRIMARY
+        *selog << "Inserting pseudo measurements -- " << std::flush;
+#endif
+
         // Initialize containers to hold pseudo-measurements
         SDMAP pseudoP, pseudoQ;
         double nominal_systemP = 0;
@@ -261,6 +265,9 @@ namespace state_estimator_util{
 #ifdef TEST_HARNESS_WRITE_FILES
         ofs.close();
 #endif
+#ifdef DEBUG_PRIMARY
+        *selog << "complete.\n\n" << std::flush;
+#endif
     }
 
 
@@ -333,6 +340,10 @@ namespace state_estimator_util{
             SSMAP& reg_cemrid_primbus_map, SSMAP& reg_cemrid_regbus_map,
             SSMAP& regid_primnode_map, SSMAP& regid_regnode_map) {
 
+#ifdef DEBUG_PRIMARY
+        *selog << "Building A matrix -- " << std::flush;
+#endif
+
         json jregs = sparql_query(gad,"regs",
                 sparq_ratio_tap_changer_nodes(gad.modelID));
             
@@ -397,6 +408,9 @@ namespace state_estimator_util{
         }
 #ifdef TEST_HARNESS_WRITE_FILES
         ofs.close();
+#endif
+#ifdef DEBUG_PRIMARY
+        *selog << "complete.\n\n" << std::flush;
 #endif
     }
 

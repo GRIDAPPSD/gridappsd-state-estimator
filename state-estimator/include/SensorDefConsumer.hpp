@@ -113,6 +113,10 @@ class SensorDefConsumer : public SEConsumer {
         json jtext = json::parse(text);
         //cout << jtext.dump(2) << endl;
 
+#ifdef DEBUG_PRIMARY
+        *selog << "Parsing sensors -- " << std::flush;
+#endif
+
         // --------------------------------------------------------------------
         // LOAD THE SENSORS -- sensors will deliver measurements
         // --------------------------------------------------------------------
@@ -307,7 +311,7 @@ class SensorDefConsumer : public SEConsumer {
         // SENSOR INITIALIZATION COMPLETE
         // --------------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-        *selog << "Sensor initialization complete.\n\n" << std::flush;
+        *selog << "complete.\n\n" << std::flush;
 #endif
         // release latch
         doneLatch.countDown();

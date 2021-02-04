@@ -98,6 +98,10 @@ class VnomConsumer: public SEConsumer {
 
         json jtext = json::parse(text);
 
+#ifdef DEBUG_PRIMARY
+        *selog << "Parsing vnom -- " << std::flush;
+#endif
+
         bool firstline = true;
         for ( auto& jline : jtext["data"]["vnom"] ) {
             if (firstline) firstline = false;
@@ -202,6 +206,10 @@ class VnomConsumer: public SEConsumer {
         }
 #ifdef TEST_HARNESS_WRITE_FILES
         ofs.close();
+#endif
+
+#ifdef DEBUG_PRIMARY
+        *selog << "complete.\n\n" << std::flush;
 #endif
 
         // --------------------------------------------------------------------
