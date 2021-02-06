@@ -311,7 +311,7 @@ class SELoopWorker {
                     }
                 }
 #endif
-#ifdef TEST_HARNESS_DIR
+#if defined(TEST_HARNESS_DIR) || defined(TEST_HARNESS_WRITE_FILES)
             } while (false); // uncomment this to fully process all messages
 #else
             } while (!workQueue->empty()); // uncomment this to drain queue
