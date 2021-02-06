@@ -146,6 +146,8 @@ class SELoopWorker {
 #ifdef TEST_HARNESS_DIR
     ifstream meas_fh;   // test harness measurement file
     std::vector<string> meas_zids;
+#endif
+#if defined(TEST_HARNESS_DIR) || defined(TEST_HARNESS_WRITE_FILES)
     ofstream results_fh;  // file to record results
 #endif
 
@@ -846,8 +848,12 @@ class SELoopWorker {
             state_fh << "\'"+node_name+"\'" << ( ++nctr < node_qty ? "," : "\n" );
         state_fh.close();
 #endif
+#if defined(TEST_HARNESS_DIR) || defined(TEST_HARNESS_WRITE_FILES)
 #ifdef TEST_HARNESS_DIR
         string filename = TEST_HARNESS_DIR;
+#else
+        string filename = "test_files";
+#endif
         filename += "/results_data.csv";
 #ifdef DEBUG_PRIMARY
         *selog << "Writing results to test harness file: " << filename << "\n\n" << std::flush;
@@ -1204,7 +1210,7 @@ class SELoopWorker {
 
 #ifdef TEST_HARNESS_WRITE_FILES
         // write simulation_data files from a running simulation for use
-        // with test harness after manually concatenating them
+        // with test harness
         // The simulation_data file is used to plot directly against results
         // in SE test harness runs without the platform
         static bool firstTimeFlag = true;
@@ -1235,7 +1241,7 @@ class SELoopWorker {
         ofh_data.close();
 
         // write measurement_data files from a running simulation for use
-        // with test harness after manually concatenating them
+        // with test harness
         // The measurement_data file is used to generate estimate results
         // in SE test harness runs without the platform
         ctr = 0;
@@ -1339,8 +1345,12 @@ class SELoopWorker {
         }
         state_fh.close();
 #endif
+#if defined(TEST_HARNESS_DIR) || defined(TEST_HARNESS_WRITE_FILES)
 #ifdef TEST_HARNESS_DIR
         string filename = TEST_HARNESS_DIR;
+#else
+        string filename = "test_files";
+#endif
         filename += "/results_data.csv";
         results_fh.open(filename,ofstream::app);
 
