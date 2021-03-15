@@ -169,8 +169,8 @@ class VnomConsumer: public SEConsumer {
                 // check node1
                 if ( node1 ) {
                     node = bus + '.' + node1_str;
-                    vre = mag1 * cos( arg1 * PI/180 );
-                    vim = mag1 * sin( arg1 * PI/180);
+                    vre = mag1 * cos( arg1 * PI/180.0 );
+                    vim = mag1 * sin( arg1 * PI/180.0 );
                     vnom = complex<double>(vre,vim);
                     node_vnoms[node] = vnom;
 #ifdef TEST_HARNESS_WRITE_FILES
@@ -181,8 +181,8 @@ class VnomConsumer: public SEConsumer {
                 // check node 2
                 if ( node2 ) {
                     node = bus + '.' + node2_str;
-                    vre = mag2 * cos( arg2 * PI/180 );
-                    vim = mag2 * sin( arg2 * PI/180 );
+                    vre = mag2 * cos( arg2 * PI/180.0 );
+                    vim = mag2 * sin( arg2 * PI/180.0 );
                     vnom = complex<double>(vre,vim);
                     node_vnoms[node] = vnom;
 #ifdef TEST_HARNESS_WRITE_FILES
@@ -193,8 +193,8 @@ class VnomConsumer: public SEConsumer {
                 // check node 3
                 if ( node3 ) {
                     node = bus + '.' + node3_str;
-                    vre = mag3 * cos( arg3 * PI/180 );
-                    vim = mag3 * sin( arg3 * PI/180 );
+                    vre = mag3 * cos( arg3 * PI/180.0 );
+                    vim = mag3 * sin( arg3 * PI/180.0 );
                     vnom = complex<double>(vre,vim);
                     node_vnoms[node] = vnom;
 #ifdef TEST_HARNESS_WRITE_FILES

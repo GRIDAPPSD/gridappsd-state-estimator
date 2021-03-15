@@ -1361,7 +1361,7 @@ class SELoopWorker {
         for ( auto& node_name : node_names ) {
             double vmag_pu = abs( Vpu[ node_idxs[node_name] ] );
             double varg_pu = arg( Vpu[ node_idxs[node_name] ] );
-            results_fh << vmag_pu << "," << varg_pu << ( ++ctr2 < node_qty ? "," : "\n" );
+            results_fh << vmag_pu << "," << varg_pu*180.0/PI << ( ++ctr2 < node_qty ? "," : "\n" );
         }
         results_fh.close();
 #endif
