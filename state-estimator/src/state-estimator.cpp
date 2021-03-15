@@ -19,9 +19,16 @@
 //#define TEST_HARNESS_DIR "test_4net"
 //#define TEST_HARNESS_DIR "test_4sbase"
 //#define TEST_HARNESS_DIR "test_13assets"
+//#define TEST_HARNESS_DIR "test_11full"
+//#define TEST_HARNESS_DIR "test_11diff"
+//#define TEST_HARNESS_DIR "test_11noQ"
+//#define TEST_HARNESS_DIR "test_4withB"
+//#define TEST_HARNESS_DIR "test_4woB"
+//#define TEST_HARNESS_DIR "test_11big"
+//#define TEST_HARNESS_DIR "test_3p6"
 #ifdef TEST_HARNESS_DIR
 // whether to get node_vnoms from file or hardwire to 1
-//#define VNOM_FROM_FILE
+#define VNOM_FROM_FILE
 // "simple" means a model outside GridAPPS-D like the 4-bus MATLAB model
 #define TEST_HARNESS_SIMPLE
 #endif
@@ -254,8 +261,8 @@ int main(int argc, char** argv) {
         getline(lineStream, node, ',');
         getline(lineStream, cell, ','); double mag = stod(cell);
         getline(lineStream, cell, ','); double arg = stod(cell);
-        double vre = mag * cos( arg * PI/180 );
-        double vim = mag * sin( arg * PI/180);
+        double vre = mag * cos( arg * PI/180.0 );
+        double vim = mag * sin( arg * PI/180.0 );
         complex<double> vnom = complex<double>(vre,vim);
         node_vnoms[node] = vnom;
     }
