@@ -1,6 +1,9 @@
 #define DIAGONAL_P
 #define SWITCHES
 //#define NET_INJECTION
+#ifdef NET_INJECTION
+//#define COMPARE_INJ_MEAS
+#endif
 
 #define DEBUG_PRIMARY
 //#define DEBUG_FILES
@@ -26,6 +29,7 @@
 //#define TEST_HARNESS_DIR "test_4woB"
 //#define TEST_HARNESS_DIR "test_11big"
 //#define TEST_HARNESS_DIR "test_3p6"
+//#define TEST_HARNESS_DIR "test_3p6pseudo"
 #ifdef TEST_HARNESS_DIR
 // whether to get node_vnoms from file or hardwire to 1
 #define VNOM_FROM_FILE

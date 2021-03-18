@@ -1267,6 +1267,19 @@ class SELoopWorker {
 
         ofh_data.close();
 #endif
+
+#ifdef COMPARE_INJ_MEAS
+        *selog << "timestamp";
+        for (auto& node : zary.injnodes )
+            *selog << ",pseudo_P_"+node << "," << "pseudo_Q_"+node << "," << node+"_Pinj" << "," << node+"_Qinj";
+        *selog << "\n";
+
+        *selog << timestamp;
+        for (auto& node : zary.injnodes )
+            *selog << "," << sbase*zary.zvals["pseudo_P_"+node] << "," << sbase*zary.zvals["pseudo_Q_"+node] << "," << sbase*zary.zvals[node+"_Pinj"] << "," << sbase*zary.zvals[node+"_Qinj"];
+        *selog << "\n" << std::flush;
+#endif
+
 #endif
 
         return ret;

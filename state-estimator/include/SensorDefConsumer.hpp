@@ -265,7 +265,7 @@ class SensorDefConsumer : public SEConsumer {
 
                             // assumes pinj and qinj are only added together
                             // allowing a second find() call to be eliminated
-                               // add the reactive power injection measurement
+                            // add the reactive power injection measurement
                             zary.zids.push_back( qinj_zid );
                             zary.zidxs[qinj_zid] = zary.zqty++;
                             zary.ztypes[qinj_zid] = "Qi";
@@ -274,6 +274,7 @@ class SensorDefConsumer : public SEConsumer {
                         }
 
                         // use nominal load for node from SPARQL query for zvals
+
                         zary.zvals[pinj_zid] -= node_nominal_Pinj_map[meas_node]/(2.0*sbase);
                         double zsig_Pinj = node_nominal_Pinj_map[meas_node]*0.01/sbase;
                         zary.zsigs[pinj_zid] = sqrt(zary.zsigs[pinj_zid]*zary.zsigs[pinj_zid] + zsig_Pinj*zsig_Pinj);    // 1 sigma = 1% of nominal
@@ -288,7 +289,9 @@ class SensorDefConsumer : public SEConsumer {
                         ofs << zary.ztypes[pinj_zid] << "," << pinj_zid << "," << zary.znode1s[pinj_zid] << "," << zary.znode2s[pinj_zid] << "," << zary.zvals[pinj_zid] << "," << zary.zsigs[pinj_zid] << ",0," << zary.znomvals[pinj_zid] << "\n";
                         ofs << zary.ztypes[qinj_zid] << "," << qinj_zid << "," << zary.znode1s[qinj_zid] << "," << zary.znode2s[qinj_zid] << "," << zary.zvals[qinj_zid] << "," << zary.zsigs[qinj_zid] << ",0," << zary.znomvals[qinj_zid] << "\n";
 #endif
-    
+#ifdef COMPARE_INJ_MEAS
+                        zary.injnodes.push_back( meas_node );
+#endif
                     } else if (!ce_type.compare("LinearShuntCompensator")) {
                     }
                     // other injection equipment types we will handle include
