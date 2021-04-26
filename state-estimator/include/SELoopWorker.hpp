@@ -1728,6 +1728,10 @@ class SELoopWorker {
         print_cs_compress(Kupd,tspath+"Kupd.csv");
         //print_cs_compress_triples(Kupd, "Kupd_sbase1e12_trip.csv", 4);
 #endif
+#ifdef DEBUG_PRIMARY
+            process_mem_usage(vm_used, res_used);
+            *selog << "Kupd Peak virtual memory: " << vm_used << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
+#endif
 
         // -- compute y = z - h
         cs *zmat; this->sample_z(zmat);
