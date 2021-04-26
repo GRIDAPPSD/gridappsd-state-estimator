@@ -30,6 +30,17 @@
 //#define TEST_HARNESS_DIR "test_11big"
 //#define TEST_HARNESS_DIR "test_3p6"
 //#define TEST_HARNESS_DIR "test_3p6pseudo"
+//#define TEST_HARNESS_DIR "test_11_bus_full"
+//#define TEST_HARNESS_DIR "test_11_bus_diff"
+//#define TEST_HARNESS_DIR "test_11_bus_full_meas"
+//#define TEST_HARNESS_DIR "test_11_bus_diff_meas"
+//#define TEST_HARNESS_DIR "test_4_bus_full"
+//#define TEST_HARNESS_DIR "test_4_bus_diff"
+//#define TEST_HARNESS_DIR "test_3p6_bus_full"
+//#define TEST_HARNESS_DIR "test_3p6_bus_diff"
+//#define TEST_HARNESS_DIR "test_3p6_bus_full_meas"
+//#define TEST_HARNESS_DIR "test_3p6_bus_diff_meas"
+
 #ifdef TEST_HARNESS_DIR
 // whether to get node_vnoms from file or hardwire to 1
 #define VNOM_FROM_FILE
