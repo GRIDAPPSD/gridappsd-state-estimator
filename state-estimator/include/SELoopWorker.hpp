@@ -3194,9 +3194,10 @@ class SELoopWorker {
 
     private:
     string getMinSec(double seconds) {
-        uint sec = (uint)seconds % 60;
+        uint useconds = (uint)seconds;
+        uint sec = useconds % 60;
         string secstr = (sec<10)? "0"+std::to_string(sec): std::to_string(sec);
-        return (std::to_string((uint)seconds/60) + ":" + secstr);
+        return (std::to_string(useconds/60) + ":" + secstr + std::to_string(seconds - useconds).substr(1));
     }
 #endif
 
