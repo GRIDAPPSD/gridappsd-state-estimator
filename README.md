@@ -1,4 +1,4 @@
-# gridappsd-state-estimator
+# GridAPPS-D State Estimator Service
 
 ## Purpose
 
