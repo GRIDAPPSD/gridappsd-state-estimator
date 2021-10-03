@@ -17,6 +17,11 @@
 //#define USE_NEGL
 
 // test harness related conditional compilation values
+//#define TEST_HARNESS_DIR "test_4Ti"
+//#define TEST_HARNESS_DIR "test_3p6_Ti"
+#define TEST_HARNESS_DIR "test_4PiQi"
+//#define TEST_HARNESS_DIR "test_13assets_noaji"
+//#define TEST_HARNESS_DIR "test_11big_jl"
 //#define TEST_HARNESS_DIR "test_4"
 //#define TEST_HARNESS_DIR "test_4vinj"
 //#define TEST_HARNESS_DIR "test_4net"
@@ -43,12 +48,12 @@
 
 #ifdef TEST_HARNESS_DIR
 // whether to get node_vnoms from file or hardwire to 1
-#define VNOM_FROM_FILE
+//#define VNOM_FROM_FILE
 // "simple" means a model outside GridAPPS-D like the 4-bus MATLAB model
 #define TEST_HARNESS_SIMPLE
 #endif
 //#define TEST_HARNESS_WRITE_FILES
-//#define TEST_HARNESS_DEBUG
+#define TEST_HARNESS_DEBUG
 
 #define PI 3.141592653589793
 
@@ -269,6 +274,10 @@ int main(int argc, char** argv) {
     *selog << "Reading vnom from test harness file: " << filename << "\n" << std::flush;
 #endif
     ifs.open(filename);
+    if (!ifs.is_open()) {
+        *selog << "\n*** ERROR: vnom file not found: " << filename << "\n\n" << std::flush;
+        exit(0);
+    }
     getline(ifs, line);  // throwaway header line
     while (getline(ifs, line)) {
         std::stringstream lineStream(line);
