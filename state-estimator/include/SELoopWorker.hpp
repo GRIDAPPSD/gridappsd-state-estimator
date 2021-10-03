@@ -452,6 +452,7 @@ class SELoopWorker {
         zqty = zary.zqty;
 
 #ifdef DEBUG_PRIMARY
+        *selog << "node_qty is " << node_qty << "; " << std::flush;
         *selog << "xqty is " << xqty << "; " << std::flush;
         *selog << "zqty is " << zqty << "\n" << std::flush;
 #endif
@@ -808,7 +809,7 @@ class SELoopWorker {
 #endif
 #ifdef GS_OPTIMIZE
         Rmat = gs_spalloc_diagonal(zqty);
-        for ( auto& zid : zary.zids )
+        for ( auto& zid : zary.zids ) {
             // variance of R[i,i] is sigma[i]^2
             // Originally we had this as just sigma[i], which resulted in
             // different sbase producing different estimate results and took
@@ -816,6 +817,8 @@ class SELoopWorker {
             // out if they were different for different sbase values
             gs_entry_diagonal_negl(Rmat,zary.zidxs[zid],
                                    zary.zsigs[zid]*zary.zsigs[zid]);
+            //*selog << zid << "," << zary.zidxs[zid] << "," << node_idxs[zary.znode1s[zid]] << "," << zary.zsigs[zid]*zary.zsigs[zid] << "\n" << std::flush;
+        }
 #else
         cs* Rraw = cs_spalloc(zqty, zqty, zqty, 1, 1);
         for ( auto& zid : zary.zids )
@@ -862,7 +865,9 @@ class SELoopWorker {
         results_fh << "timestamp,";
         uint nctr2 = 0;
         for ( auto& node_name : node_names )
-            results_fh << "vmag_"+node_name+",varg_"+node_name << ( ++nctr2 < node_qty ? "," : "\n" );
+            results_fh << "vmag_"+node_name+",";
+        for ( auto& node_name : node_names )
+            results_fh << "varg_"+node_name << ( ++nctr2 < node_qty ? "," : "\n" );
         results_fh.close();
 #endif
     }
@@ -995,12 +1000,14 @@ class SELoopWorker {
         getline(lineStream, cell, ',');
         double doubletime = stod(cell);
         timestamp = (uint)doubletime;
+        //*selog << "\t*** Read timestamp: " << timestamp << "\n" << std::flush;
 
         while ( getline(lineStream, cell, ',') ) {
             zid = meas_zids[idx++];
             zary.zvals[zid] = stod(cell);
             zary.znews[zid] = 1;
             zary.ztimes[zid] = timestamp;
+            //*selog << "\t*** Read zval[" << zid << "]: " << zary.zvals[zid] << "\n" << std::flush;
 
             if (zid.substr(zid.length()-4, string::npos) == "_tap") {
                 // Update the A matrix with the latest tap ratio measurement
@@ -1373,8 +1380,11 @@ class SELoopWorker {
         uint ctr2 = 0;
         for ( auto& node_name : node_names ) {
             double vmag_pu = abs( Vpu[ node_idxs[node_name] ] );
+            results_fh << vmag_pu << ",";
+        }
+        for ( auto& node_name : node_names ) {
             double varg_pu = arg( Vpu[ node_idxs[node_name] ] );
-            results_fh << vmag_pu << "," << varg_pu*180.0/PI << ( ++ctr2 < node_qty ? "," : "\n" );
+            results_fh << varg_pu << ( ++ctr2 < node_qty ? "," : "\n" );
         }
         results_fh.close();
 #endif
@@ -1557,6 +1567,7 @@ class SELoopWorker {
 #ifdef DEBUG_FILES
         print_cs_compress(Supd,tspath+"Supd.csv");
         //print_cs_compress_triples(Supd, "Supd_sbase1e6_trip.csv", 8);
+        //print_cs_compress_triples(Supd,"benchmarks/Supd_trip.csv");
 #endif
 
         // -- compute K = P_predict*J'*S^-1
@@ -1591,6 +1602,7 @@ class SELoopWorker {
             *selog << "klu_factor time -- " << std::flush;
             startTime = getWallTime();
 #endif
+            //stdout_cs_compress(Supd);
             klunum = klu_factor(Supd->p,Supd->i,Supd->x,klusym,&klucom);
             if (!klunum) {
 #ifdef DEBUG_PRIMARY
@@ -1693,6 +1705,8 @@ class SELoopWorker {
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(K3,tspath+"K3.csv");
+        //print_cs_full(K3,"benchmarks/K3.csv");
+        //print_cs_compress_triples(K3,"benchmarks/K3_trip.csv");
 #endif
 
         // GDB S1 and K1 are both J transpose so use S1 here
@@ -1704,6 +1718,8 @@ class SELoopWorker {
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(K2,tspath+"K2.csv");
+        //print_cs_full(K2,"benchmarks/K2.csv");
+        //print_cs_compress_triples(K2,"benchmarks/K2_trip.csv");
 #endif
 
 #ifdef DEBUG_PRIMARY
@@ -1725,12 +1741,14 @@ class SELoopWorker {
        //    Kupd->x[i] = SET_PRECISION8(Kupd->x[i]);
 #endif
 #ifdef DEBUG_FILES
-        print_cs_compress(Kupd,tspath+"Kupd.csv");
+        //print_cs_compress(Kupd,tspath+"Kupd.csv");
         //print_cs_compress_triples(Kupd, "Kupd_sbase1e12_trip.csv", 4);
 #endif
 #ifdef DEBUG_PRIMARY
-            process_mem_usage(vm_used, res_used);
-            *selog << "Kupd Peak virtual memory: " << vm_used << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
+        process_mem_usage(vm_used, res_used);
+        *selog << "Kupd Peak virtual memory: " << vm_used << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
+        //print_cs_full(Kupd,"benchmarks/Kupd.csv");
+        //print_cs_compress_triples(Kupd,"benchmarks/Kupd_trip.csv");
 #endif
 
         // -- compute y = z - h
@@ -1769,8 +1787,8 @@ class SELoopWorker {
 #ifdef DEBUG_FILES
         print_cs_compress(yupd,tspath+"yupd.csv");
         //print_cs_colvec("yupd_sbase1e6_prec8.csv", yupd);
-
 #endif
+        //stdout_cs_compress(yupd);
 
         // Residual calculation needs further investigation to be
         // properly formulated before inclusion in released SE code
@@ -2416,6 +2434,7 @@ class SELoopWorker {
         for ( auto& zid : zary.zids ) {
 #ifdef GS_OPTIMIZE
             gs_entry_firstcol_negl(zmat,zary.zidxs[zid],zary.zvals[zid]);
+            //*selog << "sample_z firstcol matrix entry for zid: " << zid << ", zary.zidxs: " << zary.zidxs[zid] << ", zvals value: " << zary.zvals[zid] << "\n" << std::flush;
 #else
             cs_entry_negl(zraw,zary.zidxs[zid],0,zary.zvals[zid]);
 #endif
@@ -2637,6 +2656,7 @@ class SELoopWorker {
                 uint i = node_idxs[zary.znode1s[zid]];
 #ifdef GS_OPTIMIZE
                 gs_entry_firstcol_negl(h,zidx,abs(Vpu[i]));
+                //*selog << "calc_h vi firstcol matrix entry for zid: " << zid << ", zidx: " << zidx << ", Vpu value: " << abs(Vpu[i]) << "\n" << std::flush;
 #else
                 cs_entry_negl(hraw,zidx,0,abs(Vpu[i]));
 #endif
@@ -2646,6 +2666,7 @@ class SELoopWorker {
                 uint i = node_idxs[zary.znode1s[zid]];
 #ifdef GS_OPTIMIZE
                 gs_entry_firstcol_negl(h,zidx,arg(Vpu[i]));
+                //*selog << "calc_h Ti firstcol matrix entry for zid: " << zid << ", zidx: " << zidx << ", Vpu value: " << abs(Vpu[i]) << "\n" << std::flush;
 #else
                 cs_entry_negl(hraw,zidx,0,arg(Vpu[i]));
 #endif
@@ -3086,6 +3107,85 @@ class SELoopWorker {
 #endif
 
 #ifdef DEBUG_FILES
+    private:
+    void print_cs_full(cs *&a, const string &filename="cs.csv",
+                           const uint &precision=16) {
+        *selog << "starting print_cs_full\n" << std::flush;
+        // write to file
+        ofstream ofh;
+        ofh << std::setprecision(precision);
+        ofh.open(filename,ofstream::out);
+        *selog << "writing " + filename + "\n" << std::flush;
+        for ( uint i = 0 ; i < a->m ; i++ ) {
+            uint ioff = i*a->n;
+            for ( uint j = 0 ; j < a->n-1 ; j++ )
+                ofh << a->x[ioff + j] << ",";
+            ofh << a->x[ioff + a->n-1] << "\n";
+        }
+        ofh.close();
+        *selog << "done print_cs_full\n" << std::flush;
+    }
+
+    private:
+    void print_cs_compress_triples(cs *&a, const string &filename="cs.csv",
+                                   const uint &precision=16) {
+        // First copy into a map
+        unordered_map<uint,unordered_map<uint,double>> mat;
+        for ( uint i = 0 ; i < a->n ; i++ ) {
+            for ( uint j = a->p[i] ; j < a->p[i+1] ; j++ ) {
+                mat[a->i[j]][i] = a->x[j];
+            }
+        }
+
+        unordered_map<uint,bool> powerMap;
+        for ( auto& zid : zary.zids ) {
+            uint zidx = zary.zidxs[zid];
+            string ztype = zary.ztypes[zid];
+            powerMap[zidx] = (ztype=="Qi" || ztype=="Pi");
+        }
+
+        // write to file
+        ofstream ofh;
+        ofh << std::setprecision(precision);
+        ofh.open(filename,ofstream::out);
+        *selog << "writing " + filename + "\n\n" << std::flush;
+        for ( uint j = 0 ; j < a->n ; j++ )
+            for ( uint i = 0 ; i < a->m ; i++ ) {
+                double val = mat[i][j];
+                string prefix = "";
+#if 000
+                if ( powerMap[j] ) {
+                    prefix = " Pi/Qi column ";
+                    //val *= sbase; // R, Supd
+                    val /= sbase; // Kupd
+                }
+                if ( powerMap[i] ) {
+                    prefix += " Pi/Qi row ";
+                    //val *= sbase; // R, Supd, Y, z, h, J
+                }
+#endif
+                if (val != 0.0)
+                    ofh << prefix << i << ", " << j << ", " << val << "\n";
+            }
+        ofh.close();
+    }
+
+    private:
+    void print_cs_compress_sparse(cs *&a, const string &filename="cs.csv",
+                                  const uint &precision=16) {
+        ofstream ofh;
+        ofh << std::setprecision(precision);
+        ofh.open(filename,ofstream::out);
+        *selog << "writing " + filename + "\n\n" << std::flush;
+        unordered_map<uint,unordered_map<uint,double>> mat;
+        for ( uint i = 0 ; i < a->n ; i++ ) {
+            for ( uint j = a->p[i] ; j < a->p[i+1] ; j++ ) {
+                ofh << a->i[j] << ", " << i << ", " << a->x[j] << "\n";
+            }
+        }
+        ofh.close();
+    }
+
     private:
     void stdout_cs_compress(cs *&a, const uint &precision=16) {
         // First copy into a map
