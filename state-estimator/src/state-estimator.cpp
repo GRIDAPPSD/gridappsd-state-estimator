@@ -19,7 +19,7 @@
 // test harness related conditional compilation values
 //#define TEST_HARNESS_DIR "test_4Ti"
 //#define TEST_HARNESS_DIR "test_3p6_Ti"
-#define TEST_HARNESS_DIR "test_4PiQi"
+//#define TEST_HARNESS_DIR "test_4PiQi"
 //#define TEST_HARNESS_DIR "test_13assets_noaji"
 //#define TEST_HARNESS_DIR "test_11big_jl"
 //#define TEST_HARNESS_DIR "test_4"
