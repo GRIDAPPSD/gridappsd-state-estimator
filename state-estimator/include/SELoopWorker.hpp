@@ -626,6 +626,50 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
         *selog << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
 #endif
+#ifdef TEST_HARNESS_WRITE_FILES
+        ofstream ofh;
+        ofh.open("test_files/ypu.csv", ofstream::out);
+        ofh << std::setprecision(10);  // match OpenDSS ysparse
+        ofh << "Row,Col,G,B\n";
+        for ( auto& inode : node_names ) {
+            uint i = node_idxs[inode];
+            try {
+                auto& row = Ypu.at(i);
+                for ( auto& jnode : node_names ) {
+                    uint j = node_idxs[jnode];
+                    try {
+                        complex<double> tmp = row.at(j);
+                        double tmpre = tmp.real();
+                        double tmpim = tmp.imag();
+                        if (j >= i) // only output the lower diagonal
+                            ofh << j << "," << i << "," << tmpre << "," << tmpim << "\n";
+                    } catch ( const std::out_of_range& oor ) {
+                    }
+                }
+            } catch ( const std::out_of_range& oor ) {
+            }
+        } ofh.close();
+
+        ofh.open("test_files/yphys.csv", ofstream::out);
+        ofh << std::setprecision(10);  // match OpenDSS ysparse
+        ofh << "Row,Col,G,B\n";
+        for ( uint i = 1 ; i <= node_qty ; i++ ) {
+            try {
+                auto& row = Yphys.at(i);
+                for ( uint j = 1 ; j <= node_qty ; j++ ) {
+                    try {
+                        complex<double> tmp = row.at(j);
+                        double tmpre = tmp.real();
+                        double tmpim = tmp.imag();
+                        if (j >= i) // only output the lower diagonal
+                            ofh << j << "," << i << "," << tmpre << "," << tmpim << "\n";
+                    } catch ( const std::out_of_range& oor ) {
+                    }
+                }
+            } catch ( const std::out_of_range& oor ) {
+            }
+        } ofh.close();
+#endif
 #ifdef DEBUG_FILES
         // write to file
         ofstream ofh;
