@@ -1,0 +1,33 @@
+Finding nodes to track for Ybus updates...
+Transformer mrid: _0685650e-835f-403b-887e-51a5736defe5, node: RG60.1
+Transformer mrid: _18bfa727-6d2c-49c4-80b5-962703b2fc72, node: RG60.2
+Switch mrid: _1e842bf6-9c94-401a-906b-a309d9b56747, nodes: ['671.2', '692.2']
+Switch mrid: _2abcc92c-2907-49f9-9bec-93667e9010e8, nodes: ['671.1', '692.1']
+Transformer mrid: _3531270b-4e0b-47ec-bdc4-f57c0c17046d, node: RG60.3
+Capcitor mrid: _3f60c60a-f30b-4a60-ac8c-5f537524b387, node: 675.3
+Capcitor mrid: _3f60c60a-f30b-4a60-ac8c-5f537524b387, node: 675.3, Ybus contribution: 0.034670858j
+Switch mrid: _621bf812-5950-405e-8034-fb22ab298cde, nodes: ['671.3', '692.3']
+Capcitor mrid: _6e4fb873-59d6-437d-8847-d0a7109023a8, node: 675.1
+Capcitor mrid: _6e4fb873-59d6-437d-8847-d0a7109023a8, node: 675.1, Ybus contribution: 0.034670858j
+Capcitor mrid: _70de865a-0e9b-4271-8585-df536284c2da, node: 611.3
+Capcitor mrid: _70de865a-0e9b-4271-8585-df536284c2da, node: 611.3, Ybus contribution: 0.017361111j
+Capcitor mrid: _9cdb3034-e735-4d49-af51-e88521eed937, node: 675.2
+Capcitor mrid: _9cdb3034-e735-4d49-af51-e88521eed937, node: 675.2, Ybus contribution: 0.034670858j
+
+
+nding nodes to track for Ybus updates...
+Transformer mrid: _0685650e-835f-403b-887e-51a5736defe5, node: RG60.1
+Transformer mrid: _18bfa727-6d2c-49c4-80b5-962703b2fc72, node: RG60.2
+Switch mrid: _1e842bf6-9c94-401a-906b-a309d9b56747, nodes: ['671.2', '692.2']
+Switch mrid: _2abcc92c-2907-49f9-9bec-93667e9010e8, nodes: ['671.1', '692.1']
+Transformer mrid: _3531270b-4e0b-47ec-bdc4-f57c0c17046d, node: RG60.3
+Capcitor mrid: _3f60c60a-f30b-4a60-ac8c-5f537524b387, node: 675.3
+Capcitor mrid: _3f60c60a-f30b-4a60-ac8c-5f537524b387, node: 675.3, Ybus contribution: 0.034670858j
+Switch mrid: _621bf812-5950-405e-8034-fb22ab298cde, nodes: ['671.3', '692.3']
+Capcitor mrid: _6e4fb873-59d6-437d-8847-d0a7109023a8, node: 675.1
+Capcitor mrid: _6e4fb873-59d6-437d-8847-d0a7109023a8, node: 675.1, Ybus contribution: 0.034670858j
+Capcitor mrid: _70de865a-0e9b-4271-8585-df536284c2da, node: 611.3
+Capcitor mrid: _70de865a-0e9b-4271-8585-df536284c2da, node: 611.3, Ybus contribution: 0.017361111j
+Capcitor mrid: _9cdb3034-e735-4d49-af51-e88521eed937, node: 675.2
+Capcitor mrid: _9cdb3034-e735-4d49-af51-e88521eed937, node: 675.2, Ybus contribution: 0.034670858j
+

@@ -1,0 +1,51 @@
+{
+   "power_system_config":{
+       "GeographicalRegion_name":"_73C512BD-7249-4F50-50DA-D93849B89C43",
+       "SubGeographicalRegion_name":"_ABEB635F-729D-24BF-B8A4-E2EF268D8B9E",
+       "Line_name":"_5B816B93-7A5F-B64C-8460-47C17D6E4B0F"
+
+},
+   "application_config":{
+       "applications":[]
+
+},
+   "simulation_config":{
+       "start_time":"1593118960",
+       "duration":"300",
+       "simulator":"GridLAB-D",
+       "timestep_frequency":"1000",
+       "timestep_increment":"1000",
+       "run_realtime":true,
+       "simulation_name":"ieee13nodecktassets",
+       "power_flow_solver_method":"NR",
+       "model_creation_config":{
+          "load_scaling_factor":"1",
+          "schedule_name":"ieeezipload",
+          "z_fraction":"0",
+          "i_fraction":"1",
+          "p_fraction":"0",
+          "randomize_zipload_fractions":false,
+          "use_houses":false
+}
+
+},
+   "test_config":{
+       "events":[],
+       "appId":""
+
+},
+   "service_configs":[
+       {"id":"state-estimator",
+        "user_options":{"use-sensors-for-estimates":true}},
+       {"id":"gridappsd-sensor-simulator",
+        "user_options":{
+            "default-perunit-confidence-band":0.02,
+            "simulate-all":true,
+            "sensors-config":{},
+            "default-normal-value":100.0,
+            "random-seed":0.0,
+            "default-aggregation-interval":0.0,
+            "passthrough-if-not-specified":false,
+            "default-perunit-drop-rate":0.0}}
+       ]
+}
