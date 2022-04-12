@@ -230,7 +230,7 @@ namespace state_estimator_util{
                 string pinj_zid = "pseudo_P_"+node;
                 zary.zids.push_back(pinj_zid);
                 zary.zidxs   [pinj_zid] = zary.zqty++;
-                zary.ztypes     [pinj_zid] = "Pi";
+                zary.ztypes  [pinj_zid] = "Pi";
                 zary.znode1s [pinj_zid] = node;
                 zary.znode2s [pinj_zid] = node;
                 zary.zvals   [pinj_zid] = pseudoP[node]/sbase;
@@ -249,7 +249,7 @@ namespace state_estimator_util{
                 string qinj_zid = "pseudo_Q_"+node;
                 zary.zids.push_back(qinj_zid);
                 zary.zidxs   [qinj_zid] = zary.zqty++;
-                zary.ztypes     [qinj_zid] = "Qi";
+                zary.ztypes  [qinj_zid] = "Qi";
                 zary.znode1s [qinj_zid] = node;
                 zary.znode2s [qinj_zid] = node;
                 zary.zvals   [qinj_zid] = pseudoQ[node]/sbase;
