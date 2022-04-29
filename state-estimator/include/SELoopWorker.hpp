@@ -67,7 +67,7 @@ using json = nlohmann::json;
 
 #ifdef TEST_HARNESS_DIR
 // macro to set precision of value to a fixed number of decimal digits
-#define SET_PRECISION12(val) round(val*1e+12)/1e+12
+//#define SET_PRECISION12(val) round(val*1e+12)/1e+12
 //#define SET_PRECISION8(val) round(val*1e+8)/1e+8
 //#define SET_PRECISION6(val) round(val*1e+6)/1e+6
 
@@ -1628,9 +1628,9 @@ class SELoopWorker {
 #else
         double *rhs = (double *)calloc(zqty*zqty, sizeof(double));
 #endif
-#ifdef TEST_HARNESS_DIR
-        double condnum;
-#endif
+//#ifdef TEST_HARNESS_DIR
+//        double condnum;
+//#endif
 
         try {
             // Initialize klusolve variables
@@ -1664,10 +1664,10 @@ class SELoopWorker {
             // KLU condition number estimation
             (void)klu_condest(Supd->p,Supd->x,klusym,klunum,&klucom);
             *selog << "klu_condest Supd condition number estimate: " << klucom.condest << "\n" << std::flush;
-#ifdef TEST_HARNESS_DIR
-            condnum = klucom.condest;
-            *selog << timestamp << "," << condnum << ",SupdCondNum\n" << std::flush;
-#endif
+//#ifdef TEST_HARNESS_DIR
+//            condnum = klucom.condest;
+//            *selog << timestamp << "," << condnum << ",SupdCondNum\n" << std::flush;
+//#endif
 #endif
 
             // initialize an identity right-hand side
@@ -1734,14 +1734,14 @@ class SELoopWorker {
         free(rhs);
 #endif
 
-#ifdef TEST_HARNESS_DIR
-       // determine number of significant digits based on condition number
-       uint digits = 15 - floor(log10(condnum));
-       // set all elements of Supd^-1 to the desired number of significant
-       // figures for MATLAB comparison
-       for (uint i=0; i<K3->nzmax; i++)
-           K3->x[i] = SET_SIGNIFICANT(K3->x[i], digits);
-#endif
+//#ifdef TEST_HARNESS_DIR
+//       // determine number of significant digits based on condition number
+//       uint digits = 15 - floor(log10(condnum));
+//       // set all elements of Supd^-1 to the desired number of significant
+//       // figures for MATLAB comparison
+//       for (uint i=0; i<K3->nzmax; i++)
+//           K3->x[i] = SET_SIGNIFICANT(K3->x[i], digits);
+//#endif
 
 #ifdef DEBUG_PRIMARY
         if ( K3 ) *selog << "K3 is " << K3->m << " by " << K3->n <<
@@ -1785,7 +1785,7 @@ class SELoopWorker {
        //    Kupd->x[i] = SET_PRECISION8(Kupd->x[i]);
 #endif
 #ifdef DEBUG_FILES
-        //print_cs_compress(Kupd,tspath+"Kupd.csv");
+        print_cs_compress(Kupd,tspath+"Kupd.csv");
         //print_cs_compress_triples(Kupd, "Kupd_sbase1e12_trip.csv", 4);
 #endif
 #ifdef DEBUG_PRIMARY
@@ -3268,6 +3268,7 @@ class SELoopWorker {
         ofh.close();
     }
 
+#if 000
     private:
     void print_cs_compress_triples(cs *&a, const string &filename="cs.csv",
                                    const uint &precision=16) {
@@ -3327,6 +3328,7 @@ class SELoopWorker {
         }
         ofh.close();
     }
+#endif
 #endif
 
 #ifdef DEBUG_PRIMARY
