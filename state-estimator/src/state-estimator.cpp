@@ -45,12 +45,14 @@
 //#define TEST_HARNESS_DIR "test_3p6_bus_diff"
 //#define TEST_HARNESS_DIR "test_3p6_bus_full_meas"
 //#define TEST_HARNESS_DIR "test_3p6_bus_diff_meas"
+//#define TEST_HARNESS_DIR "test_files_123"
+//#define TEST_HARNESS_DIR "test_files_13assets"
 
 #ifdef TEST_HARNESS_DIR
 // whether to get node_vnoms from file or hardwire to 1
-//#define VNOM_FROM_FILE
+#define VNOM_FROM_FILE
 // "simple" means a model outside GridAPPS-D like the 4-bus MATLAB model
-#define TEST_HARNESS_SIMPLE
+//#define TEST_HARNESS_SIMPLE
 #endif
 //#define TEST_HARNESS_WRITE_FILES
 //#define TEST_HARNESS_DEBUG
