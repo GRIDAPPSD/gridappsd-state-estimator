@@ -2606,19 +2606,6 @@ class SELoopWorker {
                         if (j != i) {
                             double vi, vj, T, ai, aj, bij, g, b;
                             set_nij(i, j, vi, vj, T, ai, aj, bij, g, b);
-#ifdef TEST_HARNESS_DEBUG
-                            *selog << std::setprecision(16);
-                            *selog << "*** calc_h Pi i: " << i << "\n" << std::flush;
-                            *selog << "*** calc_h Pi j: " << j << "\n" << std::flush;
-                            *selog << "*** calc_h Pi vi: " << vi << "\n" << std::flush;
-                            *selog << "*** calc_h Pi vj: " << vj << "\n" << std::flush;
-                            *selog << "*** calc_h Pi T: " << T << "\n" << std::flush;
-                            *selog << "*** calc_h Pi ai: " << ai << "\n" << std::flush;
-                            *selog << "*** calc_h Pi aj: " << aj << "\n" << std::flush;
-                            *selog << "*** calc_h Pi bij: " << bij << "\n" << std::flush;
-                            *selog << "*** calc_h Pi g: " << g << "\n" << std::flush;
-                            *selog << "*** calc_h Pi b: " << b << "\n" << std::flush;
-#endif
                             // Add the real power component flowing from i to j
                             double term = (vi*vi/(ai*ai) * g) -
                                    (vi*vj/(ai*aj) * (g*cos(T) + b*sin(T)));
@@ -2634,13 +2621,6 @@ class SELoopWorker {
                     double vi, g, b;
                     set_ni(i, vi, g, b);
                     Pi += vi*vi * g;
-#ifdef TEST_HARNESS_DEBUG
-                    *selog << "*** calc_h Pi2 i: " << i << "\n" << std::flush;
-                    *selog << "*** calc_h Pi2 vi: " << vi << "\n" << std::flush;
-                    *selog << "*** calc_h Pi2 g: " << g << "\n" << std::flush;
-                    *selog << "*** calc_h Pi2 b: " << b << "\n" << std::flush;
-                    *selog << "*** calc_h Pi2 final Pi: " << Pi << "\n" << std::flush;
-#endif
                 } catch ( const std::out_of_range& oor ) {}
                 // Insert the measurement component
 #ifdef GS_OPTIMIZE
@@ -2880,18 +2860,6 @@ class SELoopWorker {
                     if (j != i) {
                         double vi, vj, T, ai, aj, bij, g, b;
                         set_nij(i, j, vi, vj, T, ai, aj, bij, g, b);
-#ifdef TEST_HARNESS_DEBUG
-                        *selog << "*** calc_J dPi_dTi i: " << i << "\n" << std::flush;
-                        *selog << "*** calc_J dPi_dTi j: " << j << "\n" << std::flush;
-                        *selog << "*** calc_J dPi_dTi vi: " << vi << "\n" << std::flush;
-                        *selog << "*** calc_J dPi_dTi vj: " << vj << "\n" << std::flush;
-                        *selog << "*** calc_J dPi_dTi T: " << T << "\n" << std::flush;
-                        *selog << "*** calc_J dPi_dTi ai: " << ai << "\n" << std::flush;
-                        *selog << "*** calc_J dPi_dTi aj: " << aj << "\n" << std::flush;
-                        *selog << "*** calc_J dPi_dTi bij: " << bij << "\n" << std::flush;
-                        *selog << "*** calc_J dPi_dTi g: " << g << "\n" << std::flush;
-                        *selog << "*** calc_J dPi_dTi b: " << b << "\n" << std::flush;
-#endif
                         double term = (vi*vj/(ai*aj)) * (g*sin(T) - b*cos(T));
 #ifdef SWITCHES
                         // bij--switch status multiplier between i and j
