@@ -91,7 +91,7 @@ class VnomConsumer: public SEConsumer {
         *selog << "Received vnom message of " << text.length() << " bytes\n\n" << std::flush;
 #endif
 
-#ifdef TEST_HARNESS_WRITE_FILES
+#ifdef FILES_INTERFACE_WRITE
         std::ofstream ofs("test_files/vnom.csv", ofstream::out);
         ofs << "Nodename,Mag,Arg\n";
 #endif
@@ -173,7 +173,7 @@ class VnomConsumer: public SEConsumer {
                     vim = mag1 * sin( arg1 * PI/180.0 );
                     vnom = complex<double>(vre,vim);
                     node_vnoms[node] = vnom;
-#ifdef TEST_HARNESS_WRITE_FILES
+#ifdef FILES_INTERFACE_WRITE
                     ofs << node << "," << mag1_str << "," << arg1_str << "\n";
 #endif
                 }
@@ -185,7 +185,7 @@ class VnomConsumer: public SEConsumer {
                     vim = mag2 * sin( arg2 * PI/180.0 );
                     vnom = complex<double>(vre,vim);
                     node_vnoms[node] = vnom;
-#ifdef TEST_HARNESS_WRITE_FILES
+#ifdef FILES_INTERFACE_WRITE
                     ofs << node << "," << mag2_str << "," << arg2_str << "\n";
 #endif
                 }
@@ -197,14 +197,14 @@ class VnomConsumer: public SEConsumer {
                     vim = mag3 * sin( arg3 * PI/180.0 );
                     vnom = complex<double>(vre,vim);
                     node_vnoms[node] = vnom;
-#ifdef TEST_HARNESS_WRITE_FILES
+#ifdef FILES_INTERFACE_WRITE
                     ofs << node << "," << mag3_str << "," << arg3_str << "\n";
 #endif
                 }
 
             }
         }
-#ifdef TEST_HARNESS_WRITE_FILES
+#ifdef FILES_INTERFACE_WRITE
         ofs.close();
 #endif
 
