@@ -89,11 +89,11 @@ std::ostream* selog = &std::cout;
 #include "SharedQueue.hpp"
 #include "SensorArray.hpp"
 #include "SEProducer.hpp"
+#include "state_estimator_gridappsd.hpp"
 #include "SELoopWorker.hpp"
 
 #ifdef GRIDAPPSD_INTERFACE
 // include files for the GridAPPS-D interface
-#include "state_estimator_gridappsd.hpp"
 #include "GenericConsumer.hpp"
 #include "TopoProcConsumer.hpp"
 #include "VnomConsumer.hpp"
