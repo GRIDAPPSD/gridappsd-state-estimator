@@ -71,8 +71,8 @@ class SELoopWorker {
     private:
 
     // passed in from constructor
-    SharedQueue<json>* workQueue;
 #ifdef GRIDAPPSD_INTERFACE
+    SharedQueue<json>* workQueue;
     state_estimator_gridappsd::gridappsd_session* gad;
 #endif
     SensorArray        zary;
@@ -143,8 +143,9 @@ class SELoopWorker {
 
 
     public:
-    SELoopWorker(SharedQueue<json>* workQueue,
+    SELoopWorker(
 #ifdef GRIDAPPSD_INTERFACE
+            SharedQueue<json>* workQueue,
             state_estimator_gridappsd::gridappsd_session* gad,
 #endif
             const SensorArray& zary,
@@ -163,8 +164,8 @@ class SELoopWorker {
             const SSMAP& mmrid_pos_type_map,
             const SSMAP& switch_node1s,
             const SSMAP& switch_node2s) {
-        this->workQueue = workQueue;
 #ifdef GRIDAPPSD_INTERFACE
+        this->workQueue = workQueue;
         this->gad = gad;
 #endif
         this->zary = zary;
