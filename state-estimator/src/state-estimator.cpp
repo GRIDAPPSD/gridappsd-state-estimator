@@ -64,8 +64,11 @@
 #include <iostream>
 #include <fstream>
 #include <regex>
+  using std::regex;
 #include <string>
+  using std::string;
 #include <complex>
+  using std::complex;
 #include <list>
 #include <unordered_map>
 
@@ -93,10 +96,11 @@ std::ostream* selog = &std::cout;
 #include "SensorDefConsumer.hpp"
 #include "state_estimator_util.hpp"
 #include "gridappsd_requests.hpp"
+  using gridappsd_requests::sparql_query;
 #include "SharedQueue.hpp"
 #include "SELoopConsumer.hpp"
 #include "state_estimator_gridappsd.hpp"
-using gridappsd_requests::sparql_query;
+#include "SEProducer.hpp"
 
 #ifdef DEBUG_PRIMARY
 // temporary flag to hold up initialization until the platform has finished
@@ -107,7 +111,6 @@ bool blockedFlag = true;
 
 // include files for all interfaces
 #include "SensorArray.hpp"
-#include "SEProducer.hpp"
 #include "SELoopWorker.hpp"
 
 int main(int argc, char** argv) {
@@ -267,10 +270,10 @@ int main(int argc, char** argv) {
     while ( getline(ifs, line) ) {
         std::stringstream lineStream(line);
         string cell;
-        getline(lineStream, cell, ','); int i = stoi(cell);
-        getline(lineStream, cell, ','); int j = stoi(cell);
-        getline(lineStream, cell, ','); double G = stod(cell);
-        getline(lineStream, cell, ','); double B = stod(cell);
+        getline(lineStream, cell, ','); int i = std::stoi(cell);
+        getline(lineStream, cell, ','); int j = std::stoi(cell);
+        getline(lineStream, cell, ','); double G = std::stod(cell);
+        getline(lineStream, cell, ','); double B = std::stod(cell);
 
         Yphys[i][j] = complex<double>(G,B);
         if ( i != j ) Yphys[j][i] = complex<double>(G,B);
@@ -311,8 +314,8 @@ int main(int argc, char** argv) {
         std::stringstream lineStream(line);
         string node, cell;
         getline(lineStream, node, ',');
-        getline(lineStream, cell, ','); double mag = stod(cell);
-        getline(lineStream, cell, ','); double arg = stod(cell);
+        getline(lineStream, cell, ','); double mag = std::stod(cell);
+        getline(lineStream, cell, ','); double arg = std::stod(cell);
         double vre = mag * cos( arg * PI/180.0 );
         double vim = mag * sin( arg * PI/180.0 );
         complex<double> vnom = complex<double>(vre,vim);
@@ -456,10 +459,10 @@ int main(int argc, char** argv) {
         zary.ztypes[zid] = cell;
         getline(lineStream, cell, ','); zary.znode1s[zid] = cell;
         getline(lineStream, cell, ','); zary.znode2s[zid] = cell;
-        getline(lineStream, cell, ','); zary.zvals[zid] = stod(cell);
-        getline(lineStream, cell, ','); zary.zsigs[zid] = stod(cell);
+        getline(lineStream, cell, ','); zary.zvals[zid] = std::stod(cell);
+        getline(lineStream, cell, ','); zary.zsigs[zid] = std::stod(cell);
         getline(lineStream, cell, ','); zary.zpseudos[zid] = cell=="1";
-        getline(lineStream, cell, ','); zary.znomvals[zid] = stod(cell);
+        getline(lineStream, cell, ','); zary.znomvals[zid] = std::stod(cell);
     }
     ifs.close();
 #endif
