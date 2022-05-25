@@ -62,6 +62,8 @@
 #define PI 3.141592653589793
 
 #include <iostream>
+#include <fstream>
+#include <regex>
 #include <string>
 #include <complex>
 #include <list>
@@ -83,24 +85,29 @@
 // global logging stream--either a file or stdout based on invocation
 std::ostream* selog = &std::cout;
 
-#include "state_estimator_gridappsd.hpp"
+// include files for all interfaces
+#include "SharedQueue.hpp"
+#include "SensorArray.hpp"
 #include "SEProducer.hpp"
+#include "SELoopWorker.hpp"
+
+#ifdef GRIDAPPSD_INTERFACE
+// include files for the GridAPPS-D interface
+#include "state_estimator_gridappsd.hpp"
 #include "GenericConsumer.hpp"
 #include "TopoProcConsumer.hpp"
 #include "VnomConsumer.hpp"
 #include "SensorDefConsumer.hpp"
-#include "SharedQueue.hpp"
-#include "SELoopConsumer.hpp"
-#include "SELoopWorker.hpp"
 #include "state_estimator_util.hpp"
-#include "SensorArray.hpp"
 #include "gridappsd_requests.hpp"
+#include "SELoopConsumer.hpp"
 using gridappsd_requests::sparql_query;
 
 #ifdef DEBUG_PRIMARY
 // temporary flag to hold up initialization until the platform has finished
 // its own initialization for the simulation based on sending a STARTED message
 bool blockedFlag = true;
+#endif
 #endif
 
 int main(int argc, char** argv) {
