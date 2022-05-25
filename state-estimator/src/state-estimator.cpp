@@ -17,45 +17,47 @@
 //#define USE_NEGL
 
 // files-based interface related conditional compilation values
-//#define FILES_INTERFACE_READ "test_4Ti"
-//#define FILES_INTERFACE_READ "test_3p6_Ti"
-//#define FILES_INTERFACE_READ "test_4PiQi"
-//#define FILES_INTERFACE_READ "test_13assets_noaji"
-//#define FILES_INTERFACE_READ "test_11big_jl"
-//#define FILES_INTERFACE_READ "test_4"
-//#define FILES_INTERFACE_READ "test_4vinj"
-//#define FILES_INTERFACE_READ "test_4net"
-//#define FILES_INTERFACE_READ "test_4sbase"
-//#define FILES_INTERFACE_READ "test_13assets"
-//#define FILES_INTERFACE_READ "test_11full"
-//#define FILES_INTERFACE_READ "test_11diff"
-//#define FILES_INTERFACE_READ "test_11noQ"
-//#define FILES_INTERFACE_READ "test_4withB"
-//#define FILES_INTERFACE_READ "test_4woB"
-//#define FILES_INTERFACE_READ "test_11big"
-//#define FILES_INTERFACE_READ "test_3p6"
-//#define FILES_INTERFACE_READ "test_3p6pseudo"
-//#define FILES_INTERFACE_READ "test_11_bus_full"
-//#define FILES_INTERFACE_READ "test_11_bus_diff"
-//#define FILES_INTERFACE_READ "test_11_bus_full_meas"
-//#define FILES_INTERFACE_READ "test_11_bus_diff_meas"
-//#define FILES_INTERFACE_READ "test_4_bus_full"
-//#define FILES_INTERFACE_READ "test_4_bus_diff"
-//#define FILES_INTERFACE_READ "test_3p6_bus_full"
-//#define FILES_INTERFACE_READ "test_3p6_bus_diff"
-//#define FILES_INTERFACE_READ "test_3p6_bus_full_meas"
-//#define FILES_INTERFACE_READ "test_3p6_bus_diff_meas"
-//#define FILES_INTERFACE_READ "test_files_123"
-//#define FILES_INTERFACE_READ "test_files_13assets"
+//#define FILE_INTERFACE_READ "test_4Ti"
+//#define FILE_INTERFACE_READ "test_3p6_Ti"
+//#define FILE_INTERFACE_READ "test_4PiQi"
+//#define FILE_INTERFACE_READ "test_13assets_noaji"
+//#define FILE_INTERFACE_READ "test_11big_jl"
+//#define FILE_INTERFACE_READ "test_4"
+//#define FILE_INTERFACE_READ "test_4vinj"
+//#define FILE_INTERFACE_READ "test_4net"
+//#define FILE_INTERFACE_READ "test_4sbase"
+//#define FILE_INTERFACE_READ "test_13assets"
+//#define FILE_INTERFACE_READ "test_11full"
+//#define FILE_INTERFACE_READ "test_11diff"
+//#define FILE_INTERFACE_READ "test_11noQ"
+//#define FILE_INTERFACE_READ "test_4withB"
+//#define FILE_INTERFACE_READ "test_4woB"
+//#define FILE_INTERFACE_READ "test_11big"
+//#define FILE_INTERFACE_READ "test_3p6"
+//#define FILE_INTERFACE_READ "test_3p6pseudo"
+//#define FILE_INTERFACE_READ "test_11_bus_full"
+//#define FILE_INTERFACE_READ "test_11_bus_diff"
+//#define FILE_INTERFACE_READ "test_11_bus_full_meas"
+//#define FILE_INTERFACE_READ "test_11_bus_diff_meas"
+//#define FILE_INTERFACE_READ "test_4_bus_full"
+//#define FILE_INTERFACE_READ "test_4_bus_diff"
+//#define FILE_INTERFACE_READ "test_3p6_bus_full"
+//#define FILE_INTERFACE_READ "test_3p6_bus_diff"
+//#define FILE_INTERFACE_READ "test_3p6_bus_full_meas"
+//#define FILE_INTERFACE_READ "test_3p6_bus_diff_meas"
+//#define FILE_INTERFACE_READ "test_files_123"
+//#define FILE_INTERFACE_READ "test_files_13assets"
 
-#ifdef FILES_INTERFACE_READ
+#ifdef FILE_INTERFACE_READ
 // whether to get node_vnoms from file or hardwire to 1
-#define FILES_INTERFACE_VNOM
+#define FILE_INTERFACE_VNOM
 // the nosbase symbol is used for a model outside GridAPPS-D like the
 // 4-bus MATLAB model
-//#define FILES_INTERFACE_NOSBASE
+//#define FILE_INTERFACE_NOSBASE
+#else
+#define GRIDAPPSD_INTERFACE
 #endif
-//#define FILES_INTERFACE_WRITE
+//#define FILE_INTERFACE_WRITE
 
 #define PI 3.141592653589793
 
@@ -86,7 +88,7 @@ bool blockedFlag = true;
 
 int main(int argc, char** argv) {
 
-#ifndef FILES_INTERFACE_READ
+#ifndef FILE_INTERFACE_READ
     // ------------------------------------------------------------------------
     // INITIALIZE THE STATE ESTIMATOR SESSION WITH RUNTIME ARGS
     // ------------------------------------------------------------------------
@@ -183,7 +185,7 @@ int main(int argc, char** argv) {
     // Node nominal voltages data structure
     SCMAP node_vnoms;
 
-#ifndef FILES_INTERFACE_READ
+#ifndef FILE_INTERFACE_READ
     // --------------------------------------------------------------------
     // MAKE SOME SPARQL QUERIES
     // --------------------------------------------------------------------
@@ -230,7 +232,7 @@ int main(int argc, char** argv) {
     vnomConsumer.fillVnom(node_vnoms);
     vnomConsumer.close();
 #else
-    string filename = FILES_INTERFACE_READ;
+    string filename = FILE_INTERFACE_READ;
     filename += "/ysparse.csv";
 #ifdef DEBUG_PRIMARY
     *selog << "Reading ybus from test harness file: " << filename << "\n\n" << std::flush;
@@ -251,7 +253,7 @@ int main(int argc, char** argv) {
     }
     ifs.close();
 
-    filename = FILES_INTERFACE_READ;
+    filename = FILE_INTERFACE_READ;
     filename += "/nodelist.csv";
 #ifdef DEBUG_PRIMARY
     *selog << "Reading nodelist from test harness file: " << filename << "\n\n" << std::flush;
@@ -269,8 +271,8 @@ int main(int argc, char** argv) {
     }
     ifs.close();
 
-#ifdef FILES_INTERFACE_VNOM
-    filename = FILES_INTERFACE_READ;
+#ifdef FILE_INTERFACE_VNOM
+    filename = FILE_INTERFACE_READ;
     filename += "/vnom.csv";
 #ifdef DEBUG_PRIMARY
     *selog << "Reading vnom from test harness file: " << filename << "\n" << std::flush;
@@ -311,7 +313,7 @@ int main(int argc, char** argv) {
     double spower = (double)std::stoi(argv[3]);
     const double sbase = pow(10.0, spower);
 #else
-#ifdef FILES_INTERFACE_NOSBASE
+#ifdef FILE_INTERFACE_NOSBASE
     const double sbase = 1;
 #else
     const double sbase = 1.0e+6;
@@ -333,7 +335,7 @@ int main(int argc, char** argv) {
     SSMAP switch_node1s;
     SSMAP switch_node2s;
 
-#ifndef FILES_INTERFACE_READ
+#ifndef FILE_INTERFACE_READ
     SSMAP reg_cemrid_primbus_map;
     SSMAP reg_cemrid_regbus_map;
     state_estimator_util::build_A_matrix(gad,Amat,node_idxs,
@@ -387,7 +389,7 @@ int main(int argc, char** argv) {
     //}
 #endif
 #else
-    filename = FILES_INTERFACE_READ;
+    filename = FILE_INTERFACE_READ;
     filename += "/regid.csv";
 #ifdef DEBUG_PRIMARY
     *selog << "Reading regulator mappings from test harness file: " << filename << "\n\n" << std::flush;
@@ -413,7 +415,7 @@ int main(int argc, char** argv) {
     }
     ifs.close();
 
-    filename = FILES_INTERFACE_READ;
+    filename = FILE_INTERFACE_READ;
     filename += "/measurements.csv";
 #ifdef DEBUG_PRIMARY
     *selog << "Reading sensor measurements from test harness file: " << filename << "\n\n" << std::flush;
@@ -438,7 +440,7 @@ int main(int argc, char** argv) {
     ifs.close();
 #endif
 
-#ifndef FILES_INTERFACE_READ
+#ifndef FILE_INTERFACE_READ
     // Initialize class that does the state estimates
     SELoopWorker loopWorker(&workQueue, &gad, zary, node_qty, node_names,
         node_idxs, node_vnoms, node_bmrids, node_phs, node_name_lookup,

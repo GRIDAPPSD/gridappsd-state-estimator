@@ -65,7 +65,7 @@ using json = nlohmann::json;
 #endif
 #endif
 
-#ifdef FILES_INTERFACE_READ
+#ifdef FILE_INTERFACE_READ
 // macro to set precision of value to a fixed number of decimal digits
 //#define SET_PRECISION12(val) round(val*1e+12)/1e+12
 //#define SET_PRECISION8(val) round(val*1e+8)/1e+8
@@ -143,11 +143,11 @@ class SELoopWorker {
     ofstream state_fh;  // file to record states
 #endif
 
-#ifdef FILES_INTERFACE_READ
+#ifdef FILE_INTERFACE_READ
     ifstream meas_fh;   // test harness measurement file
     std::vector<string> meas_zids;
 #endif
-#if defined(FILES_INTERFACE_READ) || defined(FILES_INTERFACE_WRITE)
+#if defined(FILE_INTERFACE_READ) || defined(FILE_INTERFACE_WRITE)
     ofstream results_fh;  // file to record results
 #endif
 
@@ -214,8 +214,8 @@ class SELoopWorker {
         // (if things go bad we'll need to reset these)
         initVoltagesAndCovariance();
 
-#ifdef FILES_INTERFACE_READ
-        string filename = FILES_INTERFACE_READ;
+#ifdef FILE_INTERFACE_READ
+        string filename = FILE_INTERFACE_READ;
         filename += "/measurement_data.csv";
 #ifdef DEBUG_PRIMARY
         *selog << "Reading measurements from test harness file: " << filename << "\n\n" << std::flush;
@@ -248,7 +248,7 @@ class SELoopWorker {
 
             // drain the queue with quick z-averaging
             do {
-#ifdef FILES_INTERFACE_READ
+#ifdef FILE_INTERFACE_READ
                 if ( getline(meas_fh, meas_line) ) {
                     if (add_zvals(meas_line, timestamp))
                         reclosedFlag = true;
@@ -311,7 +311,7 @@ class SELoopWorker {
                     }
                 }
 #endif
-#if defined(FILES_INTERFACE_READ) || defined(FILES_INTERFACE_WRITE)
+#if defined(FILE_INTERFACE_READ) || defined(FILE_INTERFACE_WRITE)
             } while (false); // uncomment this to fully process all messages
 #else
             } while (!workQueue->empty()); // uncomment this to drain queue
@@ -322,7 +322,7 @@ class SELoopWorker {
 //             *selog << "===========> z-averaging being done after draining queue\n" << std::flush;
 // #endif
 
-#ifndef FILES_INTERFACE_READ
+#ifndef FILE_INTERFACE_READ
             for ( auto& zid : zary.zids ) {
                 if ( zary.znews[zid] > 1 )
                     zary.zvals[zid] /= zary.znews[zid];
@@ -427,10 +427,10 @@ class SELoopWorker {
         }
 
         // create simulation parent directory
-#ifndef FILES_INTERFACE_READ
+#ifndef FILE_INTERFACE_READ
         string simpath = "output/sim_" + gad->simid + "/";
 #else
-        string simpath = "output/"; simpath += FILES_INTERFACE_READ; simpath += "/";
+        string simpath = "output/"; simpath += FILE_INTERFACE_READ; simpath += "/";
 #endif
         mkdir(simpath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
@@ -439,7 +439,7 @@ class SELoopWorker {
         mkdir(initpath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 #endif
 
-#ifndef FILES_INTERFACE_READ
+#ifndef FILE_INTERFACE_READ
         // Construct the producer that will be used to publish the state estimate
         string sePubTopic = "goss.gridappsd.simulation.state-estimator."+gad->simid+".output";
         statePublisher = new SEProducer(gad->brokerURI,gad->username,gad->password,sePubTopic,"topic");
@@ -626,7 +626,7 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
         *selog << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
 #endif
-#ifdef FILES_INTERFACE_WRITE
+#ifdef FILE_INTERFACE_WRITE
         ofstream ofh;
         ofh.open("test_files/ypu.csv", ofstream::out);
         ofh << std::setprecision(10);  // match OpenDSS ysparse
@@ -895,9 +895,9 @@ class SELoopWorker {
             state_fh << "\'"+node_name+"\'" << ( ++nctr < node_qty ? "," : "\n" );
         state_fh.close();
 #endif
-#if defined(FILES_INTERFACE_READ) || defined(FILES_INTERFACE_WRITE)
-#ifdef FILES_INTERFACE_READ
-        string filename = FILES_INTERFACE_READ;
+#if defined(FILE_INTERFACE_READ) || defined(FILE_INTERFACE_WRITE)
+#ifdef FILE_INTERFACE_READ
+        string filename = FILE_INTERFACE_READ;
 #else
         string filename = "test_files";
 #endif
@@ -937,10 +937,10 @@ class SELoopWorker {
 #ifdef DEBUG_FILES
         // print initial state vector
         ofstream ofh;
-#ifndef FILES_INTERFACE_READ
+#ifndef FILE_INTERFACE_READ
         string simpath = "output/sim_" + gad->simid + "/";
 #else
-        string simpath = "output/"; simpath += FILES_INTERFACE_READ; simpath += "/";
+        string simpath = "output/"; simpath += FILE_INTERFACE_READ; simpath += "/";
 #endif
         string initpath = simpath + "init/";
         ofh.open(initpath+"Vpu.csv",ofstream::out);
@@ -1022,7 +1022,7 @@ class SELoopWorker {
 
 
     private:
-#ifndef FILES_INTERFACE_READ
+#ifndef FILE_INTERFACE_READ
     bool add_zvals(const json& jmessage, const uint& timestamp) {
 #else
     bool add_zvals(const string& meas_line, uint& timestamp) {
@@ -1036,7 +1036,7 @@ class SELoopWorker {
 
         bool ret = false;
 
-#ifdef FILES_INTERFACE_READ
+#ifdef FILE_INTERFACE_READ
         std::stringstream lineStream(meas_line);
         string cell, zid;
         uint idx = 0;
@@ -1074,7 +1074,7 @@ class SELoopWorker {
         // TODO: support switches
 
 #else
-#ifdef FILES_INTERFACE_WRITE
+#ifdef FILE_INTERFACE_WRITE
         SDMAP node_mag, node_ang;
 #endif
         // Next, update new measurements
@@ -1090,7 +1090,7 @@ class SELoopWorker {
                     string zid = mmrid+"_Vmag";
                     double vmag_phys = m["magnitude"];
                     double vmag_nom = vmag_phys / abs(node_vnoms[zary.znode1s[zid]]);
-#ifdef FILES_INTERFACE_WRITE
+#ifdef FILE_INTERFACE_WRITE
                     string meas_node = zary.mnodes[mmrid];
                     node_mag[meas_node] = vmag_nom;
                     // assumes there is always an angle with the magnitude,
@@ -1259,7 +1259,7 @@ class SELoopWorker {
             //}
         }
 
-#ifdef FILES_INTERFACE_WRITE
+#ifdef FILE_INTERFACE_WRITE
         // write simulation_data files from a running simulation for use
         // with test harness
         // The simulation_data file is used to plot directly against results
@@ -1345,7 +1345,7 @@ class SELoopWorker {
         
         // Don't publish test harness results because node_bmrids and node_phs
         // weren't initialized
-#ifndef FILES_INTERFACE_READ
+#ifndef FILE_INTERFACE_READ
         // Initialize json
         json jstate;
         jstate["simulation_id"] = gad->simid;
@@ -1395,10 +1395,10 @@ class SELoopWorker {
 
 #ifdef DEBUG_FILES
         // write to file
-#ifndef FILES_INTERFACE_READ
+#ifndef FILE_INTERFACE_READ
         string simpath = "output/sim_" + gad->simid + "/";
 #else
-        string simpath = "output/"; simpath += FILES_INTERFACE_READ; simpath += "/";
+        string simpath = "output/"; simpath += FILE_INTERFACE_READ; simpath += "/";
 #endif
         state_fh.open(simpath+"vmag_per-unit.csv",ofstream::app);
         state_fh << timestamp << ',';
@@ -1409,9 +1409,9 @@ class SELoopWorker {
         }
         state_fh.close();
 #endif
-#if defined(FILES_INTERFACE_READ) || defined(FILES_INTERFACE_WRITE)
-#ifdef FILES_INTERFACE_READ
-        string filename = FILES_INTERFACE_READ;
+#if defined(FILE_INTERFACE_READ) || defined(FILE_INTERFACE_WRITE)
+#ifdef FILE_INTERFACE_READ
+        string filename = FILE_INTERFACE_READ;
 #else
         string filename = "test_files";
 #endif
@@ -1446,10 +1446,10 @@ class SELoopWorker {
 
 #ifdef DEBUG_FILES
         // set filename path based on timestamp
-#ifndef FILES_INTERFACE_READ
+#ifndef FILE_INTERFACE_READ
         string simpath = "output/sim_" + gad->simid + "/ts_";
 #else
-        string simpath = "output/"; simpath += FILES_INTERFACE_READ; simpath += "/ts_";
+        string simpath = "output/"; simpath += FILE_INTERFACE_READ; simpath += "/ts_";
 #endif
         std::ostringstream out;
         out << simpath << timestamp << "/";
@@ -1628,7 +1628,7 @@ class SELoopWorker {
 #else
         double *rhs = (double *)calloc(zqty*zqty, sizeof(double));
 #endif
-//#ifdef FILES_INTERFACE_READ
+//#ifdef FILE_INTERFACE_READ
 //        double condnum;
 //#endif
 
@@ -1664,7 +1664,7 @@ class SELoopWorker {
             // KLU condition number estimation
             (void)klu_condest(Supd->p,Supd->x,klusym,klunum,&klucom);
             *selog << "klu_condest Supd condition number estimate: " << klucom.condest << "\n" << std::flush;
-//#ifdef FILES_INTERFACE_READ
+//#ifdef FILE_INTERFACE_READ
 //            condnum = klucom.condest;
 //            *selog << timestamp << "," << condnum << ",SupdCondNum\n" << std::flush;
 //#endif
@@ -1734,7 +1734,7 @@ class SELoopWorker {
         free(rhs);
 #endif
 
-//#ifdef FILES_INTERFACE_READ
+//#ifdef FILE_INTERFACE_READ
 //       // determine number of significant digits based on condition number
 //       uint digits = 15 - floor(log10(condnum));
 //       // set all elements of Supd^-1 to the desired number of significant
@@ -1779,7 +1779,7 @@ class SELoopWorker {
         if ( Kupd ) *selog << "Kupd is " << Kupd->m << " by " << Kupd->n <<
                 " with " << Kupd->nzmax << " entries\n" << std::flush;
 #endif
-#ifdef FILES_INTERFACE_READ
+#ifdef FILE_INTERFACE_READ
        // Commented out this precision limiting code per Andy request 2/3/21
        //for (uint i=0; i<Kupd->nzmax; i++)
        //    Kupd->x[i] = SET_PRECISION8(Kupd->x[i]);
@@ -1823,7 +1823,7 @@ class SELoopWorker {
         else *selog << "yupd is " << yupd->m << " by " << yupd->n <<
             " with " << yupd->nzmax << " entries\n" << std::flush;
 #endif
-#ifdef FILES_INTERFACE_READ
+#ifdef FILE_INTERFACE_READ
        // Commented out this precision limiting code per Andy request 2/3/21
        //for (uint i=0; i<yupd->nzmax; i++)
        //    yupd->x[i] = SET_PRECISION8(yupd->x[i]);

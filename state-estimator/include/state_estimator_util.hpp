@@ -178,7 +178,7 @@ namespace state_estimator_util{
         for ( auto& c : sourcebus ) c = toupper(c);
         string source_node_prefix = sourcebus + ".";
 
-#ifdef FILES_INTERFACE_WRITE
+#ifdef FILE_INTERFACE_WRITE
         // append to the existing measurements.csv started by SensorDefConsumer
         std::ofstream ofs("test_files/measurements.csv", ofstream::app);
 #endif
@@ -200,7 +200,7 @@ namespace state_estimator_util{
                 zary.zsigs   [vmag_zid] = 0.001; // 1 sigma = 0.1%
                 zary.zpseudos[vmag_zid] = true;
                 zary.znomvals[vmag_zid] = zary.zvals[vmag_zid];
-#ifdef FILES_INTERFACE_WRITE
+#ifdef FILE_INTERFACE_WRITE
                 ofs << zary.ztypes[vmag_zid] << "," << vmag_zid << "," << zary.znode1s[vmag_zid] << "," << zary.znode2s[vmag_zid] << "," << zary.zvals[vmag_zid] << "," << zary.zsigs[vmag_zid] << ",1," << zary.znomvals[vmag_zid] << "\n";
 #endif
 
@@ -218,7 +218,7 @@ namespace state_estimator_util{
                 zary.zsigs   [varg_zid] = 0.01;
                 zary.zpseudos[varg_zid] = true;
                 zary.znomvals[varg_zid] = zary.zvals[varg_zid];
-#ifdef FILES_INTERFACE_WRITE
+#ifdef FILE_INTERFACE_WRITE
                 ofs << zary.ztypes[varg_zid] << "," << varg_zid << "," << zary.znode1s[varg_zid] << "," << zary.znode2s[varg_zid] << "," << zary.zvals[varg_zid] << "," << zary.zsigs[varg_zid] << ",1," << zary.znomvals[varg_zid] << "\n";
 #endif
             }
@@ -238,7 +238,7 @@ namespace state_estimator_util{
                     loss_ratio*(nominal_systemP/sbase)/node_names.size(); // load + leakage
                 zary.zpseudos[pinj_zid] = true;
                 zary.znomvals[pinj_zid] = zary.zvals[pinj_zid];
-#ifdef FILES_INTERFACE_WRITE
+#ifdef FILE_INTERFACE_WRITE
                 ofs << zary.ztypes[pinj_zid] << "," << pinj_zid << "," << zary.znode1s[pinj_zid] << "," << zary.znode2s[pinj_zid] << "," << zary.zvals[pinj_zid] << "," << zary.zsigs[pinj_zid] << ",1," << zary.znomvals[pinj_zid] << "\n";
 #endif
 
@@ -257,12 +257,12 @@ namespace state_estimator_util{
                     loss_ratio*(nominal_systemQ/sbase)/node_names.size(); // load + leakage
                 zary.zpseudos[qinj_zid] = true;
                 zary.znomvals[qinj_zid] = zary.zvals[qinj_zid];
-#ifdef FILES_INTERFACE_WRITE
+#ifdef FILE_INTERFACE_WRITE
                 ofs << zary.ztypes[qinj_zid] << "," << qinj_zid << "," << zary.znode1s[qinj_zid] << "," << zary.znode2s[qinj_zid] << "," << zary.zvals[qinj_zid] << "," << zary.zsigs[qinj_zid] << ",1," << zary.znomvals[qinj_zid] << "\n";
 #endif
             }
         }
-#ifdef FILES_INTERFACE_WRITE
+#ifdef FILE_INTERFACE_WRITE
         ofs.close();
 #endif
 #ifdef DEBUG_PRIMARY
@@ -348,7 +348,7 @@ namespace state_estimator_util{
                 sparq_ratio_tap_changer_nodes(gad.modelID));
             
         // *selog << jregs.dump(2);
-#ifdef FILES_INTERFACE_WRITE
+#ifdef FILE_INTERFACE_WRITE
         std::ofstream ofs("test_files/regid.csv", ofstream::out);
         ofs << "Regid,Primnode,Regnode\n";
 #endif
@@ -402,11 +402,11 @@ namespace state_estimator_util{
             regid_primnode_map[regid] = primnode;
             regid_regnode_map[regid] = regnode;
 
-#ifdef FILES_INTERFACE_WRITE
+#ifdef FILE_INTERFACE_WRITE
             ofs << regid << "," << primnode << "," << regnode << "\n";
 #endif
         }
-#ifdef FILES_INTERFACE_WRITE
+#ifdef FILE_INTERFACE_WRITE
         ofs.close();
 #endif
 #ifdef DEBUG_PRIMARY
