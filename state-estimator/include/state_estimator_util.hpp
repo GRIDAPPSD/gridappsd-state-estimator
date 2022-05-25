@@ -2,12 +2,6 @@
 #define SE_INIT_HPP
 #ifdef GRIDAPPSD_INTERFACE
 
-#include "state_estimator_gridappsd.hpp"
-using state_estimator_gridappsd::gridappsd_session;
-
-#include "gridappsd_requests.hpp"
-using gridappsd_requests::sparql_query;
-
 #include "sparql_queries_CIM100.hpp"
 using sparql_queries::sparq_nodes;
 using sparql_queries::sparq_transformer_end_vbase;

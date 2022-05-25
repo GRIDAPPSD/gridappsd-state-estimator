@@ -2,11 +2,7 @@
 #define GAD_REQUESTS_HPP
 #ifdef GRIDAPPSD_INTERFACE
 
-#include "state_estimator_gridappsd.hpp"
 using session = state_estimator_gridappsd::gridappsd_session;
-
-#include "SEProducer.hpp"
-#include "GenericConsumer.hpp"
 
 #include "json.hpp"
 using nlohmann::json;

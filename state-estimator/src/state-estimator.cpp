@@ -98,13 +98,14 @@ std::ostream* selog = &std::cout;
 #include "TopoProcConsumer.hpp"
 #include "VnomConsumer.hpp"
 #include "SensorDefConsumer.hpp"
-#include "state_estimator_util.hpp"
+#include "SEProducer.hpp"
+#include "state_estimator_gridappsd.hpp"
+  using state_estimator_gridappsd::gridappsd_session;
 #include "gridappsd_requests.hpp"
   using gridappsd_requests::sparql_query;
+#include "state_estimator_util.hpp"
 #include "SharedQueue.hpp"
 #include "SELoopConsumer.hpp"
-#include "state_estimator_gridappsd.hpp"
-#include "SEProducer.hpp"
 
 #ifdef DEBUG_PRIMARY
 // temporary flag to hold up initialization until the platform has finished
