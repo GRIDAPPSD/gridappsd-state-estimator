@@ -3339,8 +3339,6 @@ class SELoopWorker {
 
 #ifdef DEBUG_PRIMARY
 #include <ios>
-#include <iostream>
-#include <fstream>
     private:
     void process_mem_usage(string& vm_used, string& res_used) {
         using std::ios_base;

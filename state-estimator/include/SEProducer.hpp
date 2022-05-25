@@ -19,9 +19,7 @@
 #include <cms/MessageListener.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <iostream>
 #include <memory>
-#include <string>
 
 using namespace activemq::core;
 using namespace decaf::util::concurrent;

@@ -1,10 +1,6 @@
 #ifndef SPARQL_QUERIES_HPP
 #define SPARQL_QUERIES_HPP
 
-#include<string>
-
-using std::string;
-
 namespace sparql_queries {
 
     string sparq_nodes(string fdrid) {

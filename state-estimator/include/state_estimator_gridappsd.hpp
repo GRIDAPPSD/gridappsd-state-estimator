@@ -4,9 +4,6 @@
 #include "json.hpp"
 using nlohmann::json;
 
-#include <string>
-using std::string;
-
 namespace state_estimator_gridappsd {
     class state_estimator_session {
         public:

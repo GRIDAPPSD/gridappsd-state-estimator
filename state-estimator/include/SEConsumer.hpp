@@ -19,10 +19,7 @@
 #include <cms/MessageListener.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <iostream>
 #include <memory>
-#include <string>
-#include <regex>
 
 #include <activemq/commands/ActiveMQTopic.h>
 

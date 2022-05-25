@@ -3,9 +3,6 @@
 
 #include "SEConsumer.hpp"
 
-#include <string>
-#include <iostream>
-
 // This class is a generic listener
 class GenericConsumer: public SEConsumer {
     public:

@@ -16,8 +16,6 @@ using sparql_queries::sparq_energy_source_buses;
 using sparql_queries::sparq_term_bus;
 using sparql_queries::sparq_cemrid_busnames;
 
-#include <string>
-
 namespace state_estimator_util{
 
     void get_nodes(gridappsd_session& gad, SSMAP& node_bmrids, SSMAP& node_phs) {
