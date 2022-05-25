@@ -2,10 +2,6 @@
 SSPATH=../SuiteSparse
 
 SSINCPATH=$(SSPATH)/include
-# APR is part of the Linux distro by default, hopefully here
-# Gary 5/2/22: Not sure if APR is needed outside of GridAPPS-D, so assume not
-#APRINCPATH=/usr/include/apr-1.0
-#INCLUDES= -I$(SSINCPATH) -I$(APRINCPATH) -I./include
 INCLUDES= -I$(SSINCPATH) -I./include
 
 # SparseSuite libraries
@@ -33,8 +29,6 @@ CXXFLAGS=-O
 #CXXFLAGS=-O2
 #CXXFLAGS=-Ofast
 
-# Gary 5/2/22: Not sure if -lssl is needed either, might just be for ActiveMQ
-#	g++ $(CXXFLAGS) $? $(SSLIBPATHS) $(SSLIBS) -lstdc++ -lssl -o $@
 bin/state-estimator: obj/state-estimator.o
 	mkdir -p bin
 	g++ $(CXXFLAGS) $? $(SSLIBPATHS) $(SSLIBS) -lstdc++ -o $@
