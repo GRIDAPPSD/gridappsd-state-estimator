@@ -72,7 +72,9 @@ class SELoopWorker {
 
     // passed in from constructor
     SharedQueue<json>* workQueue;
+#ifdef GRIDAPPSD_INTERFACE
     state_estimator_gridappsd::gridappsd_session* gad;
+#endif
     SensorArray        zary;
     uint               node_qty;     // number of nodes
     SLIST              node_names;   // node names [list of strings]
@@ -142,7 +144,9 @@ class SELoopWorker {
 
     public:
     SELoopWorker(SharedQueue<json>* workQueue,
+#ifdef GRIDAPPSD_INTERFACE
             state_estimator_gridappsd::gridappsd_session* gad,
+#endif
             const SensorArray& zary,
             const uint& node_qty,
             const SLIST& node_names,
@@ -160,7 +164,9 @@ class SELoopWorker {
             const SSMAP& switch_node1s,
             const SSMAP& switch_node2s) {
         this->workQueue = workQueue;
+#ifdef GRIDAPPSD_INTERFACE
         this->gad = gad;
+#endif
         this->zary = zary;
         this->node_qty = node_qty;
         this->node_names = node_names;

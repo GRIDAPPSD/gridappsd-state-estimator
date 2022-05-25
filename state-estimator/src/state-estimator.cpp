@@ -87,10 +87,6 @@ std::ostream* selog = &std::cout;
 
 // include files for all interfaces
 #include "SharedQueue.hpp"
-#include "SensorArray.hpp"
-#include "SEProducer.hpp"
-#include "state_estimator_gridappsd.hpp"
-#include "SELoopWorker.hpp"
 
 #ifdef GRIDAPPSD_INTERFACE
 // include files for the GridAPPS-D interface
@@ -101,6 +97,7 @@ std::ostream* selog = &std::cout;
 #include "state_estimator_util.hpp"
 #include "gridappsd_requests.hpp"
 #include "SELoopConsumer.hpp"
+#include "state_estimator_gridappsd.hpp"
 using gridappsd_requests::sparql_query;
 
 #ifdef DEBUG_PRIMARY
@@ -109,6 +106,11 @@ using gridappsd_requests::sparql_query;
 bool blockedFlag = true;
 #endif
 #endif
+
+// more include files for all interfaces
+#include "SensorArray.hpp"
+#include "SEProducer.hpp"
+#include "SELoopWorker.hpp"
 
 int main(int argc, char** argv) {
 
@@ -471,7 +473,7 @@ int main(int argc, char** argv) {
         sbase, Yphys, Amat, regid_primnode_map, regid_regnode_map,
         mmrid_pos_type_map, switch_node1s, switch_node2s);
 #else
-    SELoopWorker loopWorker(NULL, NULL, zary, node_qty, node_names,
+    SELoopWorker loopWorker(NULL, zary, node_qty, node_names,
         node_idxs, node_vnoms, node_bmrids, node_phs, node_name_lookup,
         sbase, Yphys, Amat, regid_primnode_map, regid_regnode_map,
         mmrid_pos_type_map, switch_node1s, switch_node2s);
