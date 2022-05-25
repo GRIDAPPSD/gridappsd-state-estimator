@@ -6,36 +6,7 @@ using json = nlohmann::json;
 
 #include "SEConsumer.hpp"
 
-// standard data types
-#include <string>
-#include <list>
-#include <unordered_map>
-
-// macro for unsigned int
-#define uint unsigned int
-
-
 #include "SensorArray.hpp"
-
-#ifndef SSMAP
-#define SSMAP std::unordered_map<std::string,std::string>
-#endif
-
-#ifndef SLIST
-#define SLIST std::list<std::string>
-#endif
-
-#ifndef SSLISTMAP
-#define SSLISTMAP std::unordered_map<std::string,SLIST>
-#endif
-
-//#ifndef IDMAP
-//#define IDMAP std::unordered_map<unsigned int,double>
-//#endif
-
-//#ifndef IMDMAP
-//#define IMDMAP std::unordered_map<unsigned int,IDMAP>
-//#endif
 
 // This class listens for sensor definitions and constructs the sensors
 class SensorDefConsumer : public SEConsumer {

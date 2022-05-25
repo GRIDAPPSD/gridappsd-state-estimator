@@ -1,18 +1,7 @@
 #ifndef SENSORARRAY_HPP
 #define SENSORARRAY_HPP
 
-#include <string>
-#include <list>
-#include <unordered_map>
-
-// macro for unsigned int
-#define uint unsigned int
-
 // store object names and hash names to different pieces of information
-#define SLIST std::list<std::string>
-#define SDMAP std::unordered_map<std::string,double>
-#define SBMAP std::unordered_map<std::string,bool>
-#define SSMAP std::unordered_map<std::string,std::string>
 
 class SensorArray {
     public:

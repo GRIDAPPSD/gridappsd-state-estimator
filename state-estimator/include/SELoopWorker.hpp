@@ -12,9 +12,6 @@ using json = nlohmann::json;
 #include "klu.h"
 
 // standard data types
-#include <complex>
-#include <list>
-#include <unordered_map>
 #include <array>
 
 // for mkdir and opendir
@@ -30,17 +27,9 @@ using json = nlohmann::json;
 #include <time.h>
 #endif
 
-#ifndef IDMAP
-#define IDMAP std::unordered_map<unsigned int,double>
-#endif
-
-#ifndef IMDMAP
-#define IMDMAP std::unordered_map<unsigned int,IDMAP>
-#endif
-
 #ifndef A5MAP
-#define A5MAP std::multimap<unsigned int,std::array<unsigned int, 5>>
-#define A5PAIR std::pair<unsigned int, std::array<unsigned int, 5>>
+#define A5MAP std::multimap<uint,std::array<uint, 5>>
+#define A5PAIR std::pair<uint, std::array<uint, 5>>
 #endif
 
 // macros defining the negligable value versions of C-sparse functions
@@ -2729,7 +2718,7 @@ class SELoopWorker {
         cs* Jraw = cs_spalloc(zqty, xqty, Jshapemap.size(), 1, 1);
 #endif
         // loop over existing Jacobian entries
-        for (std::pair<unsigned int, std::array<unsigned int, 5>> Jelem : Jshapemap) {
+        for (std::pair<uint, std::array<uint, 5>> Jelem : Jshapemap) {
             // Unpack entry data
             uint zidx = Jelem.second[0];
             uint xidx = Jelem.second[1];

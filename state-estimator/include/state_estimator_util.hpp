@@ -17,14 +17,6 @@ using sparql_queries::sparq_term_bus;
 using sparql_queries::sparq_cemrid_busnames;
 
 #include <string>
-#define SLIST std::list<std::string>
-#define SIMAP std::unordered_map<std::string,unsigned int>
-#define SDMAP std::unordered_map<std::string,double>
-#define SCMAP std::unordered_map<std::string,std::complex<double>>
-#define SSMAP std::unordered_map<std::string,std::string>
-#define IDMAP std::unordered_map<unsigned int,double>
-#define IMDMAP std::unordered_map<unsigned int,IDMAP>
-#define SSLISTMAP std::unordered_map<std::string,SLIST>
 
 namespace state_estimator_util{
 

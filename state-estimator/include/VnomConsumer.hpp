@@ -9,26 +9,10 @@ using json = nlohmann::json;
 // for side-loading test cases
 #include <fstream>
 
-// standard data types
-#include <string>
-#include <complex>
-#include <list>
-#include <unordered_map>
-
-// macro for unsigned int
-#define uint unsigned int
-
 // Store node names in a linked list and hash node name to their position
 // Iterate over the linked list to access all nodes or states
 // Note that positions are one-indexed
 // Store sensor names in a linked list and hash node names to various params
-#define SLIST std::list<std::string>
-#define SIMAP std::unordered_map<std::string,unsigned int>
-#define SCMAP std::unordered_map<std::string,std::complex<double>>
-
-// Hash address (i,j) to the index of a sparse matrix vector
-#define ICMAP std::unordered_map<unsigned int,std::complex<double>>
-#define IMMAP std::unordered_map<unsigned int,ICMAP>
 
 using namespace std;
 

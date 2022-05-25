@@ -62,6 +62,23 @@
 #define PI 3.141592653589793
 
 #include <iostream>
+#include <string>
+#include <complex>
+#include <list>
+#include <unordered_map>
+
+#define SLIST std::list<std::string>
+#define SIMAP std::unordered_map<std::string,uint>
+#define SDMAP std::unordered_map<std::string,double>
+#define SCMAP std::unordered_map<std::string,std::complex<double>>
+#define SBMAP std::unordered_map<std::string,bool>
+#define SSMAP std::unordered_map<std::string,std::string>
+#define ISMAP std::unordered_map<uint,std::string>
+#define IDMAP std::unordered_map<uint,double>
+#define IMDMAP std::unordered_map<uint,IDMAP>
+#define ICMAP std::unordered_map<uint,std::complex<double>>
+#define IMMAP std::unordered_map<uint,ICMAP>
+#define SSLISTMAP std::unordered_map<std::string,SLIST>
 
 // global logging stream--either a file or stdout based on invocation
 std::ostream* selog = &std::cout;
@@ -440,14 +457,13 @@ int main(int argc, char** argv) {
     ifs.close();
 #endif
 
-#ifndef FILE_INTERFACE_READ
     // Initialize class that does the state estimates
+#ifndef FILE_INTERFACE_READ
     SELoopWorker loopWorker(&workQueue, &gad, zary, node_qty, node_names,
         node_idxs, node_vnoms, node_bmrids, node_phs, node_name_lookup,
         sbase, Yphys, Amat, regid_primnode_map, regid_regnode_map,
         mmrid_pos_type_map, switch_node1s, switch_node2s);
 #else
-    // Initialize class that does the state estimates
     SELoopWorker loopWorker(NULL, NULL, zary, node_qty, node_names,
         node_idxs, node_vnoms, node_bmrids, node_phs, node_name_lookup,
         sbase, Yphys, Amat, regid_primnode_map, regid_regnode_map,
