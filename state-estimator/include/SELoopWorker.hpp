@@ -1,6 +1,7 @@
 #ifndef SELOOPWORKER_HPP
 #define SELOOPWORKER_HPP
 #include <cfloat>
+#include <iomanip>
 
 #include "cs.h"
 #include "klu.h"
@@ -187,7 +188,9 @@ class SELoopWorker {
 
     public:
     void workLoop() {
+#ifdef GRIDAPPSD_INTERFACE
         json jmessage;
+#endif
         uint timestamp, timestampLastEstimate, timeZero;
         bool exitAfterEstimateFlag = false;
         bool doEstimateFlag;
