@@ -2,8 +2,6 @@
 #define GENERICCONSUMER_HPP
 #ifdef GRIDAPPSD_INTERFACE
 
-#include "SEConsumer.hpp"
-
 // This class is a generic listener
 class GenericConsumer: public SEConsumer {
     public:

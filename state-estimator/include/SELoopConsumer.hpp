@@ -5,8 +5,6 @@
 #include "json.hpp"
 using json = nlohmann::json;
 
-#include "SEConsumer.hpp"
-
 // This class listens for system state messages
 class SELoopConsumer : public SEConsumer {
     // system state

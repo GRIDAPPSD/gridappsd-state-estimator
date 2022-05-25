@@ -5,10 +5,6 @@
 #include "json.hpp"
 using json = nlohmann::json;
 
-#include "SEConsumer.hpp"
-
-#include "SensorArray.hpp"
-
 // This class listens for sensor definitions and constructs the sensors
 class SensorDefConsumer : public SEConsumer {
     private:
