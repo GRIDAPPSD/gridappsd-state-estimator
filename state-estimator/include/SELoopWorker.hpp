@@ -90,7 +90,9 @@ class SELoopWorker {
     SSMAP              switch_node1s;
     SSMAP              switch_node2s;
 
+#ifdef GRIDAPPSD_INTERFACE
     SEProducer *statePublisher = 0;
+#endif
 
     // system topology definition
     uint xqty;          // number of states
