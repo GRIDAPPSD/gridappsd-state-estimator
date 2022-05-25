@@ -88,8 +88,12 @@
 // global logging stream--either a file or stdout based on invocation
 std::ostream* selog = &std::cout;
 
+// include files for all interfaces
+#include "SensorArray.hpp"
+
 #ifdef GRIDAPPSD_INTERFACE
 // include files for the GridAPPS-D interface
+#include "SEConsumer.hpp"
 #include "GenericConsumer.hpp"
 #include "TopoProcConsumer.hpp"
 #include "VnomConsumer.hpp"
@@ -109,8 +113,7 @@ bool blockedFlag = true;
 #endif
 #endif
 
-// include files for all interfaces
-#include "SensorArray.hpp"
+// more include files for all interfaces
 #include "SELoopWorker.hpp"
 
 int main(int argc, char** argv) {
