@@ -1,5 +1,6 @@
 #ifndef TOPOPROCCONSUMER_HPP
 #define TOPOPROCCONSUMER_HPP
+#ifdef GRIDAPPSD_INTERFACE
 
 #include "json.hpp"
 using json = nlohmann::json;
@@ -155,4 +156,5 @@ class TopoProcConsumer : public SEConsumer {
     }
 };
 
+#endif
 #endif

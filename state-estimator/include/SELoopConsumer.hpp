@@ -1,5 +1,6 @@
 #ifndef SELOOPCONSUMER_HPP
 #define SELOOPCONSUMER_HPP
+#ifdef GRIDAPPSD_INTERFACE
 
 #include "json.hpp"
 using json = nlohmann::json;
@@ -78,4 +79,5 @@ class SELoopConsumer : public SEConsumer {
     }
 };
 
+#endif
 #endif

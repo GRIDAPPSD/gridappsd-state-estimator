@@ -1,5 +1,6 @@
 #ifndef GENERICCONSUMER_HPP
 #define GENERICCONSUMER_HPP
+#ifdef GRIDAPPSD_INTERFACE
 
 #include "SEConsumer.hpp"
 
@@ -19,4 +20,5 @@ class GenericConsumer: public SEConsumer {
     }
 };
 
+#endif
 #endif

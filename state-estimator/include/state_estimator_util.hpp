@@ -1,5 +1,6 @@
 #ifndef SE_INIT_HPP
 #define SE_INIT_HPP
+#ifdef GRIDAPPSD_INTERFACE
 
 #include "state_estimator_gridappsd.hpp"
 using state_estimator_gridappsd::gridappsd_session;
@@ -427,4 +428,5 @@ namespace state_estimator_util{
 
 } // end namespace state_estimator_util
 
+#endif
 #endif // SE_INIT_HPP

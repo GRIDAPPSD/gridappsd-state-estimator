@@ -1,5 +1,6 @@
 #ifndef GAD_REQUESTS_HPP
 #define GAD_REQUESTS_HPP
+#ifdef GRIDAPPSD_INTERFACE
 
 #include "state_estimator_gridappsd.hpp"
 using session = state_estimator_gridappsd::gridappsd_session;
@@ -41,5 +42,5 @@ namespace gridappsd_requests {
     //json config_request(const session&s, const string&t) {}
 }
 
-
+#endif
 #endif

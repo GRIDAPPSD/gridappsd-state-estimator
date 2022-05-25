@@ -1,5 +1,6 @@
 #ifndef VNOMCONSUMER_HPP
 #define VNOMCONSUMER_HPP
+#ifdef GRIDAPPSD_INTERFACE
 
 #include "json.hpp"
 using json = nlohmann::json;
@@ -201,4 +202,5 @@ class VnomConsumer: public SEConsumer {
     }
 };
 
+#endif
 #endif

@@ -1,5 +1,6 @@
 #ifndef SENSORDEFCONSUMER_HPP
 #define SENSORDEFCONSUMER_HPP
+#ifdef GRIDAPPSD_INTERFACE
 
 #include "json.hpp"
 using json = nlohmann::json;
@@ -292,4 +293,5 @@ class SensorDefConsumer : public SEConsumer {
     }
 };
 
+#endif
 #endif
