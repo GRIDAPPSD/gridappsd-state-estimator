@@ -130,15 +130,15 @@ class SELoopWorker {
 #endif
 
 #ifdef DEBUG_FILES
-    ofstream state_fh;  // file to record states
+    std::ofstream state_fh;  // file to record states
 #endif
 
 #ifdef FILE_INTERFACE_READ
-    ifstream meas_fh;   // test harness measurement file
+    std::ifstream meas_fh;   // test harness measurement file
     std::vector<string> meas_zids;
 #endif
 #if defined(FILE_INTERFACE_READ) || defined(FILE_INTERFACE_WRITE)
-    ofstream results_fh;  // file to record results
+    std::ofstream results_fh;  // file to record results
 #endif
 
 
@@ -622,8 +622,8 @@ class SELoopWorker {
         *selog << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
 #endif
 #ifdef FILE_INTERFACE_WRITE
-        ofstream ofh;
-        ofh.open("test_files/ypu.csv", ofstream::out);
+        std::ofstream ofh;
+        ofh.open("test_files/ypu.csv", std::ofstream::out);
         ofh << std::setprecision(10);  // match OpenDSS ysparse
         ofh << "Row,Col,G,B\n";
         for ( auto& inode : node_names ) {
@@ -645,7 +645,7 @@ class SELoopWorker {
             }
         } ofh.close();
 
-        ofh.open("test_files/yphys.csv", ofstream::out);
+        ofh.open("test_files/yphys.csv", std::ofstream::out);
         ofh << std::setprecision(10);  // match OpenDSS ysparse
         ofh << "Row,Col,G,B\n";
         for ( uint i = 1 ; i <= node_qty ; i++ ) {
@@ -667,8 +667,8 @@ class SELoopWorker {
 #endif
 #ifdef DEBUG_FILES
         // write to file
-        ofstream ofh;
-        ofh.open(initpath+"Ypu.csv",ofstream::out);
+        std::ofstream ofh;
+        ofh.open(initpath+"Ypu.csv",std::ofstream::out);
         ofh << std::setprecision(16);
 
         for ( auto& inode : node_names ) {
@@ -700,7 +700,7 @@ class SELoopWorker {
 
 #ifdef DEBUG_FILES
         // write Y to file
-        ofh.open(initpath+"Yphys.csv",ofstream::out);
+        ofh.open(initpath+"Yphys.csv",std::ofstream::out);
         ofh << std::setprecision(16);
         *selog << "writing " << initpath+"Yphys.csv\n" << std::flush;
         for ( uint i = 1 ; i <= node_qty ; i++ ) {
@@ -728,8 +728,8 @@ class SELoopWorker {
 
 #ifdef DEBUG_FILES
         // write Vbase to file
-        //ofstream ofh;
-        ofh.open(initpath+"vnoms.csv",ofstream::out);
+        //std::ofstream ofh;
+        ofh.open(initpath+"vnoms.csv",std::ofstream::out);
         ofh << std::setprecision(16);
         *selog << "writing " << initpath+"vnoms.csv\n" << std::flush;
         std::vector<complex<double>> vnoms(node_qty);
@@ -751,7 +751,7 @@ class SELoopWorker {
             
 #ifdef DEBUG_FILES
         // write the node map to file
-        ofh.open(initpath+"nodem.csv",ofstream::out);
+        ofh.open(initpath+"nodem.csv",std::ofstream::out);
         *selog << "writing " << initpath+"nodem.csv\n" << std::flush;
         for ( auto& node_name : node_names )
             ofh << node_name << "\n";
@@ -760,7 +760,7 @@ class SELoopWorker {
 
 #ifdef DEBUG_FILES
         // write sensor information to file
-        ofh.open(initpath+"meas.txt",ofstream::out);
+        ofh.open(initpath+"meas.txt",std::ofstream::out);
         *selog << "writing output/init/meas.txt\n" << std::flush;
         ofh << "sensor_type\tsensor_name\tnode1\tnode2\tvalue\tsigma\n";
         for ( auto& zid : zary.zids ) {
@@ -883,7 +883,7 @@ class SELoopWorker {
         // --------------------------------------------------------------------
         // Initialize the state recorder file
         // --------------------------------------------------------------------
-        state_fh.open(simpath+"vmag_per-unit.csv",ofstream::out);
+        state_fh.open(simpath+"vmag_per-unit.csv",std::ofstream::out);
         state_fh << "timestamp,";
         uint nctr = 0;
         for ( auto& node_name : node_names )
@@ -900,7 +900,7 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
         *selog << "Writing results to test harness file: " << filename << "\n\n" << std::flush;
 #endif
-        results_fh.open(filename,ofstream::out);
+        results_fh.open(filename,std::ofstream::out);
         results_fh << "timestamp,";
         uint nctr2 = 0;
         for ( auto& node_name : node_names )
@@ -931,14 +931,14 @@ class SELoopWorker {
 
 #ifdef DEBUG_FILES
         // print initial state vector
-        ofstream ofh;
+        std::ofstream ofh;
 #ifndef FILE_INTERFACE_READ
         string simpath = "output/sim_" + gad->simid + "/";
 #else
         string simpath = "output/"; simpath += FILE_INTERFACE_READ; simpath += "/";
 #endif
         string initpath = simpath + "init/";
-        ofh.open(initpath+"Vpu.csv",ofstream::out);
+        ofh.open(initpath+"Vpu.csv",std::ofstream::out);
         ofh << std::setprecision(16);
         *selog << "writing " << initpath+"Vpu.csv\n\n" << std::flush;
         *selog << "node_qty is " << node_qty << "\n" << std::flush;
@@ -1260,14 +1260,14 @@ class SELoopWorker {
         // The simulation_data file is used to plot directly against results
         // in SE test harness runs without the platform
         static bool firstTimeFlag = true;
-        ofstream ofh_data;
+        std::ofstream ofh_data;
         string filename;
         uint ctr = 0;
         uint num_nodes = node_names.size();
 
         if (firstTimeFlag) {
             //firstTimeFlag = false;
-            ofh_data.open("test_files/simulation_data.csv", ofstream::out);
+            ofh_data.open("test_files/simulation_data.csv", std::ofstream::out);
 
             ofh_data << "timestamp,";
             for ( auto& node_name : node_names )
@@ -1275,7 +1275,7 @@ class SELoopWorker {
             ofh_data.close();
 
         }
-        ofh_data.open("test_files/simulation_data.csv", ofstream::app);
+        ofh_data.open("test_files/simulation_data.csv", std::ofstream::app);
         ofh_data << std::setprecision(16);
 
         ofh_data << timestamp << ",";
@@ -1294,7 +1294,7 @@ class SELoopWorker {
 
         if (firstTimeFlag) {
             firstTimeFlag = false;
-            ofh_data.open("test_files/measurement_data.csv", ofstream::out);
+            ofh_data.open("test_files/measurement_data.csv", std::ofstream::out);
 
             ofh_data << "timestamp,";
             for ( auto& zid : zary.zids )
@@ -1302,7 +1302,7 @@ class SELoopWorker {
             ofh_data.close();
 
         }
-        ofh_data.open("test_files/measurement_data.csv", ofstream::app);
+        ofh_data.open("test_files/measurement_data.csv", std::ofstream::app);
         ofh_data << std::setprecision(16);
 
         ofh_data << timestamp << ",";
@@ -1395,7 +1395,7 @@ class SELoopWorker {
 #else
         string simpath = "output/"; simpath += FILE_INTERFACE_READ; simpath += "/";
 #endif
-        state_fh.open(simpath+"vmag_per-unit.csv",ofstream::app);
+        state_fh.open(simpath+"vmag_per-unit.csv",std::ofstream::app);
         state_fh << timestamp << ',';
         uint ctr = 0;
         for ( auto& node_name : node_names ) {
@@ -1411,7 +1411,7 @@ class SELoopWorker {
         string filename = "test_files";
 #endif
         filename += "/results_data.csv";
-        results_fh.open(filename,ofstream::app);
+        results_fh.open(filename,std::ofstream::app);
 
         results_fh << timestamp << ',';
         results_fh << std::fixed;
@@ -1455,8 +1455,8 @@ class SELoopWorker {
 #endif
 
 #ifdef DEBUG_FILES
-        ofstream ofh;
-        ofh.open(tspath+"Vpu.csv",ofstream::out);
+        std::ofstream ofh;
+        ofh.open(tspath+"Vpu.csv",std::ofstream::out);
         ofh << std::setprecision(16);
         *selog << "writing " << tspath+"Vpu.csv\n\n" << std::flush;
         *selog << "node_qty is " << node_qty << "\n" << std::flush;
@@ -2073,7 +2073,7 @@ class SELoopWorker {
     private:
     void decompress_state(cs *&xmat) {
         // copy state into vector (states, especially phase, can be 0)
-        vector<double> xvec(xmat->m,0.0);
+        std::vector<double> xvec(xmat->m,0.0);
         for ( uint idx = 0 ; idx < xmat->nzmax ; idx++ )
             xvec[xmat->i[idx]] = xmat->x[idx];
         // update Vpu
@@ -2123,7 +2123,7 @@ class SELoopWorker {
     private:
     void decompress_variance(cs *&Pmat) {
         // vector to store the state variance (diagonal of Pmat)
-        vector<double> uvec(Pmat->n);
+        std::vector<double> uvec(Pmat->n);
         // Pmat is in compressed-column form; iterate over columns
         for ( uint j = 0; j < Pmat->n ; j++ ) {
             // iterate over existing data in column j
@@ -2414,9 +2414,9 @@ class SELoopWorker {
 #ifdef DEBUG_FILES
     private:
     void print_zvals(const string& filename) {
-        ofstream ofh;
+        std::ofstream ofh;
         ofh << std::setprecision(8);
-        ofh.open(filename,ofstream::out);
+        ofh.open(filename,std::ofstream::out);
 
         for ( auto& zid : zary.zids ) {
             uint zidx = zary.zidxs[zid];
@@ -2440,9 +2440,9 @@ class SELoopWorker {
 
     private:
     void print_cs_colvec(const string& filename, cs* colvec) {
-        ofstream ofh;
+        std::ofstream ofh;
         ofh << std::setprecision(8);
-        ofh.open(filename,ofstream::out);
+        ofh.open(filename,std::ofstream::out);
 
         for ( auto& zid : zary.zids ) {
             uint zidx = zary.zidxs[zid];
@@ -3119,9 +3119,9 @@ class SELoopWorker {
                            const uint &precision=16) {
         *selog << "starting print_cs_full\n" << std::flush;
         // write to file
-        ofstream ofh;
+        std::ofstream ofh;
         ofh << std::setprecision(precision);
-        ofh.open(filename,ofstream::out);
+        ofh.open(filename,std::ofstream::out);
         *selog << "writing " + filename + "\n" << std::flush;
         for ( uint i = 0 ; i < a->m ; i++ ) {
             uint ioff = i*a->n;
@@ -3152,9 +3152,9 @@ class SELoopWorker {
         }
 
         // write to file
-        ofstream ofh;
+        std::ofstream ofh;
         ofh << std::setprecision(precision);
-        ofh.open(filename,ofstream::out);
+        ofh.open(filename,std::ofstream::out);
         *selog << "writing " + filename + "\n\n" << std::flush;
         for ( uint j = 0 ; j < a->n ; j++ )
             for ( uint i = 0 ; i < a->m ; i++ ) {
@@ -3180,9 +3180,9 @@ class SELoopWorker {
     private:
     void print_cs_compress_sparse(cs *&a, const string &filename="cs.csv",
                                   const uint &precision=16) {
-        ofstream ofh;
+        std::ofstream ofh;
         ofh << std::setprecision(precision);
-        ofh.open(filename,ofstream::out);
+        ofh.open(filename,std::ofstream::out);
         *selog << "writing " + filename + "\n\n" << std::flush;
         unordered_map<uint,unordered_map<uint,double>> mat;
         for ( uint i = 0 ; i < a->n ; i++ ) {
@@ -3221,9 +3221,9 @@ class SELoopWorker {
             }
         }
         // write to file
-        ofstream ofh;
+        std::ofstream ofh;
         ofh << std::setprecision(precision);
-        ofh.open(filename,ofstream::out);
+        ofh.open(filename,std::ofstream::out);
         *selog << "writing " + filename + "\n\n" << std::flush;
         for ( uint i = 0 ; i < a->m ; i++ )
             for ( uint j = 0 ; j < a->n ; j++ )
@@ -3251,9 +3251,9 @@ class SELoopWorker {
         }
 
         // write to file
-        ofstream ofh;
+        std::ofstream ofh;
         ofh << std::setprecision(precision);
-        ofh.open(filename,ofstream::out);
+        ofh.open(filename,std::ofstream::out);
         *selog << "writing " + filename + "\n\n" << std::flush;
         for ( uint j = 0 ; j < a->n ; j++ )
             for ( uint i = 0 ; i < a->m ; i++ ) {
@@ -3279,9 +3279,9 @@ class SELoopWorker {
     private:
     void print_cs_compress_sparse(cs *&a, const string &filename="cs.csv",
                                   const uint &precision=16) {
-        ofstream ofh;
+        std::ofstream ofh;
         ofh << std::setprecision(precision);
-        ofh.open(filename,ofstream::out);
+        ofh.open(filename,std::ofstream::out);
         *selog << "writing " + filename + "\n\n" << std::flush;
         unordered_map<uint,unordered_map<uint,double>> mat;
         for ( uint i = 0 ; i < a->n ; i++ ) {
@@ -3347,15 +3347,11 @@ class SELoopWorker {
 #include <ios>
     private:
     void process_mem_usage(string& vm_used, string& res_used) {
-        using std::ios_base;
-        using std::ifstream;
-        using std::string;
-
         double vm_usage     = 0.0;
         double resident_set = 0.0;
 
         // 'file' stat seems to give the most reliable results
-        ifstream stat_stream("/proc/self/stat",ios_base::in);
+        std::ifstream stat_stream("/proc/self/stat",std::ios_base::in);
 
         // dummy vars for leading entries in stat that we don't care about
         string pid, comm, state, ppid, pgrp, session, tty_nr;
