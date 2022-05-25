@@ -2,9 +2,6 @@
 #define SELOOPWORKER_HPP
 #include <cfloat>
 
-#include "json.hpp"
-using json = nlohmann::json;
-
 #include "cs.h"
 #include "klu.h"
 

@@ -2,9 +2,6 @@
 #define TOPOPROCCONSUMER_HPP
 #ifdef GRIDAPPSD_INTERFACE
 
-#include "json.hpp"
-using json = nlohmann::json;
-
 // Store node names in a linked list and hash node name to their position
 // Iterate over the linked list to access all nodes or states
 // Note that positions are one-indexed

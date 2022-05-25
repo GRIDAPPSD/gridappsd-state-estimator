@@ -4,9 +4,6 @@
 
 using session = state_estimator_gridappsd::gridappsd_session;
 
-#include "json.hpp"
-using nlohmann::json;
-
 namespace gridappsd_requests {
     json sparql_query(const session& s, const string& t, const string& q) {
         // set up the consumer

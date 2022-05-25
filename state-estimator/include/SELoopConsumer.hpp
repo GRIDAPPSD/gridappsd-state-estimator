@@ -2,9 +2,6 @@
 #define SELOOPCONSUMER_HPP
 #ifdef GRIDAPPSD_INTERFACE
 
-#include "json.hpp"
-using json = nlohmann::json;
-
 // This class listens for system state messages
 class SELoopConsumer : public SEConsumer {
     // system state

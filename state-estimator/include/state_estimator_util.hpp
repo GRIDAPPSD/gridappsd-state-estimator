@@ -2,7 +2,6 @@
 #define SE_INIT_HPP
 #ifdef GRIDAPPSD_INTERFACE
 
-#include "sparql_queries_CIM100.hpp"
 using sparql_queries::sparq_nodes;
 using sparql_queries::sparq_transformer_end_vbase;
 using sparql_queries::sparq_energy_consumer_pq;

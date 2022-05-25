@@ -1,9 +1,6 @@
 #ifndef SE_GAD_HPP
 #define SE_GAD_HPP
 
-#include "json.hpp"
-using nlohmann::json;
-
 namespace state_estimator_gridappsd {
     class state_estimator_session {
         public:

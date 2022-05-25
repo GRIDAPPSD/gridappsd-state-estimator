@@ -2,9 +2,6 @@
 #define SENSORDEFCONSUMER_HPP
 #ifdef GRIDAPPSD_INTERFACE
 
-#include "json.hpp"
-using json = nlohmann::json;
-
 // This class listens for sensor definitions and constructs the sensors
 class SensorDefConsumer : public SEConsumer {
     private:

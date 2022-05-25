@@ -72,6 +72,9 @@
 #include <list>
 #include <unordered_map>
 
+#include "json.hpp"
+  using json = nlohmann::json;
+
 #define SLIST std::list<std::string>
 #define SIMAP std::unordered_map<std::string,uint>
 #define SDMAP std::unordered_map<std::string,double>
@@ -103,6 +106,7 @@ std::ostream* selog = &std::cout;
   using state_estimator_gridappsd::gridappsd_session;
 #include "gridappsd_requests.hpp"
   using gridappsd_requests::sparql_query;
+#include "sparql_queries_CIM100.hpp"
 #include "state_estimator_util.hpp"
 #include "SharedQueue.hpp"
 #include "SELoopConsumer.hpp"
