@@ -72,9 +72,6 @@
 #include <list>
 #include <unordered_map>
 
-#include "json.hpp"
-  using json = nlohmann::json;
-
 #define SLIST std::list<std::string>
 #define SIMAP std::unordered_map<std::string,uint>
 #define SDMAP std::unordered_map<std::string,double>
@@ -96,6 +93,9 @@ std::ostream* selog = &std::cout;
 
 #ifdef GRIDAPPSD_INTERFACE
 // include files for the GridAPPS-D interface
+#include "json.hpp"
+  using json = nlohmann::json;
+
 #include "SEConsumer.hpp"
 #include "GenericConsumer.hpp"
 #include "TopoProcConsumer.hpp"
