@@ -52,7 +52,7 @@ bin/state-estimator: obj/state-estimator.o
 
 obj/state-estimator.o: src/state-estimator.cpp $(wildcard include/*.hpp)
 	mkdir -p obj
-	g++ $(CXXFLAGS) -Wno-deprecated-declarations -std=c++11 -c $(GRIDAPPSD_INCLUDES) $< -o $@
+	g++ $(CXXFLAGS) -Wno-deprecated-declarations -std=c++11 -DGRIDAPPSD_INTERFACE -c $(GRIDAPPSD_INCLUDES) $< -o $@
 
 file bin/state-estimator-file: obj/state-estimator-file.o
 	mkdir -p bin
@@ -60,7 +60,7 @@ file bin/state-estimator-file: obj/state-estimator-file.o
 
 obj/state-estimator-file.o: src/state-estimator.cpp $(wildcard include/*.hpp)
 	mkdir -p obj
-	g++ $(CXXFLAGS) -Wno-deprecated-declarations -std=c++11 -c $(FILE_INCLUDES) $< -o $@
+	g++ $(CXXFLAGS) -Wno-deprecated-declarations -std=c++11 -DFILE_INTERFACE -c $(FILE_INCLUDES) $< -o $@
 
 clean:
 	rm -f obj/*
