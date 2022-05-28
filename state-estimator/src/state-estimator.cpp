@@ -17,6 +17,7 @@
 //#define USE_NEGL
 
 // files-based interface related conditional compilation values
+#ifdef FILE_INTERFACE
 //#define FILE_INTERFACE_READ "test_4Ti"
 //#define FILE_INTERFACE_READ "test_3p6_Ti"
 //#define FILE_INTERFACE_READ "test_4PiQi"
@@ -48,14 +49,17 @@
 //#define FILE_INTERFACE_READ "test_files_123"
 //#define FILE_INTERFACE_READ "test_files_13assets"
 
+#ifndef FILE_INTERFACE_READ
+#include "OOPS, NEED TO DEFINE FILE_INTERFACE_READ!"
+#endif
+#endif
+
 #ifdef FILE_INTERFACE_READ
 // whether to get node_vnoms from file or hardwire to 1
 #define FILE_INTERFACE_VNOM
 // the nosbase symbol is used for a model outside GridAPPS-D like the
 // 4-bus MATLAB model
 //#define FILE_INTERFACE_NOSBASE
-#else
-#define GRIDAPPSD_INTERFACE
 #endif
 //#define FILE_INTERFACE_WRITE
 
@@ -259,7 +263,7 @@ int main(int argc, char** argv) {
 
     // Wait for topological processor and retrieve topology
     ybusConsumerThread.join();
-    ybusConsumer.fillTopo(node_qty,node_names,node_idxs, node_name_lookup,Yphys);
+    ybusConsumer.fillTopo(node_qty,node_names,node_idxs,node_name_lookup,Yphys);
     ybusConsumer.close();
 
     // Wait for the vnom processor and retrive vnom
