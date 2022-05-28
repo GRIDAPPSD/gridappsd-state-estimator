@@ -46,7 +46,7 @@
 //#define FILE_INTERFACE_READ "test_3p6_bus_diff"
 //#define FILE_INTERFACE_READ "test_3p6_bus_full_meas"
 //#define FILE_INTERFACE_READ "test_3p6_bus_diff_meas"
-//#define FILE_INTERFACE_READ "test_files_123"
+#define FILE_INTERFACE_READ "test_files_123"
 //#define FILE_INTERFACE_READ "test_files_13assets"
 
 #ifndef FILE_INTERFACE_READ
