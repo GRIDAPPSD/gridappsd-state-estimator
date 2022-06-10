@@ -56,7 +56,7 @@ obj/state-estimator.o: src/state-estimator.cpp $(wildcard include/*.hpp)
 
 file bin/state-estimator-file: obj/state-estimator-file.o
 	mkdir -p bin
-	g++ $(CXXFLAGS) $? $(FILE_LIBS) -o $@
+	g++ $(CXXFLAGS) $? $(FILE_LIBS) -o bin/state-estimator-file
 
 obj/state-estimator-file.o: src/state-estimator.cpp $(wildcard include/*.hpp)
 	mkdir -p obj
