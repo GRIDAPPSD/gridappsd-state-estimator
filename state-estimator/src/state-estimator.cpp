@@ -292,7 +292,6 @@ int main(int argc, char** argv) {
         "{\"configurationType\":\"Vnom Export\",\"parameters\":{\"simulation_id\":\""
         + gad.simid + "\"}}";
     requester.send(vnomRequestText,vnomTopic);
-    requester.close();
 
     // Wait for topology processor and retrieve topology (ybus, node info)
     ybusConsumerThread.join();
@@ -334,19 +333,14 @@ int main(int argc, char** argv) {
     string sensRequestTopic = "goss.gridappsd.process.request.config";
     string sensRequestText = "{\"configurationType\":\"CIM Dictionary\",\"parameters\":{\"simulation_id\":\""
         + gad.simid + "\"}}";
-    SEProducer sensRequester(gad.brokerURI,gad.username,gad.password,sensRequestTopic,"queue");
-    sensRequester.send(sensRequestText,sensTopic);
-    sensRequester.close();
+    requester.send(sensRequestText,sensTopic);
+    requester.close(); // this is the last request so close it off
 
     // Wait for sensor initializer and retrieve sensors
     sensConsumerThread.join();
-
-    // Add Sensors
-    sensConsumer.fillSens(zary, mmrid_pos_type_map, switch_node1s, switch_node2s);
+    sensConsumer.fillSens(zary,mmrid_pos_type_map,switch_node1s,switch_node2s);
     sensConsumer.close();
 
-    // For the test harness, SensorDefConsumer reads the file for all
-    // measurements so no need to do anything for pseudo-measurements
     // Add Pseudo-Measurements
     state_estimator_util::insert_pseudo_measurements(gad,zary,
             node_names,node_vnoms,sbase);
@@ -459,6 +453,8 @@ int main(int argc, char** argv) {
     }
     ifs.close();
 
+    // For the file interface, file is read for all measurements so no need to
+    // do anything for pseudo-measurements as is done by SensorDefConsumer
     filename = FILE_INTERFACE_READ;
     filename += "/measurements.csv";
 #ifdef DEBUG_PRIMARY
