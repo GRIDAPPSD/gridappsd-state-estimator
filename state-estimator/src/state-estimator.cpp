@@ -52,15 +52,14 @@
 #ifndef FILE_INTERFACE_READ
 #include "OOPS, NEED TO DEFINE FILE_INTERFACE_READ!"
 #endif
-#endif
 
-#ifdef FILE_INTERFACE_READ
 // whether to get node_vnoms from file or hardwire to 1
 #define FILE_INTERFACE_VNOM
 // the nosbase symbol is used for a model outside GridAPPS-D like the
 // 4-bus MATLAB model
 //#define FILE_INTERFACE_NOSBASE
 #endif
+
 //#define FILE_INTERFACE_WRITE
 
 #define PI 3.141592653589793
@@ -181,9 +180,7 @@ int main(int argc, char** argv) {
     SSMAP switch_node1s;
     SSMAP switch_node2s;
 
-#ifndef FILE_INTERFACE_READ
-    // GridAPPS-D interface code
-
+#ifdef GRIDAPPSD_INTERFACE
     // ------------------------------------------------------------------------
     // INITIALIZE THE STATE ESTIMATOR SESSION WITH RUNTIME ARGS
     // ------------------------------------------------------------------------
@@ -365,10 +362,9 @@ int main(int argc, char** argv) {
         node_idxs, node_vnoms, node_bmrids, node_phs, node_name_lookup,
         sbase, Yphys, Amat, regid_primnode_map, regid_regnode_map,
         mmrid_pos_type_map, switch_node1s, switch_node2s);
+#endif
 
-#else
-    // File interface code
-
+#ifdef FILE_INTERFACE
     string filename = FILE_INTERFACE_READ;
     filename += "/ysparse.csv";
 #ifdef DEBUG_PRIMARY
