@@ -273,14 +273,7 @@ int main(int argc, char** argv) {
     ybusConsumerThread.start();        // execute ybusConsumer.run()
     ybusConsumer.waitUntilReady();    // wait for latch release
 
-    // Set up the vnom consumer
-    string vnomTopic = "goss.gridappsd.se.response."+gad.simid+".vnom";
-    VnomConsumer vnomConsumer(gad.brokerURI,gad.username,gad.password,vnomTopic,"queue");
-    Thread vnomConsumerThread(&vnomConsumer);
-    vnomConsumerThread.start();        // execute vnomConsumer.run()
-    vnomConsumer.waitUntilReady();    // wait for latch release
-
-    // Set up the producer to then request ybus and vnom
+    // Set up the producer to then request ybus
     string requestTopic = "goss.gridappsd.process.request.config";
     SEProducer requester(gad.brokerURI,gad.username,gad.password,requestTopic,"queue");
     string ybusRequestText =
@@ -288,15 +281,23 @@ int main(int argc, char** argv) {
         + gad.simid + "\"}}";
     requester.send(ybusRequestText,ybusTopic);
 
-    string vnomRequestText =
-        "{\"configurationType\":\"Vnom Export\",\"parameters\":{\"simulation_id\":\""
-        + gad.simid + "\"}}";
-    requester.send(vnomRequestText,vnomTopic);
-
     // Wait for topology processor and retrieve topology (ybus, node info)
     ybusConsumerThread.join();
     ybusConsumer.fillTopo(node_qty,node_names,node_idxs,node_name_lookup,Yphys);
     ybusConsumer.close();
+
+    // Set up the vnom consumer
+    string vnomTopic = "goss.gridappsd.se.response."+gad.simid+".vnom";
+    VnomConsumer vnomConsumer(gad.brokerURI,gad.username,gad.password,vnomTopic,"queue");
+    Thread vnomConsumerThread(&vnomConsumer);
+    vnomConsumerThread.start();        // execute vnomConsumer.run()
+    vnomConsumer.waitUntilReady();    // wait for latch release
+
+    // Request vnom with previously created producer
+    string vnomRequestText =
+        "{\"configurationType\":\"Vnom Export\",\"parameters\":{\"simulation_id\":\""
+        + gad.simid + "\"}}";
+    requester.send(vnomRequestText,vnomTopic);
 
     // Wait for the vnom processor and retrive vnom
     vnomConsumerThread.join();
@@ -313,7 +314,7 @@ int main(int argc, char** argv) {
     SSLISTMAP cemrid_busnames_map;
     state_estimator_util::build_cemrid_busnames_map(gad, cemrid_busnames_map);
 
-    // Add Pseudo-Measurements
+    // Adds nominal load injections
     SDMAP node_nominal_Pinj_map;
     SDMAP node_nominal_Qinj_map;
     state_estimator_util::get_nominal_energy_consumer_injections(gad,
@@ -329,7 +330,7 @@ int main(int argc, char** argv) {
     sensConsumerThread.start();       // execute sensConsumer.run()
     sensConsumer.waitUntilReady();    // wait for latch release
 
-    // Set up the producer to request sensor data
+    // Request sensor data with previously created producer
     string sensRequestTopic = "goss.gridappsd.process.request.config";
     string sensRequestText = "{\"configurationType\":\"CIM Dictionary\",\"parameters\":{\"simulation_id\":\""
         + gad.simid + "\"}}";
