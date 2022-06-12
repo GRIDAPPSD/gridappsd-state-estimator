@@ -126,8 +126,64 @@ bool blockedFlag = true;
 #include "SELoopWorker.hpp"
 
 int main(int argc, char** argv) {
+    // Common/shared interface code
+
+    // Node bus mRIDs and phases data structures
+    SSMAP node_bmrids;
+    SSMAP node_phs;
+
+    // Topology data structures
+    uint node_qty;      // number of nodes
+    SLIST node_names;   // list of node names
+    SIMAP node_idxs;    // map from node name to unit-indexed position
+    ISMAP node_name_lookup;
+    IMMAP Yphys;        // double map from indices to complex admittance
+    // G, B, g, and b are derived from Yphys:
+    //    -- Gij = std::real(Yphys[i][j]);
+    //    -- Bij = std::imag(Yphys[i][j]);
+    //    -- gij = std::real(-1.0*Yphys[i][j]);
+    //    -- bij = std::imag(-1.0*Yphys[i][j]);
+
+    // Node nominal voltages data structure
+    SCMAP node_vnoms;
+
+    // system base power, functionally arbitrary -- can be tweaked
+    // for better numerical stability if needed
+    // all values in the approximate range 1e-140 to 1e+150 converge
+    // and only numeric overflow/underflow results in failures for the
+    // 3 models tested (ieee13nodecktassets, ieee123, test9500new)
+    // values in the 1e+6 to 1e+12 range result in minimum Supd condition
+    // numbers with the range for lowest condition varying somewhat between
+    // the 3 models tested
+#ifdef SBASE_TESTING
+    double spower = (double)std::stoi(argv[3]);
+    const double sbase = pow(10.0, spower);
+#else
+#ifdef FILE_INTERFACE_NOSBASE
+    const double sbase = 1;
+#else
+    const double sbase = 1.0e+6;
+#endif
+#endif
+
+    // --------------------------------------------------------------------
+    // SENSOR INITIALIZATION
+    // --------------------------------------------------------------------
+
+    // A matrix data structures
+    IMDMAP Amat;
+    SSMAP regid_primnode_map;
+    SSMAP regid_regnode_map;
+
+    // Sensors data structures
+    SensorArray zary;
+    SSMAP mmrid_pos_type_map;
+    SSMAP switch_node1s;
+    SSMAP switch_node2s;
 
 #ifndef FILE_INTERFACE_READ
+    // GridAPPS-D interface code
+
     // ------------------------------------------------------------------------
     // INITIALIZE THE STATE ESTIMATOR SESSION WITH RUNTIME ARGS
     // ------------------------------------------------------------------------
@@ -203,28 +259,7 @@ int main(int argc, char** argv) {
         *selog << "\nNOT waiting before continuing with initialization\n" << std::flush;
     }
 #endif
-#endif
 
-    // Node bus mRIDs and phases data structures
-    SSMAP node_bmrids;
-    SSMAP node_phs;
-
-    // Topology data structures
-    uint node_qty;      // number of nodes
-    SLIST node_names;   // list of node names
-    SIMAP node_idxs;    // map from node name to unit-indexed position
-    ISMAP node_name_lookup;
-    IMMAP Yphys;        // double map from indices to complex admittance
-    // G, B, g, and b are derived from Yphys:
-    //    -- Gij = std::real(Yphys[i][j]);
-    //    -- Bij = std::imag(Yphys[i][j]);
-    //    -- gij = std::real(-1.0*Yphys[i][j]);
-    //    -- bij = std::imag(-1.0*Yphys[i][j]);
-
-    // Node nominal voltages data structure
-    SCMAP node_vnoms;
-
-#ifndef FILE_INTERFACE_READ
     // --------------------------------------------------------------------
     // MAKE SOME SPARQL QUERIES
     // --------------------------------------------------------------------
@@ -248,20 +283,21 @@ int main(int argc, char** argv) {
     vnomConsumerThread.start();        // execute vnomConsumer.run()
     vnomConsumer.waitUntilReady();    // wait for latch release
 
-    // Set up the producer to request the ybus and vnom
-    string topoRequestTopic = "goss.gridappsd.process.request.config";
-    SEProducer topoRequester(gad.brokerURI,gad.username,gad.password,topoRequestTopic,"queue");
+    // Set up the producer to then request ybus and vnom
+    string requestTopic = "goss.gridappsd.process.request.config";
+    SEProducer requester(gad.brokerURI,gad.username,gad.password,requestTopic,"queue");
     string ybusRequestText =
         "{\"configurationType\":\"YBus Export\",\"parameters\":{\"simulation_id\":\""
         + gad.simid + "\"}}";
-    topoRequester.send(ybusRequestText,ybusTopic);
+    requester.send(ybusRequestText,ybusTopic);
+
     string vnomRequestText =
         "{\"configurationType\":\"Vnom Export\",\"parameters\":{\"simulation_id\":\""
         + gad.simid + "\"}}";
-    topoRequester.send(vnomRequestText,vnomTopic);
-    topoRequester.close();
+    requester.send(vnomRequestText,vnomTopic);
+    requester.close();
 
-    // Wait for topological processor and retrieve topology
+    // Wait for topology processor and retrieve topology (ybus, node info)
     ybusConsumerThread.join();
     ybusConsumer.fillTopo(node_qty,node_names,node_idxs,node_name_lookup,Yphys);
     ybusConsumer.close();
@@ -270,7 +306,69 @@ int main(int argc, char** argv) {
     vnomConsumerThread.join();
     vnomConsumer.fillVnom(node_vnoms);
     vnomConsumer.close();
+
+    SSMAP reg_cemrid_primbus_map;
+    SSMAP reg_cemrid_regbus_map;
+    state_estimator_util::build_A_matrix(gad,Amat,node_idxs,
+            reg_cemrid_primbus_map,reg_cemrid_regbus_map,
+            regid_primnode_map,regid_regnode_map);
+
+    // map conducting equipment to bus names
+    SSLISTMAP cemrid_busnames_map;
+    state_estimator_util::build_cemrid_busnames_map(gad, cemrid_busnames_map);
+
+    // Add Pseudo-Measurements
+    SDMAP node_nominal_Pinj_map;
+    SDMAP node_nominal_Qinj_map;
+    state_estimator_util::get_nominal_energy_consumer_injections(gad,
+            node_vnoms,node_nominal_Pinj_map,node_nominal_Qinj_map);
+
+    // Set up the sensors consumer
+    string sensTopic = "goss.gridappsd.se.response."+gad.simid+".cimdict";
+    SensorDefConsumer sensConsumer(gad.brokerURI,gad.username,gad.password,
+           cemrid_busnames_map,reg_cemrid_primbus_map,reg_cemrid_regbus_map,
+           node_nominal_Pinj_map,node_nominal_Qinj_map,
+           sbase,sensTopic,"queue");
+    Thread sensConsumerThread(&sensConsumer);
+    sensConsumerThread.start();       // execute sensConsumer.run()
+    sensConsumer.waitUntilReady();    // wait for latch release
+
+    // Set up the producer to request sensor data
+    string sensRequestTopic = "goss.gridappsd.process.request.config";
+    string sensRequestText = "{\"configurationType\":\"CIM Dictionary\",\"parameters\":{\"simulation_id\":\""
+        + gad.simid + "\"}}";
+    SEProducer sensRequester(gad.brokerURI,gad.username,gad.password,sensRequestTopic,"queue");
+    sensRequester.send(sensRequestText,sensTopic);
+    sensRequester.close();
+
+    // Wait for sensor initializer and retrieve sensors
+    sensConsumerThread.join();
+
+    // Add Sensors
+    sensConsumer.fillSens(zary, mmrid_pos_type_map, switch_node1s, switch_node2s);
+    sensConsumer.close();
+
+    // For the test harness, SensorDefConsumer reads the file for all
+    // measurements so no need to do anything for pseudo-measurements
+    // Add Pseudo-Measurements
+    state_estimator_util::insert_pseudo_measurements(gad,zary,
+            node_names,node_vnoms,sbase);
+#ifdef DEBUG_PRIMARY
+    //*selog << "\nzsigs/zvals after adding pseudo-measurements:\n" << std::flush;
+    //for ( auto& zid : zary.zids ) {
+    //    *selog << "\tzid: " << zid << ", ztype: " << zary.ztypes[zid] << ", zsig: " << zary.zsigs[zid] << ", zvals: " << zary.zvals[zid] << "\n" << std::flush;
+    //}
+#endif
+
+    // Initialize class that does the state estimates
+    SELoopWorker loopWorker(&workQueue, &gad, zary, node_qty, node_names,
+        node_idxs, node_vnoms, node_bmrids, node_phs, node_name_lookup,
+        sbase, Yphys, Amat, regid_primnode_map, regid_regnode_map,
+        mmrid_pos_type_map, switch_node1s, switch_node2s);
+
 #else
+    // File interface code
+
     string filename = FILE_INTERFACE_READ;
     filename += "/ysparse.csv";
 #ifdef DEBUG_PRIMARY
@@ -338,96 +436,7 @@ int main(int argc, char** argv) {
     for ( auto& node_name : node_names )
         node_vnoms[node_name] = 1;
 #endif
-#endif
-        
-    // system base power, functionally arbitrary -- can be tweaked
-    // for better numerical stability if needed
-    // all values in the approximate range 1e-140 to 1e+150 converge
-    // and only numeric overflow/underflow results in failures for the
-    // 3 models tested (ieee13nodecktassets, ieee123, test9500new)
-    // values in the 1e+6 to 1e+12 range result in minimum Supd condition
-    // numbers with the range for lowest condition varying somewhat between
-    // the 3 models tested
-#ifdef SBASE_TESTING
-    double spower = (double)std::stoi(argv[3]);
-    const double sbase = pow(10.0, spower);
-#else
-#ifdef FILE_INTERFACE_NOSBASE
-    const double sbase = 1;
-#else
-    const double sbase = 1.0e+6;
-#endif
-#endif
 
-    // --------------------------------------------------------------------
-    // SENSOR INITIALIZATION
-    // --------------------------------------------------------------------
-
-    // A matrix data structures
-    IMDMAP Amat;
-    SSMAP regid_primnode_map;
-    SSMAP regid_regnode_map;
-
-    // Sensors data structures
-    SensorArray zary;
-    SSMAP mmrid_pos_type_map;
-    SSMAP switch_node1s;
-    SSMAP switch_node2s;
-
-#ifndef FILE_INTERFACE_READ
-    SSMAP reg_cemrid_primbus_map;
-    SSMAP reg_cemrid_regbus_map;
-    state_estimator_util::build_A_matrix(gad,Amat,node_idxs,
-            reg_cemrid_primbus_map,reg_cemrid_regbus_map,
-            regid_primnode_map,regid_regnode_map);
-
-    // map conducting equipment to bus names
-    SSLISTMAP cemrid_busnames_map;
-    state_estimator_util::build_cemrid_busnames_map(gad, cemrid_busnames_map);
-
-    // Add Pseudo-Measurements
-    SDMAP node_nominal_Pinj_map;
-    SDMAP node_nominal_Qinj_map;
-    state_estimator_util::get_nominal_energy_consumer_injections(gad,
-            node_vnoms,node_nominal_Pinj_map,node_nominal_Qinj_map);
-
-    // Set up the sensors consumer
-    string sensTopic = "goss.gridappsd.se.response."+gad.simid+".cimdict";
-    SensorDefConsumer sensConsumer(gad.brokerURI,gad.username,gad.password,
-           cemrid_busnames_map,reg_cemrid_primbus_map,reg_cemrid_regbus_map,
-           node_nominal_Pinj_map,node_nominal_Qinj_map,
-           sbase,sensTopic,"queue");
-    Thread sensConsumerThread(&sensConsumer);
-    sensConsumerThread.start();       // execute sensConsumer.run()
-    sensConsumer.waitUntilReady();    // wait for latch release
-
-    // Set up the producer to request sensor data
-    string sensRequestTopic = "goss.gridappsd.process.request.config";
-    string sensRequestText = "{\"configurationType\":\"CIM Dictionary\",\"parameters\":{\"simulation_id\":\""
-        + gad.simid + "\"}}";
-    SEProducer sensRequester(gad.brokerURI,gad.username,gad.password,sensRequestTopic,"queue");
-    sensRequester.send(sensRequestText,sensTopic);
-    sensRequester.close();
-
-    // Wait for sensor initializer and retrieve sensors
-    sensConsumerThread.join();
-
-    // Add Sensors
-    sensConsumer.fillSens(zary, mmrid_pos_type_map, switch_node1s, switch_node2s);
-    sensConsumer.close();
-
-    // For the test harness, SensorDefConsumer reads the file for all
-    // measurements so no need to do anything for pseudo-measurements
-    // Add Pseudo-Measurements
-    state_estimator_util::insert_pseudo_measurements(gad,zary,
-            node_names,node_vnoms,sbase);
-#ifdef DEBUG_PRIMARY
-    //*selog << "\nzsigs/zvals after adding pseudo-measurements:\n" << std::flush;
-    //for ( auto& zid : zary.zids ) {
-    //    *selog << "\tzid: " << zid << ", ztype: " << zary.ztypes[zid] << ", zsig: " << zary.zsigs[zid] << ", zvals: " << zary.zvals[zid] << "\n" << std::flush;
-    //}
-#endif
-#else
     filename = FILE_INTERFACE_READ;
     filename += "/regid.csv";
 #ifdef DEBUG_PRIMARY
@@ -477,20 +486,15 @@ int main(int argc, char** argv) {
         getline(lineStream, cell, ','); zary.znomvals[zid] = std::stod(cell);
     }
     ifs.close();
-#endif
 
     // Initialize class that does the state estimates
-#ifndef FILE_INTERFACE_READ
-    SELoopWorker loopWorker(&workQueue, &gad, zary, node_qty, node_names,
-        node_idxs, node_vnoms, node_bmrids, node_phs, node_name_lookup,
-        sbase, Yphys, Amat, regid_primnode_map, regid_regnode_map,
-        mmrid_pos_type_map, switch_node1s, switch_node2s);
-#else
     SELoopWorker loopWorker(zary, node_qty, node_names,
         node_idxs, node_vnoms, node_bmrids, node_phs, node_name_lookup,
         sbase, Yphys, Amat, regid_primnode_map, regid_regnode_map,
         mmrid_pos_type_map, switch_node1s, switch_node2s);
 #endif
+
+    // Common/shared interface code
 
 #ifdef DEBUG_PRIMARY
     *selog << "Starting the SE work loop\n" << std::flush;
