@@ -188,7 +188,7 @@ int main(int argc, char** argv) {
     if ( !se.init(argc,argv) ) return 0;
 
     // ------------------------------------------------------------------------
-    // INITIALIZE THE GRIDAPPS SESSION
+    // INITIALIZE THE GRIDAPPS-D SESSION
     // ------------------------------------------------------------------------
     state_estimator_gridappsd::gridappsd_session gad(se);
 
@@ -225,6 +225,7 @@ int main(int argc, char** argv) {
 #ifdef DEBUG_PRIMARY
     *selog << "Listening for simulation log messages on "+simlogTopic+'\n' << std::flush;
 #endif
+
     // --------------------------------------------------------------------
     // LISTEN FOR SIMULATION MEASUREMENTS
     // --------------------------------------------------------------------
@@ -266,6 +267,10 @@ int main(int argc, char** argv) {
     // --------------------------------------------------------------------
     // TOPOLOGY PROCESSOR
     // --------------------------------------------------------------------
+    // Set up the producer shared by ybus, vnom, and sensor requests
+    string requestTopic = "goss.gridappsd.process.request.config";
+    SEProducer requester(gad.brokerURI,gad.username,gad.password,requestTopic,"queue");
+
     // Set up the ybus consumer
     string ybusTopic = "goss.gridappsd.se.response."+gad.simid+".ybus";
     TopoProcConsumer ybusConsumer(gad.brokerURI,gad.username,gad.password,ybusTopic,"queue");
@@ -273,9 +278,7 @@ int main(int argc, char** argv) {
     ybusConsumerThread.start();        // execute ybusConsumer.run()
     ybusConsumer.waitUntilReady();    // wait for latch release
 
-    // Set up the producer to then request ybus
-    string requestTopic = "goss.gridappsd.process.request.config";
-    SEProducer requester(gad.brokerURI,gad.username,gad.password,requestTopic,"queue");
+    // Request ybus with previously created producer
     string ybusRequestText =
         "{\"configurationType\":\"YBus Export\",\"parameters\":{\"simulation_id\":\""
         + gad.simid + "\"}}";
@@ -323,9 +326,9 @@ int main(int argc, char** argv) {
     // Set up the sensors consumer
     string sensTopic = "goss.gridappsd.se.response."+gad.simid+".cimdict";
     SensorDefConsumer sensConsumer(gad.brokerURI,gad.username,gad.password,
-           cemrid_busnames_map,reg_cemrid_primbus_map,reg_cemrid_regbus_map,
-           node_nominal_Pinj_map,node_nominal_Qinj_map,
-           sbase,sensTopic,"queue");
+            cemrid_busnames_map,reg_cemrid_primbus_map,reg_cemrid_regbus_map,
+            node_nominal_Pinj_map,node_nominal_Qinj_map,
+            sbase,sensTopic,"queue");
     Thread sensConsumerThread(&sensConsumer);
     sensConsumerThread.start();       // execute sensConsumer.run()
     sensConsumer.waitUntilReady();    // wait for latch release
@@ -333,7 +336,7 @@ int main(int argc, char** argv) {
     // Request sensor data with previously created producer
     string sensRequestTopic = "goss.gridappsd.process.request.config";
     string sensRequestText = "{\"configurationType\":\"CIM Dictionary\",\"parameters\":{\"simulation_id\":\""
-        + gad.simid + "\"}}";
+            + gad.simid + "\"}}";
     requester.send(sensRequestText,sensTopic);
     requester.close(); // this is the last request so close it off
 
