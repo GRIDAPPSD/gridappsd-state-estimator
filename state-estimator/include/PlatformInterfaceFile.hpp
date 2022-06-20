@@ -1,7 +1,8 @@
 #ifndef PLATFORMINTERFACEFILE_HPP
 #define PLATFORMINTERFACEFILE_HPP
 
-class PlatformInterface : public PlatformInterfaceCommon {
+//class PlatformInterface : public PlatformInterfaceCommon {
+class PlatformInterface {
 public:
     void fillTopologyMinimal(IMMAP& Yphys, SLIST& node_names) {
 

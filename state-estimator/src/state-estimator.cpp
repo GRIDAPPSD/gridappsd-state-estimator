@@ -372,125 +372,20 @@ int main(int argc, char** argv) {
 #endif
 
 #ifdef FILE_INTERFACE
-    string filename = FILE_INTERFACE_READ;
-    filename += "/ysparse.csv";
-#ifdef DEBUG_PRIMARY
-    *selog << "Reading ybus from test harness file: " << filename << "\n\n" << std::flush;
-#endif
-    std::ifstream ifs(filename);
-    string line;
-    getline(ifs, line);  // throwaway header line
-    while ( getline(ifs, line) ) {
-        std::stringstream lineStream(line);
-        string cell;
-        getline(lineStream, cell, ','); int i = std::stoi(cell);
-        getline(lineStream, cell, ','); int j = std::stoi(cell);
-        getline(lineStream, cell, ','); double G = std::stod(cell);
-        getline(lineStream, cell, ','); double B = std::stod(cell);
+    PlatformInterface pi;
 
-        Yphys[i][j] = complex<double>(G,B);
-        if ( i != j ) Yphys[j][i] = complex<double>(G,B);
-    }
-    ifs.close();
-
-    filename = FILE_INTERFACE_READ;
-    filename += "/nodelist.csv";
-#ifdef DEBUG_PRIMARY
-    *selog << "Reading nodelist from test harness file: " << filename << "\n\n" << std::flush;
-#endif
-    ifs.open(filename);
+    pi.fillTopologyMinimal(Yphys, node_names);
 
     node_qty = 0;
-    while ( getline(ifs, line) ) {
-        // Extract the node name
-        string node_name = regex_replace(line,regex("\""),"");
-        // Store the node information
-        node_names.push_back(node_name);
+    for ( auto& node_name : node_names ) {
         node_idxs[node_name] = ++node_qty;
         node_name_lookup[node_qty] = node_name;
     }
-    ifs.close();
 
-#ifdef FILE_INTERFACE_VNOM
-    filename = FILE_INTERFACE_READ;
-    filename += "/vnom.csv";
-#ifdef DEBUG_PRIMARY
-    *selog << "Reading vnom from test harness file: " << filename << "\n" << std::flush;
-#endif
-    ifs.open(filename);
-    if (!ifs.is_open()) {
-        *selog << "\n*** ERROR: vnom file not found: " << filename << "\n\n" << std::flush;
-        exit(0);
-    }
-    getline(ifs, line);  // throwaway header line
-    while (getline(ifs, line)) {
-        std::stringstream lineStream(line);
-        string node, cell;
-        getline(lineStream, node, ',');
-        getline(lineStream, cell, ','); double mag = std::stod(cell);
-        getline(lineStream, cell, ','); double arg = std::stod(cell);
-        double vre = mag * cos( arg * PI/180.0 );
-        double vim = mag * sin( arg * PI/180.0 );
-        complex<double> vnom = complex<double>(vre,vim);
-        node_vnoms[node] = vnom;
-    }
-    ifs.close();
-#else
-    for ( auto& node_name : node_names )
-        node_vnoms[node_name] = 1;
-#endif
+    pi.fillVnom(node_names, node_vnoms);
 
-    filename = FILE_INTERFACE_READ;
-    filename += "/regid.csv";
-#ifdef DEBUG_PRIMARY
-    *selog << "Reading regulator mappings from test harness file: " << filename << "\n\n" << std::flush;
-#endif
-    ifs.open(filename);
-    getline(ifs, line); // throwaway header line
-
-    while ( getline(ifs, line) ) {
-        std::stringstream lineStream(line);
-        string regid, primnode, regnode;
-        getline(lineStream, regid, ',');
-        getline(lineStream, primnode, ',');
-        getline(lineStream, regnode, ',');
-
-        regid_primnode_map[regid] = primnode;
-        regid_regnode_map[regid] = regnode;
-
-        uint primidx = node_idxs[primnode];
-        uint regidx = node_idxs[regnode];
-        // initialize the A matrix
-        Amat[primidx][regidx] = 1; // this will change
-        Amat[regidx][primidx] = 1; // this stays unity and may not be required
-    }
-    ifs.close();
-
-    // For the file interface, file is read for all measurements so no need to
-    // do anything for pseudo-measurements as is done by SensorDefConsumer
-    filename = FILE_INTERFACE_READ;
-    filename += "/measurements.csv";
-#ifdef DEBUG_PRIMARY
-    *selog << "Reading sensor measurements from test harness file: " << filename << "\n\n" << std::flush;
-#endif
-    ifs.open(filename);
-    getline(ifs, line); // throwaway header line
-
-    while ( getline(ifs, line) ) {
-        std::stringstream lineStream(line);
-        string cell, zid;
-        getline(lineStream, cell, ',');
-        getline(lineStream, zid, ','); zary.zids.push_back(zid);
-        zary.zidxs[zid] = zary.zqty++;
-        zary.ztypes[zid] = cell;
-        getline(lineStream, cell, ','); zary.znode1s[zid] = cell;
-        getline(lineStream, cell, ','); zary.znode2s[zid] = cell;
-        getline(lineStream, cell, ','); zary.zvals[zid] = std::stod(cell);
-        getline(lineStream, cell, ','); zary.zsigs[zid] = std::stod(cell);
-        getline(lineStream, cell, ','); zary.zpseudos[zid] = cell=="1";
-        getline(lineStream, cell, ','); zary.znomvals[zid] = std::stod(cell);
-    }
-    ifs.close();
+    pi.fillMeasurements(node_idxs, zary, Amat,
+        regid_primnode_map, regid_regnode_map);
 
     // Initialize class that does the state estimates
     SELoopWorker loopWorker(zary, node_qty, node_names,
