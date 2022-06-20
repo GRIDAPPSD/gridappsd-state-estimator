@@ -124,6 +124,15 @@ bool blockedFlag = true;
 // more include files for all interfaces
 #include "SELoopWorker.hpp"
 
+#include "PlatformInterfaceCommon.hpp"
+#ifdef FILE_INTERFACE
+#include "PlatformInterfaceFile.hpp"
+#endif
+#ifdef GRIDAPPSD_INTERFACE
+//#include "PlatformInterfaceGridAPPSD.hpp"
+#endif
+
+
 int main(int argc, char** argv) {
     // Common/shared interface code
 
