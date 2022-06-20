@@ -129,7 +129,7 @@ bool blockedFlag = true;
 #include "PlatformInterfaceFile.hpp"
 #endif
 #ifdef GRIDAPPSD_INTERFACE
-//#include "PlatformInterfaceGridAPPSD.hpp"
+#include "PlatformInterfaceGridAPPSD.hpp"
 #endif
 
 
