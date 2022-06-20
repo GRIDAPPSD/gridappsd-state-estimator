@@ -23,6 +23,11 @@ public:
 
     virtual void fillVnom(const SLIST& node_names, SCMAP& node_vnoms)=0;
 
+    virtual void fillMeasurements(SIMAP& node_idxs, SensorArray& zary,
+        IMDMAP& Amat, SSMAP& regid_primnode_map, SSMAP& regid_regnode_map,
+        SSMAP& mmrid_pos_type=ssmap_empty,
+        SSMAP& switch_node1s=ssmap_empty, SSMAP& switch_node2s=ssmap_empty)=0;
+
 private:
 };
 

@@ -8,9 +8,16 @@ public:
         string filename = FILE_INTERFACE_READ;
         filename += "/ysparse.csv";
 #ifdef DEBUG_PRIMARY
-        *selog << "Reading ybus from test harness file: " << filename << "\n\n" << std::flush;
+        *selog << "Reading ybus from test harness file: " << filename <<
+            "\n\n" << std::flush;
 #endif
         std::ifstream ifs(filename);
+        if (!ifs.is_open()) {
+            *selog << "\n*** ERROR: ysparse file not found: " << filename <<
+                "\n\n" << std::flush;
+            exit(0);
+        }
+
         string line;
         getline(ifs, line);  // throwaway header line
         while ( getline(ifs, line) ) {
@@ -29,9 +36,15 @@ public:
         filename = FILE_INTERFACE_READ;
         filename += "/nodelist.csv";
 #ifdef DEBUG_PRIMARY
-        *selog << "Reading nodelist from test harness file: " << filename << "\n\n" << std::flush;
+        *selog << "Reading nodelist from test harness file: " << filename <<
+            "\n\n" << std::flush;
 #endif
         ifs.open(filename);
+        if (!ifs.is_open()) {
+            *selog << "\n*** ERROR: nodelist file not found: " << filename <<
+                "\n\n" << std::flush;
+            exit(0);
+        }
 
         while ( getline(ifs, line) ) {
             // Extract the node name
@@ -49,17 +62,20 @@ public:
         string filename = FILE_INTERFACE_READ;
         filename += "/vnom.csv";
 #ifdef DEBUG_PRIMARY
-        *selog << "Reading vnom from test harness file: " << filename << "\n" << std::flush;
+        *selog << "Reading vnom from test harness file: " << filename <<
+            "\n" << std::flush;
 #endif
         std::ifstream ifs(filename);
         if (!ifs.is_open()) {
-            *selog << "\n*** ERROR: vnom file not found: " << filename << "\n\n" << std::flush;
+            *selog << "\n*** ERROR: vnom file not found: " << filename <<
+                "\n\n" << std::flush;
             exit(0);
         }
 
         string line;
         getline(ifs, line);  // throwaway header line
-        while (getline(ifs, line)) {
+
+        while ( getline(ifs, line) ) {
             std::stringstream lineStream(line);
             string node, cell;
             getline(lineStream, node, ',');
@@ -75,6 +91,78 @@ public:
         for ( auto& node_name : node_names )
             node_vnoms[node_name] = 1;
 #endif
+    }
+
+
+    void fillMeasurements(SIMAP& node_idxs, SensorArray& zary,
+        IMDMAP& Amat, SSMAP& regid_primnode_map, SSMAP& regid_regnode_map) {
+
+        string filename = FILE_INTERFACE_READ;
+        filename += "/regid.csv";
+#ifdef DEBUG_PRIMARY
+        *selog << "Reading regulator mappings from test harness file: " <<
+            filename << "\n\n" << std::flush;
+#endif
+        std::ifstream ifs(filename);
+        if (!ifs.is_open()) {
+            *selog << "\n*** ERROR: regid file not found: " << filename <<
+                "\n\n" << std::flush;
+            exit(0);
+        }
+
+        string line;
+        getline(ifs, line); // throwaway header line
+
+        while ( getline(ifs, line) ) {
+            std::stringstream lineStream(line);
+            string regid, primnode, regnode;
+            getline(lineStream, regid, ',');
+            getline(lineStream, primnode, ',');
+            getline(lineStream, regnode, ',');
+
+            regid_primnode_map[regid] = primnode;
+            regid_regnode_map[regid] = regnode;
+
+            uint primidx = node_idxs[primnode];
+            uint regidx = node_idxs[regnode];
+            // initialize the A matrix
+            Amat[primidx][regidx] = 1; // this will change
+            Amat[regidx][primidx] = 1; // this stays unity and may not be needed
+        }
+        ifs.close();
+
+        // For the file interface, file is read for all measurements so no need
+        // to do anything for pseudo-measurements as with SensorDefConsumer
+        filename = FILE_INTERFACE_READ;
+        filename += "/measurements.csv";
+#ifdef DEBUG_PRIMARY
+        *selog << "Reading sensor measurements from test harness file: " <<
+            filename << "\n\n" << std::flush;
+#endif
+        ifs.open(filename);
+        if (!ifs.is_open()) {
+            *selog << "\n*** ERROR: measurements file not found: " <<
+                filename << "\n\n" << std::flush;
+            exit(0);
+        }
+
+        getline(ifs, line); // throwaway header line
+
+        while ( getline(ifs, line) ) {
+            std::stringstream lineStream(line);
+            string cell, zid;
+            getline(lineStream, cell, ',');
+            getline(lineStream, zid, ','); zary.zids.push_back(zid);
+            zary.zidxs[zid] = zary.zqty++;
+            zary.ztypes[zid] = cell;
+            getline(lineStream, cell, ','); zary.znode1s[zid] = cell;
+            getline(lineStream, cell, ','); zary.znode2s[zid] = cell;
+            getline(lineStream, cell, ','); zary.zvals[zid] = std::stod(cell);
+            getline(lineStream, cell, ','); zary.zsigs[zid] = std::stod(cell);
+            getline(lineStream, cell, ','); zary.zpseudos[zid] = cell=="1";
+            getline(lineStream, cell, ','); zary.znomvals[zid] =std::stod(cell);
+        }
+        ifs.close();
     }
 
 private:
