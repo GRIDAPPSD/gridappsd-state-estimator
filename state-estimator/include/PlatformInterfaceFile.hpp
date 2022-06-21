@@ -3,8 +3,11 @@
 
 class PlatformInterface : public PlatformInterfaceCommon {
 public:
-    void fillTopologyMinimal(IMMAP& Yphys, SLIST& node_names,
-        SSMAP& node_bmrids=ssmap_empty, SSMAP& node_phs=ssmap_empty) {
+    PlatformInterface(int, char**, const double&) {
+    }
+
+
+    void fillTopologyMinimal(IMMAP& Yphys, SLIST& node_names, SSMAP&, SSMAP&) {
 
         string filename = FILE_INTERFACE_READ;
         filename += "/ysparse.csv";
@@ -97,8 +100,7 @@ public:
 
     void fillMeasurements(SensorArray& zary, IMDMAP& Amat,
         SSMAP& regid_primnode_map, SSMAP& regid_regnode_map,
-        SSMAP& mmrid_pos_type=ssmap_empty,
-        SSMAP& switch_node1s=ssmap_empty, SSMAP& switch_node2s=ssmap_empty) {
+        SSMAP&, SSMAP&, SSMAP&) {
 
         string filename = FILE_INTERFACE_READ;
         filename += "/regid.csv";
