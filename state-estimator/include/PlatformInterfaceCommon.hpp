@@ -5,7 +5,6 @@ SSMAP ssmap_empty;
 
 class PlatformInterfaceCommon {
 public:
-#if 000
     virtual void fillTopologyMinimal(IMMAP& Yphys, SLIST& node_names,
         SSMAP& node_bmrids=ssmap_empty, SSMAP& node_phs=ssmap_empty)=0;
 
@@ -20,12 +19,10 @@ public:
             node_idxs[node_name] = ++node_qty;
             node_name_lookup[node_qty] = node_name;
         }
+
+        node_names_ref = &node_names;
+        node_idxs_ref = &node_idxs;
     }
-#else
-    virtual void fillTopology(IMMAP& Yphys, uint& node_qty, SLIST& node_names,
-        SIMAP& node_idxs, ISMAP& node_name_lookup,
-        SSMAP& node_bmrids=ssmap_empty, SSMAP& node_phs=ssmap_empty)=0;
-#endif
 
     virtual void fillVnom(SCMAP& node_vnoms)=0;
 
@@ -34,7 +31,9 @@ public:
         SSMAP& mmrid_pos_type=ssmap_empty,
         SSMAP& switch_node1s=ssmap_empty, SSMAP& switch_node2s=ssmap_empty)=0;
 
-private:
+protected:
+    SLIST* node_names_ref;
+    SIMAP* node_idxs_ref;
 };
 
 #endif

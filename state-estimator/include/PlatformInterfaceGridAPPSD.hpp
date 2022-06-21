@@ -45,8 +45,7 @@ public:
     }
 
 
-    void fillTopology(IMMAP& Yphys, uint& node_qty, SLIST& node_names,
-        SIMAP& node_idxs, ISMAP& node_name_lookup,
+    void fillTopologyMinimal(IMMAP& Yphys, SLIST& node_names,
         SSMAP& node_bmrids, SSMAP& node_phs) {
 #ifdef DEBUG_PRIMARY
         extern bool blockedFlag;
@@ -83,12 +82,8 @@ public:
 
         // Wait for topology processor and retrieve topology (ybus, node info)
         ybusConsumerThread.join();
-        ybusConsumer.fillTopo(node_qty, node_names, node_idxs,
-            node_name_lookup, Yphys);
+        ybusConsumer.fillTopo(node_names, Yphys);
         ybusConsumer.close();
-
-        node_names_ref = &node_names;
-        node_idxs_ref = &node_idxs;
     }
 
 
@@ -182,8 +177,6 @@ public:
 private:
     state_estimator_gridappsd::gridappsd_session* gad_ref;
     SEProducer* requester_ref;
-    SLIST* node_names_ref;
-    SIMAP* node_idxs_ref;
     SCMAP* node_vnoms_ref;
     const double* sbase_ref;
 

@@ -3,8 +3,7 @@
 
 class PlatformInterface : public PlatformInterfaceCommon {
 public:
-    void fillTopology(IMMAP& Yphys, uint& node_qty, SLIST& node_names,
-        SIMAP& node_idxs, ISMAP& node_name_lookup,
+    void fillTopologyMinimal(IMMAP& Yphys, SLIST& node_names,
         SSMAP& node_bmrids=ssmap_empty, SSMAP& node_phs=ssmap_empty) {
 
         string filename = FILE_INTERFACE_READ;
@@ -55,15 +54,6 @@ public:
             node_names.push_back(node_name);
         }
         ifs.close();
-
-        node_qty = 0;
-        for ( auto& node_name : node_names ) {
-            node_idxs[node_name] = ++node_qty;
-            node_name_lookup[node_qty] = node_name;
-        }
-
-        node_names_ref = &node_names;
-        node_idxs_ref = &node_idxs;
     }
 
 
@@ -179,9 +169,6 @@ public:
     }
 
 private:
-    SLIST* node_names_ref;
-    SIMAP* node_idxs_ref;
-
 };
 
 #endif

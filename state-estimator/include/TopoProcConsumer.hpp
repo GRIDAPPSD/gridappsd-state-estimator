@@ -16,12 +16,8 @@ class TopoProcConsumer : public SEConsumer {
     // Pointers or set reference
     private:
     SLIST node_names;
-    SIMAP node_idxs;
-    ISMAP node_name_lookup;
-    uint node_qty = 0;
     // to add a node:
     //    -- node_names.push_back(noden);
-    //    -- node_idxs[noden] = ++node_qty;
     
     private:
     IMMAP Y;
@@ -48,12 +44,8 @@ class TopoProcConsumer : public SEConsumer {
     }
 
     public:
-    void fillTopo(uint& node_qty, SLIST& node_names, SIMAP& node_idxs,
-            ISMAP& node_name_lookup, IMMAP& Y) {
-        node_qty = this->node_qty;
+    void fillTopo(SLIST& node_names, IMMAP& Y) {
         node_names = this->node_names;
-        node_idxs = this->node_idxs;
-        node_name_lookup = this->node_name_lookup;
         Y = this->Y;
     }
     
@@ -119,8 +111,6 @@ class TopoProcConsumer : public SEConsumer {
 #endif
             // Store the node information
             node_names.push_back(node_name);
-            node_idxs[node_name] = ++node_qty;
-            node_name_lookup[node_qty] = node_name;
         }
 #ifdef DEBUG_PRIMARY
         *selog << "complete.\n\n" << std::flush;
