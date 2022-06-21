@@ -7,8 +7,7 @@
 bool blockedFlag = true;
 #endif
 
-//class PlatformInterface : public PlatformInterfaceCommon {
-class PlatformInterface {
+class PlatformInterface : public PlatformInterfaceCommon {
 public:
     PlatformInterface(int argc, char** argv, const double& sbase) {
         // --------------------------------------------------------------------

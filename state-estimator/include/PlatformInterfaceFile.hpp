@@ -1,11 +1,11 @@
 #ifndef PLATFORMINTERFACEFILE_HPP
 #define PLATFORMINTERFACEFILE_HPP
 
-//class PlatformInterface : public PlatformInterfaceCommon {
-class PlatformInterface {
+class PlatformInterface : public PlatformInterfaceCommon {
 public:
     void fillTopology(IMMAP& Yphys, uint& node_qty, SLIST& node_names,
-        SIMAP& node_idxs, ISMAP& node_name_lookup) {
+        SIMAP& node_idxs, ISMAP& node_name_lookup,
+        SSMAP& node_bmrids=ssmap_empty, SSMAP& node_phs=ssmap_empty) {
 
         string filename = FILE_INTERFACE_READ;
         filename += "/ysparse.csv";
@@ -106,7 +106,9 @@ public:
 
 
     void fillMeasurements(SensorArray& zary, IMDMAP& Amat,
-        SSMAP& regid_primnode_map, SSMAP& regid_regnode_map) {
+        SSMAP& regid_primnode_map, SSMAP& regid_regnode_map,
+        SSMAP& mmrid_pos_type=ssmap_empty,
+        SSMAP& switch_node1s=ssmap_empty, SSMAP& switch_node2s=ssmap_empty) {
 
         string filename = FILE_INTERFACE_READ;
         filename += "/regid.csv";
