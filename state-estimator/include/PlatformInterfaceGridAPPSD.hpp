@@ -4,18 +4,19 @@
 //class PlatformInterface : public PlatformInterfaceCommon {
 class PlatformInterface {
 public:
-    void fillTopologyMinimal(IMMAP& Yphys, SLIST& node_names) {
+    void fillTopology(IMMAP& Yphys, uint& node_qty, SLIST& node_names,
+        SIMAP& node_idxs, ISMAP& node_name_lookup) {
 
     }
 
 
-    void fillVnom(const SLIST& node_names, SCMAP& node_vnoms) {
+    void fillVnom(SCMAP& node_vnoms) {
 
     }
 
 
-    void fillMeasurements(SIMAP& node_idxs, SensorArray& zary,
-        IMDMAP& Amat, SSMAP& regid_primnode_map, SSMAP& regid_regnode_map) {
+    void fillMeasurements(SensorArray& zary, IMDMAP& Amat,
+        SSMAP& regid_primnode_map, SSMAP& regid_regnode_map) {
 
     }
 

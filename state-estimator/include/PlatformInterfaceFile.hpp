@@ -61,7 +61,7 @@ public:
             node_idxs[node_name] = ++node_qty;
             node_name_lookup[node_qty] = node_name;
         }
-  
+
         node_names_ref = &node_names;
         node_idxs_ref = &node_idxs;
     }
