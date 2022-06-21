@@ -113,12 +113,6 @@ std::ostream* selog = &std::cout;
 #include "state_estimator_util.hpp"
 #include "SharedQueue.hpp"
 #include "SELoopConsumer.hpp"
-
-#ifdef DEBUG_PRIMARY
-// temporary flag to hold up initialization until the platform has finished
-// its own initialization for the simulation based on sending a STARTED message
-bool blockedFlag = true;
-#endif
 #endif
 
 // more include files for all interfaces
@@ -190,44 +184,22 @@ int main(int argc, char** argv) {
     SSMAP switch_node2s;
 
 #ifdef GRIDAPPSD_INTERFACE
-    // ------------------------------------------------------------------------
-    // INITIALIZE THE STATE ESTIMATOR SESSION WITH RUNTIME ARGS
-    // ------------------------------------------------------------------------
-    state_estimator_gridappsd::state_estimator_session se;
-    if ( !se.init(argc,argv) ) return 0;
+    PlatformInterface pi(argc, argv, sbase);
 
-    // ------------------------------------------------------------------------
-    // INITIALIZE THE GRIDAPPS-D SESSION
-    // ------------------------------------------------------------------------
-    state_estimator_gridappsd::gridappsd_session gad(se);
-
-#ifdef DEBUG_PRIMARY
-    // determine whether to write to a log file or stdout based on whether
-    // this is a platform vs. command line invocation
-    static std::ofstream logfile;
-    if (gad.stateEstimatorFromPlatformFlag) {
-        logfile.open("/tmp/state-estimator.log");
-        selog = &logfile;
-    }
-#endif
+    state_estimator_gridappsd::gridappsd_session* gad_ref = pi.getGad();
 
     // declare the thread-safe queue shared between SELoopConsumer (writer)
     // and SELoopWorker (reader)
     SharedQueue<json> workQueue;
 
-    // ------------------------------------------------------------------------
-    // START THE AMQ INTERFACE
-    // ------------------------------------------------------------------------
-    activemq::library::ActiveMQCPP::initializeLibrary();
-
     // --------------------------------------------------------------------
     // LISTEN FOR SIMULATION LOG MESSAGES
     // --------------------------------------------------------------------
     // simulation status (running, complete) comes from log messages
-    string simlogTopic = "goss.gridappsd.simulation.log."+gad.simid;
+    string simlogTopic = "goss.gridappsd.simulation.log."+gad_ref->simid;
 
-    SELoopConsumer simLogConsumer(&workQueue, gad.brokerURI, gad.username,
-        gad.password, simlogTopic, "topic");
+    SELoopConsumer simLogConsumer(&workQueue, gad_ref->brokerURI,
+        gad_ref->username, gad_ref->password, simlogTopic, "topic");
     Thread simLogConsumerThread(&simLogConsumer);
     simLogConsumerThread.start();    // execute simLogConsumer.run
     simLogConsumer.waitUntilReady(); // wait for the startup latch release
@@ -239,133 +211,32 @@ int main(int argc, char** argv) {
     // LISTEN FOR SIMULATION MEASUREMENTS
     // --------------------------------------------------------------------
     // measurements come from either simulation output or sensor-simulator
-    string topic = gad.useSensorsForEstimatesFlag?
-        "goss.gridappsd.simulation.gridappsd-sensor-simulator."+gad.simid+".output":
-        "goss.gridappsd.simulation.output."+gad.simid;
+    string topic = gad_ref->useSensorsForEstimatesFlag?
+        "goss.gridappsd.simulation.gridappsd-sensor-simulator."+gad_ref->simid+".output":
+        "goss.gridappsd.simulation.output."+gad_ref->simid;
 
-    SELoopConsumer measurementConsumer(&workQueue, gad.brokerURI,
-                            gad.username, gad.password, topic, "topic");
+    SELoopConsumer measurementConsumer(&workQueue, gad_ref->brokerURI,
+        gad_ref->username, gad_ref->password, topic, "topic");
     Thread measurementConsumerThread(&measurementConsumer);
     measurementConsumerThread.start();    // execute measurementConsumer.run
     measurementConsumer.waitUntilReady(); // wait for the startup latch release
 #ifdef DEBUG_PRIMARY
-    if (gad.useSensorsForEstimatesFlag)
+    if (gad_ref->useSensorsForEstimatesFlag)
         *selog << "Listening for sensor-simulator output on "+topic+'\n' << std::flush;
     else
         *selog << "Listening for simulation output on "+topic+'\n' << std::flush;
 #endif
 
-#ifdef DEBUG_PRIMARY
-    // only block initialization for command line invocations
-    //if (false) {
-    if (!gad.stateEstimatorFromPlatformFlag) {
-        *selog << "\nWaiting for simulation to start before continuing with initialization\n" << std::flush;
-        while (blockedFlag) sleep(1);
-        *selog << "\nSimulation started--continuing with initialization\n" << std::flush;
-    } else {
-        *selog << "\nNOT waiting before continuing with initialization\n" << std::flush;
-    }
-#endif
+    pi.fillTopology(Yphys, node_qty, node_names, node_idxs, node_name_lookup,
+        node_bmrids, node_phs);
 
-    // --------------------------------------------------------------------
-    // MAKE SOME SPARQL QUERIES
-    // --------------------------------------------------------------------
-    // get node bus mRIDs and phases needed to publish results
-    state_estimator_util::get_nodes(gad,node_bmrids,node_phs);
+    pi.fillVnom(node_vnoms);
 
-    // --------------------------------------------------------------------
-    // TOPOLOGY PROCESSOR
-    // --------------------------------------------------------------------
-    // Set up the producer shared by ybus, vnom, and sensor requests
-    string requestTopic = "goss.gridappsd.process.request.config";
-    SEProducer requester(gad.brokerURI,gad.username,gad.password,requestTopic,"queue");
-
-    // Set up the ybus consumer
-    string ybusTopic = "goss.gridappsd.se.response."+gad.simid+".ybus";
-    TopoProcConsumer ybusConsumer(gad.brokerURI,gad.username,gad.password,ybusTopic,"queue");
-    Thread ybusConsumerThread(&ybusConsumer);
-    ybusConsumerThread.start();        // execute ybusConsumer.run()
-    ybusConsumer.waitUntilReady();    // wait for latch release
-
-    // Request ybus with previously created producer
-    string ybusRequestText =
-        "{\"configurationType\":\"YBus Export\",\"parameters\":{\"simulation_id\":\""
-        + gad.simid + "\"}}";
-    requester.send(ybusRequestText,ybusTopic);
-
-    // Wait for topology processor and retrieve topology (ybus, node info)
-    ybusConsumerThread.join();
-    ybusConsumer.fillTopo(node_qty,node_names,node_idxs,node_name_lookup,Yphys);
-    ybusConsumer.close();
-
-    // Set up the vnom consumer
-    string vnomTopic = "goss.gridappsd.se.response."+gad.simid+".vnom";
-    VnomConsumer vnomConsumer(gad.brokerURI,gad.username,gad.password,vnomTopic,"queue");
-    Thread vnomConsumerThread(&vnomConsumer);
-    vnomConsumerThread.start();        // execute vnomConsumer.run()
-    vnomConsumer.waitUntilReady();    // wait for latch release
-
-    // Request vnom with previously created producer
-    string vnomRequestText =
-        "{\"configurationType\":\"Vnom Export\",\"parameters\":{\"simulation_id\":\""
-        + gad.simid + "\"}}";
-    requester.send(vnomRequestText,vnomTopic);
-
-    // Wait for the vnom processor and retrive vnom
-    vnomConsumerThread.join();
-    vnomConsumer.fillVnom(node_vnoms);
-    vnomConsumer.close();
-
-    SSMAP reg_cemrid_primbus_map;
-    SSMAP reg_cemrid_regbus_map;
-    state_estimator_util::build_A_matrix(gad,Amat,node_idxs,
-            reg_cemrid_primbus_map,reg_cemrid_regbus_map,
-            regid_primnode_map,regid_regnode_map);
-
-    // map conducting equipment to bus names
-    SSLISTMAP cemrid_busnames_map;
-    state_estimator_util::build_cemrid_busnames_map(gad, cemrid_busnames_map);
-
-    // Adds nominal load injections
-    SDMAP node_nominal_Pinj_map;
-    SDMAP node_nominal_Qinj_map;
-    state_estimator_util::get_nominal_energy_consumer_injections(gad,
-            node_vnoms,node_nominal_Pinj_map,node_nominal_Qinj_map);
-
-    // Set up the sensors consumer
-    string sensTopic = "goss.gridappsd.se.response."+gad.simid+".cimdict";
-    SensorDefConsumer sensConsumer(gad.brokerURI,gad.username,gad.password,
-            cemrid_busnames_map,reg_cemrid_primbus_map,reg_cemrid_regbus_map,
-            node_nominal_Pinj_map,node_nominal_Qinj_map,
-            sbase,sensTopic,"queue");
-    Thread sensConsumerThread(&sensConsumer);
-    sensConsumerThread.start();       // execute sensConsumer.run()
-    sensConsumer.waitUntilReady();    // wait for latch release
-
-    // Request sensor data with previously created producer
-    string sensRequestTopic = "goss.gridappsd.process.request.config";
-    string sensRequestText = "{\"configurationType\":\"CIM Dictionary\",\"parameters\":{\"simulation_id\":\""
-            + gad.simid + "\"}}";
-    requester.send(sensRequestText,sensTopic);
-    requester.close(); // this is the last request so close it off
-
-    // Wait for sensor initializer and retrieve sensors
-    sensConsumerThread.join();
-    sensConsumer.fillSens(zary,mmrid_pos_type_map,switch_node1s,switch_node2s);
-    sensConsumer.close();
-
-    // Add Pseudo-Measurements
-    state_estimator_util::insert_pseudo_measurements(gad,zary,
-            node_names,node_vnoms,sbase);
-#ifdef DEBUG_PRIMARY
-    //*selog << "\nzsigs/zvals after adding pseudo-measurements:\n" << std::flush;
-    //for ( auto& zid : zary.zids ) {
-    //    *selog << "\tzid: " << zid << ", ztype: " << zary.ztypes[zid] << ", zsig: " << zary.zsigs[zid] << ", zvals: " << zary.zvals[zid] << "\n" << std::flush;
-    //}
-#endif
+    pi.fillMeasurements(zary, Amat, regid_primnode_map, regid_regnode_map,
+        mmrid_pos_type_map, switch_node1s, switch_node2s);
 
     // Initialize class that does the state estimates
-    SELoopWorker loopWorker(&workQueue, &gad, zary, node_qty, node_names,
+    SELoopWorker loopWorker(&workQueue, gad_ref, zary, node_qty, node_names,
         node_idxs, node_vnoms, node_bmrids, node_phs, node_name_lookup,
         sbase, Yphys, Amat, regid_primnode_map, regid_regnode_map,
         mmrid_pos_type_map, switch_node1s, switch_node2s);
