@@ -374,18 +374,11 @@ int main(int argc, char** argv) {
 #ifdef FILE_INTERFACE
     PlatformInterface pi;
 
-    pi.fillTopologyMinimal(Yphys, node_names);
+    pi.fillTopology(Yphys, node_qty, node_names, node_idxs, node_name_lookup);
 
-    node_qty = 0;
-    for ( auto& node_name : node_names ) {
-        node_idxs[node_name] = ++node_qty;
-        node_name_lookup[node_qty] = node_name;
-    }
+    pi.fillVnom(node_vnoms);
 
-    pi.fillVnom(node_names, node_vnoms);
-
-    pi.fillMeasurements(node_idxs, zary, Amat,
-        regid_primnode_map, regid_regnode_map);
+    pi.fillMeasurements(zary, Amat, regid_primnode_map, regid_regnode_map);
 
     // Initialize class that does the state estimates
     SELoopWorker loopWorker(zary, node_qty, node_names,

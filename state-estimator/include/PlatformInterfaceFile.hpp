@@ -4,7 +4,8 @@
 //class PlatformInterface : public PlatformInterfaceCommon {
 class PlatformInterface {
 public:
-    void fillTopologyMinimal(IMMAP& Yphys, SLIST& node_names) {
+    void fillTopology(IMMAP& Yphys, uint& node_qty, SLIST& node_names,
+        SIMAP& node_idxs, ISMAP& node_name_lookup) {
 
         string filename = FILE_INTERFACE_READ;
         filename += "/ysparse.csv";
@@ -54,10 +55,19 @@ public:
             node_names.push_back(node_name);
         }
         ifs.close();
+
+        node_qty = 0;
+        for ( auto& node_name : node_names ) {
+            node_idxs[node_name] = ++node_qty;
+            node_name_lookup[node_qty] = node_name;
+        }
+  
+        node_names_ref = &node_names;
+        node_idxs_ref = &node_idxs;
     }
 
 
-    void fillVnom(const SLIST& node_names, SCMAP& node_vnoms) {
+    void fillVnom(SCMAP& node_vnoms) {
 
 #ifdef FILE_INTERFACE_VNOM
         string filename = FILE_INTERFACE_READ;
@@ -89,14 +99,14 @@ public:
         }
         ifs.close();
 #else
-        for ( auto& node_name : node_names )
+        for ( auto& node_name : *node_names_ref )
             node_vnoms[node_name] = 1;
 #endif
     }
 
 
-    void fillMeasurements(SIMAP& node_idxs, SensorArray& zary,
-        IMDMAP& Amat, SSMAP& regid_primnode_map, SSMAP& regid_regnode_map) {
+    void fillMeasurements(SensorArray& zary, IMDMAP& Amat,
+        SSMAP& regid_primnode_map, SSMAP& regid_regnode_map) {
 
         string filename = FILE_INTERFACE_READ;
         filename += "/regid.csv";
@@ -124,8 +134,8 @@ public:
             regid_primnode_map[regid] = primnode;
             regid_regnode_map[regid] = regnode;
 
-            uint primidx = node_idxs[primnode];
-            uint regidx = node_idxs[regnode];
+            uint primidx = (*node_idxs_ref)[primnode];
+            uint regidx = (*node_idxs_ref)[regnode];
             // initialize the A matrix
             Amat[primidx][regidx] = 1; // this will change
             Amat[regidx][primidx] = 1; // this stays unity and may not be needed
@@ -167,6 +177,9 @@ public:
     }
 
 private:
+  SLIST* node_names_ref;
+  SIMAP* node_idxs_ref;
+
 };
 
 #endif
