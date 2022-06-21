@@ -177,8 +177,8 @@ public:
     }
 
 private:
-  SLIST* node_names_ref;
-  SIMAP* node_idxs_ref;
+    SLIST* node_names_ref;
+    SIMAP* node_idxs_ref;
 
 };
 
