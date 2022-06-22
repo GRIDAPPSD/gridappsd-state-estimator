@@ -86,6 +86,8 @@ public:
 
 
     void fillVnom(SCMAP& node_vnoms) {
+        PlatformInterfaceBase::fillVnom(node_vnoms);
+
         // Set up the vnom consumer
         string vnomTopic = "goss.gridappsd.se.response."+gad_ref->simid+".vnom";
         VnomConsumer vnomConsumer(gad_ref->brokerURI, gad_ref->username,
@@ -104,14 +106,15 @@ public:
         vnomConsumerThread.join();
         vnomConsumer.fillVnom(node_vnoms);
         vnomConsumer.close();
-
-        node_vnoms_ref = &node_vnoms;
     }
 
 
     void fillSensors(SensorArray& zary, IMDMAP& Amat,
         SSMAP& regid_primnode_map, SSMAP& regid_regnode_map,
         SSMAP& mmrid_pos_type_map, SSMAP& switch_node1s, SSMAP& switch_node2s) {
+        PlatformInterfaceBase::fillSensors(zary, Amat,
+            regid_primnode_map, regid_regnode_map,
+            mmrid_pos_type_map, switch_node1s, switch_node2s);
 
         SSMAP reg_cemrid_primbus_map;
         SSMAP reg_cemrid_regbus_map;
@@ -175,7 +178,6 @@ public:
 private:
     state_estimator_gridappsd::gridappsd_session* gad_ref;
     SEProducer* requester_ref;
-    SCMAP* node_vnoms_ref;
 
 };
 

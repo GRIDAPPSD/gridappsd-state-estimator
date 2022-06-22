@@ -61,6 +61,7 @@ public:
 
 
     void fillVnom(SCMAP& node_vnoms) {
+       PlatformInterfaceBase::fillVnom(node_vnoms);
 
 #ifdef FILE_INTERFACE_VNOM
         string filename = FILE_INTERFACE_READ;
@@ -101,6 +102,7 @@ public:
     void fillSensors(SensorArray& zary, IMDMAP& Amat,
         SSMAP& regid_primnode_map, SSMAP& regid_regnode_map,
         SSMAP&, SSMAP&, SSMAP&) {
+        PlatformInterfaceBase::fillSensors(zary, Amat, regid_primnode_map, regid_regnode_map);
 
         string filename = FILE_INTERFACE_READ;
         filename += "/regid.csv";
