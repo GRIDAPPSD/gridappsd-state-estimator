@@ -38,14 +38,14 @@ public:
     }
 
     void fillSensors(SensorArray& zary,
-        IMDMAP& Amat, SSMAP& regid_primnode_map, SSMAP& regid_regnode_map,
-        SSMAP& mmrid_pos_type_map=ssmap_empty,
+        IMDMAP& Amat, SSMAP& regid_primnode, SSMAP& regid_regnode,
+        SSMAP& mmrid_pos_type=ssmap_empty,
         SSMAP& switch_node1s=ssmap_empty, SSMAP& switch_node2s=ssmap_empty) {
         zary_ref = &zary;
         Amat_ref = &Amat;
-        regid_primnode_map_ref = &regid_primnode_map;
-        regid_regnode_map_ref = &regid_regnode_map;
-        mmrid_pos_type_map_ref = &mmrid_pos_type_map;
+        regid_primnode_ref = &regid_primnode;
+        regid_regnode_ref = &regid_regnode;
+        mmrid_pos_type_ref = &mmrid_pos_type;
         switch_node1s_ref = &switch_node1s;
         switch_node2s_ref = &switch_node2s;
     }
@@ -62,9 +62,9 @@ protected:
     SCMAP* node_vnoms_ref;
     SensorArray* zary_ref;
     IMDMAP* Amat_ref;
-    SSMAP* regid_primnode_map_ref;
-    SSMAP* regid_regnode_map_ref;
-    SSMAP* mmrid_pos_type_map_ref;
+    SSMAP* regid_primnode_ref;
+    SSMAP* regid_regnode_ref;
+    SSMAP* mmrid_pos_type_ref;
     SSMAP* switch_node1s_ref;
     SSMAP* switch_node2s_ref;
 };

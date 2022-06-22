@@ -5,20 +5,20 @@
 // This class listens for sensor definitions and constructs the sensors
 class SensorDefConsumer : public SEConsumer {
     private:
-    SSMAP term_bus_map; // terminal_mrid -> bus_name
-    SSLISTMAP cemrid_busnames_map; // ce_mrid -> bus_names
+    SSMAP term_bus; // terminal_mrid -> bus_name
+    SSLISTMAP cemrid_busnames; // ce_mrid -> bus_names
 
     private:
-    SSMAP reg_cemrid_primbus_map;  // for regulator Pos measurement init
-    SSMAP reg_cemrid_regbus_map;   // for regulator Pos measurement init
+    SSMAP reg_cemrid_primbus;  // for regulator Pos measurement init
+    SSMAP reg_cemrid_regbus;   // for regulator Pos measurement init
 
     private:
-    SDMAP node_nominal_Pinj_map;
-    SDMAP node_nominal_Qinj_map;
+    SDMAP node_nominal_Pinj;
+    SDMAP node_nominal_Qinj;
     
     private:
     SensorArray zary;
-    SSMAP mmrid_pos_type_map;
+    SSMAP mmrid_pos_type;
     SSMAP switch_node1s;
     SSMAP switch_node2s;
 
@@ -29,34 +29,34 @@ class SensorDefConsumer : public SEConsumer {
     SensorDefConsumer(const string& brokerURI, 
                 const string& username,
                 const string& password,
-//                const SSMAP& term_bus_map,
-                const SSLISTMAP& cemrid_busnames_map,
-                const SSMAP& reg_cemrid_primbus_map,
-                const SSMAP& reg_cemrid_regbus_map,
-                const SDMAP& node_nominal_Pinj_map,
-                const SDMAP& node_nominal_Qinj_map,
+//                const SSMAP& term_bus,
+                const SSLISTMAP& cemrid_busnames,
+                const SSMAP& reg_cemrid_primbus,
+                const SSMAP& reg_cemrid_regbus,
+                const SDMAP& node_nominal_Pinj,
+                const SDMAP& node_nominal_Qinj,
                 const double& sbase,
                 const string& target,
                 const string& mode) {
         this->brokerURI = brokerURI;
         this->username = username;
         this->password = password;
-//        this->term_bus_map = term_bus_map;
-        this->cemrid_busnames_map = cemrid_busnames_map;
-        this->reg_cemrid_primbus_map = reg_cemrid_primbus_map;
-        this->reg_cemrid_regbus_map = reg_cemrid_regbus_map;
-        this->node_nominal_Pinj_map = node_nominal_Pinj_map;
-        this->node_nominal_Qinj_map = node_nominal_Qinj_map;
+//        this->term_bus = term_bus;
+        this->cemrid_busnames = cemrid_busnames;
+        this->reg_cemrid_primbus = reg_cemrid_primbus;
+        this->reg_cemrid_regbus = reg_cemrid_regbus;
+        this->node_nominal_Pinj = node_nominal_Pinj;
+        this->node_nominal_Qinj = node_nominal_Qinj;
         this->sbase = sbase;
         this->target = target;
         this->mode = mode;
     }
 
     public:
-    void fillSens(SensorArray &zary, SSMAP& mmrid_pos_type_map,
+    void fillSens(SensorArray &zary, SSMAP& mmrid_pos_type,
                   SSMAP& switch_node1s, SSMAP& switch_node2s) {
         zary = this->zary;
-        mmrid_pos_type_map = this->mmrid_pos_type_map;
+        mmrid_pos_type = this->mmrid_pos_type;
         switch_node1s = this->switch_node1s;
         switch_node2s = this->switch_node2s;
     }
@@ -134,15 +134,15 @@ class SensorDefConsumer : public SEConsumer {
                 } else if ( !tmeas.compare("Pos") ) {
                     if ( !ce_type.compare("PowerTransformer") ) {
                         // regulator tap measurement
-                        // TODO: use zary.mcetypes instead of mmrid_pos_type_map
-                        mmrid_pos_type_map[mmrid] = "regulator_tap";
+                        // TODO: use zary.mcetypes instead of mmrid_pos_type
+                        mmrid_pos_type[mmrid] = "regulator_tap";
 
                         // look up the prim and reg nodes
                         string cemrid = m["ConductingEquipment_mRID"];
-                        string primbus = reg_cemrid_primbus_map[cemrid];
-                        string regbus = reg_cemrid_regbus_map[cemrid];
-                        //string primnode = regid_primnode_map[cemrid];
-                        //string regnode = regid_regnode_map[cemrid];
+                        string primbus = reg_cemrid_primbus[cemrid];
+                        string regbus = reg_cemrid_regbus[cemrid];
+                        //string primnode = regid_primnode[cemrid];
+                        //string regnode = regid_regnode[cemrid];
 
                         string phase = m["phases"];
                         string primnode = primbus;
@@ -172,17 +172,17 @@ class SensorDefConsumer : public SEConsumer {
 //                        *selog << "primnode: " << primnode << std::endl;
 //                        *selog << "regnode: " << regnode << std::endl;
                     } else if ( !ce_type.compare("LoadBreakSwitch") ) {
-                        // TODO: use zary.mcetypes instead of mmrid_pos_type_map
-                        mmrid_pos_type_map[mmrid] = "load_break_switch";
+                        // TODO: use zary.mcetypes instead of mmrid_pos_type
+                        mmrid_pos_type[mmrid] = "load_break_switch";
                         string cemrid = m["ConductingEquipment_mRID"];
                         string zid = mmrid + "_switch";
 
-                        // cemrid_busnames_map[cemrid] contains 2 buses
+                        // cemrid_busnames[cemrid] contains 2 buses
                         // adjacent to a switch for cemrid
                         string phase = m["phases"];
                         uint switch_node_count = 0;
-                        for (auto it=cemrid_busnames_map[cemrid].begin();
-                                it!=cemrid_busnames_map[cemrid].end(); ++it) {
+                        for (auto it=cemrid_busnames[cemrid].begin();
+                                it!=cemrid_busnames[cemrid].end(); ++it) {
                             string switch_node = *it;
                             if (!phase.compare("A")) switch_node += ".1";
                             if (!phase.compare("B")) switch_node += ".2";
@@ -200,7 +200,7 @@ class SensorDefConsumer : public SEConsumer {
                             }
                         }
                     } else {
-                        mmrid_pos_type_map[mmrid] = "other";
+                        mmrid_pos_type[mmrid] = "other";
                     }
                 } else if ( !tmeas.compare("VA") ) {
 #ifdef NET_INJECTION
@@ -240,13 +240,13 @@ class SensorDefConsumer : public SEConsumer {
 
                         // use nominal load for node from SPARQL query for zvals
 
-                        zary.zvals[pinj_zid] -= node_nominal_Pinj_map[meas_node]/(2.0*sbase);
-                        double zsig_Pinj = node_nominal_Pinj_map[meas_node]*0.01/sbase;
+                        zary.zvals[pinj_zid] -= node_nominal_Pinj[meas_node]/(2.0*sbase);
+                        double zsig_Pinj = node_nominal_Pinj[meas_node]*0.01/sbase;
                         zary.zsigs[pinj_zid] = sqrt(zary.zsigs[pinj_zid]*zary.zsigs[pinj_zid] + zsig_Pinj*zsig_Pinj);    // 1 sigma = 1% of nominal
                         zary.znomvals[pinj_zid] += zary.zvals[pinj_zid];
 
-                        zary.zvals[qinj_zid] -= node_nominal_Qinj_map[meas_node]/(2.0*sbase);
-                        double zsig_Qinj = node_nominal_Qinj_map[meas_node]*0.01/sbase;
+                        zary.zvals[qinj_zid] -= node_nominal_Qinj[meas_node]/(2.0*sbase);
+                        double zsig_Qinj = node_nominal_Qinj[meas_node]*0.01/sbase;
                         zary.zsigs[qinj_zid] = sqrt(zary.zsigs[qinj_zid]*zary.zsigs[qinj_zid] + zsig_Qinj*zsig_Qinj);    // 1 sigma = 1% of nominal
                         zary.znomvals[qinj_zid] += zary.zvals[qinj_zid];
 

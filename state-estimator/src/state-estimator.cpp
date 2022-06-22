@@ -174,12 +174,12 @@ int main(int argc, char** argv) {
 
     // A matrix data structures
     IMDMAP Amat;
-    SSMAP regid_primnode_map;
-    SSMAP regid_regnode_map;
+    SSMAP regid_primnode;
+    SSMAP regid_regnode;
 
     // Sensors data structures
     SensorArray zary;
-    SSMAP mmrid_pos_type_map;
+    SSMAP mmrid_pos_type;
     SSMAP switch_node1s;
     SSMAP switch_node2s;
 
@@ -233,22 +233,22 @@ int main(int argc, char** argv) {
 
     plint.fillVnom(node_vnoms);
 
-    plint.fillSensors(zary, Amat, regid_primnode_map, regid_regnode_map,
-        mmrid_pos_type_map, switch_node1s, switch_node2s);
+    plint.fillSensors(zary, Amat, regid_primnode, regid_regnode,
+        mmrid_pos_type, switch_node1s, switch_node2s);
 
 #ifdef GRIDAPPSD_INTERFACE
     // Initialize class that does the state estimates
     SELoopWorker loopWorker(&workQueue, gad_ref, zary, node_qty, node_names,
         node_idxs, node_vnoms, node_bmrids, node_phs, node_name_lookup,
-        sbase, Yphys, Amat, regid_primnode_map, regid_regnode_map,
-        mmrid_pos_type_map, switch_node1s, switch_node2s);
+        sbase, Yphys, Amat, regid_primnode, regid_regnode,
+        mmrid_pos_type, switch_node1s, switch_node2s);
 #endif
 #ifdef FILE_INTERFACE
     // Initialize class that does the state estimates
     SELoopWorker loopWorker(zary, node_qty, node_names,
         node_idxs, node_vnoms, node_bmrids, node_phs, node_name_lookup,
-        sbase, Yphys, Amat, regid_primnode_map, regid_regnode_map,
-        mmrid_pos_type_map, switch_node1s, switch_node2s);
+        sbase, Yphys, Amat, regid_primnode, regid_regnode,
+        mmrid_pos_type, switch_node1s, switch_node2s);
 #endif
 
     // Common/shared interface code

@@ -84,9 +84,9 @@ class SELoopWorker {
     double             sbase;
     IMMAP              Yphys;        // Ybus [node->[row->col]] [physical units]
     IMDMAP             Amat;         // regulator tap ratios
-    SSMAP              regid_primnode_map;
-    SSMAP              regid_regnode_map;
-    SSMAP              mmrid_pos_type_map; // type of position measurement
+    SSMAP              regid_primnode;
+    SSMAP              regid_regnode;
+    SSMAP              mmrid_pos_type; // type of position measurement
     SSMAP              switch_node1s;
     SSMAP              switch_node2s;
 
@@ -157,9 +157,9 @@ class SELoopWorker {
             const double& sbase,
             const IMMAP& Yphys,
             const IMDMAP& Amat,
-            const SSMAP& regid_primnode_map,
-            const SSMAP& regid_regnode_map,
-            const SSMAP& mmrid_pos_type_map,
+            const SSMAP& regid_primnode,
+            const SSMAP& regid_regnode,
+            const SSMAP& mmrid_pos_type,
             const SSMAP& switch_node1s,
             const SSMAP& switch_node2s) {
 #ifdef GRIDAPPSD_INTERFACE
@@ -177,9 +177,9 @@ class SELoopWorker {
         this->sbase = sbase;
         this->Yphys = Yphys; 
         this->Amat = Amat;
-        this->regid_primnode_map = regid_primnode_map;
-        this->regid_regnode_map = regid_regnode_map;
-        this->mmrid_pos_type_map = mmrid_pos_type_map;
+        this->regid_primnode = regid_primnode;
+        this->regid_regnode = regid_regnode;
+        this->mmrid_pos_type = mmrid_pos_type;
         this->switch_node1s = switch_node1s;
         this->switch_node2s = switch_node2s;
     }
@@ -1111,7 +1111,7 @@ class SELoopWorker {
            
             // Check for "Pos" measurement
             else if ( !m_type.compare("Pos") ) {
-                if ( !mmrid_pos_type_map[mmrid].compare("regulator_tap") ) {
+                if ( !mmrid_pos_type[mmrid].compare("regulator_tap") ) {
                     // update the tap ratio
                     string zid = mmrid+"_tap";
                     double tap_position = m["value"];
@@ -1150,7 +1150,7 @@ class SELoopWorker {
                         Amat[j][i] = tap_ratio;
                     }
                 }
-                else if ( !mmrid_pos_type_map[mmrid].compare("load_break_switch") ) {
+                else if ( !mmrid_pos_type[mmrid].compare("load_break_switch") ) {
                     string zid = mmrid+"_switch";
                     double switch_state = m["value"];
                     uint i = node_idxs[switch_node1s[zid]];
@@ -2090,11 +2090,11 @@ class SELoopWorker {
             Vpu[idx] = complex<double>(vrei,vimi);
         }
         // update A
-        for ( auto& map_pair : regid_primnode_map ) {
+        for ( auto& map_pair : regid_primnode ) {
 //            *selog << map_pair.first << std::endl;
             string regid = map_pair.first;
-            string primnode = regid_primnode_map[regid];
-            string regnode = regid_regnode_map[regid];
+            string primnode = regid_primnode[regid];
+            string regnode = regid_regnode[regid];
 
 //            *selog << "primnode: " << primnode << 
 //                "\tregnode: " << regnode << std::endl;

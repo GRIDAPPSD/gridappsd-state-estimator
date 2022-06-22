@@ -256,8 +256,8 @@ namespace state_estimator_util{
 
 
     void get_nominal_energy_consumer_injections(gridappsd_session& gad,
-                SCMAP& node_vnoms, SDMAP& node_nominal_Pinj_map,
-                SDMAP& node_nominal_Qinj_map) {
+                SCMAP& node_vnoms, SDMAP& node_nominal_Pinj,
+                SDMAP& node_nominal_Qinj) {
         json jpsm = sparql_query(gad,"psm",sparq_energy_consumer_pq(gad.modelID));
         // Add nominal load injections
         for ( auto& load : jpsm["data"]["results"]["bindings"] ) {
@@ -269,14 +269,14 @@ namespace state_estimator_util{
                 string sptot = load["p_3p"]["value"]; double ptot = stod(sptot);
                 string sqtot = load["q_3p"]["value"]; double qtot = stod(sqtot);
                 // Add injection to phase A
-                node_nominal_Pinj_map[bus+".1"] -= ptot/3.0;
-                node_nominal_Qinj_map[bus+".1"] -= qtot/3.0;
+                node_nominal_Pinj[bus+".1"] -= ptot/3.0;
+                node_nominal_Qinj[bus+".1"] -= qtot/3.0;
                 // Add injection to phase B
-                node_nominal_Pinj_map[bus+".2"] -= ptot/3.0;
-                node_nominal_Qinj_map[bus+".2"] -= qtot/3.0;
+                node_nominal_Pinj[bus+".2"] -= ptot/3.0;
+                node_nominal_Qinj[bus+".2"] -= qtot/3.0;
                 // Add injection to phase C
-                node_nominal_Pinj_map[bus+".3"] -= ptot/3.0;
-                node_nominal_Qinj_map[bus+".3"] -= qtot/3.0;
+                node_nominal_Pinj[bus+".3"] -= ptot/3.0;
+                node_nominal_Qinj[bus+".3"] -= qtot/3.0;
 
             } else {
                 // This is a 1-phase load
@@ -294,8 +294,8 @@ namespace state_estimator_util{
                 string conn = load["conn"]["value"];
                 if ( !conn.compare("Y") ) {
                     // Wye-connected load - injections are 
-                    node_nominal_Pinj_map[node] -= pph;
-                    node_nominal_Qinj_map[node] -= qph;
+                    node_nominal_Pinj[node] -= pph;
+                    node_nominal_Qinj[node] -= qph;
                 }
                 if ( !conn.compare("D") ) {
                     // Delta-connected load - injections depend on load current
@@ -309,11 +309,11 @@ namespace state_estimator_util{
                     if (!phase.compare("s2")) n2 += ".1";
                     complex<double> vload = node_vnoms[node] - node_vnoms[n2];
                     // Positive load at the named node
-                    node_nominal_Pinj_map[node] -= real(sload/vload*node_vnoms[node]);
-                    node_nominal_Qinj_map[node] -= imag(sload/vload*node_vnoms[node]);
+                    node_nominal_Pinj[node] -= real(sload/vload*node_vnoms[node]);
+                    node_nominal_Qinj[node] -= imag(sload/vload*node_vnoms[node]);
                     // Negative load at the second node
-                    node_nominal_Pinj_map[n2] += real(sload/vload*node_vnoms[n2]);
-                    node_nominal_Qinj_map[n2] += imag(sload/vload*node_vnoms[n2]);
+                    node_nominal_Pinj[n2] += real(sload/vload*node_vnoms[n2]);
+                    node_nominal_Qinj[n2] += imag(sload/vload*node_vnoms[n2]);
                 }
             }
         }
@@ -321,8 +321,8 @@ namespace state_estimator_util{
 
 
     void build_A_matrix(gridappsd_session& gad, IMDMAP& Amat, SIMAP& node_idxs,
-            SSMAP& reg_cemrid_primbus_map, SSMAP& reg_cemrid_regbus_map,
-            SSMAP& regid_primnode_map, SSMAP& regid_regnode_map) {
+            SSMAP& reg_cemrid_primbus, SSMAP& reg_cemrid_regbus,
+            SSMAP& regid_primnode, SSMAP& regid_regnode) {
 
 #ifdef DEBUG_PRIMARY
         *selog << "Building A matrix -- " << std::flush;
@@ -378,13 +378,13 @@ namespace state_estimator_util{
             // NOTE: This is over-written when multiple single-phase regulators
             //      are attached to a single multi-phase transformer
             string cemrid = reg["cemrid"]["value"];
-            reg_cemrid_primbus_map[cemrid] = primbus;
-            reg_cemrid_regbus_map[cemrid] = regbus;
+            reg_cemrid_primbus[cemrid] = primbus;
+            reg_cemrid_regbus[cemrid] = regbus;
 
             // map the regulator id to prim and reg nodes
             string regid = reg["rtcid"]["value"];
-            regid_primnode_map[regid] = primnode;
-            regid_regnode_map[regid] = regnode;
+            regid_primnode[regid] = primnode;
+            regid_regnode[regid] = regnode;
 
 #ifdef FILE_INTERFACE_WRITE
             ofs << regid << "," << primnode << "," << regnode << "\n";
@@ -398,24 +398,24 @@ namespace state_estimator_util{
 #endif
     }
 
-    void build_term_bus_map(gridappsd_session& gad, SSMAP& term_bus_map) {
+    void build_term_bus(gridappsd_session& gad, SSMAP& term_bus) {
         json jterms = sparql_query(gad,"terms",sparq_term_bus(gad.modelID));
         for ( auto& item : jterms["data"]["results"]["bindings"] ) {
             string termid = item["termid"]["value"];
             string busname = item["busname"]["value"];
             for ( auto& c : busname ) c = toupper(c);
-            term_bus_map[termid] = busname;
+            term_bus[termid] = busname;
         }
     }
 
-    void build_cemrid_busnames_map(gridappsd_session& gad,
-            SSLISTMAP& cemrid_busnames_map) {
+    void build_cemrid_busnames(gridappsd_session& gad,
+            SSLISTMAP& cemrid_busnames) {
         json jbusnames = sparql_query(gad,"busnames",sparq_cemrid_busnames(gad.modelID));
         for ( auto& item : jbusnames["data"]["results"]["bindings"] ) {
             string cemrid = item["cemrid"]["value"];
             string busname = item["busname"]["value"];
             for ( auto& c : busname ) c = toupper(c);
-            cemrid_busnames_map[cemrid].push_back(busname);
+            cemrid_busnames[cemrid].push_back(busname);
         }
     }
 

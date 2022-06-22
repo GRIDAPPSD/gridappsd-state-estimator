@@ -110,36 +110,36 @@ public:
 
 
     void fillSensors(SensorArray& zary, IMDMAP& Amat,
-        SSMAP& regid_primnode_map, SSMAP& regid_regnode_map,
-        SSMAP& mmrid_pos_type_map, SSMAP& switch_node1s, SSMAP& switch_node2s) {
+        SSMAP& regid_primnode, SSMAP& regid_regnode,
+        SSMAP& mmrid_pos_type, SSMAP& switch_node1s, SSMAP& switch_node2s) {
         PlatformInterfaceBase::fillSensors(zary, Amat,
-            regid_primnode_map, regid_regnode_map,
-            mmrid_pos_type_map, switch_node1s, switch_node2s);
+            regid_primnode, regid_regnode,
+            mmrid_pos_type, switch_node1s, switch_node2s);
 
-        SSMAP reg_cemrid_primbus_map;
-        SSMAP reg_cemrid_regbus_map;
+        SSMAP reg_cemrid_primbus;
+        SSMAP reg_cemrid_regbus;
         state_estimator_util::build_A_matrix(*gad_ref, Amat, *node_idxs_ref,
-            reg_cemrid_primbus_map, reg_cemrid_regbus_map,
-            regid_primnode_map, regid_regnode_map);
+            reg_cemrid_primbus, reg_cemrid_regbus,
+            regid_primnode, regid_regnode);
 
         // map conducting equipment to bus names
-        SSLISTMAP cemrid_busnames_map;
-        state_estimator_util::build_cemrid_busnames_map(*gad_ref,
-            cemrid_busnames_map);
+        SSLISTMAP cemrid_busnames;
+        state_estimator_util::build_cemrid_busnames(*gad_ref,
+            cemrid_busnames);
 
         // Adds nominal load injections
-        SDMAP node_nominal_Pinj_map;
-        SDMAP node_nominal_Qinj_map;
+        SDMAP node_nominal_Pinj;
+        SDMAP node_nominal_Qinj;
         state_estimator_util::get_nominal_energy_consumer_injections(*gad_ref,
-            *node_vnoms_ref, node_nominal_Pinj_map, node_nominal_Qinj_map);
+            *node_vnoms_ref, node_nominal_Pinj, node_nominal_Qinj);
 
         // Set up the sensors consumer
         string sensTopic = "goss.gridappsd.se.response."+gad_ref->simid+
             ".cimdict";
         SensorDefConsumer sensConsumer(gad_ref->brokerURI,
             gad_ref->username, gad_ref->password,
-            cemrid_busnames_map, reg_cemrid_primbus_map, reg_cemrid_regbus_map,
-            node_nominal_Pinj_map, node_nominal_Qinj_map,
+            cemrid_busnames, reg_cemrid_primbus, reg_cemrid_regbus,
+            node_nominal_Pinj, node_nominal_Qinj,
             *sbase_ref, sensTopic, "queue");
         Thread sensConsumerThread(&sensConsumer);
         sensConsumerThread.start();       // execute sensConsumer.run()
@@ -154,7 +154,7 @@ public:
 
         // Wait for sensor initializer and retrieve sensors
         sensConsumerThread.join();
-        sensConsumer.fillSens(zary, mmrid_pos_type_map,
+        sensConsumer.fillSens(zary, mmrid_pos_type,
             switch_node1s, switch_node2s);
         sensConsumer.close();
 

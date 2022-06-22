@@ -100,9 +100,10 @@ public:
 
 
     void fillSensors(SensorArray& zary, IMDMAP& Amat,
-        SSMAP& regid_primnode_map, SSMAP& regid_regnode_map,
+        SSMAP& regid_primnode, SSMAP& regid_regnode,
         SSMAP&, SSMAP&, SSMAP&) {
-        PlatformInterfaceBase::fillSensors(zary, Amat, regid_primnode_map, regid_regnode_map);
+        PlatformInterfaceBase::fillSensors(zary, Amat,
+            regid_primnode, regid_regnode);
 
         string filename = FILE_INTERFACE_READ;
         filename += "/regid.csv";
@@ -127,8 +128,8 @@ public:
             getline(lineStream, primnode, ',');
             getline(lineStream, regnode, ',');
 
-            regid_primnode_map[regid] = primnode;
-            regid_regnode_map[regid] = regnode;
+            regid_primnode[regid] = primnode;
+            regid_regnode[regid] = regnode;
 
             uint primidx = (*node_idxs_ref)[primnode];
             uint regidx = (*node_idxs_ref)[regnode];
