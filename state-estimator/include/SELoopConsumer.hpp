@@ -7,16 +7,16 @@ class SELoopConsumer : public SEConsumer {
     // system state
     private:
     json jtext;     // object holding the input message
-    SharedQueue<json>* workQueue;
+    SharedQueue<json>* measQueue;
 
     public:
-    SELoopConsumer(SharedQueue<json>* workQueue,
+    SELoopConsumer(SharedQueue<json>* measQueue,
             const string& brokerURI,
             const string& username,
             const string& password,
             const string& target,
             const string& mode) {
-        this->workQueue = workQueue;
+        this->measQueue = measQueue;
         this->brokerURI = brokerURI;
         this->username = username;
         this->password = password;
@@ -50,7 +50,7 @@ class SELoopConsumer : public SEConsumer {
             //}
             //*selog << "MESSAGE END\n" << std::flush;
 #endif
-            workQueue->push(jtext);
+            measQueue->push(jtext);
 
 #ifdef DEBUG_PRIMARY
             // just in case this wasn't cleared with a STARTED log message
@@ -62,7 +62,7 @@ class SELoopConsumer : public SEConsumer {
 #ifdef DEBUG_PRIMARY
                 *selog << "\nSELoopConsumer received COMPLETE/CLOSED log message\n" << std::flush;
 #endif
-                workQueue->push(jtext);
+                measQueue->push(jtext);
             }
 #ifdef DEBUG_PRIMARY
             else if (!status.compare("STARTED") && blockedFlag) {

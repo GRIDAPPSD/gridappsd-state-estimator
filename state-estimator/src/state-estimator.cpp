@@ -190,7 +190,7 @@ int main(int argc, char** argv) {
 
     // declare the thread-safe queue shared between SELoopConsumer (writer)
     // and SELoopWorker (reader)
-    SharedQueue<json> workQueue;
+    SharedQueue<json> measQueue;
 
     // --------------------------------------------------------------------
     // LISTEN FOR SIMULATION LOG MESSAGES
@@ -198,7 +198,7 @@ int main(int argc, char** argv) {
     // simulation status (running, complete) comes from log messages
     string simlogTopic = "goss.gridappsd.simulation.log."+gad_ref->simid;
 
-    SELoopConsumer simLogConsumer(&workQueue, gad_ref->brokerURI,
+    SELoopConsumer simLogConsumer(&measQueue, gad_ref->brokerURI,
         gad_ref->username, gad_ref->password, simlogTopic, "topic");
     Thread simLogConsumerThread(&simLogConsumer);
     simLogConsumerThread.start();    // execute simLogConsumer.run
@@ -215,7 +215,7 @@ int main(int argc, char** argv) {
         "goss.gridappsd.simulation.gridappsd-sensor-simulator."+gad_ref->simid+".output":
         "goss.gridappsd.simulation.output."+gad_ref->simid;
 
-    SELoopConsumer measurementConsumer(&workQueue, gad_ref->brokerURI,
+    SELoopConsumer measurementConsumer(&measQueue, gad_ref->brokerURI,
         gad_ref->username, gad_ref->password, topic, "topic");
     Thread measurementConsumerThread(&measurementConsumer);
     measurementConsumerThread.start();    // execute measurementConsumer.run
@@ -238,7 +238,7 @@ int main(int argc, char** argv) {
 
 #ifdef GRIDAPPSD_INTERFACE
     // Initialize class that does the state estimates
-    SELoopWorker loopWorker(&workQueue, gad_ref, zary, node_qty, node_names,
+    SELoopWorker loopWorker(&measQueue, gad_ref, zary, node_qty, node_names,
         node_idxs, node_vnoms, node_bmrids, node_phs, node_name_lookup,
         sbase, Yphys, Amat, regid_primnode, regid_regnode,
         mmrid_pos_type, switch_node1s, switch_node2s);

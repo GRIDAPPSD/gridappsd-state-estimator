@@ -70,7 +70,7 @@ class SELoopWorker {
 
     // passed in from constructor
 #ifdef GRIDAPPSD_INTERFACE
-    SharedQueue<json>* workQueue;
+    SharedQueue<json>* measQueue;
     state_estimator_gridappsd::gridappsd_session* gad;
 #endif
     SensorArray        zary;
@@ -143,7 +143,7 @@ class SELoopWorker {
     public:
     SELoopWorker(
 #ifdef GRIDAPPSD_INTERFACE
-            SharedQueue<json>* workQueue,
+            SharedQueue<json>* measQueue,
             state_estimator_gridappsd::gridappsd_session* gad,
 #endif
             const SensorArray& zary,
@@ -163,7 +163,7 @@ class SELoopWorker {
             const SSMAP& switch_node1s,
             const SSMAP& switch_node2s) {
 #ifdef GRIDAPPSD_INTERFACE
-        this->workQueue = workQueue;
+        this->measQueue = measQueue;
         this->gad = gad;
 #endif
         this->zary = zary;
@@ -262,7 +262,7 @@ class SELoopWorker {
                     exit(0);
                 }
 #else
-                jmessage = workQueue->pop();
+                jmessage = measQueue->pop();
 
                 if (jmessage.find("message") != jmessage.end()) {
                     timestamp = jmessage["message"]["timestamp"];
@@ -274,7 +274,7 @@ class SELoopWorker {
                         firstEstimateFlag = false;
                     }
 #ifdef DEBUG_PRIMARY
-                    *selog << "Draining workQueue size: " << workQueue->size() << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
+                    *selog << "Draining measQueue size: " << measQueue->size() << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
 #endif
 
                     // do z summation here
@@ -309,7 +309,7 @@ class SELoopWorker {
 #if defined(FILE_INTERFACE_READ) || defined(FILE_INTERFACE_WRITE)
             } while (false); // uncomment this to fully process all messages
 #else
-            } while (!workQueue->empty()); // uncomment this to drain queue
+            } while (!measQueue->empty()); // uncomment this to drain queue
 #endif
 
             // do z averaging here by dividing sum by # of items
