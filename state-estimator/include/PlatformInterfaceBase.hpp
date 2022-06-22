@@ -1,9 +1,9 @@
-#ifndef PLATFORMINTERFACECOMMON_HPP
-#define PLATFORMINTERFACECOMMON_HPP
+#ifndef PLATFORMINTERFACEBASE_HPP
+#define PLATFORMINTERFACEBASE_HPP
 
 SSMAP ssmap_empty;
 
-class PlatformInterfaceCommon {
+class PlatformInterfaceBase {
 public:
     virtual void fillTopologyMinimal(IMMAP& Yphys, SLIST& node_names,
         SSMAP& node_bmrids=ssmap_empty, SSMAP& node_phs=ssmap_empty)=0;

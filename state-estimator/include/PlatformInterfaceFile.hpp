@@ -1,7 +1,7 @@
 #ifndef PLATFORMINTERFACEFILE_HPP
 #define PLATFORMINTERFACEFILE_HPP
 
-class PlatformInterface : public PlatformInterfaceCommon {
+class PlatformInterface : public PlatformInterfaceBase {
 public:
     PlatformInterface(int, char**, const double&) {
     }

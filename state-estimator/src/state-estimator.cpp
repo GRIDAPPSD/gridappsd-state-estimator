@@ -118,7 +118,7 @@ std::ostream* selog = &std::cout;
 // more include files for all interfaces
 #include "SELoopWorker.hpp"
 
-#include "PlatformInterfaceCommon.hpp"
+#include "PlatformInterfaceBase.hpp"
 #ifdef FILE_INTERFACE
 #include "PlatformInterfaceFile.hpp"
 #endif
@@ -183,10 +183,10 @@ int main(int argc, char** argv) {
     SSMAP switch_node1s;
     SSMAP switch_node2s;
 
-    PlatformInterface pi(argc, argv, sbase);
+    PlatformInterface plint(argc, argv, sbase);
 
 #ifdef GRIDAPPSD_INTERFACE
-    state_estimator_gridappsd::gridappsd_session* gad_ref = pi.getGad();
+    state_estimator_gridappsd::gridappsd_session* gad_ref = plint.getGad();
 
     // declare the thread-safe queue shared between SELoopConsumer (writer)
     // and SELoopWorker (reader)
@@ -228,12 +228,12 @@ int main(int argc, char** argv) {
 #endif
 #endif
 
-    pi.fillTopology(Yphys, node_qty, node_names, node_idxs, node_name_lookup,
+    plint.fillTopology(Yphys, node_qty, node_names, node_idxs, node_name_lookup,
         node_bmrids, node_phs);
 
-    pi.fillVnom(node_vnoms);
+    plint.fillVnom(node_vnoms);
 
-    pi.fillMeasurements(zary, Amat, regid_primnode_map, regid_regnode_map,
+    plint.fillMeasurements(zary, Amat, regid_primnode_map, regid_regnode_map,
         mmrid_pos_type_map, switch_node1s, switch_node2s);
 
 #ifdef GRIDAPPSD_INTERFACE
