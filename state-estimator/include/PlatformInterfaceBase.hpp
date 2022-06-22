@@ -54,6 +54,10 @@ public:
         switch_node2s_ref = &switch_node2s;
     }
 
+    SharedQueue<json>* getMeasQueue() {
+      return measQueue_ref;
+    }
+
 protected:
     const double* sbase_ref;
     IMMAP* Yphys_ref;

@@ -17,9 +17,7 @@
 #endif
 
 #ifdef DEBUG_PRIMARY
-#include <unistd.h>
 #include <sys/time.h>
-#include <time.h>
 #endif
 
 #ifndef A5MAP
@@ -69,8 +67,8 @@ class SELoopWorker {
     private:
 
     // passed in from constructor
-#ifdef GRIDAPPSD_INTERFACE
     SharedQueue<json>* measQueue;
+#ifdef GRIDAPPSD_INTERFACE
     state_estimator_gridappsd::gridappsd_session* gad;
 #endif
     SensorArray        zary;
@@ -142,10 +140,7 @@ class SELoopWorker {
 
     public:
     SELoopWorker(
-#ifdef GRIDAPPSD_INTERFACE
-            SharedQueue<json>* measQueue,
-            state_estimator_gridappsd::gridappsd_session* gad,
-#endif
+            PlatformInterface& plint,
             const SensorArray& zary,
             const uint& node_qty,
             const SLIST& node_names,
@@ -162,9 +157,9 @@ class SELoopWorker {
             const SSMAP& mmrid_pos_type,
             const SSMAP& switch_node1s,
             const SSMAP& switch_node2s) {
+        this->measQueue = plint.getMeasQueue();
 #ifdef GRIDAPPSD_INTERFACE
-        this->measQueue = measQueue;
-        this->gad = gad;
+        this->gad = plint.getGad();
 #endif
         this->zary = zary;
         this->node_qty = node_qty;
@@ -183,7 +178,6 @@ class SELoopWorker {
         this->switch_node1s = switch_node1s;
         this->switch_node2s = switch_node2s;
     }
-
 
 
     public:

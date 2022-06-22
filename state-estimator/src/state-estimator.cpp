@@ -74,6 +74,9 @@
   using std::complex;
 #include <list>
 #include <unordered_map>
+#ifdef DEBUG_PRIMARY
+#include <unistd.h>
+#endif
 
 #define SLIST std::list<std::string>
 #define SIMAP std::unordered_map<std::string,uint>
@@ -99,7 +102,6 @@ std::ostream* selog = &std::cout;
 
 #ifdef GRIDAPPSD_INTERFACE
 // include files for the GridAPPS-D interface
-
 #include "SEConsumer.hpp"
 #include "GenericConsumer.hpp"
 #include "TopoProcConsumer.hpp"
@@ -115,9 +117,6 @@ std::ostream* selog = &std::cout;
 #include "SELoopConsumer.hpp"
 #endif
 
-// more include files for all interfaces
-#include "SELoopWorker.hpp"
-
 #include "PlatformInterfaceBase.hpp"
 #ifdef FILE_INTERFACE
 #include "PlatformInterfaceFile.hpp"
@@ -125,6 +124,9 @@ std::ostream* selog = &std::cout;
 #ifdef GRIDAPPSD_INTERFACE
 #include "PlatformInterfaceGridAPPSD.hpp"
 #endif
+
+// more include files for all interfaces
+#include "SELoopWorker.hpp"
 
 
 int main(int argc, char** argv) {
@@ -199,22 +201,11 @@ int main(int argc, char** argv) {
     plint.fillSensors(zary, Amat, regid_primnode, regid_regnode,
         mmrid_pos_type, switch_node1s, switch_node2s);
 
-#ifdef GRIDAPPSD_INTERFACE
     // Initialize class that does the state estimates
-    SELoopWorker loopWorker(&measQueue, plint.getGad(), zary, node_qty, node_names,
+    SELoopWorker loopWorker(plint, zary, node_qty, node_names,
         node_idxs, node_vnoms, node_bmrids, node_phs, node_name_lookup,
         sbase, Yphys, Amat, regid_primnode, regid_regnode,
         mmrid_pos_type, switch_node1s, switch_node2s);
-#endif
-#ifdef FILE_INTERFACE
-    // Initialize class that does the state estimates
-    SELoopWorker loopWorker(zary, node_qty, node_names,
-        node_idxs, node_vnoms, node_bmrids, node_phs, node_name_lookup,
-        sbase, Yphys, Amat, regid_primnode, regid_regnode,
-        mmrid_pos_type, switch_node1s, switch_node2s);
-#endif
-
-    // Common/shared interface code
 
 #ifdef DEBUG_PRIMARY
     *selog << "Starting the SE work loop\n" << std::flush;
