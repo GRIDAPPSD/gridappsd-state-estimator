@@ -93,11 +93,12 @@ std::ostream* selog = &std::cout;
 
 // include files for all interfaces
 #include "SensorArray.hpp"
+#include "SharedQueue.hpp"
+#include "json.hpp"
+  using json = nlohmann::json;
 
 #ifdef GRIDAPPSD_INTERFACE
 // include files for the GridAPPS-D interface
-#include "json.hpp"
-  using json = nlohmann::json;
 
 #include "SEConsumer.hpp"
 #include "GenericConsumer.hpp"
@@ -111,7 +112,6 @@ std::ostream* selog = &std::cout;
   using gridappsd_requests::sparql_query;
 #include "sparql_queries_CIM100.hpp"
 #include "state_estimator_util.hpp"
-#include "SharedQueue.hpp"
 #include "SELoopConsumer.hpp"
 #endif
 
