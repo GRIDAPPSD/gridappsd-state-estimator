@@ -43,7 +43,7 @@ public:
     }
 
 
-    void fillTopologyMinimal(IMMAP& Yphys, SLIST& node_names,
+    void fillTopo(IMMAP& Yphys, SLIST& node_names,
         SSMAP& node_bmrids, SSMAP& node_phs) {
 #ifdef DEBUG_PRIMARY
         extern bool blockedFlag;

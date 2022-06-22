@@ -7,7 +7,7 @@ public:
     }
 
 
-    void fillTopologyMinimal(IMMAP& Yphys, SLIST& node_names, SSMAP&, SSMAP&) {
+    void fillTopo(IMMAP& Yphys, SLIST& node_names, SSMAP&, SSMAP&) {
 
         string filename = FILE_INTERFACE_READ;
         filename += "/ysparse.csv";
