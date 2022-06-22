@@ -5,6 +5,10 @@ SSMAP ssmap_empty;
 
 class PlatformInterfaceBase {
 public:
+    PlatformInterfaceBase(int, char**, const double& sbase) {
+        sbase_ref = &sbase;
+    }
+
     virtual void fillTopologyMinimal(IMMAP& Yphys, SLIST& node_names,
         SSMAP& node_bmrids=ssmap_empty, SSMAP& node_phs=ssmap_empty)=0;
 
@@ -26,12 +30,13 @@ public:
 
     virtual void fillVnom(SCMAP& node_vnoms)=0;
 
-    virtual void fillMeasurements(SensorArray& zary,
+    virtual void fillSensors(SensorArray& zary,
         IMDMAP& Amat, SSMAP& regid_primnode_map, SSMAP& regid_regnode_map,
         SSMAP& mmrid_pos_type=ssmap_empty,
         SSMAP& switch_node1s=ssmap_empty, SSMAP& switch_node2s=ssmap_empty)=0;
 
 protected:
+    const double* sbase_ref;
     SLIST* node_names_ref;
     SIMAP* node_idxs_ref;
 };

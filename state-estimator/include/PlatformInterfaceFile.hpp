@@ -3,7 +3,7 @@
 
 class PlatformInterface : public PlatformInterfaceBase {
 public:
-    PlatformInterface(int, char**, const double&) {
+    PlatformInterface(int argc, char** argv, const double& sbase) : PlatformInterfaceBase(argc, argv, sbase) {
     }
 
 
@@ -98,7 +98,7 @@ public:
     }
 
 
-    void fillMeasurements(SensorArray& zary, IMDMAP& Amat,
+    void fillSensors(SensorArray& zary, IMDMAP& Amat,
         SSMAP& regid_primnode_map, SSMAP& regid_regnode_map,
         SSMAP&, SSMAP&, SSMAP&) {
 

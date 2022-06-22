@@ -9,7 +9,7 @@ bool blockedFlag = true;
 
 class PlatformInterface : public PlatformInterfaceBase {
 public:
-    PlatformInterface(int argc, char** argv, const double& sbase) {
+    PlatformInterface(int argc, char** argv, const double& sbase) : PlatformInterfaceBase(argc, argv, sbase) {
         // --------------------------------------------------------------------
         // INITIALIZE THE STATE ESTIMATOR SESSION WITH RUNTIME ARGS
         // --------------------------------------------------------------------
@@ -40,8 +40,6 @@ public:
         string requestTopic = "goss.gridappsd.process.request.config";
         requester_ref = new SEProducer(gad_ref->brokerURI, gad_ref->username,
             gad_ref->password, requestTopic, "queue");
-
-        sbase_ref = &sbase;
     }
 
 
@@ -111,7 +109,7 @@ public:
     }
 
 
-    void fillMeasurements(SensorArray& zary, IMDMAP& Amat,
+    void fillSensors(SensorArray& zary, IMDMAP& Amat,
         SSMAP& regid_primnode_map, SSMAP& regid_regnode_map,
         SSMAP& mmrid_pos_type_map, SSMAP& switch_node1s, SSMAP& switch_node2s) {
 
@@ -178,7 +176,6 @@ private:
     state_estimator_gridappsd::gridappsd_session* gad_ref;
     SEProducer* requester_ref;
     SCMAP* node_vnoms_ref;
-    const double* sbase_ref;
 
 };
 

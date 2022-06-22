@@ -233,7 +233,7 @@ int main(int argc, char** argv) {
 
     plint.fillVnom(node_vnoms);
 
-    plint.fillMeasurements(zary, Amat, regid_primnode_map, regid_regnode_map,
+    plint.fillSensors(zary, Amat, regid_primnode_map, regid_regnode_map,
         mmrid_pos_type_map, switch_node1s, switch_node2s);
 
 #ifdef GRIDAPPSD_INTERFACE
