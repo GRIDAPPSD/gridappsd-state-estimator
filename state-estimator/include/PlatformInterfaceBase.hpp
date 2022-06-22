@@ -9,6 +9,10 @@ public:
         sbase_ref = &sbase;
     }
 
+    void setupMeasurements(SharedQueue<json>& measQueue) {
+        measQueue_ref = &measQueue;
+    }
+
     virtual void fillTopo(IMMAP& Yphys, SLIST& node_names,
         SSMAP& node_bmrids=ssmap_empty, SSMAP& node_phs=ssmap_empty)=0;
 
@@ -67,6 +71,7 @@ protected:
     SSMAP* mmrid_pos_type_ref;
     SSMAP* switch_node1s_ref;
     SSMAP* switch_node2s_ref;
+    SharedQueue<json>* measQueue_ref;
 };
 
 #endif

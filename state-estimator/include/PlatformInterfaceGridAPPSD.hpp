@@ -43,6 +43,52 @@ public:
     }
 
 
+    void setupMeasurements(SharedQueue<json>& measQueue) {
+        PlatformInterfaceBase::setupMeasurements(measQueue);
+
+        // --------------------------------------------------------------------
+        // LISTEN FOR SIMULATION LOG MESSAGES
+        // --------------------------------------------------------------------
+        // simulation status (running, complete) comes from log messages
+        string simLogTopic = "goss.gridappsd.simulation.log."+gad_ref->simid;
+
+        SELoopConsumer* simLogConsumer = new SELoopConsumer(&measQueue,
+            gad_ref->brokerURI, gad_ref->username, gad_ref->password,
+            simLogTopic, "topic");
+        Thread* simLogConsumerThread = new Thread(simLogConsumer);
+        simLogConsumerThread->start();    // execute simLogConsumer->run
+        simLogConsumer->waitUntilReady(); // wait for the startup latch release
+#ifdef DEBUG_PRIMARY
+        *selog << "Listening for simulation log messages on "+simLogTopic+'\n'
+        << std::flush;
+#endif
+
+        // --------------------------------------------------------------------
+        // LISTEN FOR SIMULATION OUTPUT MESSAGES
+        // --------------------------------------------------------------------
+        // measurements come from either simulation output or sensor-simulator
+        string simOutTopic = gad_ref->useSensorsForEstimatesFlag?
+            "goss.gridappsd.simulation.gridappsd-sensor-simulator."+
+            gad_ref->simid+".output":
+            "goss.gridappsd.simulation.output."+gad_ref->simid;
+
+        SELoopConsumer* simOutConsumer = new SELoopConsumer(&measQueue,
+            gad_ref->brokerURI, gad_ref->username, gad_ref->password,
+            simOutTopic, "topic");
+        Thread* simOutConsumerThread = new Thread(simOutConsumer);
+        simOutConsumerThread->start();    // execute simOutConsumer->run
+        simOutConsumer->waitUntilReady(); // wait for the startup latch release
+#ifdef DEBUG_PRIMARY
+        if (gad_ref->useSensorsForEstimatesFlag)
+            *selog << "Listening for sensor-simulator output on "+simOutTopic+
+            '\n' << std::flush;
+        else
+            *selog << "Listening for simulation output on "+simOutTopic+
+            '\n' << std::flush;
+#endif
+    }
+
+
     void fillTopo(IMMAP& Yphys, SLIST& node_names,
         SSMAP& node_bmrids, SSMAP& node_phs) {
 #ifdef DEBUG_PRIMARY

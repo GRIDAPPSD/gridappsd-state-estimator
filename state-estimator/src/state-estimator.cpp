@@ -183,50 +183,13 @@ int main(int argc, char** argv) {
     SSMAP switch_node1s;
     SSMAP switch_node2s;
 
-    PlatformInterface plint(argc, argv, sbase);
-
-#ifdef GRIDAPPSD_INTERFACE
-    state_estimator_gridappsd::gridappsd_session* gad_ref = plint.getGad();
-
     // declare the thread-safe queue shared between SELoopConsumer (writer)
     // and SELoopWorker (reader)
     SharedQueue<json> measQueue;
 
-    // --------------------------------------------------------------------
-    // LISTEN FOR SIMULATION LOG MESSAGES
-    // --------------------------------------------------------------------
-    // simulation status (running, complete) comes from log messages
-    string simlogTopic = "goss.gridappsd.simulation.log."+gad_ref->simid;
+    PlatformInterface plint(argc, argv, sbase);
 
-    SELoopConsumer simLogConsumer(&measQueue, gad_ref->brokerURI,
-        gad_ref->username, gad_ref->password, simlogTopic, "topic");
-    Thread simLogConsumerThread(&simLogConsumer);
-    simLogConsumerThread.start();    // execute simLogConsumer.run
-    simLogConsumer.waitUntilReady(); // wait for the startup latch release
-#ifdef DEBUG_PRIMARY
-    *selog << "Listening for simulation log messages on "+simlogTopic+'\n' << std::flush;
-#endif
-
-    // --------------------------------------------------------------------
-    // LISTEN FOR SIMULATION MEASUREMENTS
-    // --------------------------------------------------------------------
-    // measurements come from either simulation output or sensor-simulator
-    string topic = gad_ref->useSensorsForEstimatesFlag?
-        "goss.gridappsd.simulation.gridappsd-sensor-simulator."+gad_ref->simid+".output":
-        "goss.gridappsd.simulation.output."+gad_ref->simid;
-
-    SELoopConsumer measurementConsumer(&measQueue, gad_ref->brokerURI,
-        gad_ref->username, gad_ref->password, topic, "topic");
-    Thread measurementConsumerThread(&measurementConsumer);
-    measurementConsumerThread.start();    // execute measurementConsumer.run
-    measurementConsumer.waitUntilReady(); // wait for the startup latch release
-#ifdef DEBUG_PRIMARY
-    if (gad_ref->useSensorsForEstimatesFlag)
-        *selog << "Listening for sensor-simulator output on "+topic+'\n' << std::flush;
-    else
-        *selog << "Listening for simulation output on "+topic+'\n' << std::flush;
-#endif
-#endif
+    plint.setupMeasurements(measQueue);
 
     plint.fillTopology(Yphys, node_qty, node_names, node_idxs, node_name_lookup,
         node_bmrids, node_phs);
@@ -238,7 +201,7 @@ int main(int argc, char** argv) {
 
 #ifdef GRIDAPPSD_INTERFACE
     // Initialize class that does the state estimates
-    SELoopWorker loopWorker(&measQueue, gad_ref, zary, node_qty, node_names,
+    SELoopWorker loopWorker(&measQueue, plint.getGad(), zary, node_qty, node_names,
         node_idxs, node_vnoms, node_bmrids, node_phs, node_name_lookup,
         sbase, Yphys, Amat, regid_primnode, regid_regnode,
         mmrid_pos_type, switch_node1s, switch_node2s);

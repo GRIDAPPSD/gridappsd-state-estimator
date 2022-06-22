@@ -7,6 +7,11 @@ public:
     }
 
 
+    void setupMeasurements(SharedQueue<json>& measQueue) {
+        PlatformInterfaceBase::setupMeasurements(measQueue);
+    }
+
+
     void fillTopo(IMMAP& Yphys, SLIST& node_names, SSMAP&, SSMAP&) {
 
         string filename = FILE_INTERFACE_READ;
