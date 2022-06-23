@@ -9,8 +9,8 @@ public:
         sbase_ref = &sbase;
     }
 
-    void setupMeasurements(SharedQueue<json>& measQueue) {
-        measQueue_ref = &measQueue;
+    void setupMeasurements(SharedQueue<json>& workQueue) {
+        workQueue_ref = &workQueue;
     }
 
     virtual void fillTopo(IMMAP& Yphys, SLIST& node_names,
@@ -54,8 +54,8 @@ public:
         switch_node2s_ref = &switch_node2s;
     }
 
-    SharedQueue<json>* getMeasQueue() {
-      return measQueue_ref;
+    SharedQueue<json>* getWorkQueue() {
+      return workQueue_ref;
     }
 
 protected:
@@ -75,7 +75,7 @@ protected:
     SSMAP* mmrid_pos_type_ref;
     SSMAP* switch_node1s_ref;
     SSMAP* switch_node2s_ref;
-    SharedQueue<json>* measQueue_ref;
+    SharedQueue<json>* workQueue_ref;
 };
 
 #endif

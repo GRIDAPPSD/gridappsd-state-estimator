@@ -67,7 +67,7 @@ class SELoopWorker {
     private:
 
     // passed in from constructor
-    SharedQueue<json>* measQueue;
+    SharedQueue<json>* workQueue;
 #ifdef GRIDAPPSD_INTERFACE
     state_estimator_gridappsd::gridappsd_session* gad;
 #endif
@@ -157,7 +157,7 @@ class SELoopWorker {
             const SSMAP& mmrid_pos_type,
             const SSMAP& switch_node1s,
             const SSMAP& switch_node2s) {
-        this->measQueue = plint.getMeasQueue();
+        this->workQueue = plint.getWorkQueue();
 #ifdef GRIDAPPSD_INTERFACE
         this->gad = plint.getGad();
 #endif
@@ -256,7 +256,7 @@ class SELoopWorker {
                     exit(0);
                 }
 #else
-                jmessage = measQueue->pop();
+                jmessage = workQueue->pop();
 
                 if (jmessage.find("message") != jmessage.end()) {
                     timestamp = jmessage["message"]["timestamp"];
@@ -268,7 +268,7 @@ class SELoopWorker {
                         firstEstimateFlag = false;
                     }
 #ifdef DEBUG_PRIMARY
-                    *selog << "Draining measQueue size: " << measQueue->size() << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
+                    *selog << "Draining workQueue size: " << workQueue->size() << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
 #endif
 
                     // do z summation here
@@ -303,7 +303,7 @@ class SELoopWorker {
 #if defined(FILE_INTERFACE_READ) || defined(FILE_INTERFACE_WRITE)
             } while (false); // uncomment this to fully process all messages
 #else
-            } while (!measQueue->empty()); // uncomment this to drain queue
+            } while (!workQueue->empty()); // uncomment this to drain queue
 #endif
 
             // do z averaging here by dividing sum by # of items

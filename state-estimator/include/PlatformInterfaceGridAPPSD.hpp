@@ -43,8 +43,8 @@ public:
     }
 
 
-    void setupMeasurements(SharedQueue<json>& measQueue) {
-        PlatformInterfaceBase::setupMeasurements(measQueue);
+    void setupMeasurements(SharedQueue<json>& workQueue) {
+        PlatformInterfaceBase::setupMeasurements(workQueue);
 
         // --------------------------------------------------------------------
         // LISTEN FOR SIMULATION LOG MESSAGES
@@ -52,7 +52,7 @@ public:
         // simulation status (running, complete) comes from log messages
         string simLogTopic = "goss.gridappsd.simulation.log."+gad_ref->simid;
 
-        SELoopConsumer* simLogConsumer = new SELoopConsumer(&measQueue,
+        SELoopConsumer* simLogConsumer = new SELoopConsumer(&workQueue,
             gad_ref->brokerURI, gad_ref->username, gad_ref->password,
             simLogTopic, "topic");
         Thread* simLogConsumerThread = new Thread(simLogConsumer);
@@ -72,7 +72,7 @@ public:
             gad_ref->simid+".output":
             "goss.gridappsd.simulation.output."+gad_ref->simid;
 
-        SELoopConsumer* simOutConsumer = new SELoopConsumer(&measQueue,
+        SELoopConsumer* simOutConsumer = new SELoopConsumer(&workQueue,
             gad_ref->brokerURI, gad_ref->username, gad_ref->password,
             simOutTopic, "topic");
         Thread* simOutConsumerThread = new Thread(simOutConsumer);
