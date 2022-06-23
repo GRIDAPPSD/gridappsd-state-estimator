@@ -7,8 +7,8 @@ public:
     }
 
 
-    void setupMeasurements(SharedQueue<json>& workQueue) {
-        PlatformInterfaceBase::setupMeasurements(workQueue);
+    void setupMeasurements() {
+        PlatformInterfaceBase::setupMeasurements();
     }
 
 

@@ -149,13 +149,9 @@ int main(int argc, char** argv) {
 #endif
 #endif
 
-    // declare the thread-safe queue shared between SELoopConsumer (writer)
-    // and SELoopWorker (reader)
-    SharedQueue<json> workQueue;
-
     PlatformInterface plint(argc, argv, sbase);
 
-    plint.setupMeasurements(workQueue);
+    plint.setupMeasurements();
 
     plint.fillTopology();
 

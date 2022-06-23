@@ -43,8 +43,8 @@ public:
     }
 
 
-    void setupMeasurements(SharedQueue<json>& workQueue) {
-        PlatformInterfaceBase::setupMeasurements(workQueue);
+    void setupMeasurements() {
+        PlatformInterfaceBase::setupMeasurements();
 
         // --------------------------------------------------------------------
         // LISTEN FOR SIMULATION LOG MESSAGES

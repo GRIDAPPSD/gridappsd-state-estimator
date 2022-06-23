@@ -9,8 +9,7 @@ public:
         sbase_ref = &sbase;
     }
 
-    void setupMeasurements(SharedQueue<json>& workQueue) {
-        workQueue_ref = &workQueue;
+    void setupMeasurements() {
     }
 
     virtual void fillTopo()=0;
@@ -32,7 +31,7 @@ public:
     }
 
     SharedQueue<json>* getWorkQueue() {
-        return workQueue_ref;
+        return &workQueue;
     }
 
     IMMAP getYphys() {
@@ -98,6 +97,9 @@ public:
 protected:
     const double* sbase_ref;
 
+    // PlatformInterface::setupMeasurements manages this:
+    SharedQueue<json> workQueue;
+
     // PlatformInterface::fillTopology must populate these:
     IMMAP Yphys;
     SLIST node_names;
@@ -123,8 +125,6 @@ protected:
     SSMAP mmrid_pos_type;
     SSMAP switch_node1s;
     SSMAP switch_node2s;
-
-    SharedQueue<json>* workQueue_ref;
 };
 
 #endif
