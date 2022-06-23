@@ -89,8 +89,7 @@ public:
     }
 
 
-    void fillTopo(IMMAP& Yphys, SLIST& node_names,
-        SSMAP& node_bmrids, SSMAP& node_phs) {
+    void fillTopo() {
 #ifdef DEBUG_PRIMARY
         extern bool blockedFlag;
         // only block initialization for command line invocations
@@ -131,8 +130,8 @@ public:
     }
 
 
-    void fillVnom(SCMAP& node_vnoms) {
-        PlatformInterfaceBase::fillVnom(node_vnoms);
+    void fillVnoms() {
+        PlatformInterfaceBase::fillVnoms();
 
         // Set up the vnom consumer
         string vnomTopic = "goss.gridappsd.se.response."+gad_ref->simid+".vnom";
@@ -155,16 +154,12 @@ public:
     }
 
 
-    void fillSensors(SensorArray& zary, IMDMAP& Amat,
-        SSMAP& regid_primnode, SSMAP& regid_regnode,
-        SSMAP& mmrid_pos_type, SSMAP& switch_node1s, SSMAP& switch_node2s) {
-        PlatformInterfaceBase::fillSensors(zary, Amat,
-            regid_primnode, regid_regnode,
-            mmrid_pos_type, switch_node1s, switch_node2s);
+    void fillSensors() {
+        PlatformInterfaceBase::fillSensors();
 
         SSMAP reg_cemrid_primbus;
         SSMAP reg_cemrid_regbus;
-        state_estimator_util::build_A_matrix(*gad_ref, Amat, *node_idxs_ref,
+        state_estimator_util::build_A_matrix(*gad_ref, Amat, node_idxs,
             reg_cemrid_primbus, reg_cemrid_regbus,
             regid_primnode, regid_regnode);
 
@@ -177,7 +172,7 @@ public:
         SDMAP node_nominal_Pinj;
         SDMAP node_nominal_Qinj;
         state_estimator_util::get_nominal_energy_consumer_injections(*gad_ref,
-            *node_vnoms_ref, node_nominal_Pinj, node_nominal_Qinj);
+            node_vnoms, node_nominal_Pinj, node_nominal_Qinj);
 
         // Set up the sensors consumer
         string sensTopic = "goss.gridappsd.se.response."+gad_ref->simid+
@@ -200,17 +195,17 @@ public:
 
         // Wait for sensor initializer and retrieve sensors
         sensConsumerThread.join();
-        sensConsumer.fillSens(zary, mmrid_pos_type,
+        sensConsumer.fillSens(Zary, mmrid_pos_type,
             switch_node1s, switch_node2s);
         sensConsumer.close();
 
         // Add Pseudo-Measurements
-        state_estimator_util::insert_pseudo_measurements(*gad_ref, zary,
-            *node_names_ref, *node_vnoms_ref, *sbase_ref);
+        state_estimator_util::insert_pseudo_measurements(*gad_ref, Zary,
+            node_names, node_vnoms, *sbase_ref);
 #ifdef DEBUG_PRIMARY
         //*selog << "\nzsigs/zvals after adding pseudo-measurements:\n" << std::flush;
-        //for ( auto& zid : zary.zids ) {
-        //    *selog << "\tzid: " << zid << ", ztype: " << zary.ztypes[zid] << ", zsig: " << zary.zsigs[zid] << ", zvals: " << zary.zvals[zid] << "\n" << std::flush;
+        //for ( auto& zid : Zary.zids ) {
+        //    *selog << "\tzid: " << zid << ", ztype: " << Zary.ztypes[zid] << ", zsig: " << Zary.zsigs[zid] << ", zvals: " << Zary.zvals[zid] << "\n" << std::flush;
         //}
 #endif
     }

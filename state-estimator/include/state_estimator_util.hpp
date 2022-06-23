@@ -62,7 +62,7 @@ namespace state_estimator_util{
     }
 
 
-    void insert_pseudo_measurements(gridappsd_session& gad, SensorArray& zary,
+    void insert_pseudo_measurements(gridappsd_session& gad, SensorArray& Zary,
                 SLIST& node_names, SCMAP& node_vnoms, const double sbase) {
         json jpsm = sparql_query(gad,"psm",sparq_energy_consumer_pq(gad.modelID));
 
@@ -175,17 +175,17 @@ namespace state_estimator_util{
 
                 // Add sourcebus voltage magnitude
                 string vmag_zid = "source_V_"+node;
-                zary.zids.push_back(vmag_zid);
-                zary.zidxs   [vmag_zid] = zary.zqty++;
-                zary.ztypes  [vmag_zid] = "vi";
-                zary.znode1s [vmag_zid] = node;
-                zary.znode2s [vmag_zid] = node;
-                zary.zvals   [vmag_zid] = 1.00;
-                zary.zsigs   [vmag_zid] = 0.001; // 1 sigma = 0.1%
-                zary.zpseudos[vmag_zid] = true;
-                zary.znomvals[vmag_zid] = zary.zvals[vmag_zid];
+                Zary.zids.push_back(vmag_zid);
+                Zary.zidxs   [vmag_zid] = Zary.zqty++;
+                Zary.ztypes  [vmag_zid] = "vi";
+                Zary.znode1s [vmag_zid] = node;
+                Zary.znode2s [vmag_zid] = node;
+                Zary.zvals   [vmag_zid] = 1.00;
+                Zary.zsigs   [vmag_zid] = 0.001; // 1 sigma = 0.1%
+                Zary.zpseudos[vmag_zid] = true;
+                Zary.znomvals[vmag_zid] = Zary.zvals[vmag_zid];
 #ifdef FILE_INTERFACE_WRITE
-                ofs << zary.ztypes[vmag_zid] << "," << vmag_zid << "," << zary.znode1s[vmag_zid] << "," << zary.znode2s[vmag_zid] << "," << zary.zvals[vmag_zid] << "," << zary.zsigs[vmag_zid] << ",1," << zary.znomvals[vmag_zid] << "\n";
+                ofs << Zary.ztypes[vmag_zid] << "," << vmag_zid << "," << Zary.znode1s[vmag_zid] << "," << Zary.znode2s[vmag_zid] << "," << Zary.zvals[vmag_zid] << "," << Zary.zsigs[vmag_zid] << ",1," << Zary.znomvals[vmag_zid] << "\n";
 #endif
 
 //                *selog << "**Source Bus node: " << node << '\n' << std::flush;
@@ -193,17 +193,17 @@ namespace state_estimator_util{
 
                 // Add sourcebus voltage phase
                 string varg_zid = "source_T_"+node;
-                zary.zids.push_back(varg_zid);
-                zary.zidxs   [varg_zid] = zary.zqty++;
-                zary.ztypes  [varg_zid] = "Ti";
-                zary.znode1s [varg_zid] = node;
-                zary.znode2s [varg_zid] = node;
-                zary.zvals   [varg_zid] = 0.0;
-                zary.zsigs   [varg_zid] = 0.01;
-                zary.zpseudos[varg_zid] = true;
-                zary.znomvals[varg_zid] = zary.zvals[varg_zid];
+                Zary.zids.push_back(varg_zid);
+                Zary.zidxs   [varg_zid] = Zary.zqty++;
+                Zary.ztypes  [varg_zid] = "Ti";
+                Zary.znode1s [varg_zid] = node;
+                Zary.znode2s [varg_zid] = node;
+                Zary.zvals   [varg_zid] = 0.0;
+                Zary.zsigs   [varg_zid] = 0.01;
+                Zary.zpseudos[varg_zid] = true;
+                Zary.znomvals[varg_zid] = Zary.zvals[varg_zid];
 #ifdef FILE_INTERFACE_WRITE
-                ofs << zary.ztypes[varg_zid] << "," << varg_zid << "," << zary.znode1s[varg_zid] << "," << zary.znode2s[varg_zid] << "," << zary.zvals[varg_zid] << "," << zary.zsigs[varg_zid] << ",1," << zary.znomvals[varg_zid] << "\n";
+                ofs << Zary.ztypes[varg_zid] << "," << varg_zid << "," << Zary.znode1s[varg_zid] << "," << Zary.znode2s[varg_zid] << "," << Zary.zvals[varg_zid] << "," << Zary.zsigs[varg_zid] << ",1," << Zary.znomvals[varg_zid] << "\n";
 #endif
             }
 
@@ -212,18 +212,18 @@ namespace state_estimator_util{
 
                 // Add the P injection
                 string pinj_zid = "pseudo_P_"+node;
-                zary.zids.push_back(pinj_zid);
-                zary.zidxs   [pinj_zid] = zary.zqty++;
-                zary.ztypes  [pinj_zid] = "Pi";
-                zary.znode1s [pinj_zid] = node;
-                zary.znode2s [pinj_zid] = node;
-                zary.zvals   [pinj_zid] = pseudoP[node]/sbase;
-                zary.zsigs   [pinj_zid] = std::abs(pseudoP[node]/sbase) +
+                Zary.zids.push_back(pinj_zid);
+                Zary.zidxs   [pinj_zid] = Zary.zqty++;
+                Zary.ztypes  [pinj_zid] = "Pi";
+                Zary.znode1s [pinj_zid] = node;
+                Zary.znode2s [pinj_zid] = node;
+                Zary.zvals   [pinj_zid] = pseudoP[node]/sbase;
+                Zary.zsigs   [pinj_zid] = std::abs(pseudoP[node]/sbase) +
                     loss_ratio*(nominal_systemP/sbase)/node_names.size(); // load + leakage
-                zary.zpseudos[pinj_zid] = true;
-                zary.znomvals[pinj_zid] = zary.zvals[pinj_zid];
+                Zary.zpseudos[pinj_zid] = true;
+                Zary.znomvals[pinj_zid] = Zary.zvals[pinj_zid];
 #ifdef FILE_INTERFACE_WRITE
-                ofs << zary.ztypes[pinj_zid] << "," << pinj_zid << "," << zary.znode1s[pinj_zid] << "," << zary.znode2s[pinj_zid] << "," << zary.zvals[pinj_zid] << "," << zary.zsigs[pinj_zid] << ",1," << zary.znomvals[pinj_zid] << "\n";
+                ofs << Zary.ztypes[pinj_zid] << "," << pinj_zid << "," << Zary.znode1s[pinj_zid] << "," << Zary.znode2s[pinj_zid] << "," << Zary.zvals[pinj_zid] << "," << Zary.zsigs[pinj_zid] << ",1," << Zary.znomvals[pinj_zid] << "\n";
 #endif
 
 //                *selog << "NON-Source Bus node: " << node << '\n' << std::flush;
@@ -231,18 +231,18 @@ namespace state_estimator_util{
                 
                 // Add the Q injection
                 string qinj_zid = "pseudo_Q_"+node;
-                zary.zids.push_back(qinj_zid);
-                zary.zidxs   [qinj_zid] = zary.zqty++;
-                zary.ztypes  [qinj_zid] = "Qi";
-                zary.znode1s [qinj_zid] = node;
-                zary.znode2s [qinj_zid] = node;
-                zary.zvals   [qinj_zid] = pseudoQ[node]/sbase;
-                zary.zsigs   [qinj_zid] = std::abs(pseudoQ[node]/sbase) +
+                Zary.zids.push_back(qinj_zid);
+                Zary.zidxs   [qinj_zid] = Zary.zqty++;
+                Zary.ztypes  [qinj_zid] = "Qi";
+                Zary.znode1s [qinj_zid] = node;
+                Zary.znode2s [qinj_zid] = node;
+                Zary.zvals   [qinj_zid] = pseudoQ[node]/sbase;
+                Zary.zsigs   [qinj_zid] = std::abs(pseudoQ[node]/sbase) +
                     loss_ratio*(nominal_systemQ/sbase)/node_names.size(); // load + leakage
-                zary.zpseudos[qinj_zid] = true;
-                zary.znomvals[qinj_zid] = zary.zvals[qinj_zid];
+                Zary.zpseudos[qinj_zid] = true;
+                Zary.znomvals[qinj_zid] = Zary.zvals[qinj_zid];
 #ifdef FILE_INTERFACE_WRITE
-                ofs << zary.ztypes[qinj_zid] << "," << qinj_zid << "," << zary.znode1s[qinj_zid] << "," << zary.znode2s[qinj_zid] << "," << zary.zvals[qinj_zid] << "," << zary.zsigs[qinj_zid] << ",1," << zary.znomvals[qinj_zid] << "\n";
+                ofs << Zary.ztypes[qinj_zid] << "," << qinj_zid << "," << Zary.znode1s[qinj_zid] << "," << Zary.znode2s[qinj_zid] << "," << Zary.zvals[qinj_zid] << "," << Zary.zsigs[qinj_zid] << ",1," << Zary.znomvals[qinj_zid] << "\n";
 #endif
             }
         }

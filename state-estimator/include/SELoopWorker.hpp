@@ -71,7 +71,7 @@ class SELoopWorker {
 #ifdef GRIDAPPSD_INTERFACE
     state_estimator_gridappsd::gridappsd_session* gad;
 #endif
-    SensorArray        zary;
+    SensorArray        Zary;
     uint               node_qty;     // number of nodes
     SLIST              node_names;   // node names [list of strings]
     SIMAP              node_idxs;    // node positional indices [node->int]
@@ -81,6 +81,11 @@ class SELoopWorker {
     ISMAP              node_name_lookup;
     double             sbase;
     IMMAP              Yphys;        // Ybus [node->[row->col]] [physical units]
+    // G, B, g, and b are derived from Yphys:
+    //    -- Gij = std::real(Yphys[i][j]);
+    //    -- Bij = std::imag(Yphys[i][j]);
+    //    -- gij = std::real(-1.0*Yphys[i][j]);
+    //    -- bij = std::imag(-1.0*Yphys[i][j]);
     IMDMAP             Amat;         // regulator tap ratios
     SSMAP              regid_primnode;
     SSMAP              regid_regnode;
@@ -141,42 +146,27 @@ class SELoopWorker {
     public:
     SELoopWorker(
             PlatformInterface& plint,
-            const SensorArray& zary,
-            const uint& node_qty,
-            const SLIST& node_names,
-            const SIMAP& node_idxs,
-            const SCMAP& node_vnoms,
-            const SSMAP& node_bmrids,
-            const SSMAP& node_phs,
-            const ISMAP& node_name_lookup,
-            const double& sbase,
-            const IMMAP& Yphys,
-            const IMDMAP& Amat,
-            const SSMAP& regid_primnode,
-            const SSMAP& regid_regnode,
-            const SSMAP& mmrid_pos_type,
-            const SSMAP& switch_node1s,
-            const SSMAP& switch_node2s) {
+            const double& sbase) {
         this->workQueue = plint.getWorkQueue();
 #ifdef GRIDAPPSD_INTERFACE
         this->gad = plint.getGad();
 #endif
-        this->zary = zary;
-        this->node_qty = node_qty;
-        this->node_names = node_names;
-        this->node_idxs = node_idxs;
-        this->node_vnoms = node_vnoms;
-        this->node_bmrids = node_bmrids;
-        this->node_phs = node_phs;
-        this->node_name_lookup = node_name_lookup;
+        this->Zary = plint.getZary();
+        this->node_qty = plint.getnode_qty();
+        this->node_names = plint.getnode_names();
+        this->node_idxs = plint.getnode_idxs();
+        this->node_vnoms = plint.getVnoms();
+        this->node_bmrids = plint.getnode_bmrids();
+        this->node_phs = plint.getnode_phs();
+        this->node_name_lookup = plint.getnode_name_lookup();
         this->sbase = sbase;
-        this->Yphys = Yphys; 
-        this->Amat = Amat;
-        this->regid_primnode = regid_primnode;
-        this->regid_regnode = regid_regnode;
-        this->mmrid_pos_type = mmrid_pos_type;
-        this->switch_node1s = switch_node1s;
-        this->switch_node2s = switch_node2s;
+        this->Yphys = plint.getYphys(); 
+        this->Amat = plint.getAmat();
+        this->regid_primnode = plint.getregid_primnode();
+        this->regid_regnode = plint.getregid_regnode();
+        this->mmrid_pos_type = plint.getmmrid_pos_type();
+        this->switch_node1s = plint.getswitch_node1s();
+        this->switch_node2s = plint.getswitch_node2s();
     }
 
 
@@ -196,8 +186,8 @@ class SELoopWorker {
         init();
 
         // initialize "last timestamp" map to a "no measurements" flag value
-        for ( auto& zid : zary.zids )
-            zary.ztimes[zid] = UINT_MAX;
+        for ( auto& zid : Zary.zids )
+            Zary.ztimes[zid] = UINT_MAX;
 
         // initialize what's updated during processing
         // (if things go bad we'll need to reset these)
@@ -231,7 +221,7 @@ class SELoopWorker {
 
             // check whether to preserve zvals from last queue draining
             if ( !keepZvalsFlag )
-                for ( auto& zid : zary.zids ) zary.znews[zid] = 0;
+                for ( auto& zid : Zary.zids ) Zary.znews[zid] = 0;
             else
                 keepZvalsFlag = false;
 
@@ -312,16 +302,16 @@ class SELoopWorker {
 // #endif
 
 #ifndef FILE_INTERFACE_READ
-            for ( auto& zid : zary.zids ) {
-                if ( zary.znews[zid] > 1 )
-                    zary.zvals[zid] /= zary.znews[zid];
+            for ( auto& zid : Zary.zids ) {
+                if ( Zary.znews[zid] > 1 )
+                    Zary.zvals[zid] /= Zary.znews[zid];
             }
 #endif
 
 // #ifdef DEBUG_PRIMARY
 //            *selog << "zvals before estimate\n" << std::flush;
-//            for ( auto& zid : zary.zids ) {
-//                *selog << "measurement of type: " << zary.ztypes[zid] << "\t" << zid << ": " << zary.zvals[zid] << "\t(" << zary.znews[zid] << ")\n" << std::flush;
+//            for ( auto& zid : Zary.zids ) {
+//                *selog << "measurement of type: " << Zary.ztypes[zid] << "\t" << zid << ": " << Zary.zvals[zid] << "\t(" << Zary.znews[zid] << ")\n" << std::flush;
 //            }
 // #endif
 
@@ -373,9 +363,9 @@ class SELoopWorker {
                     // undo the zvals averaging because we'll drain what's been
                     // added before the next estimate call and average those
                     // with what's been drained already
-                    for ( auto& zid : zary.zids ) {
-                        if ( zary.znews[zid] > 1 )
-                            zary.zvals[zid] *= zary.znews[zid];
+                    for ( auto& zid : Zary.zids ) {
+                        if ( Zary.znews[zid] > 1 )
+                            Zary.zvals[zid] *= Zary.znews[zid];
                     }
 
                     // set flag to indicate not to clear previous zvals
@@ -438,7 +428,7 @@ class SELoopWorker {
         // Establish Dimension of State Space and Measurement Space
         // --------------------------------------------------------------------
         xqty = 2*node_qty;
-        zqty = zary.zqty;
+        zqty = Zary.zqty;
 
 #ifdef DEBUG_PRIMARY
         *selog << "node_qty is " << node_qty << "; " << std::flush;
@@ -449,10 +439,10 @@ class SELoopWorker {
         // --------------------------------------------------------------------
         // Determine possible non-zero Jacobian elements
         // --------------------------------------------------------------------
-        for ( auto& zid: zary.zids ) {
-            uint zidx = zary.zidxs[zid];            // row index of J
-            string ztype = zary.ztypes[zid];        // measurement type
-            uint i = node_idxs[zary.znode1s[zid]];  // one-indexed
+        for ( auto& zid: Zary.zids ) {
+            uint zidx = Zary.zidxs[zid];            // row index of J
+            string ztype = Zary.ztypes[zid];        // measurement type
+            uint i = node_idxs[Zary.znode1s[zid]];  // one-indexed
 
             // Real Power Injection Measurements
             if ( !ztype.compare("Pi") ) {
@@ -484,7 +474,7 @@ class SELoopWorker {
             } else if ( !ztype.compare("aji") ) {
                 // note: the regulation node, j, is assigned to znode2s
                 //       the primary node, i, is assigned to znode1s
-                uint j = node_idxs[zary.znode2s[zid]];
+                uint j = node_idxs[Zary.znode2s[zid]];
 
                 // daji/dvj exists: 1/vi
                 Jshapemap.insert(A5PAIR(j-1, {zidx, j-1, i, j, daji_dvj}));
@@ -757,13 +747,13 @@ class SELoopWorker {
         ofh.open(initpath+"meas.txt",std::ofstream::out);
         *selog << "writing output/init/meas.txt\n" << std::flush;
         ofh << "sensor_type\tsensor_name\tnode1\tnode2\tvalue\tsigma\n";
-        for ( auto& zid : zary.zids ) {
-            ofh << zary.ztypes[zid] << "\t"
+        for ( auto& zid : Zary.zids ) {
+            ofh << Zary.ztypes[zid] << "\t"
                 << zid << "\t"
-                << zary.znode1s[zid] << "\t"
-                << zary.znode2s[zid] << "\t"
-                << zary.zvals[zid] << "\t"
-                << zary.zsigs[zid] << "\n";
+                << Zary.znode1s[zid] << "\t"
+                << Zary.znode2s[zid] << "\t"
+                << Zary.zvals[zid] << "\t"
+                << Zary.zsigs[zid] << "\n";
         } ofh.close();
 
         *selog << "done writing\n" << std::flush;
@@ -772,24 +762,24 @@ class SELoopWorker {
 #ifdef DEBUG_FILES
         // write sensor types to file
         ofh.open(initpath+"ztypes.csv");
-        for ( auto& zid : zary.zids )
-            ofh << zary.ztypes[zid] << "\n";
+        for ( auto& zid : Zary.zids )
+            ofh << Zary.ztypes[zid] << "\n";
         ofh.close();
 #endif
 
 #ifdef DEBUG_FILES
         // write sensor node 1s
         ofh.open(initpath+"znode1s.csv");
-        for ( auto& zid : zary.zids )
-            ofh << zary.znode1s[zid] << "\n";
+        for ( auto& zid : Zary.zids )
+            ofh << Zary.znode1s[zid] << "\n";
         ofh.close();
 #endif
 
 #ifdef DEBUG_FILES
         // write sensor node 2s
         ofh.open(initpath+"znode2s.csv");
-        for ( auto& zid : zary.zids )
-            ofh << zary.znode2s[zid] << "\n";
+        for ( auto& zid : Zary.zids )
+            ofh << Zary.znode2s[zid] << "\n";
         ofh.close();
 #endif
 
@@ -842,26 +832,26 @@ class SELoopWorker {
 #endif
 #ifdef GS_OPTIMIZE
         Rmat = gs_spalloc_diagonal(zqty);
-        for ( auto& zid : zary.zids ) {
+        for ( auto& zid : Zary.zids ) {
             // variance of R[i,i] is sigma[i]^2
             // Originally we had this as just sigma[i], which resulted in
             // different sbase producing different estimate results and took
             // a couple weeks to debug working through many matrices to figure
             // out if they were different for different sbase values
-            gs_entry_diagonal_negl(Rmat,zary.zidxs[zid],
-                                   zary.zsigs[zid]*zary.zsigs[zid]);
-            //*selog << zid << "," << zary.zidxs[zid] << "," << node_idxs[zary.znode1s[zid]] << "," << zary.zsigs[zid]*zary.zsigs[zid] << "\n" << std::flush;
+            gs_entry_diagonal_negl(Rmat,Zary.zidxs[zid],
+                                   Zary.zsigs[zid]*Zary.zsigs[zid]);
+            //*selog << zid << "," << Zary.zidxs[zid] << "," << node_idxs[Zary.znode1s[zid]] << "," << Zary.zsigs[zid]*Zary.zsigs[zid] << "\n" << std::flush;
         }
 #else
         cs* Rraw = cs_spalloc(zqty, zqty, zqty, 1, 1);
-        for ( auto& zid : zary.zids )
+        for ( auto& zid : Zary.zids )
             // variance of R[i,i] is sigma[i]^2
             // Originally we had this as just sigma[i], which resulted in
             // different sbase producing different estimate results and took
             // a couple weeks to debug working through many matrices to figure
             // out if they were different for different sbase values
-            cs_entry_negl(Rraw,zary.zidxs[zid],zary.zidxs[zid],
-                          zary.zsigs[zid]*zary.zsigs[zid]);
+            cs_entry_negl(Rraw,Zary.zidxs[zid],Zary.zidxs[zid],
+                          Zary.zsigs[zid]*Zary.zsigs[zid]);
         Rmat = cs_compress(Rraw);
         cs_spfree(Rraw);
 #endif
@@ -1019,7 +1009,7 @@ class SELoopWorker {
         // --------------------------------------------------------------------
         // Use the simulation output to update the states
         // --------------------------------------------------------------------
-        // This needs to translate simulation output into zary.zvals[zid]
+        // This needs to translate simulation output into Zary.zvals[zid]
         //  - We need to iterate over the "measurements" in the simoutput
         //  - As in SensorDefConsumer.hpp, measurements can have multiple z's
 
@@ -1037,19 +1027,19 @@ class SELoopWorker {
 
         while ( getline(lineStream, cell, ',') ) {
             zid = meas_zids[idx++];
-            zary.zvals[zid] = stod(cell);
-            zary.znews[zid] = 1;
-            zary.ztimes[zid] = timestamp;
-            //*selog << "\t*** Read zval[" << zid << "]: " << zary.zvals[zid] << "\n" << std::flush;
+            Zary.zvals[zid] = stod(cell);
+            Zary.znews[zid] = 1;
+            Zary.ztimes[zid] = timestamp;
+            //*selog << "\t*** Read zval[" << zid << "]: " << Zary.zvals[zid] << "\n" << std::flush;
 
             if (zid.substr(zid.length()-4, string::npos) == "_tap") {
                 // Update the A matrix with the latest tap ratio measurement
                 double tap_ratio = stod(cell);
 
-                string primnode = zary.znode1s[zid];
+                string primnode = Zary.znode1s[zid];
                 uint i = node_idxs[primnode];
 
-                string regnode = zary.znode2s[zid];
+                string regnode = Zary.znode2s[zid];
                 uint j = node_idxs[regnode];
 
                 if ( ( Amat[j][i] - tap_ratio ) > 0.00625 )
@@ -1070,7 +1060,7 @@ class SELoopWorker {
         for ( auto& m : jmessage["message"]["measurements"] ) {
             // link back to information about the measurement using its mRID
             string mmrid = m["measurement_mrid"];
-            string m_type = zary.mtypes[mmrid];
+            string m_type = Zary.mtypes[mmrid];
 
             // Check for "PNV" measurement
             if ( !m_type.compare("PNV") ) {
@@ -1078,9 +1068,9 @@ class SELoopWorker {
                     // update the voltage magnitude (in per-unit)
                     string zid = mmrid+"_Vmag";
                     double vmag_phys = m["magnitude"];
-                    double vmag_nom = vmag_phys / abs(node_vnoms[zary.znode1s[zid]]);
+                    double vmag_nom = vmag_phys / abs(node_vnoms[Zary.znode1s[zid]]);
 #ifdef FILE_INTERFACE_WRITE
-                    string meas_node = zary.mnodes[mmrid];
+                    string meas_node = Zary.mnodes[mmrid];
                     node_mag[meas_node] = vmag_nom;
                     // assumes there is always an angle with the magnitude,
                     // which isn't the case with sensor simulator measurements
@@ -1090,12 +1080,12 @@ class SELoopWorker {
 #endif
                     // TODO: This uses vnom filled from OpenDSS values, but needs
                     // to use GridLAB-D values
-                    if (zary.znews[zid] == 0)
-                        zary.zvals[zid] = vmag_nom;
+                    if (Zary.znews[zid] == 0)
+                        Zary.zvals[zid] = vmag_nom;
                     else
-                        zary.zvals[zid] += vmag_nom;
-                    zary.znews[zid]++;
-                    zary.ztimes[zid] = timestamp;
+                        Zary.zvals[zid] += vmag_nom;
+                    Zary.znews[zid]++;
+                    Zary.ztimes[zid] = timestamp;
                 }
 
                 // update the voltage phase
@@ -1111,19 +1101,19 @@ class SELoopWorker {
                     double tap_position = m["value"];
                     double tap_ratio = 1.0 + 0.1*tap_position/16.0;
 
-                    if (zary.znews[zid] == 0)
-                        zary.zvals[zid] = tap_ratio;
+                    if (Zary.znews[zid] == 0)
+                        Zary.zvals[zid] = tap_ratio;
                     else
-                        zary.zvals[zid] += tap_ratio;
-                    zary.znews[zid]++;
-                    zary.ztimes[zid] = timestamp;
+                        Zary.zvals[zid] += tap_ratio;
+                    Zary.znews[zid]++;
+                    Zary.ztimes[zid] = timestamp;
 
                     // Update the A matrix with the latest tap ratio measurement
                     // TODO: Consider averaging for queued measurements
-                    string primnode = zary.znode1s[zid];
+                    string primnode = Zary.znode1s[zid];
                     uint i = node_idxs[primnode];
 
-                    string regnode = zary.znode2s[zid];
+                    string regnode = Zary.znode2s[zid];
                     uint j = node_idxs[regnode];
                     
                     if ( ( Amat[j][i] - tap_ratio ) > 0.00625 ) {
@@ -1199,7 +1189,7 @@ class SELoopWorker {
             }
 #ifdef NET_INJECTION
             else if ( !m_type.compare("VA") ) {
-                if ( !zary.mcetypes[mmrid].compare("EnergyConsumer") ) {
+                if ( !Zary.mcetypes[mmrid].compare("EnergyConsumer") ) {
                     // P and Q injection measurements are composed of physical
                     // measurements of all devices at the node.
 
@@ -1213,19 +1203,19 @@ class SELoopWorker {
                     // the pseudo-measurement with an accumulator over physical
                     // measurements at that node.
 
-                    string meas_node = zary.mnodes[mmrid];
+                    string meas_node = Zary.mnodes[mmrid];
                     string pinj_zid = meas_node+"_Pinj";
                     string qinj_zid = meas_node+"_Qinj";
 
                     // assumes pinj and qinj are updated in pairs only
                     // or we would have to check qinj_zid as well
-                    if (zary.ztimes[pinj_zid] != timestamp) {
-                        zary.zvals[pinj_zid] = 0;
-                        zary.zvals[qinj_zid] = 0;
-                        zary.znews[pinj_zid]++;
-                        zary.znews[qinj_zid]++;
-                        zary.ztimes[pinj_zid] = timestamp;
-                        zary.ztimes[qinj_zid] = timestamp;
+                    if (Zary.ztimes[pinj_zid] != timestamp) {
+                        Zary.zvals[pinj_zid] = 0;
+                        Zary.zvals[qinj_zid] = 0;
+                        Zary.znews[pinj_zid]++;
+                        Zary.znews[qinj_zid]++;
+                        Zary.ztimes[pinj_zid] = timestamp;
+                        Zary.ztimes[qinj_zid] = timestamp;
                     }
 
                     if (m.find("magnitude")!=m.end() &&
@@ -1235,12 +1225,12 @@ class SELoopWorker {
                         double vang_rad = vang_phys*PI/180.0;
 
                         // convert from polar to rectangular coordinates
-                        zary.zvals[pinj_zid] -= vmag_phys*cos(vang_rad)/sbase;
-                        zary.zvals[qinj_zid] -= vmag_phys*sin(vang_rad)/sbase;
+                        Zary.zvals[pinj_zid] -= vmag_phys*cos(vang_rad)/sbase;
+                        Zary.zvals[qinj_zid] -= vmag_phys*sin(vang_rad)/sbase;
                     }
                 }
                 // check other conducting equipment types
-                // else if ( !zary.mcetypes[mmrid].compare("") ) {
+                // else if ( !Zary.mcetypes[mmrid].compare("") ) {
                 // }
             }
 #endif
@@ -1291,7 +1281,7 @@ class SELoopWorker {
             ofh_data.open("test_files/measurement_data.csv", std::ofstream::out);
 
             ofh_data << "timestamp,";
-            for ( auto& zid : zary.zids )
+            for ( auto& zid : Zary.zids )
                 ofh_data << zid << ( ++ctr < zqty ? "," : "\n" );
             ofh_data.close();
 
@@ -1302,21 +1292,21 @@ class SELoopWorker {
         ofh_data << timestamp << ",";
 
         ctr = 0;
-        for ( auto& zid : zary.zids )
-            ofh_data << zary.zvals[zid] << ( ++ctr < zqty ? "," : "\n" );
+        for ( auto& zid : Zary.zids )
+            ofh_data << Zary.zvals[zid] << ( ++ctr < zqty ? "," : "\n" );
 
         ofh_data.close();
 #endif
 
 #ifdef COMPARE_INJ_MEAS
         *selog << "timestamp";
-        for (auto& node : zary.injnodes )
+        for (auto& node : Zary.injnodes )
             *selog << ",pseudo_P_"+node << "," << "pseudo_Q_"+node << "," << node+"_Pinj" << "," << node+"_Qinj";
         *selog << "\n";
 
         *selog << timestamp;
-        for (auto& node : zary.injnodes )
-            *selog << "," << sbase*zary.zvals["pseudo_P_"+node] << "," << sbase*zary.zvals["pseudo_Q_"+node] << "," << sbase*zary.zvals[node+"_Pinj"] << "," << sbase*zary.zvals[node+"_Qinj"];
+        for (auto& node : Zary.injnodes )
+            *selog << "," << sbase*Zary.zvals["pseudo_P_"+node] << "," << sbase*Zary.zvals["pseudo_Q_"+node] << "," << sbase*Zary.zvals[node+"_Pinj"] << "," << sbase*Zary.zvals[node+"_Qinj"];
         *selog << "\n" << std::flush;
 #endif
 
@@ -1847,8 +1837,8 @@ class SELoopWorker {
         double dmin = DBL_MAX;
         double dmax = -DBL_MAX;
 
-        for ( auto& zid : zary.zids ) {
-            uint zidx = zary.zidxs[zid];
+        for ( auto& zid : Zary.zids ) {
+            uint zidx = Zary.zidxs[zid];
             double yval = yupd->x[zidx];
             double rval = Rmat->x[zidx];
 
@@ -1881,12 +1871,12 @@ class SELoopWorker {
             }
         }
 
-        double resmean = ressum/zary.zqty;
+        double resmean = ressum/Zary.zqty;
         *selog << "\nRESIDUAL resmean: " << resmean << ", resmin: " << resmin << ", resmax: " << resmax << "\n" << std::flush;
-        *selog << "RESIDUAL ymean: " << ysum/zary.zqty << ", ymin: " << ymin << ", ymax: " << ymax << "\n" << std::flush;
-        *selog << "RESIDUAL rmean: " << rsum/zary.zqty << ", rmin: " << rmin << ", rmax: " << rmax << "\n" << std::flush;
-        *selog << "RESIDUAL smean: " << ssum/zary.zqty << ", smin: " << smin << ", smax: " << smax << "\n" << std::flush;
-        *selog << "RESIDUAL denommean: " << dsum/zary.zqty << ", denommin: " << dmin << ", denommax: " << dmax << "\n" << std::flush;
+        *selog << "RESIDUAL ymean: " << ysum/Zary.zqty << ", ymin: " << ymin << ", ymax: " << ymax << "\n" << std::flush;
+        *selog << "RESIDUAL rmean: " << rsum/Zary.zqty << ", rmin: " << rmin << ", rmax: " << rmax << "\n" << std::flush;
+        *selog << "RESIDUAL smean: " << ssum/Zary.zqty << ", smin: " << smin << ", smax: " << smax << "\n" << std::flush;
+        *selog << "RESIDUAL denommean: " << dsum/Zary.zqty << ", denommin: " << dmin << ", denommax: " << dmax << "\n" << std::flush;
 
 #if 111
         // when residual is added back in, don't free Supd higher up in
@@ -2287,10 +2277,10 @@ class SELoopWorker {
         cs* Rraw = cs_spalloc(zqty, zqty, zqty, 1, 1);
 #endif
 
-        for ( auto& zid : zary.zids ) {
+        for ( auto& zid : Zary.zids ) {
             // check whether to apply some form of time-based uncertainty by
             // checking a measurement type related flag
-            if (!zary.zpseudos[zid]) {
+            if (!Zary.zpseudos[zid]) {
                 // We are currently using the time since last measurement
                 // for a node to determine a time-based uncertainty value.
                 // The time since last measurement approach was chosen because
@@ -2305,86 +2295,86 @@ class SELoopWorker {
 
                 // consider no measurements yet for node so uncertainty
                 // isn't based on time since last measurement
-                if (zary.ztimes[zid] == UINT_MAX) {
+                if (Zary.ztimes[zid] == UINT_MAX) {
                     double uncertainty;
 
-                    if (zary.ztypes[zid] == "vi")
+                    if (Zary.ztypes[zid] == "vi")
                         // standard deviation of expected initial voltage
                         // magnitude
                         uncertainty = 0.2*0.2;
-                    else if (zary.ztypes[zid] == "Ti")
+                    else if (Zary.ztypes[zid] == "Ti")
                         // standard deviation of expected initial voltage
                         // angle
                         uncertainty = 0.01*PI*PI;
-                    else if (zary.ztypes[zid] == "aji")
+                    else if (Zary.ztypes[zid] == "aji")
                         // standard deviation of expected initial tap ratio
                         uncertainty = 0.2*0.2;
-                    else if (zary.ztypes[zid]=="Pi" || zary.ztypes[zid]=="Qi")
+                    else if (Zary.ztypes[zid]=="Pi" || Zary.ztypes[zid]=="Qi")
                         // standard deviation of expected initial complex power
-                        uncertainty = zary.znomvals[zid]*zary.znomvals[zid]*0.25;
+                        uncertainty = Zary.znomvals[zid]*Zary.znomvals[zid]*0.25;
                     else {
                         *selog << "ERROR: prep_R unrecognized measurement type: " <<
-                                  zary.ztypes[zid] << "\n" << std::flush;
+                                  Zary.ztypes[zid] << "\n" << std::flush;
                         exit(1);
                     }
 
                     // variance of R[i,i] is sigma[i]^2 + uncertainty
 #ifdef GS_OPTIMIZE
-                    gs_entry_diagonal_negl(Rmat,zary.zidxs[zid],
-                                 zary.zsigs[zid]*zary.zsigs[zid] + uncertainty);
+                    gs_entry_diagonal_negl(Rmat,Zary.zidxs[zid],
+                                 Zary.zsigs[zid]*Zary.zsigs[zid] + uncertainty);
 #else
-                    cs_entry_negl(Rraw,zary.zidxs[zid],zary.zidxs[zid],
-                                 zary.zsigs[zid]*zary.zsigs[zid] + uncertainty);
+                    cs_entry_negl(Rraw,Zary.zidxs[zid],Zary.zidxs[zid],
+                                 Zary.zsigs[zid]*Zary.zsigs[zid] + uncertainty);
 #endif
 
                 // consider when there is an existing measurement so uncertainty
                 // is based on time since last measurement
-                } else if (timestamp - zary.ztimes[zid] > 0) {
+                } else if (timestamp - Zary.ztimes[zid] > 0) {
                     double factor;
 
-                    if (zary.ztypes[zid] == "vi")
+                    if (Zary.ztypes[zid] == "vi")
                         // standard deviation of expected change in voltage
                         // magnitude per second
                         factor = 0.0001;
-                    else if (zary.ztypes[zid] == "Ti")
+                    else if (Zary.ztypes[zid] == "Ti")
                         // standard deviation of expected change in voltage
                         // angle per second
                         factor = 0.0001*PI*PI;
-                    else if (zary.ztypes[zid] == "aji")
+                    else if (Zary.ztypes[zid] == "aji")
                         // standard deviation of expected change in tap ratio
                         // per second
                         factor = 0.00625*0.00625;
-                    else if (zary.ztypes[zid]=="Pi" || zary.ztypes[zid]=="Qi")
+                    else if (Zary.ztypes[zid]=="Pi" || Zary.ztypes[zid]=="Qi")
                         // standard deviation of expected change in complex
                         // power per second
-                        factor = zary.znomvals[zid]*zary.znomvals[zid]*0.0001;
+                        factor = Zary.znomvals[zid]*Zary.znomvals[zid]*0.0001;
                     else {
                         *selog << "ERROR: prep_R unrecognized measurement type: " <<
-                                  zary.ztypes[zid] << "\n" << std::flush;
+                                  Zary.ztypes[zid] << "\n" << std::flush;
                         exit(1);
                     }
 
-                    double timeUncertainty = factor*(timestamp - zary.ztimes[zid]);
+                    double timeUncertainty = factor*(timestamp - Zary.ztimes[zid]);
 #ifdef DEBUG_PRIMARY
                     if (timeUncertainty > 0.0)
-                        *selog << "Rmat non-zero timeUncertainty value, zid: " << zid << ", timestamp: " << timestamp << ", ztimes: " << zary.ztimes[zid] << ", factor: " << factor << ", timeUncertainty: " << timeUncertainty << "\n" << std::flush;
+                        *selog << "Rmat non-zero timeUncertainty value, zid: " << zid << ", timestamp: " << timestamp << ", ztimes: " << Zary.ztimes[zid] << ", factor: " << factor << ", timeUncertainty: " << timeUncertainty << "\n" << std::flush;
 #endif
                     // variance of R[i,i] is sigma[i]^2 + timeUncertainty
 #ifdef GS_OPTIMIZE
-                    gs_entry_diagonal_negl(Rmat,zary.zidxs[zid],
-                             zary.zsigs[zid]*zary.zsigs[zid] + timeUncertainty);
+                    gs_entry_diagonal_negl(Rmat,Zary.zidxs[zid],
+                             Zary.zsigs[zid]*Zary.zsigs[zid] + timeUncertainty);
 #else
-                    cs_entry_negl(Rraw,zary.zidxs[zid],zary.zidxs[zid],
-                             zary.zsigs[zid]*zary.zsigs[zid] + timeUncertainty);
+                    cs_entry_negl(Rraw,Zary.zidxs[zid],Zary.zidxs[zid],
+                             Zary.zsigs[zid]*Zary.zsigs[zid] + timeUncertainty);
 #endif
                 } else {
                 // variance of R[i,i] is sigma[i]^2
 #ifdef GS_OPTIMIZE
-                    gs_entry_diagonal_negl(Rmat,zary.zidxs[zid],
-                                           zary.zsigs[zid]*zary.zsigs[zid]);
+                    gs_entry_diagonal_negl(Rmat,Zary.zidxs[zid],
+                                           Zary.zsigs[zid]*Zary.zsigs[zid]);
 #else
-                    cs_entry_negl(Rraw,zary.zidxs[zid],zary.zidxs[zid],
-                                  zary.zsigs[zid]*zary.zsigs[zid]);
+                    cs_entry_negl(Rraw,Zary.zidxs[zid],Zary.zidxs[zid],
+                                  Zary.zsigs[zid]*Zary.zsigs[zid]);
 #endif
                 }
             }
@@ -2393,8 +2383,8 @@ class SELoopWorker {
             // C-sparse functions, Rraw is created from scratch to need
             // to re-initialize those values every prep_R call
             else
-                cs_entry_negl(Rraw,zary.zidxs[zid],zary.zidxs[zid],
-                              zary.zsigs[zid]*zary.zsigs[zid]);
+                cs_entry_negl(Rraw,Zary.zidxs[zid],Zary.zidxs[zid],
+                              Zary.zsigs[zid]*Zary.zsigs[zid]);
 #endif
         }
 
@@ -2412,10 +2402,10 @@ class SELoopWorker {
         ofh << std::setprecision(8);
         ofh.open(filename,std::ofstream::out);
 
-        for ( auto& zid : zary.zids ) {
-            uint zidx = zary.zidxs[zid];
-            double zval = zary.zvals[zid];
-            string ztype = zary.ztypes[zid];
+        for ( auto& zid : Zary.zids ) {
+            uint zidx = Zary.zidxs[zid];
+            double zval = Zary.zvals[zid];
+            string ztype = Zary.ztypes[zid];
 
             // these sbase checks are for when the comparison is to sbase 1e6
             if (sbase > 1.0e+11) {
@@ -2438,9 +2428,9 @@ class SELoopWorker {
         ofh << std::setprecision(8);
         ofh.open(filename,std::ofstream::out);
 
-        for ( auto& zid : zary.zids ) {
-            uint zidx = zary.zidxs[zid];
-            string ztype = zary.ztypes[zid];
+        for ( auto& zid : Zary.zids ) {
+            uint zidx = Zary.zidxs[zid];
+            string ztype = Zary.ztypes[zid];
             double val = colvec->x[colvec->i[zidx]];
             if (filename[0]=='k' && (ztype=="Qi" || ztype=="Pi")) {
                 //val /= sbase;
@@ -2457,19 +2447,19 @@ class SELoopWorker {
 
     private:
     void sample_z(cs *&zmat) {
-        // measurements have been loaded from the sim output message to zary
+        // measurements have been loaded from the sim output message to Zary
 #ifdef GS_OPTIMIZE
         zmat = gs_spalloc_firstcol(zqty);
         if (!zmat) *selog << "ERROR: null z\n" << std::flush;
 #else
         cs* zraw = cs_spalloc(zqty, 1, zqty, 1, 1);
 #endif
-        for ( auto& zid : zary.zids ) {
+        for ( auto& zid : Zary.zids ) {
 #ifdef GS_OPTIMIZE
-            gs_entry_firstcol_negl(zmat,zary.zidxs[zid],zary.zvals[zid]);
-            //*selog << "sample_z firstcol matrix entry for zid: " << zid << ", zary.zidxs: " << zary.zidxs[zid] << ", zvals value: " << zary.zvals[zid] << "\n" << std::flush;
+            gs_entry_firstcol_negl(zmat,Zary.zidxs[zid],Zary.zvals[zid]);
+            //*selog << "sample_z firstcol matrix entry for zid: " << zid << ", Zary.zidxs: " << Zary.zidxs[zid] << ", zvals value: " << Zary.zvals[zid] << "\n" << std::flush;
 #else
-            cs_entry_negl(zraw,zary.zidxs[zid],0,zary.zvals[zid]);
+            cs_entry_negl(zraw,Zary.zidxs[zid],0,Zary.zvals[zid]);
 #endif
         }
 #ifndef GS_OPTIMIZE
@@ -2580,13 +2570,13 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
         double startTime = getWallTime();
 #endif
-        for ( auto& zid : zary.zids ) {
-            uint zidx = zary.zidxs[zid];
-            string ztype = zary.ztypes[zid];
+        for ( auto& zid : Zary.zids ) {
+            uint zidx = Zary.zidxs[zid];
+            string ztype = Zary.ztypes[zid];
             // Determine the type of z component
             if ( !ztype.compare("Pi") ) {
                 // Real power injection into node i
-                uint i = node_idxs[zary.znode1s[zid]];
+                uint i = node_idxs[Zary.znode1s[zid]];
                 double Pi = 0;
                 try {
                     auto& Yrow = Ypu.at(i);
@@ -2618,9 +2608,9 @@ class SELoopWorker {
                 cs_entry_negl(hraw,zidx,0,Pi);
 #endif
             }
-            else if ( !zary.ztypes[zid].compare("Qi") ) {
+            else if ( !Zary.ztypes[zid].compare("Qi") ) {
                 // Reactive power injection into node i
-                uint i = node_idxs[zary.znode1s[zid]];
+                uint i = node_idxs[Zary.znode1s[zid]];
                 double Qi = 0;
                 try {
                     auto& Yrow = Ypu.at(i);
@@ -2651,10 +2641,10 @@ class SELoopWorker {
                 cs_entry_negl(hraw,zidx,0,Qi);
 #endif
             }
-            else if ( !zary.ztypes[zid].compare("aji" ) ) {
+            else if ( !Zary.ztypes[zid].compare("aji" ) ) {
                 // aji = vj/vi
-                uint i = node_idxs[zary.znode1s[zid]];
-                uint j = node_idxs[zary.znode2s[zid]];
+                uint i = node_idxs[Zary.znode1s[zid]];
+                uint j = node_idxs[Zary.znode2s[zid]];
                 double vi, vj, T, ai, aj, bij, g, b;
                 set_nij(i, j, vi, vj, T, ai, aj, bij, g, b);
                 double aji = vj/vi;
@@ -2664,9 +2654,9 @@ class SELoopWorker {
                 cs_entry_negl(hraw,zidx,0,aji);
 #endif
             }
-            else if ( !zary.ztypes[zid].compare("vi") ) {
+            else if ( !Zary.ztypes[zid].compare("vi") ) {
                 // vi is a direct state measurement
-                uint i = node_idxs[zary.znode1s[zid]];
+                uint i = node_idxs[Zary.znode1s[zid]];
 #ifdef GS_OPTIMIZE
                 gs_entry_firstcol_negl(h,zidx,abs(Vpu[i]));
                 //*selog << "calc_h vi firstcol matrix entry for zid: " << zid << ", zidx: " << zidx << ", Vpu value: " << abs(Vpu[i]) << "\n" << std::flush;
@@ -2674,9 +2664,9 @@ class SELoopWorker {
                 cs_entry_negl(hraw,zidx,0,abs(Vpu[i]));
 #endif
             }
-            else if ( !zary.ztypes[zid].compare("Ti") ) {
+            else if ( !Zary.ztypes[zid].compare("Ti") ) {
                 // Ti is a direct state measurement
-                uint i = node_idxs[zary.znode1s[zid]];
+                uint i = node_idxs[Zary.znode1s[zid]];
 #ifdef GS_OPTIMIZE
                 gs_entry_firstcol_negl(h,zidx,arg(Vpu[i]));
                 //*selog << "calc_h Ti firstcol matrix entry for zid: " << zid << ", zidx: " << zidx << ", Vpu value: " << abs(Vpu[i]) << "\n" << std::flush;
@@ -2684,7 +2674,7 @@ class SELoopWorker {
                 cs_entry_negl(hraw,zidx,0,arg(Vpu[i]));
 #endif
             }
-            else if ( !zary.ztypes[zid].compare("switch_ij") ) {
+            else if ( !Zary.ztypes[zid].compare("switch_ij") ) {
                 // if switch is closed, vi = vj
 
                 // if switch is open, possibility of distributed generation
@@ -3139,9 +3129,9 @@ class SELoopWorker {
         }
 
         unordered_map<uint,bool> powerMap;
-        for ( auto& zid : zary.zids ) {
-            uint zidx = zary.zidxs[zid];
-            string ztype = zary.ztypes[zid];
+        for ( auto& zid : Zary.zids ) {
+            uint zidx = Zary.zidxs[zid];
+            string ztype = Zary.ztypes[zid];
             powerMap[zidx] = (ztype=="Qi" || ztype=="Pi");
         }
 
@@ -3238,9 +3228,9 @@ class SELoopWorker {
         }
 
         unordered_map<uint,bool> powerMap;
-        for ( auto& zid : zary.zids ) {
-            uint zidx = zary.zidxs[zid];
-            string ztype = zary.ztypes[zid];
+        for ( auto& zid : Zary.zids ) {
+            uint zidx = Zary.zidxs[zid];
+            string ztype = Zary.ztypes[zid];
             powerMap[zidx] = (ztype=="Qi" || ztype=="Pi");
         }
 

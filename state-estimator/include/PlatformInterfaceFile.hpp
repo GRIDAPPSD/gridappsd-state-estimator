@@ -12,8 +12,7 @@ public:
     }
 
 
-    void fillTopo(IMMAP& Yphys, SLIST& node_names, SSMAP&, SSMAP&) {
-
+    void fillTopo() {
         string filename = FILE_INTERFACE_READ;
         filename += "/ysparse.csv";
 #ifdef DEBUG_PRIMARY
@@ -65,8 +64,8 @@ public:
     }
 
 
-    void fillVnom(SCMAP& node_vnoms) {
-       PlatformInterfaceBase::fillVnom(node_vnoms);
+    void fillVnoms() {
+       PlatformInterfaceBase::fillVnoms();
 
 #ifdef FILE_INTERFACE_VNOM
         string filename = FILE_INTERFACE_READ;
@@ -104,11 +103,8 @@ public:
     }
 
 
-    void fillSensors(SensorArray& zary, IMDMAP& Amat,
-        SSMAP& regid_primnode, SSMAP& regid_regnode,
-        SSMAP&, SSMAP&, SSMAP&) {
-        PlatformInterfaceBase::fillSensors(zary, Amat,
-            regid_primnode, regid_regnode);
+    void fillSensors() {
+        PlatformInterfaceBase::fillSensors();
 
         string filename = FILE_INTERFACE_READ;
         filename += "/regid.csv";
@@ -136,8 +132,8 @@ public:
             regid_primnode[regid] = primnode;
             regid_regnode[regid] = regnode;
 
-            uint primidx = (*node_idxs_ref)[primnode];
-            uint regidx = (*node_idxs_ref)[regnode];
+            uint primidx = node_idxs[primnode];
+            uint regidx = node_idxs[regnode];
             // initialize the A matrix
             Amat[primidx][regidx] = 1; // this will change
             Amat[regidx][primidx] = 1; // this stays unity and may not be needed
@@ -165,15 +161,15 @@ public:
             std::stringstream lineStream(line);
             string cell, zid;
             getline(lineStream, cell, ',');
-            getline(lineStream, zid, ','); zary.zids.push_back(zid);
-            zary.zidxs[zid] = zary.zqty++;
-            zary.ztypes[zid] = cell;
-            getline(lineStream, cell, ','); zary.znode1s[zid] = cell;
-            getline(lineStream, cell, ','); zary.znode2s[zid] = cell;
-            getline(lineStream, cell, ','); zary.zvals[zid] = std::stod(cell);
-            getline(lineStream, cell, ','); zary.zsigs[zid] = std::stod(cell);
-            getline(lineStream, cell, ','); zary.zpseudos[zid] = cell=="1";
-            getline(lineStream, cell, ','); zary.znomvals[zid] =std::stod(cell);
+            getline(lineStream, zid, ','); Zary.zids.push_back(zid);
+            Zary.zidxs[zid] = Zary.zqty++;
+            Zary.ztypes[zid] = cell;
+            getline(lineStream, cell, ','); Zary.znode1s[zid] = cell;
+            getline(lineStream, cell, ','); Zary.znode2s[zid] = cell;
+            getline(lineStream, cell, ','); Zary.zvals[zid] = std::stod(cell);
+            getline(lineStream, cell, ','); Zary.zsigs[zid] = std::stod(cell);
+            getline(lineStream, cell, ','); Zary.zpseudos[zid] = cell=="1";
+            getline(lineStream, cell, ','); Zary.znomvals[zid] =std::stod(cell);
         }
         ifs.close();
     }

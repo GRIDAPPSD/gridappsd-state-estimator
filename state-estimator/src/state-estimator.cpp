@@ -130,27 +130,6 @@ std::ostream* selog = &std::cout;
 
 
 int main(int argc, char** argv) {
-    // Common/shared interface code
-
-    // Node bus mRIDs and phases data structures
-    SSMAP node_bmrids;
-    SSMAP node_phs;
-
-    // Topology data structures
-    uint node_qty;      // number of nodes
-    SLIST node_names;   // list of node names
-    SIMAP node_idxs;    // map from node name to unit-indexed position
-    ISMAP node_name_lookup;
-    IMMAP Yphys;        // double map from indices to complex admittance
-    // G, B, g, and b are derived from Yphys:
-    //    -- Gij = std::real(Yphys[i][j]);
-    //    -- Bij = std::imag(Yphys[i][j]);
-    //    -- gij = std::real(-1.0*Yphys[i][j]);
-    //    -- bij = std::imag(-1.0*Yphys[i][j]);
-
-    // Node nominal voltages data structure
-    SCMAP node_vnoms;
-
     // system base power, functionally arbitrary -- can be tweaked
     // for better numerical stability if needed
     // all values in the approximate range 1e-140 to 1e+150 converge
@@ -170,21 +149,6 @@ int main(int argc, char** argv) {
 #endif
 #endif
 
-    // --------------------------------------------------------------------
-    // SENSOR INITIALIZATION
-    // --------------------------------------------------------------------
-
-    // A matrix data structures
-    IMDMAP Amat;
-    SSMAP regid_primnode;
-    SSMAP regid_regnode;
-
-    // Sensors data structures
-    SensorArray zary;
-    SSMAP mmrid_pos_type;
-    SSMAP switch_node1s;
-    SSMAP switch_node2s;
-
     // declare the thread-safe queue shared between SELoopConsumer (writer)
     // and SELoopWorker (reader)
     SharedQueue<json> workQueue;
@@ -193,19 +157,14 @@ int main(int argc, char** argv) {
 
     plint.setupMeasurements(workQueue);
 
-    plint.fillTopology(Yphys, node_qty, node_names, node_idxs, node_name_lookup,
-        node_bmrids, node_phs);
+    plint.fillTopology();
 
-    plint.fillVnom(node_vnoms);
+    plint.fillVnoms();
 
-    plint.fillSensors(zary, Amat, regid_primnode, regid_regnode,
-        mmrid_pos_type, switch_node1s, switch_node2s);
+    plint.fillSensors();
 
     // Initialize class that does the state estimates
-    SELoopWorker loopWorker(plint, zary, node_qty, node_names,
-        node_idxs, node_vnoms, node_bmrids, node_phs, node_name_lookup,
-        sbase, Yphys, Amat, regid_primnode, regid_regnode,
-        mmrid_pos_type, switch_node1s, switch_node2s);
+    SELoopWorker loopWorker(plint, sbase);
 
 #ifdef DEBUG_PRIMARY
     *selog << "Starting the SE work loop\n" << std::flush;

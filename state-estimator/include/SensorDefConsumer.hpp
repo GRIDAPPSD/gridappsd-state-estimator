@@ -17,7 +17,7 @@ class SensorDefConsumer : public SEConsumer {
     SDMAP node_nominal_Qinj;
     
     private:
-    SensorArray zary;
+    SensorArray Zary;
     SSMAP mmrid_pos_type;
     SSMAP switch_node1s;
     SSMAP switch_node2s;
@@ -53,9 +53,9 @@ class SensorDefConsumer : public SEConsumer {
     }
 
     public:
-    void fillSens(SensorArray &zary, SSMAP& mmrid_pos_type,
+    void fillSens(SensorArray &Zary, SSMAP& mmrid_pos_type,
                   SSMAP& switch_node1s, SSMAP& switch_node2s) {
-        zary = this->zary;
+        Zary = this->Zary;
         mmrid_pos_type = this->mmrid_pos_type;
         switch_node1s = this->switch_node1s;
         switch_node2s = this->switch_node2s;
@@ -93,9 +93,9 @@ class SensorDefConsumer : public SEConsumer {
                 string mmrid = m["mRID"];
                 string tmeas = m["measurementType"];
                 string ce_type = m["ConductingEquipment_type"];
-                zary.mmrids.push_back( mmrid );
-                zary.mtypes[mmrid] = tmeas;
-                zary.mcetypes[mmrid] = ce_type;
+                Zary.mmrids.push_back( mmrid );
+                Zary.mtypes[mmrid] = tmeas;
+                Zary.mcetypes[mmrid] = ce_type;
 
                 // The node is [bus].[phase_num];
                 string meas_node = m["ConnectivityNode"];
@@ -106,24 +106,24 @@ class SensorDefConsumer : public SEConsumer {
                 if ( !phase.compare("C") ) meas_node += ".3";
                 if ( !phase.compare("s1") ) meas_node += ".1";    // secondary
                 if ( !phase.compare("s2") ) meas_node += ".2";    // secondary
-                zary.mnodes[mmrid] = meas_node;
+                Zary.mnodes[mmrid] = meas_node;
 
                 // build z and supporting structures
                 if ( !tmeas.compare("PNV") ) {
 
                     // add the voltage magnitude measurement
                     string zid = mmrid + "_Vmag";
-                    zary.zids.push_back( zid );
-                    zary.zidxs[zid] = zary.zqty++;
-                    zary.ztypes[zid] = "vi";
-                    zary.znode1s[zid] = meas_node;
-                    zary.znode2s[zid] = meas_node;
+                    Zary.zids.push_back( zid );
+                    Zary.zidxs[zid] = Zary.zqty++;
+                    Zary.ztypes[zid] = "vi";
+                    Zary.znode1s[zid] = meas_node;
+                    Zary.znode2s[zid] = meas_node;
                     // TODO use sensor service uncertainty when implemented
-                    zary.zsigs[zid] = 0.01;    // 1 sigma = 1%
-                    zary.zvals[zid] = 1.0;
-                    zary.znomvals[zid] = zary.zvals[zid];
+                    Zary.zsigs[zid] = 0.01;    // 1 sigma = 1%
+                    Zary.zvals[zid] = 1.0;
+                    Zary.znomvals[zid] = Zary.zvals[zid];
 #ifdef FILE_INTERFACE_WRITE
-                    ofs << zary.ztypes[zid] << "," << zid << "," << zary.znode1s[zid] << "," << zary.znode2s[zid] << "," << zary.zvals[zid] << "," << zary.zsigs[zid] << ",0," << zary.znomvals[zid] << "\n";
+                    ofs << Zary.ztypes[zid] << "," << zid << "," << Zary.znode1s[zid] << "," << Zary.znode2s[zid] << "," << Zary.zvals[zid] << "," << Zary.zsigs[zid] << ",0," << Zary.znomvals[zid] << "\n";
 #endif
 
 
@@ -134,7 +134,7 @@ class SensorDefConsumer : public SEConsumer {
                 } else if ( !tmeas.compare("Pos") ) {
                     if ( !ce_type.compare("PowerTransformer") ) {
                         // regulator tap measurement
-                        // TODO: use zary.mcetypes instead of mmrid_pos_type
+                        // TODO: use Zary.mcetypes instead of mmrid_pos_type
                         mmrid_pos_type[mmrid] = "regulator_tap";
 
                         // look up the prim and reg nodes
@@ -155,24 +155,24 @@ class SensorDefConsumer : public SEConsumer {
 
                         // add the position measurement 
                         string zid = mmrid + "_tap";
-                        zary.zids.push_back( zid );
-                        zary.zidxs[zid] = zary.zqty++;
-                        zary.ztypes[zid] = "aji";
-                        zary.znode1s[zid] = primnode;
-                        zary.znode2s[zid] = regnode;
-                        //zary.zsigs[zid] = 0.0000625; // 1% of 1 tap
-                        zary.zsigs[zid] = 0.001; // 1% of span
-                        zary.zvals[zid] = 1.0;
-                        zary.znomvals[zid] = zary.zvals[zid];
+                        Zary.zids.push_back( zid );
+                        Zary.zidxs[zid] = Zary.zqty++;
+                        Zary.ztypes[zid] = "aji";
+                        Zary.znode1s[zid] = primnode;
+                        Zary.znode2s[zid] = regnode;
+                        //Zary.zsigs[zid] = 0.0000625; // 1% of 1 tap
+                        Zary.zsigs[zid] = 0.001; // 1% of span
+                        Zary.zvals[zid] = 1.0;
+                        Zary.znomvals[zid] = Zary.zvals[zid];
 #ifdef FILE_INTERFACE_WRITE
-                        ofs << zary.ztypes[zid] << "," << zid << "," << zary.znode1s[zid] << "," << zary.znode2s[zid] << "," << zary.zvals[zid] << "," << zary.zsigs[zid] << ",0," << zary.znomvals[zid] << "\n";
+                        ofs << Zary.ztypes[zid] << "," << zid << "," << Zary.znode1s[zid] << "," << Zary.znode2s[zid] << "," << Zary.zvals[zid] << "," << Zary.zsigs[zid] << ",0," << Zary.znomvals[zid] << "\n";
 #endif
 
 //                        *selog << m.dump(2);
 //                        *selog << "primnode: " << primnode << std::endl;
 //                        *selog << "regnode: " << regnode << std::endl;
                     } else if ( !ce_type.compare("LoadBreakSwitch") ) {
-                        // TODO: use zary.mcetypes instead of mmrid_pos_type
+                        // TODO: use Zary.mcetypes instead of mmrid_pos_type
                         mmrid_pos_type[mmrid] = "load_break_switch";
                         string cemrid = m["ConductingEquipment_mRID"];
                         string zid = mmrid + "_switch";
@@ -219,43 +219,43 @@ class SensorDefConsumer : public SEConsumer {
                         // instead of poor performing n^2 complexity find,
                         // we could create a map from node name to aggregate
                         // injection while processing CIM dictionary and then
-                        // after processing add these to zary
-                        if (std::find(zary.zids.begin(),zary.zids.end(),pinj_zid) == zary.zids.end()) {
+                        // after processing add these to Zary
+                        if (std::find(Zary.zids.begin(),Zary.zids.end(),pinj_zid) == Zary.zids.end()) {
                             // add the real power injection measurement
-                            zary.zids.push_back( pinj_zid );
-                            zary.zidxs[pinj_zid] = zary.zqty++;
-                            zary.ztypes[pinj_zid] = "Pi";
-                            zary.znode1s[pinj_zid] = meas_node;
-                            zary.znode2s[pinj_zid] = meas_node;
+                            Zary.zids.push_back( pinj_zid );
+                            Zary.zidxs[pinj_zid] = Zary.zqty++;
+                            Zary.ztypes[pinj_zid] = "Pi";
+                            Zary.znode1s[pinj_zid] = meas_node;
+                            Zary.znode2s[pinj_zid] = meas_node;
 
                             // assumes pinj and qinj are only added together
                             // allowing a second find() call to be eliminated
                             // add the reactive power injection measurement
-                            zary.zids.push_back( qinj_zid );
-                            zary.zidxs[qinj_zid] = zary.zqty++;
-                            zary.ztypes[qinj_zid] = "Qi";
-                            zary.znode1s[qinj_zid] = meas_node;
-                            zary.znode2s[qinj_zid] = meas_node;
+                            Zary.zids.push_back( qinj_zid );
+                            Zary.zidxs[qinj_zid] = Zary.zqty++;
+                            Zary.ztypes[qinj_zid] = "Qi";
+                            Zary.znode1s[qinj_zid] = meas_node;
+                            Zary.znode2s[qinj_zid] = meas_node;
                         }
 
                         // use nominal load for node from SPARQL query for zvals
 
-                        zary.zvals[pinj_zid] -= node_nominal_Pinj[meas_node]/(2.0*sbase);
+                        Zary.zvals[pinj_zid] -= node_nominal_Pinj[meas_node]/(2.0*sbase);
                         double zsig_Pinj = node_nominal_Pinj[meas_node]*0.01/sbase;
-                        zary.zsigs[pinj_zid] = sqrt(zary.zsigs[pinj_zid]*zary.zsigs[pinj_zid] + zsig_Pinj*zsig_Pinj);    // 1 sigma = 1% of nominal
-                        zary.znomvals[pinj_zid] += zary.zvals[pinj_zid];
+                        Zary.zsigs[pinj_zid] = sqrt(Zary.zsigs[pinj_zid]*Zary.zsigs[pinj_zid] + zsig_Pinj*zsig_Pinj);    // 1 sigma = 1% of nominal
+                        Zary.znomvals[pinj_zid] += Zary.zvals[pinj_zid];
 
-                        zary.zvals[qinj_zid] -= node_nominal_Qinj[meas_node]/(2.0*sbase);
+                        Zary.zvals[qinj_zid] -= node_nominal_Qinj[meas_node]/(2.0*sbase);
                         double zsig_Qinj = node_nominal_Qinj[meas_node]*0.01/sbase;
-                        zary.zsigs[qinj_zid] = sqrt(zary.zsigs[qinj_zid]*zary.zsigs[qinj_zid] + zsig_Qinj*zsig_Qinj);    // 1 sigma = 1% of nominal
-                        zary.znomvals[qinj_zid] += zary.zvals[qinj_zid];
+                        Zary.zsigs[qinj_zid] = sqrt(Zary.zsigs[qinj_zid]*Zary.zsigs[qinj_zid] + zsig_Qinj*zsig_Qinj);    // 1 sigma = 1% of nominal
+                        Zary.znomvals[qinj_zid] += Zary.zvals[qinj_zid];
 
 #ifdef FILE_INTERFACE_WRITE
-                        ofs << zary.ztypes[pinj_zid] << "," << pinj_zid << "," << zary.znode1s[pinj_zid] << "," << zary.znode2s[pinj_zid] << "," << zary.zvals[pinj_zid] << "," << zary.zsigs[pinj_zid] << ",0," << zary.znomvals[pinj_zid] << "\n";
-                        ofs << zary.ztypes[qinj_zid] << "," << qinj_zid << "," << zary.znode1s[qinj_zid] << "," << zary.znode2s[qinj_zid] << "," << zary.zvals[qinj_zid] << "," << zary.zsigs[qinj_zid] << ",0," << zary.znomvals[qinj_zid] << "\n";
+                        ofs << Zary.ztypes[pinj_zid] << "," << pinj_zid << "," << Zary.znode1s[pinj_zid] << "," << Zary.znode2s[pinj_zid] << "," << Zary.zvals[pinj_zid] << "," << Zary.zsigs[pinj_zid] << ",0," << Zary.znomvals[pinj_zid] << "\n";
+                        ofs << Zary.ztypes[qinj_zid] << "," << qinj_zid << "," << Zary.znode1s[qinj_zid] << "," << Zary.znode2s[qinj_zid] << "," << Zary.zvals[qinj_zid] << "," << Zary.zsigs[qinj_zid] << ",0," << Zary.znomvals[qinj_zid] << "\n";
 #endif
 #ifdef COMPARE_INJ_MEAS
-                        zary.injnodes.push_back( meas_node );
+                        Zary.injnodes.push_back( meas_node );
 #endif
                     } else if (!ce_type.compare("LinearShuntCompensator")) {
                     }
