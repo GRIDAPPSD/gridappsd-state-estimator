@@ -144,9 +144,7 @@ class SELoopWorker {
 
 
     public:
-    SELoopWorker(
-            PlatformInterface& plint,
-            const double& sbase) {
+    SELoopWorker(PlatformInterface& plint) {
         this->workQueue = plint.getWorkQueue();
 #ifdef GRIDAPPSD_INTERFACE
         this->gad = plint.getGad();
@@ -159,7 +157,7 @@ class SELoopWorker {
         this->node_bmrids = plint.getnode_bmrids();
         this->node_phs = plint.getnode_phs();
         this->node_name_lookup = plint.getnode_name_lookup();
-        this->sbase = sbase;
+        this->sbase = plint.getsbase();
         this->Yphys = plint.getYphys(); 
         this->Amat = plint.getAmat();
         this->regid_primnode = plint.getregid_primnode();

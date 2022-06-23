@@ -160,7 +160,7 @@ int main(int argc, char** argv) {
     plint.fillSensors();
 
     // Initialize class that does the state estimates
-    SELoopWorker loopWorker(plint, sbase);
+    SELoopWorker loopWorker(plint);
 
 #ifdef DEBUG_PRIMARY
     *selog << "Starting the SE work loop\n" << std::flush;

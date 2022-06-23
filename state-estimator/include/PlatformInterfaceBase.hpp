@@ -30,6 +30,10 @@ public:
     void fillSensors() {
     }
 
+    uint getsbase() {
+        return *sbase_ref;
+    }
+
     SharedQueue<json>* getWorkQueue() {
         return &workQueue;
     }
