@@ -8,7 +8,6 @@ public:
 
 
     void setupMeasurements() {
-        PlatformInterfaceBase::setupMeasurements();
     }
 
 
@@ -65,8 +64,6 @@ public:
 
 
     void fillVnoms() {
-       PlatformInterfaceBase::fillVnoms();
-
 #ifdef FILE_INTERFACE_VNOM
         string filename = FILE_INTERFACE_READ;
         filename += "/vnom.csv";
@@ -104,8 +101,6 @@ public:
 
 
     void fillSensors() {
-        PlatformInterfaceBase::fillSensors();
-
         string filename = FILE_INTERFACE_READ;
         filename += "/regid.csv";
 #ifdef DEBUG_PRIMARY

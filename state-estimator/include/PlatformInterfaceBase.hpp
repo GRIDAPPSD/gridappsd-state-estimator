@@ -9,8 +9,7 @@ public:
         sbase_ref = &sbase;
     }
 
-    void setupMeasurements() {
-    }
+    virtual void setupMeasurements()=0;
 
     virtual void fillTopo()=0;
 
@@ -24,11 +23,9 @@ public:
         }
     }
 
-    void fillVnoms() {
-    }
+    virtual void fillVnoms()=0;
 
-    void fillSensors() {
-    }
+    virtual void fillSensors()=0;
 
     uint getsbase() {
         return *sbase_ref;

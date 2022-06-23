@@ -44,8 +44,6 @@ public:
 
 
     void setupMeasurements() {
-        PlatformInterfaceBase::setupMeasurements();
-
         // --------------------------------------------------------------------
         // LISTEN FOR SIMULATION LOG MESSAGES
         // --------------------------------------------------------------------
@@ -131,8 +129,6 @@ public:
 
 
     void fillVnoms() {
-        PlatformInterfaceBase::fillVnoms();
-
         // Set up the vnom consumer
         string vnomTopic = "goss.gridappsd.se.response."+gad_ref->simid+".vnom";
         VnomConsumer vnomConsumer(gad_ref->brokerURI, gad_ref->username,
@@ -155,8 +151,6 @@ public:
 
 
     void fillSensors() {
-        PlatformInterfaceBase::fillSensors();
-
         SSMAP reg_cemrid_primbus;
         SSMAP reg_cemrid_regbus;
         state_estimator_util::build_A_matrix(*gad_ref, Amat, node_idxs,
