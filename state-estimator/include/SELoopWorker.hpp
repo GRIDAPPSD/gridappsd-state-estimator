@@ -68,7 +68,6 @@ class SELoopWorker {
 
     // passed in from constructor
     PlatformInterface* plint;
-    SharedQueue<json>* workQueue;
 #ifdef GRIDAPPSD_INTERFACE
     state_estimator_gridappsd::gridappsd_session* gad;
 #endif
@@ -143,7 +142,6 @@ class SELoopWorker {
     public:
     SELoopWorker(PlatformInterface* plint) {
         this->plint = plint;
-        this->workQueue = plint->getWorkQueue();
 #ifdef GRIDAPPSD_INTERFACE
         this->gad = plint->getGad();
 #endif

@@ -35,10 +35,6 @@ public:
         return *sbase_ref;
     }
 
-    SharedQueue<json>* getWorkQueue() {
-        return &workQueue;
-    }
-
     IMMAP getYphys() {
         return Yphys;
     }
@@ -121,9 +117,6 @@ public:
 
 protected:
     const double* sbase_ref;
-
-    // PlatformInterface::setupMeasurements manages this:
-    SharedQueue<json> workQueue;
 
     // PlatformInterface::fillTopology must populate these:
     IMMAP Yphys;

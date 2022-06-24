@@ -253,6 +253,7 @@ public:
 private:
     state_estimator_gridappsd::gridappsd_session* gad_ref;
     SEProducer* requester_ref;
+    SharedQueue<json> workQueue;
 };
 
 #endif

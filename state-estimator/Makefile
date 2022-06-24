@@ -3,7 +3,7 @@ SSPATH=../SuiteSparse
 SSINCPATH=$(SSPATH)/include
 JSONINCPATH=../json/single_include/nlohmann
 
-FILE_INCLUDES=-I$(SSINCPATH) -I$(JSONINCPATH) -I./include
+FILE_INCLUDES=-I$(SSINCPATH) -I./include
 
 AMQINCPATH1=/gridappsd/include/activemq-cpp-3.9.4
 AMQINCPATH2=/usr/local/include/activemq-cpp-3.9.4
@@ -11,7 +11,7 @@ AMQINCPATH3=/usr/local/include/activemq-cpp-3.9.5
 # APR is part of the Linux distro by default, hopefully here
 APRINCPATH=/usr/include/apr-1.0
 
-GRIDAPPSD_INCLUDES=$(FILE_INCLUDES) -I$(AMQINCPATH1) -I$(AMQINCPATH2) -I$(AMQINCPATH3) -I$(APRINCPATH)
+GRIDAPPSD_INCLUDES=$(FILE_INCLUDES) -I$(JSONINCPATH) -I$(AMQINCPATH1) -I$(AMQINCPATH2) -I$(AMQINCPATH3) -I$(APRINCPATH)
 
 # SparseSuite libraries
 SSCONFLIBPATH=$(SSPATH)/SuiteSparse_config

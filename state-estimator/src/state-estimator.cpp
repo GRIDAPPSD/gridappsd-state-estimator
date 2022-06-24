@@ -96,12 +96,12 @@ std::ostream* selog = &std::cout;
 
 // include files for all interfaces
 #include "SensorArray.hpp"
-#include "SharedQueue.hpp"
-#include "json.hpp"
-  using json = nlohmann::json;
 
 #ifdef GRIDAPPSD_INTERFACE
 // include files for the GridAPPS-D interface
+#include "SharedQueue.hpp"
+#include "json.hpp"
+  using json = nlohmann::json;
 #include "SEConsumer.hpp"
 #include "GenericConsumer.hpp"
 #include "TopoProcConsumer.hpp"
