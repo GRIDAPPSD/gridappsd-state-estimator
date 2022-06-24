@@ -53,13 +53,13 @@
 //#define SET_PRECISION8(val) round(val*1e+8)/1e+8
 //#define SET_PRECISION6(val) round(val*1e+6)/1e+6
 
-double SET_SIGNIFICANT(double value, uint digits) {
-    if (value == 0.0)
-        return 0.0;
+//double SET_SIGNIFICANT(double value, uint digits) {
+//    if (value == 0.0)
+//        return 0.0;
 
-    double factor = pow(10.0, digits - ceil(log10(fabs(value))));
-    return round(value*factor)/factor;
-}
+//    double factor = pow(10.0, digits - ceil(log10(fabs(value))));
+//    return round(value*factor)/factor;
+//}
 #endif
 
 // This class listens for system state messages
@@ -265,12 +265,10 @@ class SELoopWorker {
 //             *selog << "===========> z-averaging being done after draining queue\n" << std::flush;
 // #endif
 
-#ifndef FILE_INTERFACE_READ
             for ( auto& zid : Zary.zids ) {
                 if ( Zary.znews[zid] > 1 )
                     Zary.zvals[zid] /= Zary.znews[zid];
             }
-#endif
 
 // #ifdef DEBUG_PRIMARY
 //            *selog << "zvals before estimate\n" << std::flush;
