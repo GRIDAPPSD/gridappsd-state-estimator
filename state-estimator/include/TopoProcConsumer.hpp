@@ -62,7 +62,7 @@ class TopoProcConsumer : public SEConsumer {
         *selog << "Received ybus message of " << text.length() << " bytes\n\n" << std::flush;
 #endif
 
-#ifdef FILE_INTERFACE_WRITE
+#ifdef WRITE_FILES
         std::ofstream ofs("test_files/ysparse.csv", ofstream::out);
 #endif
 
@@ -75,7 +75,7 @@ class TopoProcConsumer : public SEConsumer {
         json jlines_ysparse = jtext["data"]["yParse"];
         for ( auto& jline : jlines_ysparse ) {
             line = jline;
-#ifdef FILE_INTERFACE_WRITE
+#ifdef WRITE_FILES
             ofs << line << "\n";
 #endif
             if (firstline) firstline = false;
@@ -96,7 +96,7 @@ class TopoProcConsumer : public SEConsumer {
         *selog << "complete.\n\n" << std::flush;
         *selog << "Parsing nodelist -- " << std::flush;
 #endif
-#ifdef FILE_INTERFACE_WRITE
+#ifdef WRITE_FILES
         ofs.close();
         ofs.open("test_files/nodelist.csv", ofstream::out);
 #endif
@@ -106,7 +106,7 @@ class TopoProcConsumer : public SEConsumer {
             line = jline;
             // Extract the node name
             string node_name = line.substr(1, line.size()-2);
-#ifdef FILE_INTERFACE_WRITE
+#ifdef WRITE_FILES
             ofs << node_name << "\n";
 #endif
             // Store the node information
@@ -115,7 +115,7 @@ class TopoProcConsumer : public SEConsumer {
 #ifdef DEBUG_PRIMARY
         *selog << "complete.\n\n" << std::flush;
 #endif
-#ifdef FILE_INTERFACE_WRITE
+#ifdef WRITE_FILES
         ofs.close();
 #endif
 //        // print

@@ -60,7 +60,7 @@
 //#define FILE_INTERFACE_NOSBASE
 #endif
 
-//#define FILE_INTERFACE_WRITE
+//#define WRITE_FILES
 
 #define PI 3.141592653589793
 

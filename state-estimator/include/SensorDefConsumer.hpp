@@ -70,7 +70,7 @@ class SensorDefConsumer : public SEConsumer {
         *selog << "Received sensor message of " << text.length() << " bytes\n\n" << std::flush;
 #endif
 
-#ifdef FILE_INTERFACE_WRITE
+#ifdef WRITE_FILES
         std::ofstream ofs("test_files/measurements.csv", ofstream::out);
         ofs << "ztype,zid,znode1,znode2,zval,zsig,zpseudo,znomval\n";
 #endif
@@ -122,7 +122,7 @@ class SensorDefConsumer : public SEConsumer {
                     Zary.zsigs[zid] = 0.01;    // 1 sigma = 1%
                     Zary.zvals[zid] = 1.0;
                     Zary.znomvals[zid] = Zary.zvals[zid];
-#ifdef FILE_INTERFACE_WRITE
+#ifdef WRITE_FILES
                     ofs << Zary.ztypes[zid] << "," << zid << "," << Zary.znode1s[zid] << "," << Zary.znode2s[zid] << "," << Zary.zvals[zid] << "," << Zary.zsigs[zid] << ",0," << Zary.znomvals[zid] << "\n";
 #endif
 
@@ -164,7 +164,7 @@ class SensorDefConsumer : public SEConsumer {
                         Zary.zsigs[zid] = 0.001; // 1% of span
                         Zary.zvals[zid] = 1.0;
                         Zary.znomvals[zid] = Zary.zvals[zid];
-#ifdef FILE_INTERFACE_WRITE
+#ifdef WRITE_FILES
                         ofs << Zary.ztypes[zid] << "," << zid << "," << Zary.znode1s[zid] << "," << Zary.znode2s[zid] << "," << Zary.zvals[zid] << "," << Zary.zsigs[zid] << ",0," << Zary.znomvals[zid] << "\n";
 #endif
 
@@ -250,7 +250,7 @@ class SensorDefConsumer : public SEConsumer {
                         Zary.zsigs[qinj_zid] = sqrt(Zary.zsigs[qinj_zid]*Zary.zsigs[qinj_zid] + zsig_Qinj*zsig_Qinj);    // 1 sigma = 1% of nominal
                         Zary.znomvals[qinj_zid] += Zary.zvals[qinj_zid];
 
-#ifdef FILE_INTERFACE_WRITE
+#ifdef WRITE_FILES
                         ofs << Zary.ztypes[pinj_zid] << "," << pinj_zid << "," << Zary.znode1s[pinj_zid] << "," << Zary.znode2s[pinj_zid] << "," << Zary.zvals[pinj_zid] << "," << Zary.zsigs[pinj_zid] << ",0," << Zary.znomvals[pinj_zid] << "\n";
                         ofs << Zary.ztypes[qinj_zid] << "," << qinj_zid << "," << Zary.znode1s[qinj_zid] << "," << Zary.znode2s[qinj_zid] << "," << Zary.zvals[qinj_zid] << "," << Zary.zsigs[qinj_zid] << ",0," << Zary.znomvals[qinj_zid] << "\n";
 #endif
@@ -271,7 +271,7 @@ class SensorDefConsumer : public SEConsumer {
                 }
             }
         }
-#ifdef FILE_INTERFACE_WRITE
+#ifdef WRITE_FILES
         ofs.close();
 #endif
 

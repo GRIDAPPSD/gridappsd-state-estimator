@@ -134,7 +134,7 @@ class SELoopWorker {
     std::ofstream state_fh;  // file to record states
 #endif
 
-#if defined(FILE_INTERFACE_READ) || defined(FILE_INTERFACE_WRITE)
+#if defined(FILE_INTERFACE_READ) || defined(WRITE_FILES)
     std::ofstream results_fh;  // file to record results
 #endif
 
@@ -550,7 +550,7 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
         *selog << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
 #endif
-#ifdef FILE_INTERFACE_WRITE
+#ifdef WRITE_FILES
         std::ofstream ofh;
         ofh.open("test_files/ypu.csv", std::ofstream::out);
         ofh << std::setprecision(10);  // match OpenDSS ysparse
@@ -819,7 +819,7 @@ class SELoopWorker {
             state_fh << "\'"+node_name+"\'" << ( ++nctr < node_qty ? "," : "\n" );
         state_fh.close();
 #endif
-#if defined(FILE_INTERFACE_READ) || defined(FILE_INTERFACE_WRITE)
+#if defined(FILE_INTERFACE_READ) || defined(WRITE_FILES)
 #ifdef FILE_INTERFACE_READ
         string filename = FILE_INTERFACE_READ;
 #else
@@ -960,7 +960,7 @@ class SELoopWorker {
         SDMAP meas_magnitudes = plint->getmeas_magnitudes();
         SDMAP meas_angles = plint->getmeas_angles();
         SDMAP meas_values = plint->getmeas_values();
-#ifdef FILE_INTERFACE_WRITE
+#ifdef WRITE_FILES
         SDMAP node_mag, node_ang;
 #endif
 
@@ -997,7 +997,7 @@ class SELoopWorker {
                     string zid = mmrid+"_Vmag";
                     double vmag_phys = meas_magnitudes[mmrid];
                     double vmag_nom = vmag_phys / abs(node_vnoms[Zary.znode1s[zid]]);
-#ifdef FILE_INTERFACE_WRITE
+#ifdef WRITE_FILES
                     string meas_node = Zary.mnodes[mmrid];
                     node_mag[meas_node] = vmag_nom;
                     // assumes there is always an angle with the magnitude,
@@ -1162,7 +1162,7 @@ class SELoopWorker {
 #endif
         }
 
-#ifdef FILE_INTERFACE_WRITE
+#ifdef WRITE_FILES
         // write simulation_data files from a running simulation for use
         // with test harness
         // The simulation_data file is used to plot directly against results
@@ -1310,7 +1310,7 @@ class SELoopWorker {
         }
         state_fh.close();
 #endif
-#if defined(FILE_INTERFACE_READ) || defined(FILE_INTERFACE_WRITE)
+#if defined(FILE_INTERFACE_READ) || defined(WRITE_FILES)
 #ifdef FILE_INTERFACE_READ
         string filename = FILE_INTERFACE_READ;
 #else
