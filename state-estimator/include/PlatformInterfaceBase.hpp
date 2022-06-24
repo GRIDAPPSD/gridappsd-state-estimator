@@ -27,6 +27,10 @@ public:
 
     virtual void fillSensors()=0;
 
+    virtual bool fillMeasurement()=0;
+
+    virtual bool nextMeasurementWaiting()=0;
+
     uint getsbase() {
         return *sbase_ref;
     }

@@ -8,6 +8,22 @@ public:
 
 
     void setupMeasurements() {
+        string filename = FILE_INTERFACE_READ;
+        filename += "/measurement_data.csv";
+#ifdef DEBUG_PRIMARY
+        *selog << "Reading measurements from test harness file: " << filename << "\n\n" << std::flush;
+#endif
+        meas_fh.open(filename);
+
+        // header line is an ordered list of zids
+        // parse measurement file header to get the zids into an STL vector
+        string meas_line;
+        getline(meas_fh, meas_line);
+        string cell;
+        std::stringstream headerStream(meas_line);
+        getline(headerStream, cell, ','); // throwaway timestamp header token
+        while ( getline(headerStream, cell, ',') )
+            meas_zids.push_back(cell);
     }
 
 
@@ -169,7 +185,42 @@ public:
         ifs.close();
     }
 
+
+    bool fillMeasurement() {
+        bool ret = true;
+
+        if ( getline(meas_fh, meas_line) ) {
+        } else {
+#ifdef DEBUG_PRIMARY
+            *selog << "Reached end of measurement_data.csv file, normal exit\n" << std::flush;
+#endif
+            ret = false;
+        }
+
+        return ret;
+    }
+
+
+    bool nextMeasurementWaiting() {
+        // always returning false tells the SE work loop to complete an
+        // estimate for every measurement
+        return false;
+    }
+
+
+    string getLine() { // interim
+        return meas_line;
+    }
+
+
+    std::vector<string> getZids() {
+        return meas_zids;
+    }
+
 private:
+    std::ifstream meas_fh;
+    std::vector<string> meas_zids;
+    string meas_line; // interim
 };
 
 #endif

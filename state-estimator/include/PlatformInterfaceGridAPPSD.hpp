@@ -204,16 +204,41 @@ public:
 #endif
     }
 
+    bool fillMeasurement() {
+        bool ret = true;
+
+        jmessage = workQueue.pop();
+
+        if (jmessage.find("message") != jmessage.end()) {
+        } else if (jmessage.find("processStatus") != jmessage.end()) {
+           // only COMPLETE/CLOSED log messages are put on the queue
+           // so we know right away to return false
+            ret = false;
+        }
+
+        return ret;
+    }
+
+
+    bool nextMeasurementWaiting() {
+        return !workQueue.empty();
+    }
+
 
     state_estimator_gridappsd::gridappsd_session* getGad() {
         return gad_ref;
     }
 
 
+    json getMessage() { // interim
+        return jmessage;
+    }
+
 private:
     state_estimator_gridappsd::gridappsd_session* gad_ref;
     SEProducer* requester_ref;
 
+    json jmessage; // interim
 };
 
 #endif
