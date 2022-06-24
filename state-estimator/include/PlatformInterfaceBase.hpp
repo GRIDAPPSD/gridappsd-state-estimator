@@ -99,6 +99,26 @@ public:
         return switch_node2s;
     }
 
+    uint getmeas_timestamp() {
+        return meas_timestamp;
+    }
+
+    SLIST getmeas_mrids() {
+        return meas_mrids;
+    }
+
+    SDMAP getmeas_magnitudes() {
+        return meas_magnitudes;
+    }
+
+    SDMAP getmeas_angles() {
+        return meas_angles;
+    }
+
+    SDMAP getmeas_values() {
+        return meas_values;
+    }
+
 protected:
     const double* sbase_ref;
 
@@ -130,6 +150,13 @@ protected:
     SSMAP mmrid_pos_type;
     SSMAP switch_node1s;
     SSMAP switch_node2s;
+
+    // PlatformInterface:fillMeasurement populates these:
+    uint meas_timestamp;
+    SLIST meas_mrids;
+    SDMAP meas_magnitudes;
+    SDMAP meas_angles;
+    SDMAP meas_values;
 };
 
 #endif

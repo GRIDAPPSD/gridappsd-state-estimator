@@ -204,15 +204,35 @@ public:
 #endif
     }
 
+
     bool fillMeasurement() {
         bool ret = true;
 
-        jmessage = workQueue.pop();
+        json jmessage = workQueue.pop();
+
+        meas_timestamp = 0;
+        meas_mrids.clear();
+        meas_magnitudes.clear();
+        meas_angles.clear();
+        meas_values.clear();
 
         if (jmessage.find("message") != jmessage.end()) {
+            meas_timestamp = jmessage["message"]["timestamp"];
+
+            string mmrid;
+            for ( auto& m : jmessage["message"]["measurements"] ) {
+                mmrid = m["measurement_mrid"];
+                meas_mrids.push_back(mmrid);
+                if (m.find("magnitude") != m.end())
+                    meas_magnitudes[mmrid] = m["magnitude"];
+                if (m.find("angle") != m.end())
+                    meas_angles[mmrid] = m["angle"];
+                if (m.find("value") != m.end())
+                    meas_values[mmrid] = m["value"];
+            }
         } else if (jmessage.find("processStatus") != jmessage.end()) {
-           // only COMPLETE/CLOSED log messages are put on the queue
-           // so we know right away to return false
+            // only COMPLETE/CLOSED log messages are put on the queue
+            // so we know right away to return false
             ret = false;
         }
 
@@ -230,15 +250,9 @@ public:
     }
 
 
-    json getMessage() { // interim
-        return jmessage;
-    }
-
 private:
     state_estimator_gridappsd::gridappsd_session* gad_ref;
     SEProducer* requester_ref;
-
-    json jmessage; // interim
 };
 
 #endif

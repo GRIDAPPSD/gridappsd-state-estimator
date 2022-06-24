@@ -189,7 +189,24 @@ public:
     bool fillMeasurement() {
         bool ret = true;
 
+        meas_timestamp = 0;
+        meas_mrids.clear();
+        meas_magnitudes.clear();
+
+        string meas_line;
         if ( getline(meas_fh, meas_line) ) {
+            std::stringstream lineStream(meas_line);
+            string cell, zid;
+            getline(lineStream, cell, ',');
+            double doubletime = stod(cell);
+            meas_timestamp = (uint)doubletime;
+
+            uint idx = 0;
+            while ( getline(lineStream, cell, ',') ) {
+                zid = meas_zids[idx++];
+                meas_mrids.push_back(zid);
+                meas_magnitudes[zid] = stod(cell);
+            }
         } else {
 #ifdef DEBUG_PRIMARY
             *selog << "Reached end of measurement_data.csv file, normal exit\n" << std::flush;
@@ -208,11 +225,6 @@ public:
     }
 
 
-    string getLine() { // interim
-        return meas_line;
-    }
-
-
     std::vector<string> getZids() {
         return meas_zids;
     }
@@ -220,7 +232,6 @@ public:
 private:
     std::ifstream meas_fh;
     std::vector<string> meas_zids;
-    string meas_line; // interim
 };
 
 #endif
