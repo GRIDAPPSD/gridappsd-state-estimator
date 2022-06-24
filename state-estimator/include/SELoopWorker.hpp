@@ -67,6 +67,7 @@ class SELoopWorker {
     private:
 
     // passed in from constructor
+    PlatformInterface* plint;
     SharedQueue<json>* workQueue;
 #ifdef GRIDAPPSD_INTERFACE
     state_estimator_gridappsd::gridappsd_session* gad;
@@ -134,37 +135,34 @@ class SELoopWorker {
     std::ofstream state_fh;  // file to record states
 #endif
 
-#ifdef FILE_INTERFACE_READ
-    std::ifstream meas_fh;   // test harness measurement file
-    std::vector<string> meas_zids;
-#endif
 #if defined(FILE_INTERFACE_READ) || defined(FILE_INTERFACE_WRITE)
     std::ofstream results_fh;  // file to record results
 #endif
 
 
     public:
-    SELoopWorker(PlatformInterface& plint) {
-        this->workQueue = plint.getWorkQueue();
+    SELoopWorker(PlatformInterface* plint) {
+        this->plint = plint;
+        this->workQueue = plint->getWorkQueue();
 #ifdef GRIDAPPSD_INTERFACE
-        this->gad = plint.getGad();
+        this->gad = plint->getGad();
 #endif
-        this->Zary = plint.getZary();
-        this->node_qty = plint.getnode_qty();
-        this->node_names = plint.getnode_names();
-        this->node_idxs = plint.getnode_idxs();
-        this->node_vnoms = plint.getVnoms();
-        this->node_bmrids = plint.getnode_bmrids();
-        this->node_phs = plint.getnode_phs();
-        this->node_name_lookup = plint.getnode_name_lookup();
-        this->sbase = plint.getsbase();
-        this->Yphys = plint.getYphys(); 
-        this->Amat = plint.getAmat();
-        this->regid_primnode = plint.getregid_primnode();
-        this->regid_regnode = plint.getregid_regnode();
-        this->mmrid_pos_type = plint.getmmrid_pos_type();
-        this->switch_node1s = plint.getswitch_node1s();
-        this->switch_node2s = plint.getswitch_node2s();
+        this->Zary = plint->getZary();
+        this->node_qty = plint->getnode_qty();
+        this->node_names = plint->getnode_names();
+        this->node_idxs = plint->getnode_idxs();
+        this->node_vnoms = plint->getVnoms();
+        this->node_bmrids = plint->getnode_bmrids();
+        this->node_phs = plint->getnode_phs();
+        this->node_name_lookup = plint->getnode_name_lookup();
+        this->sbase = plint->getsbase();
+        this->Yphys = plint->getYphys();
+        this->Amat = plint->getAmat();
+        this->regid_primnode = plint->getregid_primnode();
+        this->regid_regnode = plint->getregid_regnode();
+        this->mmrid_pos_type = plint->getmmrid_pos_type();
+        this->switch_node1s = plint->getswitch_node1s();
+        this->switch_node2s = plint->getswitch_node2s();
     }
 
 
@@ -191,25 +189,6 @@ class SELoopWorker {
         // (if things go bad we'll need to reset these)
         initVoltagesAndCovariance();
 
-#ifdef FILE_INTERFACE_READ
-        string filename = FILE_INTERFACE_READ;
-        filename += "/measurement_data.csv";
-#ifdef DEBUG_PRIMARY
-        *selog << "Reading measurements from test harness file: " << filename << "\n\n" << std::flush;
-#endif
-        meas_fh.open(filename);
-
-        // header line is an ordered list of zids
-        // parse measurement file header to get the zids into an STL vector
-        string meas_line;
-        getline(meas_fh, meas_line);
-        string cell;
-        std::stringstream headerStream(meas_line);
-        getline(headerStream, cell, ','); // throwaway timestamp header token
-        while ( getline(headerStream, cell, ',') )
-            meas_zids.push_back(cell);
-#endif
-
         for (;;) {
             // ----------------------------------------------------------------
             // Reset the new measurement counter for each node
@@ -225,9 +204,9 @@ class SELoopWorker {
 
             // drain the queue with quick z-averaging
             do {
+                if ( plint->fillMeasurement() ) {
 #ifdef FILE_INTERFACE_READ
-                if ( getline(meas_fh, meas_line) ) {
-                    if (add_zvals(meas_line, timestamp))
+                    if (add_zvals(plint->getLine(), timestamp))
                         reclosedFlag = true;
 
                     if (firstEstimateFlag) {
@@ -238,15 +217,11 @@ class SELoopWorker {
                         firstEstimateFlag = false;
                     }
                 } else {
-#ifdef DEBUG_PRIMARY
-                    *selog << "Reached end of measurement_data.csv file, normal exit\n" << std::flush;
-#endif
                     exit(0);
                 }
 #else
-                jmessage = workQueue->pop();
+                    jmessage = plint->getMessage();
 
-                if (jmessage.find("message") != jmessage.end()) {
                     timestamp = jmessage["message"]["timestamp"];
                     if (firstEstimateFlag) {
                         timeZero = timestamp;
@@ -267,9 +242,7 @@ class SELoopWorker {
                     // if a COMPLETED/CLOSED log message is received
                     doEstimateFlag = true;
 
-                } else if (jmessage.find("processStatus") != jmessage.end()) {
-                    // only COMPLETE/CLOSED log messages are put on the queue
-                    // so process for that case only
+                } else {
                     if (doEstimateFlag) {
 #ifdef DEBUG_PRIMARY
                         *selog << "Got COMPLETE/CLOSED log message on queue, doing full estimate with previous measurement\n" << std::flush;
@@ -288,11 +261,7 @@ class SELoopWorker {
                     }
                 }
 #endif
-#if defined(FILE_INTERFACE_READ) || defined(FILE_INTERFACE_WRITE)
-            } while (false); // uncomment this to fully process all messages
-#else
-            } while (!workQueue->empty()); // uncomment this to drain queue
-#endif
+            } while (plint->nextMeasurementWaiting());
 
             // do z averaging here by dividing sum by # of items
 // #ifdef DEBUG_PRIMARY
@@ -1021,6 +990,7 @@ class SELoopWorker {
         getline(lineStream, cell, ',');
         double doubletime = stod(cell);
         timestamp = (uint)doubletime;
+        std::vector<string> meas_zids = plint->getZids();
         //*selog << "\t*** Read timestamp: " << timestamp << "\n" << std::flush;
 
         while ( getline(lineStream, cell, ',') ) {
