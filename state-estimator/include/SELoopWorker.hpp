@@ -206,23 +206,17 @@ class SELoopWorker {
             do {
                 if ( plint->fillMeasurement() ) {
 #ifdef FILE_INTERFACE_READ
-                    if (add_zvals(plint->getLine(), timestamp))
-                        reclosedFlag = true;
-
-                    if (firstEstimateFlag) {
-                        timeZero = timestamp;
-                        // set flag value to increase uncertainty in
-                        // first estimate call
-                        timestampLastEstimate = UINT_MAX;
-                        firstEstimateFlag = false;
-                    }
-                } else {
-                    exit(0);
-                }
+                    string meas_line = plint->getLine();
+                    std::stringstream lineStream(meas_line);
+                    string cell;
+                    getline(lineStream, cell, ',');
+                    double doubletime = stod(cell);
+                    timestamp = (uint)doubletime;
 #else
                     jmessage = plint->getMessage();
-
                     timestamp = jmessage["message"]["timestamp"];
+#endif
+
                     if (firstEstimateFlag) {
                         timeZero = timestamp;
                         // set flag value to increase uncertainty in first
@@ -230,12 +224,12 @@ class SELoopWorker {
                         timestampLastEstimate = UINT_MAX;
                         firstEstimateFlag = false;
                     }
-#ifdef DEBUG_PRIMARY
-                    *selog << "Draining workQueue size: " << workQueue->size() << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
-#endif
 
-                    // do z summation here
-                    if (add_zvals(jmessage, timestamp))
+#ifdef FILE_INTERFACE
+                    if (add_zvals(meas_line, timestamp, timeZero))
+#else
+                    if (add_zvals(jmessage, timestamp, timeZero))
+#endif
                         reclosedFlag = true;
 
                     // set flag to indicate a full estimate can be done
@@ -244,8 +238,10 @@ class SELoopWorker {
 
                 } else {
                     if (doEstimateFlag) {
+#ifdef GRIDAPPSD_INTERFACE
 #ifdef DEBUG_PRIMARY
                         *selog << "Got COMPLETE/CLOSED log message on queue, doing full estimate with previous measurement\n" << std::flush;
+#endif
 #endif
                         // set flag to exit after completing full estimate below
                         exitAfterEstimateFlag = true;
@@ -255,12 +251,13 @@ class SELoopWorker {
                         break;
                     } else {
 #ifdef DEBUG_PRIMARY
+#ifdef GRIDAPPSD_INTERFACE
                         *selog << "Got COMPLETE/CLOSED log message on queue, normal exit because full estimate just done\n" << std::flush;
+#endif
 #endif
                         exit(0);
                     }
                 }
-#endif
             } while (plint->nextMeasurementWaiting());
 
             // do z averaging here by dividing sum by # of items
@@ -969,9 +966,9 @@ class SELoopWorker {
 
     private:
 #ifndef FILE_INTERFACE_READ
-    bool add_zvals(const json& jmessage, const uint& timestamp) {
+    bool add_zvals(const json& jmessage, const uint& timestamp, uint& timeZero) {
 #else
-    bool add_zvals(const string& meas_line, uint& timestamp) {
+    bool add_zvals(const string& meas_line, uint& timestamp, uint& timeZero) {
 #endif
         // --------------------------------------------------------------------
         // Use the simulation output to update the states
@@ -987,10 +984,8 @@ class SELoopWorker {
         string cell, zid;
         uint idx = 0;
 
-        getline(lineStream, cell, ',');
-        double doubletime = stod(cell);
-        timestamp = (uint)doubletime;
         std::vector<string> meas_zids = plint->getZids();
+        getline(lineStream, cell, ','); // read over timestamp retrieved earlier
         //*selog << "\t*** Read timestamp: " << timestamp << "\n" << std::flush;
 
         while ( getline(lineStream, cell, ',') ) {
@@ -1024,6 +1019,10 @@ class SELoopWorker {
 #ifdef FILE_INTERFACE_WRITE
         SDMAP node_mag, node_ang;
 #endif
+#ifdef DEBUG_PRIMARY
+        *selog << "Draining workQueue size: " << workQueue->size() << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
+#endif
+
         // Next, update new measurements
         for ( auto& m : jmessage["message"]["measurements"] ) {
             // link back to information about the measurement using its mRID
