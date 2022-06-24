@@ -205,18 +205,7 @@ class SELoopWorker {
             // drain the queue with quick z-averaging
             do {
                 if ( plint->fillMeasurement() ) {
-#ifdef FILE_INTERFACE_READ
-                    string meas_line = plint->getLine();
-                    std::stringstream lineStream(meas_line);
-                    string cell;
-                    getline(lineStream, cell, ',');
-                    double doubletime = stod(cell);
-                    timestamp = (uint)doubletime;
-#else
-                    jmessage = plint->getMessage();
-                    timestamp = jmessage["message"]["timestamp"];
-#endif
-
+                    timestamp = plint->getmeas_timestamp();
                     if (firstEstimateFlag) {
                         timeZero = timestamp;
                         // set flag value to increase uncertainty in first
@@ -225,11 +214,7 @@ class SELoopWorker {
                         firstEstimateFlag = false;
                     }
 
-#ifdef FILE_INTERFACE
-                    if (add_zvals(meas_line, timestamp, timeZero))
-#else
-                    if (add_zvals(jmessage, timestamp, timeZero))
-#endif
+                    if (add_zvals(timestamp, timeZero))
                         reclosedFlag = true;
 
                     // set flag to indicate a full estimate can be done
@@ -963,11 +948,7 @@ class SELoopWorker {
 
 
     private:
-#ifndef FILE_INTERFACE_READ
-    bool add_zvals(const json& jmessage, const uint& timestamp, uint& timeZero) {
-#else
-    bool add_zvals(const string& meas_line, uint& timestamp, uint& timeZero) {
-#endif
+    bool add_zvals(const uint& timestamp, const uint& timeZero) {
         // --------------------------------------------------------------------
         // Use the simulation output to update the states
         // --------------------------------------------------------------------
@@ -977,74 +958,58 @@ class SELoopWorker {
 
         bool ret = false;
 
-#ifdef FILE_INTERFACE_READ
-        std::stringstream lineStream(meas_line);
-        string cell, zid;
-        uint idx = 0;
-
-        std::vector<string> meas_zids = plint->getZids();
-        getline(lineStream, cell, ','); // read over timestamp retrieved earlier
-        //*selog << "\t*** Read timestamp: " << timestamp << "\n" << std::flush;
-
-        while ( getline(lineStream, cell, ',') ) {
-            zid = meas_zids[idx++];
-            Zary.zvals[zid] = stod(cell);
-            Zary.znews[zid] = 1;
-            Zary.ztimes[zid] = timestamp;
-            //*selog << "\t*** Read zval[" << zid << "]: " << Zary.zvals[zid] << "\n" << std::flush;
-
-            if (zid.substr(zid.length()-4, string::npos) == "_tap") {
-                // Update the A matrix with the latest tap ratio measurement
-                double tap_ratio = stod(cell);
-
-                string primnode = Zary.znode1s[zid];
-                uint i = node_idxs[primnode];
-
-                string regnode = Zary.znode2s[zid];
-                uint j = node_idxs[regnode];
-
-                if ( ( Amat[j][i] - tap_ratio ) > 0.00625 )
-                    Amat[j][i] -= 0.00625;
-                else if ( ( Amat[j][i] - tap_ratio ) < -0.00625 )
-                    Amat[j][i] += 0.00625;
-                else
-                    Amat[j][i] = tap_ratio;
-            }
-        }
-        // TODO: support switches
-
-#else
+        SLIST meas_mrids = plint->getmeas_mrids();
+        SDMAP meas_magnitudes = plint->getmeas_magnitudes();
+        SDMAP meas_angles = plint->getmeas_angles();
+        SDMAP meas_values = plint->getmeas_values();
 #ifdef FILE_INTERFACE_WRITE
         SDMAP node_mag, node_ang;
 #endif
-#ifdef DEBUG_PRIMARY
-        *selog << "Draining workQueue size: " << workQueue->size() << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
-#endif
 
-        // Next, update new measurements
-        for ( auto& m : jmessage["message"]["measurements"] ) {
-            // link back to information about the measurement using its mRID
-            string mmrid = m["measurement_mrid"];
-            string m_type = Zary.mtypes[mmrid];
+        for ( auto& mmrid : meas_mrids ) {
+            if ( !Zary.mtypes[mmrid].compare("") ) {
+                if (Zary.znews[mmrid] == 0)
+                    Zary.zvals[mmrid] = meas_magnitudes[mmrid];
+                else
+                    Zary.zvals[mmrid] += meas_magnitudes[mmrid];
+                Zary.znews[mmrid]++;
+                Zary.ztimes[mmrid] = timestamp;
 
-            // Check for "PNV" measurement
-            if ( !m_type.compare("PNV") ) {
-                if (m.find("magnitude") != m.end()) {
+                if (mmrid.substr(mmrid.length()-4, string::npos) == "_tap") {
+                    // Update the A matrix with the latest tap ratio measurement
+                    double tap_ratio = meas_magnitudes[mmrid];
+
+                    string primnode = Zary.znode1s[mmrid];
+                    uint i = node_idxs[primnode];
+
+                    string regnode = Zary.znode2s[mmrid];
+                    uint j = node_idxs[regnode];
+
+                    if ( ( Amat[j][i] - tap_ratio ) > 0.00625 )
+                        Amat[j][i] -= 0.00625;
+                    else if ( ( Amat[j][i] - tap_ratio ) < -0.00625 )
+                        Amat[j][i] += 0.00625;
+                    else
+                        Amat[j][i] = tap_ratio;
+                }
+
+            } else if ( !Zary.mtypes[mmrid].compare("PNV") ) {
+                if (meas_magnitudes.find(mmrid) != meas_magnitudes.end()) {
                     // update the voltage magnitude (in per-unit)
                     string zid = mmrid+"_Vmag";
-                    double vmag_phys = m["magnitude"];
+                    double vmag_phys = meas_magnitudes[mmrid];
                     double vmag_nom = vmag_phys / abs(node_vnoms[Zary.znode1s[zid]]);
 #ifdef FILE_INTERFACE_WRITE
                     string meas_node = Zary.mnodes[mmrid];
                     node_mag[meas_node] = vmag_nom;
                     // assumes there is always an angle with the magnitude,
                     // which isn't the case with sensor simulator measurements
-                    double vang_phys = m["angle"];
+                    double vang_phys = meas_angles[mmrid];
                     double vang_rad = vang_phys*PI/180.0;
                     node_ang[meas_node] = vang_rad;
 #endif
-                    // TODO: This uses vnom filled from OpenDSS values, but needs
-                    // to use GridLAB-D values
+                    // TODO: This uses vnom filled from OpenDSS values, but
+                    // needs to use GridLAB-D values
                     if (Zary.znews[zid] == 0)
                         Zary.zvals[zid] = vmag_nom;
                     else
@@ -1056,14 +1021,12 @@ class SELoopWorker {
                 // update the voltage phase
                 // --- LATER ---
                 // -------------
-            }
-           
-            // Check for "Pos" measurement
-            else if ( !m_type.compare("Pos") ) {
+
+            } else if ( !Zary.mtypes[mmrid].compare("Pos") ) {
                 if ( !mmrid_pos_type[mmrid].compare("regulator_tap") ) {
                     // update the tap ratio
                     string zid = mmrid+"_tap";
-                    double tap_position = m["value"];
+                    double tap_position = meas_values[mmrid];
                     double tap_ratio = 1.0 + 0.1*tap_position/16.0;
 
                     if (Zary.znews[zid] == 0)
@@ -1098,10 +1061,10 @@ class SELoopWorker {
 //                                << "] to " << tap_ratio << '\n' << std::flush;
                         Amat[j][i] = tap_ratio;
                     }
-                }
-                else if ( !mmrid_pos_type[mmrid].compare("load_break_switch") ) {
+
+                } else if ( !mmrid_pos_type[mmrid].compare("load_break_switch") ) {
                     string zid = mmrid+"_switch";
-                    double switch_state = m["value"];
+                    double switch_state = meas_values[mmrid];
                     uint i = node_idxs[switch_node1s[zid]];
                     uint j = node_idxs[switch_node2s[zid]];
 
@@ -1110,7 +1073,7 @@ class SELoopWorker {
                         try {
                             auto Brow = Bmat.at(i);
                             try {
-                                double bval = real(Brow.at(j));
+                                double bval = std::real(Brow.at(j));
                                 if (bval < 1) {
 #ifdef DEBUG_PRIMARY
 //                                    *selog << "\tJUST CLOSED SWITCH Bmat[" << i << "][" << j << "] = " << switch_state << ", switch_node1s: " << switch_node1s[zid] << ", switch_node2s: " << switch_node2s[zid] << "\n" << std::flush;
@@ -1125,7 +1088,7 @@ class SELoopWorker {
                         try {
                             auto Brow = Bmat.at(i);
                             try {
-                                double beeij = real(Brow.at(j));
+                                double beeij = std::real(Brow.at(j));
                                 if (beeij > 0) {
 #ifdef DEBUG_PRIMARY
                                     *selog << "\tJUST OPENED SWITCH Bmat[" << i << "][" << j << "] = " << switch_state << ", switch_node1s: " << switch_node1s[zid] << ", switch_node2s: " << switch_node2s[zid] << "\n" << std::flush;
@@ -1153,7 +1116,7 @@ class SELoopWorker {
                 }
             }
 #ifdef NET_INJECTION
-            else if ( !m_type.compare("VA") ) {
+            else if ( !Zary.mtypes[mmrid].compare("VA") ) {
                 if ( !Zary.mcetypes[mmrid].compare("EnergyConsumer") ) {
                     // P and Q injection measurements are composed of physical
                     // measurements of all devices at the node.
@@ -1183,10 +1146,10 @@ class SELoopWorker {
                         Zary.ztimes[qinj_zid] = timestamp;
                     }
 
-                    if (m.find("magnitude")!=m.end() &&
-                        m.find("angle")!=m.end()) {
-                        double vmag_phys = m["magnitude"];
-                        double vang_phys = m["angle"];
+                    if (meas_magnitudes.find(mmrid) != meas_magnitudes.end() &&
+                        meas_angles.find(mmrid) != meas_angles.end()) {
+                        double vmag_phys = meas_magnitudes[mmrid];
+                        double vang_phys = meas_angles[mmrid];
                         double vang_rad = vang_phys*PI/180.0;
 
                         // convert from polar to rectangular coordinates
@@ -1199,8 +1162,6 @@ class SELoopWorker {
                 // }
             }
 #endif
-            //else if ( !m_type.compare("") ) {
-            //}
         }
 
 #ifdef FILE_INTERFACE_WRITE
@@ -1273,8 +1234,6 @@ class SELoopWorker {
         for (auto& node : Zary.injnodes )
             *selog << "," << sbase*Zary.zvals["pseudo_P_"+node] << "," << sbase*Zary.zvals["pseudo_Q_"+node] << "," << sbase*Zary.zvals[node+"_Pinj"] << "," << sbase*Zary.zvals[node+"_Qinj"];
         *selog << "\n" << std::flush;
-#endif
-
 #endif
 
         return ret;
