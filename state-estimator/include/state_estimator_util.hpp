@@ -3,11 +3,9 @@
 #ifdef GRIDAPPSD_INTERFACE
 
 using sparql_queries::sparq_nodes;
-using sparql_queries::sparq_transformer_end_vbase;
 using sparql_queries::sparq_energy_consumer_pq;
 using sparql_queries::sparq_ratio_tap_changer_nodes;
 using sparql_queries::sparq_energy_source_buses;
-using sparql_queries::sparq_term_bus;
 using sparql_queries::sparq_cemrid_busnames;
 
 namespace state_estimator_util{
@@ -398,15 +396,6 @@ namespace state_estimator_util{
 #endif
     }
 
-    void build_term_bus(gridappsd_session& gad, SSMAP& term_bus) {
-        json jterms = sparql_query(gad,"terms",sparq_term_bus(gad.modelID));
-        for ( auto& item : jterms["data"]["results"]["bindings"] ) {
-            string termid = item["termid"]["value"];
-            string busname = item["busname"]["value"];
-            for ( auto& c : busname ) c = toupper(c);
-            term_bus[termid] = busname;
-        }
-    }
 
     void build_cemrid_busnames(gridappsd_session& gad,
             SSLISTMAP& cemrid_busnames) {

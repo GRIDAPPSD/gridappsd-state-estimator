@@ -62,54 +62,6 @@ namespace sparql_queries {
         return sparq;
     }
 
-    string sparq_conducting_equipment_vbase(string fdrid) {
-        string sparq = "# Find the base voltage of each bus\n"
-            "PREFIX r:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
-            "PREFIX c: <http://iec.ch/TC57/CIM100#>\n"
-            "SELECT ?busid ?busname ?vbase WHERE {\n"
-            "  # conducting equipment as an IdentifiedObject (PowerSystemResource)\n"
-            "  ?ce c:IdentifiedObject.name ?cename.\n"
-            "  # conducting equipment with a BaseVoltage\n"
-            "  ?ce c:ConductingEquipment.BaseVoltage ?bvo.\n"
-            "  ?bvo c:BaseVoltage.nominalVoltage ?vbase.\n"
-            "  # terminals attached to conducting equipment\n"
-            "  ?term c:Terminal.ConductingEquipment ?ce.\n"
-            "  ?term c:Terminal.ConnectivityNode ?bus.\n"
-            "  ?bus c:IdentifiedObject.name ?busname.\n"
-            "  ?bus c:IdentifiedObject.mRID ?busid.\n"
-            "  VALUES ?fdrid {\\\""+fdrid+"\\\"}\n"
-            "  ?ce c:Equipment.EquipmentContainer ?fdr.\n"
-            "  ?fdr c:IdentifiedObject.mRID ?fdrid.\n"
-            "}\n"
-            "GROUP BY ?busid ?busname ?vbase\n"
-            "ORDER by ?busid\n";
-        return sparq;
-    }
-
-    string sparq_transformer_end_vbase(string fdrid) {
-        string sparq = "# Find the base voltage of each bus\n"
-            "PREFIX r:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
-            "PREFIX c: <http://iec.ch/TC57/CIM100#>\n"
-            "SELECT ?busid ?busname ?vbase ?cename WHERE {\n"
-            "  # conducting equipment as an IdentifiedObject (PowerSystemResource)\n"
-            "  ?ce c:IdentifiedObject.name ?cename.\n"
-            "  # transformer ends associated with BaseVoltage object\n"
-            "  ?te c:TransformerEnd.BaseVoltage ?bvo.\n"
-            "  ?bvo c:BaseVoltage.nominalVoltage ?vbase.\n"
-            "  # transformerends attached to terminals\n"
-            "  ?te c:TransformerEnd.Terminal ?term.\n"
-            "  ?term c:Terminal.ConnectivityNode ?bus.\n"
-            "  ?bus c:IdentifiedObject.name ?busname.\n"
-            "  ?bus c:IdentifiedObject.mRID ?busid.\n"
-            "  VALUES ?fdrid {\\\""+fdrid+"\\\"}  # 13 bus\n"
-            "  ?te c:PowerTransformerEnd.PowerTransformer ?ce.\n"
-            "  ?ce c:Equipment.EquipmentContainer ?fdr.\n"
-            "  ?fdr c:IdentifiedObject.mRID ?fdrid.\n"
-            "}\n"
-            "GROUP BY ?busid ?busname ?vbase ?cename\n"
-            "ORDER by ?busid\n";
-        return sparq;
-    }
 
     string sparq_energy_consumer_pq(string fdrid) {
         string sparq =
@@ -145,6 +97,7 @@ namespace sparql_queries {
         "ORDER by ?loadname\n";
         return sparq;
     }
+
 
     string sparq_ratio_tap_changer_nodes(string fdrid) { 
         string sparq = "# Find the nodes of each regulator\n"
@@ -200,27 +153,6 @@ namespace sparql_queries {
         return sparq;
     }
 
-    string sparq_term_bus(string fdrid) {
-        string sparq =
-            "PREFIX r:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
-            "PREFIX c:  <http://iec.ch/TC57/CIM100#> "
-            "SELECT ?termid ?busname "
-            "WHERE { "
-            "?term c:Terminal.ConnectivityNode ?bus. "
-            "?term c:IdentifiedObject.mRID ?termid. "
-            "?bus c:IdentifiedObject.name ?busname. "
-            "?bus c:IdentifiedObject.mRID ?busid. "
-            "VALUES ?fdrid {\\\"" + fdrid + "\\\"} "
-            "?term c:Terminal.ConductingEquipment ?ce. "
-            "?ce c:Equipment.EquipmentContainer ?fdr. "
-            "?fdr c:IdentifiedObject.mRID ?fdrid. "
-            "?ce c:IdentifiedObject.name ?cename. "
-            "?ce c:IdentifiedObject.mRID ?cemrid. "
-            " } "
-            "GROUP BY ?termid ?busname "
-            "ORDER BY ?termid";
-        return sparq;
-    }
 
     string sparq_cemrid_busnames(string fdrid) {
         string sparq =
