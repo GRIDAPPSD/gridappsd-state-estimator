@@ -106,12 +106,6 @@ public:
         }
 #endif
 
-        // --------------------------------------------------------------------
-        // MAKE SOME SPARQL QUERIES
-        // --------------------------------------------------------------------
-        // get node bus mRIDs and phases needed to publish results
-        state_estimator_util::get_nodes(*gad_ref, node_bmrids, node_phs);
-
         // Set up the ybus consumer
         string ybusTopic = "goss.gridappsd.se.response."+gad_ref->simid+".ybus";
         TopoProcConsumer ybusConsumer(gad_ref->brokerURI, gad_ref->username,
@@ -255,6 +249,9 @@ public:
 
 
     void setupPublishing() {
+        // get node bus mRIDs and phases needed to publish results
+        state_estimator_util::get_nodes(*gad_ref, node_bmrids, node_phs);
+
         string publisherTopic = "goss.gridappsd.simulation.state-estimator."+
             gad_ref->simid+".output";
         publisher_ref = new SEProducer(gad_ref->brokerURI, gad_ref->username,

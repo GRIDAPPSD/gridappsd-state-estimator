@@ -63,14 +63,6 @@ public:
         return node_name_lookup;
     }
 
-    SSMAP getnode_bmrids() {
-        return node_bmrids;
-    }
-
-    SSMAP getnode_phs() {
-        return node_phs;
-    }
-
     SCMAP getVnoms() {
         return node_vnoms;
     }
@@ -123,41 +115,51 @@ public:
         return meas_values;
     }
 
+    SSMAP getnode_bmrids() {
+        return node_bmrids;
+    }
+
+    SSMAP getnode_phs() {
+        return node_phs;
+    }
+
 protected:
     const double* sbase_ref;
 
-    // PlatformInterface::fillTopology must populate these:
+    // You must populate these in PlatformInterface::fillTopo:
     IMMAP Yphys;
     SLIST node_names;
-    // If PlatformInterface publishes results, PlatformInterface::fillTopology
-    // must populate these:
-    SSMAP node_bmrids;
-    SSMAP node_phs;
-    // PlatformInterfaceBase::fillTopology populates these:
+
+    // These are populated for you in PlatformInterfaceBase::fillTopology:
     uint node_qty;
     SIMAP node_idxs;
     ISMAP node_name_lookup;
 
-    // PlatformInterface::fillVnoms must populate this:
+    // You must populate this in PlatformInterface::fillVnoms:
     SCMAP node_vnoms;
 
-    // PlatformInterface::fillSensors must populate these:
+    // You must populate these in PlatformInterface::fillSensors:
     SensorArray Zary;
     IMDMAP Amat;
     SSMAP regid_primnode;
     SSMAP regid_regnode;
-    // If PlatformInterface processes switch state and regulator tap position
-    // changes, PlatformInterface::fillSensors must populate these:
+    // You may populate these in PlatformInterface::fillSensors if the
+    // interface processes switch state and regulator tap position changes:
     SSMAP mmrid_pos_type;
     SSMAP switch_node1s;
     SSMAP switch_node2s;
 
-    // PlatformInterface:fillMeasurement populates these:
+    // These are populated for you to use in PlatformInterface:fillMeasurement:
     uint meas_timestamp;
     SLIST meas_mrids;
     SDMAP meas_magnitudes;
     SDMAP meas_angles;
     SDMAP meas_values;
+
+    // You may populate these in PlatformInterface::setupPublishing depending
+    // upon whether they are needed for publishing estimates
+    SSMAP node_bmrids;
+    SSMAP node_phs;
 };
 
 #endif
