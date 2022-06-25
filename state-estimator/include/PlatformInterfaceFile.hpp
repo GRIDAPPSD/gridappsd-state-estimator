@@ -268,6 +268,11 @@ public:
         return meas_zids;
     }
 
+
+    string getOutputDir() {
+        return FILE_INTERFACE_READ;
+    }
+
 private:
     std::ifstream meas_fh;
     std::ofstream est_fh;

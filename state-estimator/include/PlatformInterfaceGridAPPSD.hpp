@@ -294,6 +294,10 @@ public:
     }
 
 
+    string getOutputDir() {
+        return "sim_" + gad_ref->simid;
+    }
+
 private:
     state_estimator_gridappsd::gridappsd_session* gad_ref;
     SEProducer* requester_ref;

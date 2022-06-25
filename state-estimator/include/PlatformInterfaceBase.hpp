@@ -37,6 +37,8 @@ public:
         SDMAP& est_v, SDMAP& est_angle, SDMAP& est_vvar, SDMAP& est_anglevar,
         SDMAP& est_vmagpu, SDMAP& est_vargpu)=0;
 
+    virtual string getOutputDir()=0;
+
     uint getsbase() {
         return *sbase_ref;
     }
