@@ -31,6 +31,12 @@ public:
 
     virtual bool nextMeasurementWaiting()=0;
 
+    virtual void setupPublishing()=0;
+
+    virtual void publishEstimate(const uint& timestamp,
+        SDMAP& est_v, SDMAP& est_angle, SDMAP& est_vvar, SDMAP& est_anglevar,
+        SDMAP& est_vmagpu, SDMAP& est_vargpu)=0;
+
     uint getsbase() {
         return *sbase_ref;
     }

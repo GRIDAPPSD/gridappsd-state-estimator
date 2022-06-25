@@ -1,6 +1,8 @@
 #ifndef PLATFORMINTERFACEFILE_HPP
 #define PLATFORMINTERFACEFILE_HPP
 
+#include <iomanip> // std::setprecision
+
 class PlatformInterface : public PlatformInterfaceBase {
 public:
     PlatformInterface(int argc, char** argv, const double& sbase) : PlatformInterfaceBase(argc, argv, sbase) {
@@ -225,12 +227,50 @@ public:
     }
 
 
+    void setupPublishing() {
+        string filename = FILE_INTERFACE_READ;
+        filename += "/results_data.csv";
+        est_fh.open(filename, std::ofstream::trunc);
+        est_fh << "timestamp,";
+
+        for ( auto& node_name : node_names )
+            est_fh << "vmag_"+node_name+",";
+        uint nctr = 0;
+        for ( auto& node_name : node_names )
+            est_fh << "varg_"+node_name << ( ++nctr < node_qty ? "," : "\n" );
+
+        est_fh.close();
+    }
+
+
+    void publishEstimate(const uint& timestamp,
+        SDMAP&, SDMAP&, SDMAP&, SDMAP&, SDMAP& est_vmagpu, SDMAP& est_vargpu) {
+
+        string filename = FILE_INTERFACE_READ;
+        filename += "/results_data.csv";
+        est_fh.open(filename, std::ofstream::app);
+
+        est_fh << timestamp << ',';
+        est_fh << std::fixed;
+        est_fh << std::setprecision(10);
+
+        for ( auto& node_name : node_names )
+            est_fh << est_vmagpu[node_name] << ",";
+        uint nctr = 0;
+        for ( auto& node_name : node_names )
+            est_fh << est_vargpu[node_name] << ( ++nctr < node_qty ? "," : "\n" );
+
+        est_fh.close();
+    }
+
+
     std::vector<string> getZids() {
         return meas_zids;
     }
 
 private:
     std::ifstream meas_fh;
+    std::ofstream est_fh;
     std::vector<string> meas_zids;
 };
 

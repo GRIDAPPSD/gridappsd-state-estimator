@@ -91,10 +91,6 @@ class SELoopWorker {
     SSMAP              switch_node1s;
     SSMAP              switch_node2s;
 
-#ifdef GRIDAPPSD_INTERFACE
-    SEProducer *statePublisher = 0;
-#endif
-
     // system topology definition
     uint xqty;          // number of states
     uint zqty;          // number of measurements
@@ -132,10 +128,9 @@ class SELoopWorker {
     std::ofstream state_fh;  // file to record states
 #endif
 
-#if defined(FILE_INTERFACE_READ) || defined(WRITE_FILES)
+#ifdef WRITE_FILES
     std::ofstream results_fh;  // file to record results
 #endif
-
 
     public:
     SELoopWorker(PlatformInterface* plint) {
@@ -361,11 +356,8 @@ class SELoopWorker {
         mkdir(initpath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 #endif
 
-#ifndef FILE_INTERFACE_READ
-        // Construct the producer that will be used to publish the state estimate
-        string sePubTopic = "goss.gridappsd.simulation.state-estimator."+gad->simid+".output";
-        statePublisher = new SEProducer(gad->brokerURI,gad->username,gad->password,sePubTopic,"topic");
-#endif
+        // do the setup needed to publish state estimates later
+        plint->setupPublishing();
 
         // --------------------------------------------------------------------
         // Establish Dimension of State Space and Measurement Space
@@ -817,23 +809,18 @@ class SELoopWorker {
             state_fh << "\'"+node_name+"\'" << ( ++nctr < node_qty ? "," : "\n" );
         state_fh.close();
 #endif
-#if defined(FILE_INTERFACE_READ) || defined(WRITE_FILES)
-#ifdef FILE_INTERFACE_READ
-        string filename = FILE_INTERFACE_READ;
-#else
-        string filename = "test_files";
-#endif
-        filename += "/results_data.csv";
+#ifdef WRITE_FILE
+        string filename = "test_files/results_data.csv";
 #ifdef DEBUG_PRIMARY
         *selog << "Writing results to test harness file: " << filename << "\n\n" << std::flush;
 #endif
         results_fh.open(filename,std::ofstream::out);
         results_fh << "timestamp,";
-        uint nctr2 = 0;
+        nctr = 0;
         for ( auto& node_name : node_names )
             results_fh << "vmag_"+node_name+",";
         for ( auto& node_name : node_names )
-            results_fh << "varg_"+node_name << ( ++nctr2 < node_qty ? "," : "\n" );
+            results_fh << "varg_"+node_name << ( ++nctr < node_qty ? "," : "\n" );
         results_fh.close();
 #endif
     }
@@ -1237,63 +1224,43 @@ class SELoopWorker {
 
 
     private:
+    double normalizeAngle(const double& radians) {
+        double degrees = 180.0/PI * radians;
+        // -165 <= degrees <= 195
+        while (degrees > 195.0) degrees -= 360.0;
+        while (degrees < -165.0) degrees += 360.0;
+
+        return degrees;
+    }
+
+
+    private:
     void publish(const uint& timestamp) {
         // --------------------------------------------------------------------
         // Package and publish the state
         // --------------------------------------------------------------------
-        
-        // Don't publish test harness results because node_bmrids and node_phs
-        // weren't initialized
-#ifndef FILE_INTERFACE_READ
-        // Initialize json
-        json jstate;
-        jstate["simulation_id"] = gad->simid;
-        jstate["message"] = json::object();
-        jstate["message"]["timestamp"] = timestamp;
-        jstate["message"]["Estimate"] = json::object();
-        jstate["message"]["Estimate"]["timeStamp"] = timestamp;
-        jstate["message"]["Estimate"]["SvEstVoltages"] = json::array();
+        SDMAP est_v, est_angle;
+        SDMAP est_vvar, est_anglevar;
+        SDMAP est_vmagpu, est_vargpu;
 
         for ( auto& node_name : node_names ) {
-            // build a json object for each node
-            // NOTE: I will not spend too much time on this until we know
-            //  exactly what the message should look like
-            //  - best guess is node and phase as commented out below
-            //  - this would require a new sparql query and data flows
-            json node_state;
-            node_state["ConnectivityNode"] = node_bmrids[node_name];
-            node_state["phase"] = node_phs[node_name];
-
-            // add the state values
             uint idx = node_idxs[node_name];
             complex<double> vnom = node_vnoms[node_name];
-            node_state["v"] = abs ( vnom * Vpu[idx] );
 
-            double degrees = 180.0/PI * arg ( vnom * Vpu[idx] );
-            // -165 <= degrees <= 195
-            while (degrees > 195.0) degrees -= 360.0;
-            while (degrees < -165.0) degrees += 360.0;
-            node_state["angle"] = degrees;
+            est_v[node_name] = abs( vnom * Vpu[idx] );
+            est_angle[node_name] = normalizeAngle(arg( vnom * Vpu[idx] ));
 
-            // Add v and angle variance values
-            node_state["vVariance"] = Uvmag[idx];
+            est_vvar[node_name] = Uvmag[idx];
+            est_anglevar[node_name] = normalizeAngle(Uvarg[idx]);
 
-            degrees = 180.0/PI * Uvarg[idx];
-            // -165 <= degrees <= 195
-            while (degrees > 195.0) degrees -= 360.0;
-            while (degrees < -165.0) degrees += 360.0;
-            node_state["angleVariance"] = degrees;
-
-            // append this state to the measurement array
-            jstate["message"]["Estimate"]["SvEstVoltages"].push_back(node_state);
+            est_vmagpu[node_name] = abs( Vpu[idx] );
+            est_vargpu[node_name] = arg( Vpu[idx] );
         }
 
-        // Publish the message
-        statePublisher->send(jstate.dump());
-#endif
+        plint->publishEstimate(timestamp, est_v, est_angle,
+            est_vvar, est_anglevar, est_vmagpu, est_vargpu);
 
 #ifdef DEBUG_FILES
-        // write to file
 #ifndef FILE_INTERFACE_READ
         string simpath = "output/sim_" + gad->simid + "/";
 #else
@@ -1301,33 +1268,29 @@ class SELoopWorker {
 #endif
         state_fh.open(simpath+"vmag_per-unit.csv",std::ofstream::app);
         state_fh << timestamp << ',';
-        uint ctr = 0;
+        uint nctr = 0;
         for ( auto& node_name : node_names ) {
             double vmag_pu = abs( Vpu[ node_idxs[node_name] ] );
-            state_fh << vmag_pu << ( ++ctr < node_qty ? "," : "\n" );
+            state_fh << vmag_pu << ( ++nctr < node_qty ? "," : "\n" );
         }
         state_fh.close();
 #endif
-#if defined(FILE_INTERFACE_READ) || defined(WRITE_FILES)
-#ifdef FILE_INTERFACE_READ
-        string filename = FILE_INTERFACE_READ;
-#else
-        string filename = "test_files";
-#endif
-        filename += "/results_data.csv";
+
+#ifdef WRITE_FILES
+        string filename = "test_files/results_data.csv";
         results_fh.open(filename,std::ofstream::app);
 
         results_fh << timestamp << ',';
         results_fh << std::fixed;
         results_fh << std::setprecision(10);
-        uint ctr2 = 0;
         for ( auto& node_name : node_names ) {
             double vmag_pu = abs( Vpu[ node_idxs[node_name] ] );
             results_fh << vmag_pu << ",";
         }
+        nctr = 0;
         for ( auto& node_name : node_names ) {
             double varg_pu = arg( Vpu[ node_idxs[node_name] ] );
-            results_fh << varg_pu << ( ++ctr2 < node_qty ? "," : "\n" );
+            results_fh << varg_pu << ( ++nctr < node_qty ? "," : "\n" );
         }
         results_fh.close();
 #endif

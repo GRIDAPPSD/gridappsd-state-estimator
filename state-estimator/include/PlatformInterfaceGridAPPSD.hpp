@@ -245,6 +245,50 @@ public:
     }
 
 
+    void setupPublishing() {
+        string publisherTopic = "goss.gridappsd.simulation.state-estimator."+
+            gad_ref->simid+".output";
+        publisher_ref = new SEProducer(gad_ref->brokerURI, gad_ref->username,
+            gad_ref->password, publisherTopic, "topic");
+    }
+
+
+    void publishEstimate(const uint& timestamp,
+        SDMAP& est_v, SDMAP& est_angle, SDMAP& est_vvar, SDMAP& est_anglevar,
+        SDMAP&,  SDMAP&) {
+
+        json jmessage;
+        jmessage["simulation_id"] = gad_ref->simid;
+        jmessage["message"] = json::object();
+        jmessage["message"]["timestamp"] = timestamp;
+        jmessage["message"]["Estimate"] = json::object();
+        jmessage["message"]["Estimate"]["timeStamp"] = timestamp;
+        jmessage["message"]["Estimate"]["SvEstVoltages"] = json::array();
+
+        for ( auto& node_name : node_names ) {
+            // build a json object for each node
+            json node_state;
+            node_state["ConnectivityNode"] = node_bmrids[node_name];
+            node_state["phase"] = node_phs[node_name];
+
+            // add the state values
+            node_state["v"] = est_v[node_name];
+            node_state["angle"] = est_angle[node_name];
+
+            // Add v and angle variance values
+            node_state["vVariance"] = est_vvar[node_name];
+            node_state["angleVariance"] = est_anglevar[node_name];
+
+            // append this state to the measurement array
+            jmessage["message"]["Estimate"]["SvEstVoltages"].
+                push_back(node_state);
+        }
+
+        // Publish the message
+        publisher_ref->send(jmessage.dump());
+    }
+
+
     state_estimator_gridappsd::gridappsd_session* getGad() {
         return gad_ref;
     }
@@ -253,6 +297,7 @@ public:
 private:
     state_estimator_gridappsd::gridappsd_session* gad_ref;
     SEProducer* requester_ref;
+    SEProducer* publisher_ref;
     SharedQueue<json> workQueue;
 };
 
