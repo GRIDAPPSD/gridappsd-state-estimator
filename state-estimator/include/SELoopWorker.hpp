@@ -1869,7 +1869,8 @@ class SELoopWorker {
 
 #ifdef DEBUG_PRIMARY
         *selog << "\n*** Total estimate time: " << 
-            getMinSec(getWallTime()-estimateStartTime) << ", timestep: " <<
+            getMinSec(getWallTime()-estimateStartTime) << ", timestamp: " <<
+            timestamp << ", timestep: " <<
             timestamp-timeZero << "\n" << std::flush;
 #ifdef DEBUG_SIZES
 #ifndef DIAGONAL_P
