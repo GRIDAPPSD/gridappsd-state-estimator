@@ -16,53 +16,7 @@
 // defining USE_NEGL indicates not to store negligable values
 //#define USE_NEGL
 
-// files-based interface related conditional compilation values
-#ifdef FILE_INTERFACE
-//#define FILE_INTERFACE_READ "test_4Ti"
-//#define FILE_INTERFACE_READ "test_3p6_Ti"
-//#define FILE_INTERFACE_READ "test_4PiQi"
-//#define FILE_INTERFACE_READ "test_13assets_noaji"
-//#define FILE_INTERFACE_READ "test_11big_jl"
-//#define FILE_INTERFACE_READ "test_4"
-//#define FILE_INTERFACE_READ "test_4vinj"
-//#define FILE_INTERFACE_READ "test_4net"
-//#define FILE_INTERFACE_READ "test_4sbase"
-//#define FILE_INTERFACE_READ "test_13assets"
-//#define FILE_INTERFACE_READ "test_11full"
-//#define FILE_INTERFACE_READ "test_11diff"
-//#define FILE_INTERFACE_READ "test_11noQ"
-//#define FILE_INTERFACE_READ "test_4withB"
-//#define FILE_INTERFACE_READ "test_4woB"
-//#define FILE_INTERFACE_READ "test_11big"
-//#define FILE_INTERFACE_READ "test_3p6"
-//#define FILE_INTERFACE_READ "test_3p6pseudo"
-//#define FILE_INTERFACE_READ "test_11_bus_full"
-//#define FILE_INTERFACE_READ "test_11_bus_diff"
-//#define FILE_INTERFACE_READ "test_11_bus_full_meas"
-//#define FILE_INTERFACE_READ "test_11_bus_diff_meas"
-//#define FILE_INTERFACE_READ "test_4_bus_full"
-//#define FILE_INTERFACE_READ "test_4_bus_diff"
-//#define FILE_INTERFACE_READ "test_3p6_bus_full"
-//#define FILE_INTERFACE_READ "test_3p6_bus_diff"
-//#define FILE_INTERFACE_READ "test_3p6_bus_full_meas"
-//#define FILE_INTERFACE_READ "test_3p6_bus_diff_meas"
-#define FILE_INTERFACE_READ "test_files_123"
-//#define FILE_INTERFACE_READ "test_files_13assets"
-
-#ifndef FILE_INTERFACE_READ
-#include "OOPS, NEED TO DEFINE FILE_INTERFACE_READ!"
-#endif
-
-// whether to get node_vnoms from file or hardwire to 1
-#define FILE_INTERFACE_VNOM
-// the nosbase symbol is used for a model outside GridAPPS-D like the
-// 4-bus MATLAB model
-//#define FILE_INTERFACE_NOSBASE
-#endif
-
 //#define WRITE_FILES
-
-#define PI 3.141592653589793
 
 #include <iostream>
 #include <fstream>

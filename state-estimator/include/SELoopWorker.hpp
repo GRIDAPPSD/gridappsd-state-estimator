@@ -460,8 +460,8 @@ class SELoopWorker {
                 complex<double> new_term_val = term_val * scaler;
 #ifdef DEBUG_PRIMARY
                 //*selog << "\tYphys scaler: " << scaler << "\n" << std::flush;
-                //*selog << "\tYphys term_val: " << abs(term_val) << "(" << 180/PI*arg(term_val) << ")\n" << std::flush;
-                //*selog << "\tYphys new_term_val: " << abs(new_term_val) << "(" << 180/PI*arg(new_term_val) << ")\n" << std::flush;
+                //*selog << "\tYphys term_val: " << abs(term_val) << "(" << 180/M_PI*arg(term_val) << ")\n" << std::flush;
+                //*selog << "\tYphys new_term_val: " << abs(new_term_val) << "(" << 180/M_PI*arg(new_term_val) << ")\n" << std::flush;
 #endif
                 Yphys[i][j] = new_term_val;
 
@@ -869,7 +869,7 @@ class SELoopWorker {
         // Initialize State Covariance Matrix
         // --------------------------------------------------------------------
         double span_vmag = 1.0;
-        double span_varg = 1.0/3.0*PI;
+        double span_varg = 1.0/3.0*M_PI;
         double span_taps = 0.2;
 
         // scaling factor for state uncertainty initialization
@@ -979,7 +979,7 @@ class SELoopWorker {
                     // assumes there is always an angle with the magnitude,
                     // which isn't the case with sensor simulator measurements
                     double vang_phys = meas_angles[mmrid];
-                    double vang_rad = vang_phys*PI/180.0;
+                    double vang_rad = vang_phys*M_PI/180.0;
                     node_ang[meas_node] = vang_rad;
 #endif
                     // TODO: This uses vnom filled from OpenDSS values, but
@@ -1124,7 +1124,7 @@ class SELoopWorker {
                         meas_angles.find(mmrid) != meas_angles.end()) {
                         double vmag_phys = meas_magnitudes[mmrid];
                         double vang_phys = meas_angles[mmrid];
-                        double vang_rad = vang_phys*PI/180.0;
+                        double vang_rad = vang_phys*M_PI/180.0;
 
                         // convert from polar to rectangular coordinates
                         Zary.zvals[pinj_zid] -= vmag_phys*cos(vang_rad)/sbase;
@@ -1216,7 +1216,7 @@ class SELoopWorker {
 
     private:
     double normalizeAngle(const double& radians) {
-        double degrees = 180.0/PI * radians;
+        double degrees = 180.0/M_PI * radians;
         // -165 <= degrees <= 195
         while (degrees > 195.0) degrees -= 360.0;
         while (degrees < -165.0) degrees += 360.0;
@@ -2115,12 +2115,12 @@ class SELoopWorker {
         // factor = 0.03;
 
 #ifdef GS_OPTIMIZE
-        Qmat = gs_doubleval_diagonal(node_qty, factor, factor*PI);
+        Qmat = gs_doubleval_diagonal(node_qty, factor, factor*M_PI);
 #else
         cs *Qraw = cs_spalloc (2*node_qty, 2*node_qty, 2*node_qty, 1, 1);
         for (uint i = 0; i < node_qty; i++) {
             cs_entry_negl(Qraw, i, i, factor);
-            cs_entry_negl(Qraw, node_qty+i, node_qty+i, factor*PI);
+            cs_entry_negl(Qraw, node_qty+i, node_qty+i, factor*M_PI);
         }
         Qmat = cs_compress(Qraw);
         cs_spfree(Qraw);
@@ -2162,7 +2162,7 @@ class SELoopWorker {
                     else if (Zary.ztypes[zid] == "Ti")
                         // standard deviation of expected initial voltage
                         // angle
-                        uncertainty = 0.01*PI*PI;
+                        uncertainty = 0.01*M_PI*M_PI;
                     else if (Zary.ztypes[zid] == "aji")
                         // standard deviation of expected initial tap ratio
                         uncertainty = 0.2*0.2;
@@ -2196,7 +2196,7 @@ class SELoopWorker {
                     else if (Zary.ztypes[zid] == "Ti")
                         // standard deviation of expected change in voltage
                         // angle per second
-                        factor = 0.0001*PI*PI;
+                        factor = 0.0001*M_PI*M_PI;
                     else if (Zary.ztypes[zid] == "aji")
                         // standard deviation of expected change in tap ratio
                         // per second
