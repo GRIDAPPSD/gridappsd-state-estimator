@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
     double spower = (double)std::stoi(argv[3]);
     const double sbase = pow(10.0, spower);
 #else
-#ifdef FILE_INTERFACE_NOSBASE
+#ifdef SBASE_NONE
     const double sbase = 1;
 #else
     const double sbase = 1.0e+6;

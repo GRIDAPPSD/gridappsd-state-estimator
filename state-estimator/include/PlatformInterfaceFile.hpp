@@ -42,7 +42,7 @@
 #define FILE_INTERFACE_VNOM
 // the nosbase symbol is used for a model outside GridAPPS-D like the
 // 4-bus MATLAB model
-//#define FILE_INTERFACE_NOSBASE
+//#define SBASE_NONE
 
 
 class PlatformInterface : public PlatformInterfaceBase {
