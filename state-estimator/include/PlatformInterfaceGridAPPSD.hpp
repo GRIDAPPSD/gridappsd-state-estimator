@@ -178,11 +178,13 @@ public:
         state_estimator_util::build_cemrid_busnames(*gad_ref,
             cemrid_busnames);
 
+#ifdef NET_INJECTION
         // Adds nominal load injections
         SDMAP node_nominal_Pinj;
         SDMAP node_nominal_Qinj;
         state_estimator_util::get_nominal_energy_consumer_injections(*gad_ref,
             node_vnoms, node_nominal_Pinj, node_nominal_Qinj);
+#endif
 
         // Set up the sensors consumer
         string sensTopic = "goss.gridappsd.se.response."+gad_ref->simid+
@@ -190,7 +192,9 @@ public:
         SensorDefConsumer sensConsumer(gad_ref->brokerURI,
             gad_ref->username, gad_ref->password,
             cemrid_busnames, reg_cemrid_primbus, reg_cemrid_regbus,
+#ifdef NET_INJECTION
             node_nominal_Pinj, node_nominal_Qinj,
+#endif
             *sbase_ref, sensTopic, "queue");
         Thread sensConsumerThread(&sensConsumer);
         sensConsumerThread.start();       // execute sensConsumer.run()

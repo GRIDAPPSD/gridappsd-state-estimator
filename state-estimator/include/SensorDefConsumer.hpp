@@ -5,16 +5,17 @@
 // This class listens for sensor definitions and constructs the sensors
 class SensorDefConsumer : public SEConsumer {
     private:
-    SSMAP term_bus; // terminal_mrid -> bus_name
     SSLISTMAP cemrid_busnames; // ce_mrid -> bus_names
 
     private:
     SSMAP reg_cemrid_primbus;  // for regulator Pos measurement init
     SSMAP reg_cemrid_regbus;   // for regulator Pos measurement init
 
+#ifdef NET_INJECTION
     private:
     SDMAP node_nominal_Pinj;
     SDMAP node_nominal_Qinj;
+#endif
     
     private:
     SensorArray Zary;
@@ -29,24 +30,26 @@ class SensorDefConsumer : public SEConsumer {
     SensorDefConsumer(const string& brokerURI, 
                 const string& username,
                 const string& password,
-//                const SSMAP& term_bus,
                 const SSLISTMAP& cemrid_busnames,
                 const SSMAP& reg_cemrid_primbus,
                 const SSMAP& reg_cemrid_regbus,
+#ifdef NET_INJECTION
                 const SDMAP& node_nominal_Pinj,
                 const SDMAP& node_nominal_Qinj,
+#endif
                 const double& sbase,
                 const string& target,
                 const string& mode) {
         this->brokerURI = brokerURI;
         this->username = username;
         this->password = password;
-//        this->term_bus = term_bus;
         this->cemrid_busnames = cemrid_busnames;
         this->reg_cemrid_primbus = reg_cemrid_primbus;
         this->reg_cemrid_regbus = reg_cemrid_regbus;
+#ifdef NET_INJECTION
         this->node_nominal_Pinj = node_nominal_Pinj;
         this->node_nominal_Qinj = node_nominal_Qinj;
+#endif
         this->sbase = sbase;
         this->target = target;
         this->mode = mode;
