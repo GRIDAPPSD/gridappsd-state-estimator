@@ -47,7 +47,6 @@
 #endif
 #endif
 
-#ifdef FILE_INTERFACE_READ
 // macro to set precision of value to a fixed number of decimal digits
 //#define SET_PRECISION12(val) round(val*1e+12)/1e+12
 //#define SET_PRECISION8(val) round(val*1e+8)/1e+8
@@ -60,7 +59,6 @@
 //    double factor = pow(10.0, digits - ceil(log10(fabs(value))));
 //    return round(value*factor)/factor;
 //}
-#endif
 
 // This class listens for system state messages
 class SELoopWorker {
@@ -1529,9 +1527,7 @@ class SELoopWorker {
 #else
         double *rhs = (double *)calloc(zqty*zqty, sizeof(double));
 #endif
-//#ifdef FILE_INTERFACE_READ
-//        double condnum;
-//#endif
+        // double condnum;
 
         try {
             // Initialize klusolve variables
@@ -1565,10 +1561,8 @@ class SELoopWorker {
             // KLU condition number estimation
             (void)klu_condest(Supd->p,Supd->x,klusym,klunum,&klucom);
             *selog << "klu_condest Supd condition number estimate: " << klucom.condest << "\n" << std::flush;
-//#ifdef FILE_INTERFACE_READ
-//            condnum = klucom.condest;
-//            *selog << timestamp << "," << condnum << ",SupdCondNum\n" << std::flush;
-//#endif
+            // condnum = klucom.condest;
+            // *selog << timestamp << "," << condnum << ",SupdCondNum\n" << std::flush;
 #endif
 
             // initialize an identity right-hand side
@@ -1635,14 +1629,12 @@ class SELoopWorker {
         free(rhs);
 #endif
 
-//#ifdef FILE_INTERFACE_READ
 //       // determine number of significant digits based on condition number
 //       uint digits = 15 - floor(log10(condnum));
 //       // set all elements of Supd^-1 to the desired number of significant
 //       // figures for MATLAB comparison
 //       for (uint i=0; i<K3->nzmax; i++)
 //           K3->x[i] = SET_SIGNIFICANT(K3->x[i], digits);
-//#endif
 
 #ifdef DEBUG_PRIMARY
         if ( K3 ) *selog << "K3 is " << K3->m << " by " << K3->n <<
@@ -1680,11 +1672,9 @@ class SELoopWorker {
         if ( Kupd ) *selog << "Kupd is " << Kupd->m << " by " << Kupd->n <<
                 " with " << Kupd->nzmax << " entries\n" << std::flush;
 #endif
-#ifdef FILE_INTERFACE_READ
        // Commented out this precision limiting code per Andy request 2/3/21
        //for (uint i=0; i<Kupd->nzmax; i++)
        //    Kupd->x[i] = SET_PRECISION8(Kupd->x[i]);
-#endif
 #ifdef DEBUG_FILES
         print_cs_compress(Kupd,tspath+"Kupd.csv");
         //print_cs_compress_triples(Kupd, "Kupd_sbase1e12_trip.csv", 4);
@@ -1724,11 +1714,9 @@ class SELoopWorker {
         else *selog << "yupd is " << yupd->m << " by " << yupd->n <<
             " with " << yupd->nzmax << " entries\n" << std::flush;
 #endif
-#ifdef FILE_INTERFACE_READ
        // Commented out this precision limiting code per Andy request 2/3/21
        //for (uint i=0; i<yupd->nzmax; i++)
        //    yupd->x[i] = SET_PRECISION8(yupd->x[i]);
-#endif
 #ifdef DEBUG_FILES
         print_cs_compress(yupd,tspath+"yupd.csv");
         //print_cs_colvec("yupd_sbase1e6_prec8.csv", yupd);
