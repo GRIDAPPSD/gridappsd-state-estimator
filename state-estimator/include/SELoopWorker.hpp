@@ -344,11 +344,7 @@ class SELoopWorker {
         }
 
         // create simulation parent directory
-#ifndef FILE_INTERFACE_READ
-        string simpath = "output/sim_" + gad->simid + "/";
-#else
-        string simpath = "output/"; simpath += FILE_INTERFACE_READ; simpath += "/";
-#endif
+        string simpath = "output/" + plint->getOutputDir() + "/";
         mkdir(simpath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
         // create init directory
@@ -846,11 +842,7 @@ class SELoopWorker {
 #ifdef DEBUG_FILES
         // print initial state vector
         std::ofstream ofh;
-#ifndef FILE_INTERFACE_READ
-        string simpath = "output/sim_" + gad->simid + "/";
-#else
-        string simpath = "output/"; simpath += FILE_INTERFACE_READ; simpath += "/";
-#endif
+        string simpath = "output/" + plint->getOutputDir() + "/";
         string initpath = simpath + "init/";
         ofh.open(initpath+"Vpu.csv",std::ofstream::out);
         ofh << std::setprecision(16);
@@ -1261,11 +1253,7 @@ class SELoopWorker {
             est_vvar, est_anglevar, est_vmagpu, est_vargpu);
 
 #ifdef DEBUG_FILES
-#ifndef FILE_INTERFACE_READ
-        string simpath = "output/sim_" + gad->simid + "/";
-#else
-        string simpath = "output/"; simpath += FILE_INTERFACE_READ; simpath += "/";
-#endif
+        string simpath = "output/" + plint->getOutputDir() + "/";
         state_fh.open(simpath+"vmag_per-unit.csv",std::ofstream::app);
         state_fh << timestamp << ',';
         uint nctr = 0;
@@ -1308,11 +1296,7 @@ class SELoopWorker {
 
 #ifdef DEBUG_FILES
         // set filename path based on timestamp
-#ifndef FILE_INTERFACE_READ
-        string simpath = "output/sim_" + gad->simid + "/ts_";
-#else
-        string simpath = "output/"; simpath += FILE_INTERFACE_READ; simpath += "/ts_";
-#endif
+        string simpath = "output/" + plint->getOutputDir() + "/";
         std::ostringstream out;
         out << simpath << timestamp << "/";
         string tspath = out.str();
@@ -2994,14 +2978,14 @@ class SELoopWorker {
     void print_cs_compress_triples(cs *&a, const string &filename="cs.csv",
                                    const uint &precision=16) {
         // First copy into a map
-        unordered_map<uint,unordered_map<uint,double>> mat;
+        std::unordered_map<uint,std::unordered_map<uint,double>> mat;
         for ( uint i = 0 ; i < a->n ; i++ ) {
             for ( uint j = a->p[i] ; j < a->p[i+1] ; j++ ) {
                 mat[a->i[j]][i] = a->x[j];
             }
         }
 
-        unordered_map<uint,bool> powerMap;
+        std::unordered_map<uint,bool> powerMap;
         for ( auto& zid : Zary.zids ) {
             uint zidx = Zary.zidxs[zid];
             string ztype = Zary.ztypes[zid];
@@ -3041,7 +3025,7 @@ class SELoopWorker {
         ofh << std::setprecision(precision);
         ofh.open(filename,std::ofstream::out);
         *selog << "writing " + filename + "\n\n" << std::flush;
-        unordered_map<uint,unordered_map<uint,double>> mat;
+        std::unordered_map<uint,std::unordered_map<uint,double>> mat;
         for ( uint i = 0 ; i < a->n ; i++ ) {
             for ( uint j = a->p[i] ; j < a->p[i+1] ; j++ ) {
                 ofh << a->i[j] << ", " << i << ", " << a->x[j] << "\n";
@@ -3053,7 +3037,7 @@ class SELoopWorker {
     private:
     void stdout_cs_compress(cs *&a, const uint &precision=16) {
         // First copy into a map
-        unordered_map<uint,unordered_map<uint,double>> mat;
+        std::unordered_map<uint,std::unordered_map<uint,double>> mat;
         for ( uint i = 0 ; i < a->n ; i++ ) {
             for ( uint j = a->p[i] ; j < a->p[i+1] ; j++ ) {
                 mat[a->i[j]][i] = a->x[j];
@@ -3071,7 +3055,7 @@ class SELoopWorker {
     void print_cs_compress(cs *&a, const string &filename="cs.csv",
                            const uint &precision=16) {
         // First copy into a map
-        unordered_map<uint,unordered_map<uint,double>> mat;
+        std::unordered_map<uint,std::unordered_map<uint,double>> mat;
         for ( uint i = 0 ; i < a->n ; i++ ) {
             for ( uint j = a->p[i] ; j < a->p[i+1] ; j++ ) {
                 mat[a->i[j]][i] = a->x[j];
@@ -3093,14 +3077,14 @@ class SELoopWorker {
     void print_cs_compress_triples(cs *&a, const string &filename="cs.csv",
                                    const uint &precision=16) {
         // First copy into a map
-        unordered_map<uint,unordered_map<uint,double>> mat;
+        std::unordered_map<uint,std::unordered_map<uint,double>> mat;
         for ( uint i = 0 ; i < a->n ; i++ ) {
             for ( uint j = a->p[i] ; j < a->p[i+1] ; j++ ) {
                 mat[a->i[j]][i] = a->x[j];
             }
         }
 
-        unordered_map<uint,bool> powerMap;
+        std::unordered_map<uint,bool> powerMap;
         for ( auto& zid : Zary.zids ) {
             uint zidx = Zary.zidxs[zid];
             string ztype = Zary.ztypes[zid];
@@ -3140,7 +3124,7 @@ class SELoopWorker {
         ofh << std::setprecision(precision);
         ofh.open(filename,std::ofstream::out);
         *selog << "writing " + filename + "\n\n" << std::flush;
-        unordered_map<uint,unordered_map<uint,double>> mat;
+        std::unordered_map<uint,std::unordered_map<uint,double>> mat;
         for ( uint i = 0 ; i < a->n ; i++ ) {
             for ( uint j = a->p[i] ; j < a->p[i+1] ; j++ ) {
                 ofh << a->i[j] << ", " << i << ", " << a->x[j] << "\n";
