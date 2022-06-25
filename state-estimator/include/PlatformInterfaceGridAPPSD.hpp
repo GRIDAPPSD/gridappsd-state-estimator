@@ -1,6 +1,23 @@
 #ifndef PLATFORMINTERFACEGRIDAPPSD_HPP
 #define PLATFORMINTERFACEGRIDAPPSD_HPP
 
+#include "SharedQueue.hpp"
+#include "json.hpp"
+  using json = nlohmann::json;
+#include "SEConsumer.hpp"
+#include "GenericConsumer.hpp"
+#include "TopoProcConsumer.hpp"
+#include "VnomConsumer.hpp"
+#include "SensorDefConsumer.hpp"
+#include "SEProducer.hpp"
+#include "state_estimator_gridappsd.hpp"
+  using state_estimator_gridappsd::gridappsd_session;
+#include "gridappsd_requests.hpp"
+  using gridappsd_requests::sparql_query;
+#include "sparql_queries_CIM100.hpp"
+#include "state_estimator_util.hpp"
+#include "SELoopConsumer.hpp"
+
 // if defined, produces an estimate for every simulation timestamp rather than
 // catching up by doing measurement average to drain the queue which leads to
 // state estimator falling way behind with complex models
