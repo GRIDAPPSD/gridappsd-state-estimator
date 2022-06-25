@@ -1,6 +1,11 @@
 #ifndef PLATFORMINTERFACEGRIDAPPSD_HPP
 #define PLATFORMINTERFACEGRIDAPPSD_HPP
 
+// if defined, produces an estimate for every simulation timestamp rather than
+// catching up by doing measurement average to drain the queue which leads to
+// state estimator falling way behind with complex models
+//#define DONT_DRAIN_WORKQUEUE
+
 #ifdef DEBUG_PRIMARY
 // temporary flag to hold up initialization until the platform has finished
 // its own initialization for the simulation based on sending a STARTED message
@@ -241,7 +246,11 @@ public:
 
 
     bool nextMeasurementWaiting() {
+#ifndef DONT_DRAIN_WORKQUEUE
         return !workQueue.empty();
+#else
+        return false;
+#endif
     }
 
 
