@@ -537,10 +537,10 @@ class SELoopWorker {
         *selog << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
 #endif
 #ifdef WRITE_FILES
-        std::ofstream ofh;
-        ofh.open("test_files/ypu.csv", std::ofstream::out);
-        ofh << std::setprecision(10);  // match OpenDSS ysparse
-        ofh << "Row,Col,G,B\n";
+        std::ofstream wofh;
+        wofh.open("test_files/ypu.csv", std::ofstream::out);
+        wofh << std::setprecision(10);  // match OpenDSS ysparse
+        wofh << "Row,Col,G,B\n";
         for ( auto& inode : node_names ) {
             uint i = node_idxs[inode];
             try {
@@ -552,17 +552,17 @@ class SELoopWorker {
                         double tmpre = tmp.real();
                         double tmpim = tmp.imag();
                         if (j >= i) // only output the lower diagonal
-                            ofh << j << "," << i << "," << tmpre << "," << tmpim << "\n";
+                            wofh << j << "," << i << "," << tmpre << "," << tmpim << "\n";
                     } catch ( const std::out_of_range& oor ) {
                     }
                 }
             } catch ( const std::out_of_range& oor ) {
             }
-        } ofh.close();
+        } wofh.close();
 
-        ofh.open("test_files/yphys.csv", std::ofstream::out);
-        ofh << std::setprecision(10);  // match OpenDSS ysparse
-        ofh << "Row,Col,G,B\n";
+        wofh.open("test_files/yphys.csv", std::ofstream::out);
+        wofh << std::setprecision(10);  // match OpenDSS ysparse
+        wofh << "Row,Col,G,B\n";
         for ( uint i = 1 ; i <= node_qty ; i++ ) {
             try {
                 auto& row = Yphys.at(i);
@@ -572,13 +572,13 @@ class SELoopWorker {
                         double tmpre = tmp.real();
                         double tmpim = tmp.imag();
                         if (j >= i) // only output the lower diagonal
-                            ofh << j << "," << i << "," << tmpre << "," << tmpim << "\n";
+                            wofh << j << "," << i << "," << tmpre << "," << tmpim << "\n";
                     } catch ( const std::out_of_range& oor ) {
                     }
                 }
             } catch ( const std::out_of_range& oor ) {
             }
-        } ofh.close();
+        } wofh.close();
 #endif
 #ifdef DEBUG_FILES
         // write to file
@@ -643,7 +643,6 @@ class SELoopWorker {
 
 #ifdef DEBUG_FILES
         // write Vbase to file
-        //std::ofstream ofh;
         ofh.open(initpath+"vnoms.csv",std::ofstream::out);
         ofh << std::setprecision(16);
         *selog << "writing " << initpath+"vnoms.csv\n" << std::flush;
@@ -1275,10 +1274,10 @@ class SELoopWorker {
             double vmag_pu = abs( Vpu[ node_idxs[node_name] ] );
             results_fh << vmag_pu << ",";
         }
-        nctr = 0;
+        uint nctr2 = 0;
         for ( auto& node_name : node_names ) {
             double varg_pu = arg( Vpu[ node_idxs[node_name] ] );
-            results_fh << varg_pu << ( ++nctr < node_qty ? "," : "\n" );
+            results_fh << varg_pu << ( ++nctr2 < node_qty ? "," : "\n" );
         }
         results_fh.close();
 #endif
