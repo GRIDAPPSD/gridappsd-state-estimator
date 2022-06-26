@@ -17,7 +17,10 @@
 #include "SensorArray.hpp"
 
 // Methods are documented after they are declared. For map data structures that
-// must be populated in PlatformInterface implementations
+// must be populated in PlatformInterface implementations, the data type for
+// map values is given in parentheses after the description. The definitions
+// of the different data structures is given above.
+
 class PlatformInterfaceBase {
 public:
     PlatformInterfaceBase(int argc, char** argv, const double& sbase) {
@@ -32,7 +35,7 @@ public:
 
     virtual void setupMeasurements()=0;
     // Performs any setup/initialization needed so that each call to
-    // fillMeasurement() will provide the measurement data for a timestep.
+    // fillMeasurement() will provide the measurement data for a timestamp.
     // E.g., subscribe to messaging system for simulation output.
 
 
@@ -53,8 +56,9 @@ public:
             node_name_lookup[node_qty] = node_name;
         }
     }
-    // State Estimator calls this to first call the PlatformInterface::fillTopo
-    // method and then populate the following for you:
+    // Does not need to be implemented in platform-specific PlatformInterface
+    // definitions. State Estimator calls this which first calls the
+    // PlatformInterface::fillTopo method and then populates these for you:
     //     uint node_qty: number of nodes
     //     SIMAP node_idxs: index number for each node (uint)
     //     ISMAP node_name_lookup: node name for each index (string)
@@ -66,7 +70,7 @@ public:
 
 
     virtual void fillSensors()=0;
-    // Fill sensor-related data structures. The SensorArray structure is a
+    // Fills sensor-related data structures. The SensorArray structure is a
     // composite of other data structures that contains the information to
     // translate between nodes and measurments.  In addition to SensorArray,
     // a few other maps must be populated and a few are optional to allow
@@ -110,34 +114,38 @@ public:
     virtual bool fillMeasurement()=0;
     // Fills the measurement data structures from the data provided by the
     // platform.  E.g, from a message sent by the platform messaging system.
-    // The following data structures should be populated:
-    //     uint meas_timestamp: timestep or timestamp for measurement
-    //     SLIST meas_mrids: unique measurement identifiers (mrid) for
+    // The following data structures must be populated:
+    //     uint meas_timestamp: timestamp for measurement
+    //     SLIST meas_mrids: unique measurement identifiers (mrids) for
     //                       timestamp (string)
-    //     SDMAP meas_magnitudes: measurement magnitudes for given mrids
+    //     SDMAP meas_magnitudes: measurement magnitude values for given mrids
     //                            (double)
-    //     SDMAP meas_angles: measurement angle values for given mrids (double)
-    //     SDMAP meas_values: regulator tap position or switch state values
-    //                        for given mrids (double)
+    //     SDMAP meas_angles: if available, measurement angle values for given
+    //                        mrids (double)
+    //     SDMAP meas_values: if available, regulator tap position or switch
+    //                        state values for given mrids (double)
 
 
     virtual bool nextMeasurementWaiting()=0;
     // Returns true/false indicating whether there are additional measurements
     // that can be processed immediately. If true, State Estimator will
     // average voltage magnitudes for all waiting measurements before producing
-    // a new state estimate. By returning false a state estimate will be
-    // produced for every timestep even if there are waiting measurements.
-    // For reading measurement data from a file, false should always be
-    // returned to avoid producing a single estimate over all measurements.
-    // For processing simulator or field data, hardwiring a false return value
-    // will result in estimates falling behind the measurement data timestep.
+    // a new state estimate, in effect catching up to current measurement if
+    // producing the last state estimate resulted in falling behind. By
+    // returning false a state estimate will be produced for every timestamp
+    // even if there are waiting measurements. For reading measurement data
+    // from a file, false should always be returned to avoid producing a single
+    // estimate over all measurements. For processing simulator or field data,
+    // hardwiring a false return value will result in estimates falling behind
+    // the measurement data timestamp if the time to compute a state estimate
+    // is more than the time between measurements.
 
 
     virtual void setupPublishing()=0;
     // Performs any setup/initialization needed so that publishEstimate()
     // is able to provide (publish as a message, write to file) state estimate
-    // results for a timestep. E.g., create messaging system topic needed
-    // for publishing. If needed to publish estimates, you may populate these:
+    // results for a timestamp. E.g., create messaging system topic needed
+    // for publishing. If needed to publish estimates, you should populate:
     //     SSMAP node_bmrids: bus identifier for each node (string)
     //     SSMAP node_phs: phase (A/B/C/N/s1/s2) for each node (string)
 
@@ -146,12 +154,12 @@ public:
         SDMAP& est_v, SDMAP& est_angle, SDMAP& est_vvar, SDMAP& est_anglevar,
         SDMAP& est_vmagpu, SDMAP& est_vargpu)=0;
     // Sends a full state estimate for a given timestamp to the disposition
-    // established by the setupPublishing() method. The platform interface
-    // implementation for this method can choose to use any/all of the provided
-    // data structures passed as arguments in order to output the estimate.
+    // established setupPublishing(). The platform interface implementation
+    // for this method can choose to use any/all of the provided data
+    // structures passed as arguments in order to output the estimate.
     // These data structures are populated by State Estimator prior to calling
-    // publishEstimate() for each timestamp. The data that may be used are:
-    //     uint timestamp: timestep or timestamp associated with estimate
+    // publishEstimate() for each timestamp. The data available are:
+    //     uint timestamp: timestamp associated with estimate
     //     SDMAP est_v: estimated magnitude in physical units for each node
     //                  (double)
     //     SDMAP est_angle: estimated angle in degrees for each node (double)
@@ -166,8 +174,9 @@ public:
 
 
     virtual string getOutputDir()=0;
-    // Specifies the directory name for diagnostic output files, typically
-    // a unique name per invocation.
+    // Returns the directory name for diagnostic output files, typically
+    // a unique name per invocation to avoid overwriting files.  E.g.,
+    // simulation id.
 
 
     // Accessors used to retrieve platform interface data by State Estimator
