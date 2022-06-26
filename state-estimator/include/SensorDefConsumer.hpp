@@ -79,7 +79,7 @@ class SensorDefConsumer : public SEConsumer {
 #endif
 
         json jtext = json::parse(text);
-        //cout << jtext.dump(2) << endl;
+        //*selog << jtext.dump(2) << endl;
 
 #ifdef DEBUG_PRIMARY
         *selog << "Parsing sensors -- " << std::flush;
