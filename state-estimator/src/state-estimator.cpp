@@ -32,26 +32,13 @@
 #include <unistd.h>
 #endif
 
-#define SLIST std::list<std::string>
-#define SIMAP std::unordered_map<std::string,uint>
-#define SDMAP std::unordered_map<std::string,double>
-#define SCMAP std::unordered_map<std::string,std::complex<double>>
-#define SBMAP std::unordered_map<std::string,bool>
-#define SSMAP std::unordered_map<std::string,std::string>
-#define ISMAP std::unordered_map<uint,std::string>
-#define IDMAP std::unordered_map<uint,double>
-#define IMDMAP std::unordered_map<uint,IDMAP>
-#define ICMAP std::unordered_map<uint,std::complex<double>>
-#define IMMAP std::unordered_map<uint,ICMAP>
-#define SSLISTMAP std::unordered_map<std::string,SLIST>
-
 // global logging stream--either a file or stdout based on invocation
 std::ostream* selog = &std::cout;
 
-// include files for all interfaces
-#include "SensorArray.hpp"
-
+// abstract platform interface class that specific interaces must implement
 #include "PlatformInterfaceBase.hpp"
+
+// platform-specific interface implementations
 #ifdef FILE_INTERFACE
 #include "PlatformInterfaceFile.hpp"
 #endif
@@ -59,7 +46,7 @@ std::ostream* selog = &std::cout;
 #include "PlatformInterfaceGridAPPSD.hpp"
 #endif
 
-// more include files for all interfaces
+// include files for all interfaces
 #include "SELoopWorker.hpp"
 
 
@@ -97,10 +84,11 @@ int main(int argc, char** argv) {
     SELoopWorker loopWorker(&plint);
 
 #ifdef DEBUG_PRIMARY
-    *selog << "Starting the SE work loop\n" << std::flush;
+    *selog << "Starting the State Estimator work loop...\n" << std::flush;
 #endif
     loopWorker.workLoop();
 
     // we'll never get here
     return 0;
 }
+

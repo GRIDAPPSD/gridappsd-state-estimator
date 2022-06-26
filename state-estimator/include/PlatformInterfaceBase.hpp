@@ -1,21 +1,39 @@
 #ifndef PLATFORMINTERFACEBASE_HPP
 #define PLATFORMINTERFACEBASE_HPP
 
+#define SLIST std::list<std::string>
+#define SIMAP std::unordered_map<std::string,uint>
+#define SDMAP std::unordered_map<std::string,double>
+#define SCMAP std::unordered_map<std::string,std::complex<double>>
+#define SBMAP std::unordered_map<std::string,bool>
+#define SSMAP std::unordered_map<std::string,std::string>
+#define ISMAP std::unordered_map<uint,std::string>
+#define IDMAP std::unordered_map<uint,double>
+#define IMDMAP std::unordered_map<uint,IDMAP>
+#define ICMAP std::unordered_map<uint,std::complex<double>>
+#define IMMAP std::unordered_map<uint,ICMAP>
+#define SSLISTMAP std::unordered_map<std::string,SLIST>
+
+#include "SensorArray.hpp"
+
+// Methods are documented after they are declared. For map data structures that
+// must be populated in PlatformInterface implementations
 class PlatformInterfaceBase {
 public:
     PlatformInterfaceBase(int argc, char** argv, const double& sbase) {
         sbase_ref = &sbase;
     }
-    // Performs any overall platform initialization needed. E.g.,
+    // Performs any overall platform-specific initialization needed. E.g.,
     // initializing and connecting to the messaging system.
     //     double sbase: system base power used to provide numerical stability
-    //                   in matrix computations. Typical range 1e+6 to 1e+12.
+    //                   in matrix computations. Value set in State Estimator
+    //                   main function and is simply passed to the constructor.
 
 
     virtual void setupMeasurements()=0;
-    // Performs any setup/initialization needed so that fillMeasurement()
-    // is able to provide measurement data for a timestep. E.g., subscribe
-    // to messaging system for simulation output.
+    // Performs any setup/initialization needed so that each call to
+    // fillMeasurement() will provide the measurement data for a timestep.
+    // E.g., subscribe to messaging system for simulation output.
 
 
     virtual void fillTopo()=0;
