@@ -73,19 +73,40 @@ public:
 
     void fillTopo() {
         string filename = FILE_INTERFACE_READ;
+        filename += "/nodelist.csv";
+#ifdef DEBUG_PRIMARY
+        *selog << "Reading nodelist from test harness file: " << filename <<
+            "\n\n" << std::flush;
+#endif
+        std::ifstream ifs(filename);
+        if (!ifs.is_open()) {
+            *selog << "\n*** ERROR: nodelist file not found: " << filename <<
+                "\n\n" << std::flush;
+            exit(0);
+        }
+
+        string line;
+        while ( getline(ifs, line) ) {
+            // Extract the node name
+            string node_name = regex_replace(line,regex("\""),"");
+            // Store the node information
+            node_names.push_back(node_name);
+        }
+        ifs.close();
+
+        filename = FILE_INTERFACE_READ;
         filename += "/ysparse.csv";
 #ifdef DEBUG_PRIMARY
         *selog << "Reading ybus from test harness file: " << filename <<
             "\n\n" << std::flush;
 #endif
-        std::ifstream ifs(filename);
+        ifs.open(filename);
         if (!ifs.is_open()) {
             *selog << "\n*** ERROR: ysparse file not found: " << filename <<
                 "\n\n" << std::flush;
             exit(0);
         }
 
-        string line;
         getline(ifs, line);  // throwaway header line
         while ( getline(ifs, line) ) {
             std::stringstream lineStream(line);
@@ -97,27 +118,6 @@ public:
 
             Yphys[i][j] = complex<double>(G,B);
             if ( i != j ) Yphys[j][i] = complex<double>(G,B);
-        }
-        ifs.close();
-
-        filename = FILE_INTERFACE_READ;
-        filename += "/nodelist.csv";
-#ifdef DEBUG_PRIMARY
-        *selog << "Reading nodelist from test harness file: " << filename <<
-            "\n\n" << std::flush;
-#endif
-        ifs.open(filename);
-        if (!ifs.is_open()) {
-            *selog << "\n*** ERROR: nodelist file not found: " << filename <<
-                "\n\n" << std::flush;
-            exit(0);
-        }
-
-        while ( getline(ifs, line) ) {
-            // Extract the node name
-            string node_name = regex_replace(line,regex("\""),"");
-            // Store the node information
-            node_names.push_back(node_name);
         }
         ifs.close();
     }
