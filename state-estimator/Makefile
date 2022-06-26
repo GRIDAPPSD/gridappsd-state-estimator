@@ -46,6 +46,8 @@ CXXFLAGS=-O
 #CXXFLAGS=-O2
 #CXXFLAGS=-Ofast
 
+all: bin/state-estimator bin/state-estimator-file
+
 bin/state-estimator: obj/state-estimator.o
 	mkdir -p bin
 	g++ $(CXXFLAGS) $? $(GRIDAPPSD_LIBS) -o $@
