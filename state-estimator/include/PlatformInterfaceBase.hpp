@@ -1,17 +1,27 @@
 #ifndef PLATFORMINTERFACEBASE_HPP
 #define PLATFORMINTERFACEBASE_HPP
 
-SSMAP ssmap_empty;
-
 class PlatformInterfaceBase {
 public:
-    PlatformInterfaceBase(int, char**, const double& sbase) {
+    PlatformInterfaceBase(int argc, char** argv, const double& sbase) {
         sbase_ref = &sbase;
     }
+    // Performs any overall platform initialization needed. E.g.,
+    // initializing and connecting to the messaging system.
+    //     double sbase: system base power used to provide numerical stability
+    //                   in matrix computations. Typical range 1e+6 to 1e+12.
 
     virtual void setupMeasurements()=0;
+    // Performs any setup/initialization needed so that fillMeasurement()
+    // is able to provide measurement data for a timestep. E.g., subscribe
+    // to messaging system for simulation output.
 
     virtual void fillTopo()=0;
+    // Fills topology related data structures. You must populate these:
+    //     SLIST node_names: list of node names
+    //     IMMAP Yphys: physical units complex admittance sparse matrix stored
+    //                  by row and column indices. Symmetric matrix where
+    //                  Yphys[i][j] = Yphys[j][i]
 
     void fillTopology() {
         fillTopo();
@@ -22,29 +32,52 @@ public:
             node_name_lookup[node_qty] = node_name;
         }
     }
+    // State Estimator calls this to first call the PlatformInterface::fillTopo
+    // method and then populate the following for you:
+    //     uint node_qty: number of nodes
+    //     SIMAP node_idxs: index number for each node
+    //     ISMAP node_name_lookup: node name for each index
 
     virtual void fillVnoms()=0;
+    // Fills nominal voltage data structure. You must populate this:
+    //     SCMAP node_vnoms: complex nominal voltage for each node
 
     virtual void fillSensors()=0;
 
     virtual bool fillMeasurement()=0;
 
     virtual bool nextMeasurementWaiting()=0;
+    // Returns true/false indicating whether there are additional measurements
+    // that can be processed immediately. If true, State Estimator will
+    // average voltage magnitudes for all waiting measurements before producing
+    // a new state estimate. By returning false a state estimate will be
+    // produced for every timestep even if there are waiting measurements.
+    // For reading measurement data from a file, false should always be
+    // returned to avoid producing a single estimate over all measurements.
+    // For processing simulator or field data, hardwiring a false return value
+    // will result in estimates falling behind the measurement data timestep.
 
     virtual void setupPublishing()=0;
+    // Performs any setup/initialization needed so that publishEstimate()
+    // is able to provide (publish as a message, write to file) state estimate
+    // results for a timestep. E.g., create messaging system topic needed
+    // for publishing. If needed to publish estimates, you may populate these:
+    //     SSMAP node_bmrids: bus identifier for each node
+    //     SSMAP node_phs: phase (A/B/C/N/s1/s2) for each node
 
     virtual void publishEstimate(const uint& timestamp,
         SDMAP& est_v, SDMAP& est_angle, SDMAP& est_vvar, SDMAP& est_anglevar,
         SDMAP& est_vmagpu, SDMAP& est_vargpu)=0;
 
     virtual string getOutputDir()=0;
+    // Specifies the directory name for diagnostic output files, typically
+    // a unique name per invocation.
 
+    // Accessors used to retrieve platform interface data by State Estimator
+    // code. Not needed in PlatformInterface code as the data can be referenced
+    // directly with class variables.
     uint getsbase() {
         return *sbase_ref;
-    }
-
-    IMMAP getYphys() {
-        return Yphys;
     }
 
     uint getnode_qty() {
@@ -61,6 +94,10 @@ public:
 
     ISMAP getnode_name_lookup() {
         return node_name_lookup;
+    }
+
+    IMMAP getYphys() {
+        return Yphys;
     }
 
     SCMAP getVnoms() {
@@ -124,11 +161,12 @@ public:
     }
 
 protected:
+    // system base power passed to constructor:
     const double* sbase_ref;
 
     // You must populate these in PlatformInterface::fillTopo:
-    IMMAP Yphys;
     SLIST node_names;
+    IMMAP Yphys;
 
     // These are populated for you in PlatformInterfaceBase::fillTopology:
     uint node_qty;
