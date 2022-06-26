@@ -11,17 +11,20 @@ public:
     //     double sbase: system base power used to provide numerical stability
     //                   in matrix computations. Typical range 1e+6 to 1e+12.
 
+
     virtual void setupMeasurements()=0;
     // Performs any setup/initialization needed so that fillMeasurement()
     // is able to provide measurement data for a timestep. E.g., subscribe
     // to messaging system for simulation output.
 
+
     virtual void fillTopo()=0;
     // Fills topology related data structures. You must populate these:
-    //     SLIST node_names: list of node names
-    //     IMMAP Yphys: physical units complex admittance sparse matrix stored
-    //                  by row and column indices. Symmetric matrix where
-    //                  Yphys[i][j] = Yphys[j][i]
+    //     SLIST node_names: list of node names (string)
+    //     IMMAP Yphys: physical units admittance sparse matrix stored by
+    //                  row and column indices. Symmetric matrix where
+    //                  Yphys[i][j] = Yphys[j][i] (complex double)
+
 
     void fillTopology() {
         fillTopo();
@@ -35,16 +38,31 @@ public:
     // State Estimator calls this to first call the PlatformInterface::fillTopo
     // method and then populate the following for you:
     //     uint node_qty: number of nodes
-    //     SIMAP node_idxs: index number for each node
-    //     ISMAP node_name_lookup: node name for each index
+    //     SIMAP node_idxs: index number for each node (uint)
+    //     ISMAP node_name_lookup: node name for each index (string)
+
 
     virtual void fillVnoms()=0;
     // Fills nominal voltage data structure. You must populate this:
-    //     SCMAP node_vnoms: complex nominal voltage for each node
+    //     SCMAP node_vnoms: nominal voltage for each node (complex double)
+
 
     virtual void fillSensors()=0;
 
+
     virtual bool fillMeasurement()=0;
+    // Fills the measurement data structures from the data provided by the
+    // platform.  E.g, from a message sent by the platform messaging system.
+    // The following data structures should be populated:
+    //     uint meas_timestamp: timestep or timestamp for measurement
+    //     SLIST meas_mrids: unique measurement identifiers (mrid) for
+    //                       timestamp (string)
+    //     SDMAP meas_magnitudes: measurement magnitudes for given mrids
+    //                            (double)
+    //     SDMAP meas_angles: measurement angle values for given mrids (double)
+    //     SDMAP meas_values: regulator tap position or switch state values
+    //                        for given mrids (double)
+
 
     virtual bool nextMeasurementWaiting()=0;
     // Returns true/false indicating whether there are additional measurements
@@ -57,21 +75,43 @@ public:
     // For processing simulator or field data, hardwiring a false return value
     // will result in estimates falling behind the measurement data timestep.
 
+
     virtual void setupPublishing()=0;
     // Performs any setup/initialization needed so that publishEstimate()
     // is able to provide (publish as a message, write to file) state estimate
     // results for a timestep. E.g., create messaging system topic needed
     // for publishing. If needed to publish estimates, you may populate these:
-    //     SSMAP node_bmrids: bus identifier for each node
-    //     SSMAP node_phs: phase (A/B/C/N/s1/s2) for each node
+    //     SSMAP node_bmrids: bus identifier for each node (string)
+    //     SSMAP node_phs: phase (A/B/C/N/s1/s2) for each node (string)
+
 
     virtual void publishEstimate(const uint& timestamp,
         SDMAP& est_v, SDMAP& est_angle, SDMAP& est_vvar, SDMAP& est_anglevar,
         SDMAP& est_vmagpu, SDMAP& est_vargpu)=0;
+    // Sends a full state estimate for a given timestamp to the disposition
+    // established by the setupPublishing() method. The platform interface
+    // implementation for this method can choose to use any/all of the provided
+    // data structures passed as arguments in order to output the estimate.
+    // These data structures are populated by State Estimator prior to calling
+    // publishEstimate() for each timestamp. The data that may be used are:
+    //     uint timestamp: timestep or timestamp associated with estimate
+    //     SDMAP est_v: estimated magnitude in physical units for each node
+    //                  (double)
+    //     SDMAP est_angle: estimated angle in degrees for each node (double)
+    //     SDMAP est_vvar: estimated variance for magnitude for each node
+    //                     (double)
+    //     SDMAP est_anglevar: estimated variance for angle for each node
+    //                         (double)
+    //     SDMAP est_vmagpu: estimated per-unit voltage magnitude for each node
+    //                       (double)
+    //     SDMAP est_vargpu: estimated per-unit voltage phase angle per node
+    //                       (double)
+
 
     virtual string getOutputDir()=0;
     // Specifies the directory name for diagnostic output files, typically
     // a unique name per invocation.
+
 
     // Accessors used to retrieve platform interface data by State Estimator
     // code. Not needed in PlatformInterface code as the data can be referenced
