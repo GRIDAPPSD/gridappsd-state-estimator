@@ -48,6 +48,45 @@ public:
 
 
     virtual void fillSensors()=0;
+    // Fill sensor-related data structures. The SensorArray structure is a
+    // composite of other data structures that contains the information to
+    // translate between nodes and measurments.  In addition to SensorArray,
+    // a few other maps must be populated and a few are optional to allow
+    // State Estimator to process running switch state and regulator tap
+    // position changes. You must populate these:
+    //     SensorArray Zary: composite of multiple maps (see SensorArray.hpp)
+    //     IMDMAP Amat: regulator tap ratio matrix referenced by the primary
+    //                  and regulator node indices
+    //     SSMAP regid_primnode: primary node name for each regulator id
+    //     SSMAP regid_regnode: regulator node name for each regulator id
+
+    // You may populate these if measurements for the platform include position
+    // type for regulator taps and load break switches that you wish to process:
+    //     SSMAP mmrid_pos_type: type of position equipment for a measurement
+    //                           id (mrid).  Recognized values are
+    //                           "regulator_tap", "load_break_switch" (string)
+    //     SSMAP switch_node1s: first node name paired with each regulator tap
+    //                          or switch (string)
+    //     SSMAP switch_node2s: second node name paired with each regulator tap
+    //                          or switch (string)
+
+    // For populating Zary there are also required and optional data structures.
+    // The required data structures are:
+    //     SLIST Zary.zids: list of measurement component IDs, mmrid+"_"+ztype
+    //     SIMAP Zary.zidxs: measurement component index for each component ID
+    //     SSMAP Zary.ztypes: measurement component types (e.g. "Vmag")
+    //     SSMAP Zary.znode1s: point node or from node for flow measurements
+    //     SSMAP Zary.znode2s: point node or to node for flow measurements
+    //     SDMAP Zary.zvals: value of the latest measurement
+    //     SDMAP Zary.zsigs: standard deviations of measurements
+    //     SBMAP Zary.zpseudos: flag indicating a pseudo-measurement
+    //     SDMAP Zary.znomvals: nominal value of measurement
+    //     uint  Zary.zqty: number of measurement components
+    // Optional Zary data structures are:
+    //     SLIST Zary.mmrids: list of measurement identifiers (mrids)
+    //     SSMAP Zary.mtypes: measurement type for each mrid, e.g. "PNV"
+    //     SSMAP Zary.mnodes: mrid to measurement node map
+    //     SSMAP Zary.mcetypes: mmrid to conducting equipment type map
 
 
     virtual bool fillMeasurement()=0;
