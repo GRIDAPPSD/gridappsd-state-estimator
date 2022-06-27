@@ -264,8 +264,9 @@ public:
 
 
     bool nextMeasurementWaiting() {
-        // always returning false tells the SE work loop to complete an
-        // estimate for every measurement
+        // Always returning false tells the SE work loop to complete an
+        // estimate for every measurement. Otherwise it does a single estimate
+        // over the entire measurements_data.csv file!
         return false;
     }
 
