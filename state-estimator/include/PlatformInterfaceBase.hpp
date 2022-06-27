@@ -74,8 +74,8 @@ public:
     // composite of other data structures that contains the information to
     // translate between nodes and measurments.  In addition to SensorArray,
     // a few other maps must be populated and a few are optional depending on
-    // whether regulator tap position and switch state changes are a distinct 
-    // measurement type for the platform. You must populate these:
+    // whether the platform identifies distinct types of measurements such as
+    // regulator tap position and switch state changes. You must populate these:
     //     SensorArray Zary: composite of multiple maps (see documentation
     //                       below and SensorArray.hpp)
     //     IMDMAP Amat: regulator tap ratio matrix referenced by the primary
@@ -85,8 +85,9 @@ public:
     //     SSMAP regid_regnode: regulation/secondary node name for each
     //                          regulator id (string)
     //
-    // You should populate these if regulator tap position and switch state
-    // changes are provided as a distinct measurement type by the platform:
+    // You should populate these if distinct measurement types are identified
+    // by the platform that include regulator tap position and switch state
+    // changes:
     //     SSMAP mmrid_pos_type: type of equipment with position measurement
     //                           for each measurement id (mrid) in order to
     //                           distinguish the type of change. Recognized
@@ -118,12 +119,16 @@ public:
     //                          measurement component ID, true==pseudo (bool)
     //     SDMAP Zary.znomvals: nominal value of measurement for each
     //                          measurement component ID (double)
-    //     uint  Zary.zqty: number of measurement components
-    // Optional Zary data structures are:
-    //     SLIST Zary.mmrids: list of measurement identifiers (mrids)
-    //     SSMAP Zary.mtypes: measurement type for each mrid, e.g. "PNV"
-    //     SSMAP Zary.mnodes: mrid to measurement node map
-    //     SSMAP Zary.mcetypes: mmrid to conducting equipment type map
+    // Like the previously mentioned optional data structures, Zary also has
+    // data structures that only need to be populated if the platform
+    // identifies distince measurement types.  These are:
+    //     SLIST Zary.mmrids: list of measurement identifiers or mrids (string)
+    //     SSMAP Zary.mtypes: measurement type for each mrid. Recognized values
+    //                        are "PNV", "Pos", "VA" (string)
+    //     SSMAP Zary.mnodes: node connected to each measurement mrid (string)
+    //     SSMAP Zary.mcetypes: conducting equipment type for each mrid. Used
+    //                          for VA measurements so only those of type
+    //                          "EnergyConsumer" are processed (string)
 
 
     virtual bool fillMeasurement()=0;
