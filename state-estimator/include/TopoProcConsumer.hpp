@@ -1,6 +1,5 @@
 #ifndef TOPOPROCCONSUMER_HPP
 #define TOPOPROCCONSUMER_HPP
-#ifdef GRIDAPPSD_INTERFACE
 
 // Store node names in a linked list and hash node name to their position
 // Iterate over the linked list to access all nodes or states
@@ -141,5 +140,4 @@ class TopoProcConsumer : public SEConsumer {
     }
 };
 
-#endif
 #endif

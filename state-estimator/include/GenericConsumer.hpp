@@ -1,6 +1,5 @@
 #ifndef GENERICCONSUMER_HPP
 #define GENERICCONSUMER_HPP
-#ifdef GRIDAPPSD_INTERFACE
 
 // This class is a generic listener
 class GenericConsumer: public SEConsumer {
@@ -18,5 +17,4 @@ class GenericConsumer: public SEConsumer {
     }
 };
 
-#endif
 #endif

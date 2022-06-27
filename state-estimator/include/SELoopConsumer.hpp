@@ -1,6 +1,5 @@
 #ifndef SELOOPCONSUMER_HPP
 #define SELOOPCONSUMER_HPP
-#ifdef GRIDAPPSD_INTERFACE
 
 // This class listens for system state messages
 class SELoopConsumer : public SEConsumer {
@@ -74,5 +73,4 @@ class SELoopConsumer : public SEConsumer {
     }
 };
 
-#endif
 #endif

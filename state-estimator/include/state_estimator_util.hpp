@@ -1,6 +1,5 @@
 #ifndef SE_INIT_HPP
 #define SE_INIT_HPP
-#ifdef GRIDAPPSD_INTERFACE
 
 using sparql_queries::sparq_nodes;
 using sparql_queries::sparq_energy_consumer_pq;
@@ -411,5 +410,4 @@ namespace state_estimator_util{
 
 } // end namespace state_estimator_util
 
-#endif
 #endif // SE_INIT_HPP

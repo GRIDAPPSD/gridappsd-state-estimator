@@ -1,6 +1,5 @@
 #ifndef SENSORDEFCONSUMER_HPP
 #define SENSORDEFCONSUMER_HPP
-#ifdef GRIDAPPSD_INTERFACE
 
 // This class listens for sensor definitions and constructs the sensors
 class SensorDefConsumer : public SEConsumer {
@@ -290,5 +289,4 @@ class SensorDefConsumer : public SEConsumer {
     }
 };
 
-#endif
 #endif

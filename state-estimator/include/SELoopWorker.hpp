@@ -66,9 +66,6 @@ class SELoopWorker {
 
     // passed in from constructor
     PlatformInterface* plint;
-#ifdef GRIDAPPSD_INTERFACE
-    state_estimator_gridappsd::gridappsd_session* gad;
-#endif
     SensorArray        Zary;
     uint               node_qty;     // number of nodes
     SLIST              node_names;   // node names [list of strings]
@@ -135,9 +132,6 @@ class SELoopWorker {
     public:
     SELoopWorker(PlatformInterface* plint) {
         this->plint = plint;
-#ifdef GRIDAPPSD_INTERFACE
-        this->gad = plint->getGad();
-#endif
         this->Zary = plint->getZary();
         this->node_qty = plint->getnode_qty();
         this->node_names = plint->getnode_names();
@@ -159,9 +153,6 @@ class SELoopWorker {
 
     public:
     void workLoop() {
-#ifdef GRIDAPPSD_INTERFACE
-        json jmessage;
-#endif
         uint timestamp, timestampLastEstimate, timeZero;
         bool exitAfterEstimateFlag = false;
         bool doEstimateFlag;
@@ -214,10 +205,8 @@ class SELoopWorker {
 
                 } else {
                     if (doEstimateFlag) {
-#ifdef GRIDAPPSD_INTERFACE
 #ifdef DEBUG_PRIMARY
-                        *selog << "Got COMPLETE/CLOSED log message on queue, doing full estimate with previous measurement\n" << std::flush;
-#endif
+                        *selog << "Got COMPLETED for simulation status, doing full estimate with previous measurement\n" << std::flush;
 #endif
                         // set flag to exit after completing full estimate below
                         exitAfterEstimateFlag = true;
@@ -227,9 +216,7 @@ class SELoopWorker {
                         break;
                     } else {
 #ifdef DEBUG_PRIMARY
-#ifdef GRIDAPPSD_INTERFACE
-                        *selog << "Got COMPLETE/CLOSED log message on queue, normal exit because full estimate just done\n" << std::flush;
-#endif
+                        *selog << "Got COMPLETED for simulation status, normal exit because full estimate just done\n" << std::flush;
 #endif
                         exit(0);
                     }
