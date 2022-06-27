@@ -82,11 +82,11 @@ public:
     //                  and regulator node indices (double)
     //     SSMAP regid_primnode: primary node name for each regulator id
     //                           (string)
-    //     SSMAP regid_regnode: regulation/secondary node name for each
-    //                          regulator id (string)
+    //     SSMAP regid_regnode: regulated node name for each regulator id
+    //                          (string)
     //
     // You should populate these if distinct measurement types are identified
-    // by the platform that include regulator tap position and switch state
+    // by the platform including regulator tap position and switch state
     // changes:
     //     SSMAP mmrid_pos_type: type of equipment with position measurement
     //                           for each measurement id (mrid) in order to
@@ -127,7 +127,7 @@ public:
     //                        are "PNV", "Pos", "VA" (string)
     //     SSMAP Zary.mnodes: node connected to each measurement mrid (string)
     //     SSMAP Zary.mcetypes: conducting equipment type for each mrid. Used
-    //                          for VA measurements so only those of type
+    //                          for VA measurements where only those of type
     //                          "EnergyConsumer" are processed (string)
 
 
