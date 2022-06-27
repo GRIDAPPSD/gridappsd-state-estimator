@@ -121,7 +121,7 @@ public:
     //                          measurement component ID (double)
     // Like the previously mentioned optional data structures, Zary also has
     // data structures that only need to be populated if the platform
-    // identifies distince measurement types.  These are:
+    // identifies distinct measurement types.  These are:
     //     SLIST Zary.mmrids: list of measurement identifiers or mrids (string)
     //     SSMAP Zary.mtypes: measurement type for each mrid. Recognized values
     //                        are "PNV", "Pos", "VA" (string)
@@ -308,15 +308,21 @@ protected:
     SSMAP regid_primnode;
     SSMAP regid_regnode;
     // You may populate these in PlatformInterface::fillSensors if the
-    // interface processes switch state and regulator tap position changes:
+    // platform identifies different measurement types such as switch state
+    // and regulator tap position changes. Note also that some optional Zary
+    // data structures should also be populated in this case (see above).
+    // These optional maps are:
     SSMAP mmrid_pos_type;
     SSMAP switch_node1s;
     SSMAP switch_node2s;
 
-    // These are populated for you to use in PlatformInterface:fillMeasurement:
+    // These are populated in PlatformInterface:fillMeasurement. The required
+    // data structures are:
     uint meas_timestamp;
     SLIST meas_mrids;
     SDMAP meas_magnitudes;
+    // These are optional depending on whether they are separately identified
+    // by the platform (separate values for the same measurement id)
     SDMAP meas_angles;
     SDMAP meas_values;
 
