@@ -165,6 +165,7 @@ namespace state_estimator_util{
         std::ofstream ofs("test_files/measurements.csv", ofstream::app);
 #endif
 
+        uint zctr = Zary.zids.size();
         for ( auto& node : node_names ) {
 
             // Check for SOURCEBUS
@@ -174,7 +175,7 @@ namespace state_estimator_util{
                 // Add sourcebus voltage magnitude
                 string vmag_zid = "source_V_"+node;
                 Zary.zids.push_back(vmag_zid);
-                Zary.zidxs   [vmag_zid] = Zary.zqty++;
+                Zary.zidxs   [vmag_zid] = zctr++;
                 Zary.ztypes  [vmag_zid] = "vi";
                 Zary.znode1s [vmag_zid] = node;
                 Zary.znode2s [vmag_zid] = node;
@@ -192,7 +193,7 @@ namespace state_estimator_util{
                 // Add sourcebus voltage phase
                 string varg_zid = "source_T_"+node;
                 Zary.zids.push_back(varg_zid);
-                Zary.zidxs   [varg_zid] = Zary.zqty++;
+                Zary.zidxs   [varg_zid] = zctr++;
                 Zary.ztypes  [varg_zid] = "Ti";
                 Zary.znode1s [varg_zid] = node;
                 Zary.znode2s [varg_zid] = node;
@@ -211,7 +212,7 @@ namespace state_estimator_util{
                 // Add the P injection
                 string pinj_zid = "pseudo_P_"+node;
                 Zary.zids.push_back(pinj_zid);
-                Zary.zidxs   [pinj_zid] = Zary.zqty++;
+                Zary.zidxs   [pinj_zid] = zctr++;
                 Zary.ztypes  [pinj_zid] = "Pi";
                 Zary.znode1s [pinj_zid] = node;
                 Zary.znode2s [pinj_zid] = node;
@@ -230,7 +231,7 @@ namespace state_estimator_util{
                 // Add the Q injection
                 string qinj_zid = "pseudo_Q_"+node;
                 Zary.zids.push_back(qinj_zid);
-                Zary.zidxs   [qinj_zid] = Zary.zqty++;
+                Zary.zidxs   [qinj_zid] = zctr++;
                 Zary.ztypes  [qinj_zid] = "Qi";
                 Zary.znode1s [qinj_zid] = node;
                 Zary.znode2s [qinj_zid] = node;

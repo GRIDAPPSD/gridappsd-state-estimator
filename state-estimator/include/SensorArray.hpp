@@ -21,7 +21,6 @@ public:
     SIMAP ztimes;   // timestamp of last measurement
     SBMAP zpseudos; // flag indicating a pseudo-measrement
     SDMAP znomvals; // nominal value of measurement
-    uint  zqty = 0; // number of measurement components
 
 #ifdef COMPARE_INJ_MEAS
     SLIST injnodes;

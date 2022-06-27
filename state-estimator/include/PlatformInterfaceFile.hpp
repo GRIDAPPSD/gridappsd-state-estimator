@@ -212,12 +212,13 @@ public:
 
         getline(ifs, line); // throwaway header line
 
+        uint zctr = 0;
         while ( getline(ifs, line) ) {
             std::stringstream lineStream(line);
             string cell, zid;
-            getline(lineStream, cell, ',');
+            getline(lineStream, cell, ','); // hold this value for ztypes
             getline(lineStream, zid, ','); Zary.zids.push_back(zid);
-            Zary.zidxs[zid] = Zary.zqty++;
+            Zary.zidxs[zid] = zctr++;
             Zary.ztypes[zid] = cell;
             getline(lineStream, cell, ','); Zary.znode1s[zid] = cell;
             getline(lineStream, cell, ','); Zary.znode2s[zid] = cell;

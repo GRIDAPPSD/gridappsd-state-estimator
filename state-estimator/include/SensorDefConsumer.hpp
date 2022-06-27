@@ -89,6 +89,7 @@ class SensorDefConsumer : public SEConsumer {
         // LOAD THE SENSORS -- sensors will deliver measurements
         // --------------------------------------------------------------------
         // Iterate over the sensors
+        uint zctr = Zary.zids.size();
         for ( auto& f : jtext["data"]["feeders"] ) {
             for ( auto& m : f["measurements"] ) {
 
@@ -117,7 +118,7 @@ class SensorDefConsumer : public SEConsumer {
                     // add the voltage magnitude measurement
                     string zid = mmrid + "_Vmag";
                     Zary.zids.push_back( zid );
-                    Zary.zidxs[zid] = Zary.zqty++;
+                    Zary.zidxs[zid] = zctr++;
                     Zary.ztypes[zid] = "vi";
                     Zary.znode1s[zid] = meas_node;
                     Zary.znode2s[zid] = meas_node;
@@ -159,7 +160,7 @@ class SensorDefConsumer : public SEConsumer {
                         // add the position measurement 
                         string zid = mmrid + "_tap";
                         Zary.zids.push_back( zid );
-                        Zary.zidxs[zid] = Zary.zqty++;
+                        Zary.zidxs[zid] = zctr++;
                         Zary.ztypes[zid] = "aji";
                         Zary.znode1s[zid] = primnode;
                         Zary.znode2s[zid] = regnode;
@@ -226,7 +227,7 @@ class SensorDefConsumer : public SEConsumer {
                         if (std::find(Zary.zids.begin(),Zary.zids.end(),pinj_zid) == Zary.zids.end()) {
                             // add the real power injection measurement
                             Zary.zids.push_back( pinj_zid );
-                            Zary.zidxs[pinj_zid] = Zary.zqty++;
+                            Zary.zidxs[pinj_zid] = zctr++;
                             Zary.ztypes[pinj_zid] = "Pi";
                             Zary.znode1s[pinj_zid] = meas_node;
                             Zary.znode2s[pinj_zid] = meas_node;
@@ -235,7 +236,7 @@ class SensorDefConsumer : public SEConsumer {
                             // allowing a second find() call to be eliminated
                             // add the reactive power injection measurement
                             Zary.zids.push_back( qinj_zid );
-                            Zary.zidxs[qinj_zid] = Zary.zqty++;
+                            Zary.zidxs[qinj_zid] = zctr++;
                             Zary.ztypes[qinj_zid] = "Qi";
                             Zary.znode1s[qinj_zid] = meas_node;
                             Zary.znode2s[qinj_zid] = meas_node;

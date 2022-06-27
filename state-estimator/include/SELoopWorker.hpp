@@ -359,7 +359,7 @@ class SELoopWorker {
         // Establish Dimension of State Space and Measurement Space
         // --------------------------------------------------------------------
         xqty = 2*node_qty;
-        zqty = Zary.zqty;
+        zqty = Zary.zids.size();
 
 #ifdef DEBUG_PRIMARY
         *selog << "node_qty is " << node_qty << "; " << std::flush;
@@ -1727,12 +1727,12 @@ class SELoopWorker {
             }
         }
 
-        double resmean = ressum/Zary.zqty;
+        double resmean = ressum/zqty;
         *selog << "\nRESIDUAL resmean: " << resmean << ", resmin: " << resmin << ", resmax: " << resmax << "\n" << std::flush;
-        *selog << "RESIDUAL ymean: " << ysum/Zary.zqty << ", ymin: " << ymin << ", ymax: " << ymax << "\n" << std::flush;
-        *selog << "RESIDUAL rmean: " << rsum/Zary.zqty << ", rmin: " << rmin << ", rmax: " << rmax << "\n" << std::flush;
-        *selog << "RESIDUAL smean: " << ssum/Zary.zqty << ", smin: " << smin << ", smax: " << smax << "\n" << std::flush;
-        *selog << "RESIDUAL denommean: " << dsum/Zary.zqty << ", denommin: " << dmin << ", denommax: " << dmax << "\n" << std::flush;
+        *selog << "RESIDUAL ymean: " << ysum/zqty << ", ymin: " << ymin << ", ymax: " << ymax << "\n" << std::flush;
+        *selog << "RESIDUAL rmean: " << rsum/zqty << ", rmin: " << rmin << ", rmax: " << rmax << "\n" << std::flush;
+        *selog << "RESIDUAL smean: " << ssum/zqty << ", smin: " << smin << ", smax: " << smax << "\n" << std::flush;
+        *selog << "RESIDUAL denommean: " << dsum/zqty << ", denommin: " << dmin << ", denommax: " << dmax << "\n" << std::flush;
 
 #if 111
         // when residual is added back in, don't free Supd higher up in
