@@ -1441,9 +1441,9 @@ class SELoopWorker {
             " with " << Supd->nzmax << " entries\n" << std::flush;
 #endif
 #ifdef DEBUG_FILES
-        print_cs_compress(Supd,tspath+"Supd.csv");
-        //print_cs_compress_triples(Supd, "Supd_sbase1e6_trip.csv", 8);
-        //print_cs_compress_triples(Supd,"benchmarks/Supd_trip.csv");
+        //print_cs_compress(Supd,tspath+"Supd.csv");
+        //print_cs_compress_triples(Supd, "Supd_sbase1e6_trip.csv");
+        print_cs_compress_triples(Supd,"Supd_trip.csv");
 #endif
 
         // -- compute K = P_predict*J'*S^-1
@@ -2971,24 +2971,26 @@ class SELoopWorker {
                 mat[a->i[j]][i] = a->x[j];
             }
         }
-
+#if 000
         std::unordered_map<uint,bool> powerMap;
         for ( auto& zid : Zary.zids ) {
             uint zidx = Zary.zidxs[zid];
             string ztype = Zary.ztypes[zid];
             powerMap[zidx] = (ztype=="Qi" || ztype=="Pi");
         }
-
+#endif
         // write to file
         std::ofstream ofh;
         ofh << std::setprecision(precision);
         ofh.open(filename,std::ofstream::out);
         *selog << "writing " + filename + "\n\n" << std::flush;
-        for ( uint j = 0 ; j < a->n ; j++ )
+        for ( uint j = 0 ; j < a->n ; j++ ) {
+            if (j % 1000 == 0)
+              *selog << "  writing j = " << j << "\n" << std::flush;
             for ( uint i = 0 ; i < a->m ; i++ ) {
                 double val = mat[i][j];
-                string prefix = "";
 #if 000
+                string prefix = "";
                 if ( powerMap[j] ) {
                     prefix = " Pi/Qi column ";
                     //val *= sbase; // R, Supd
@@ -2998,10 +3000,12 @@ class SELoopWorker {
                     prefix += " Pi/Qi row ";
                     //val *= sbase; // R, Supd, Y, z, h, J
                 }
-#endif
+#else
                 if (val != 0.0)
-                    ofh << prefix << i << ", " << j << ", " << val << "\n";
+                    ofh << i << ", " << j << ", " << val << "\n";
+#endif
             }
+        }
         ofh.close();
     }
 
