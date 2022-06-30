@@ -50,16 +50,15 @@ public:
     void fillTopology() {
         fillTopo();
 
-        node_qty = 0;
+        uint idx = 0;
         for ( auto& node_name : node_names ) {
-            node_idxs[node_name] = ++node_qty;
-            node_name_lookup[node_qty] = node_name;
+            node_idxs[node_name] = ++idx;
+            node_name_lookup[idx] = node_name;
         }
     }
     // Does not need to be implemented in platform-specific PlatformInterface
     // definitions. State Estimator calls this which first calls the
     // PlatformInterface::fillTopo method and then populates these for you:
-    //     uint node_qty: number of nodes
     //     SIMAP node_idxs: index number for each node (uint)
     //     ISMAP node_name_lookup: node name for each index (string)
 
@@ -206,10 +205,6 @@ public:
         return *sbase_ref;
     }
 
-    uint getnode_qty() {
-        return node_qty;
-    }
-
     SLIST getnode_names() {
         return node_names;
     }
@@ -295,7 +290,6 @@ protected:
     IMMAP Yphys;
 
     // These are populated for you in PlatformInterfaceBase::fillTopology:
-    uint node_qty;
     SIMAP node_idxs;
     ISMAP node_name_lookup;
 

@@ -67,8 +67,8 @@ class SELoopWorker {
     // passed in from constructor
     PlatformInterface* plint;
     SensorArray        Zary;
-    uint               node_qty;     // number of nodes
     SLIST              node_names;   // node names [list of strings]
+    uint               node_qty;     // number of nodes
     SIMAP              node_idxs;    // node positional indices [node->int]
     SCMAP              node_vnoms;   // complex nominal voltages of nodes
     SSMAP              node_bmrids;  // string mRIDs of the associated buses
@@ -133,8 +133,8 @@ class SELoopWorker {
     SELoopWorker(PlatformInterface* plint) {
         this->plint = plint;
         this->Zary = plint->getZary();
-        this->node_qty = plint->getnode_qty();
         this->node_names = plint->getnode_names();
+        this->node_qty = this->node_names.size();
         this->node_idxs = plint->getnode_idxs();
         this->node_vnoms = plint->getVnoms();
         this->node_bmrids = plint->getnode_bmrids();

@@ -279,6 +279,7 @@ public:
 
         for ( auto& node_name : node_names )
             est_fh << "vmag_"+node_name+",";
+        uint node_qty = node_names.size();
         uint nctr = 0;
         for ( auto& node_name : node_names )
             est_fh << "varg_"+node_name << ( ++nctr < node_qty ? "," : "\n" );
@@ -300,6 +301,7 @@ public:
 
         for ( auto& node_name : node_names )
             est_fh << est_vmagpu[node_name] << ",";
+        uint node_qty = node_names.size();
         uint nctr = 0;
         for ( auto& node_name : node_names )
             est_fh << est_vargpu[node_name] << ( ++nctr < node_qty ? "," : "\n" );
