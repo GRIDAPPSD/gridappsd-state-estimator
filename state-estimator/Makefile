@@ -13,6 +13,8 @@ APRINCPATH=/usr/include/apr-1.0
 
 GRIDAPPSD_INCLUDES=$(FILE_INCLUDES) -I$(JSONINCPATH) -I$(AMQINCPATH1) -I$(AMQINCPATH2) -I$(AMQINCPATH3) -I$(APRINCPATH)
 
+SGIDAL_INCLUDES=$(FILE_INCLUDES)
+
 # SparseSuite libraries
 SSCONFLIBPATH=$(SSPATH)/SuiteSparse_config
 CSLIBPATH=$(SSPATH)/CXSparse/Lib
@@ -46,7 +48,7 @@ CXXFLAGS=-O
 #CXXFLAGS=-O2
 #CXXFLAGS=-Ofast
 
-all: bin/state-estimator bin/state-estimator-file
+all: bin/state-estimator bin/state-estimator-file bin/state-estimator-sgidal
 
 bin/state-estimator: obj/state-estimator.o
 	mkdir -p bin
@@ -63,6 +65,14 @@ file bin/state-estimator-file: obj/state-estimator-file.o
 obj/state-estimator-file.o: src/state-estimator.cpp $(wildcard include/*.hpp)
 	mkdir -p obj
 	g++ $(CXXFLAGS) -Wno-deprecated-declarations -std=c++11 -DFILE_INTERFACE -c $(FILE_INCLUDES) $< -o $@
+
+sgidal bin/state-estimator-sgidal: obj/state-estimator-sgidal.o
+	mkdir -p bin
+	g++ $(CXXFLAGS) $? $(FILE_LIBS) -o bin/state-estimator-sgidal
+
+obj/state-estimator-sgidal.o: src/state-estimator.cpp $(wildcard include/*.hpp)
+	mkdir -p obj
+	g++ $(CXXFLAGS) -Wno-deprecated-declarations -std=c++11 -DSGIDAL_INTERFACE -c $(FILE_INCLUDES) $< -o $@
 
 clean:
 	rm -f obj/*

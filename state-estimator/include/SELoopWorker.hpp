@@ -339,9 +339,6 @@ class SELoopWorker {
         mkdir(initpath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 #endif
 
-        // do the setup needed to publish state estimates later
-        plint->setupPublishing();
-
         // --------------------------------------------------------------------
         // Establish Dimension of State Space and Measurement Space
         // --------------------------------------------------------------------
@@ -368,6 +365,7 @@ class SELoopWorker {
                     uint j = row_pair.first;
                     if ( j == i ) {
                         // dPi/dvi and dPi/dTi exist for node i
+
                         Jshapemap.insert(A5PAIR(j-1, {zidx,j-1,i,i,dPi_dvi}));
                         Jshapemap.insert(A5PAIR(node_qty+j-1, {zidx,node_qty+j-1,i,i,dPi_dTi}));
                     } else {
