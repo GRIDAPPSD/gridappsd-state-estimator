@@ -24,14 +24,15 @@ if [ "$#" -gt 0 ]; then
     fi
 
     # comment out the following 5 lines to keep state-plotter from running
-    pushd .
-    cd ../../gridappsd-state-plotter/state-plotter
-    #./state-plotter.py $SIMID "$SIMREQ" -all 2>&1 > spmagdbg.log &
-    ./state-plotter.py $SIMID "$SIMREQ" -stats 2>&1 > spmagdbg.log &
-    popd
+    #pushd .
+    #cd ../../gridappsd-state-plotter/state-plotter
+    ##./state-plotter.py $SIMID "$SIMREQ" -all 2>&1 > spmagdbg.log &
+    #./state-plotter.py $SIMID "$SIMREQ" -stats 2>&1 > spmagdbg.log &
+    #popd
 
     bin/state-estimator $SIMID "$SIMREQ" 2>&1 | tee sedbg.log
 else
-    bin/state-estimator-file 2>&1 | tee sedbg.log
+    #bin/state-estimator-file 2>&1 | tee sedbg.log
+    bin/state-estimator-sgidal --startbroker "-f1" --name=fed1 --target=fed1 2>&1 | tee sedbg.log
 fi
 
