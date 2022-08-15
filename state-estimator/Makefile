@@ -13,7 +13,7 @@ APRINCPATH=/usr/include/apr-1.0
 
 GRIDAPPSD_INCLUDES=$(FILE_INCLUDES) -I$(JSONINCPATH) -I$(AMQINCPATH1) -I$(AMQINCPATH2) -I$(AMQINCPATH3) -I$(APRINCPATH)
 
-HELICS=/home/d39842/helics/install
+HELICS=$(dir $(shell which helics_broker))..
 SGIDAL_INCLUDES=$(FILE_INCLUDES) -I$(HELICS)/include -std=c++17
 
 # SparseSuite libraries
