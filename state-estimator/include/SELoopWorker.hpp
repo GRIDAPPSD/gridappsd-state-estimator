@@ -1219,6 +1219,15 @@ class SELoopWorker {
         SDMAP est_vvar, est_anglevar;
         SDMAP est_vmagpu, est_vargpu;
 
+#ifdef DEBUG_PRIMARY
+        double minMag = DBL_MAX;
+        double maxMag = DBL_MIN;
+        double sumMag = 0.0;
+        double minArg = DBL_MAX;
+        double maxArg = DBL_MIN;
+        double sumArg = 0.0;
+#endif
+
         for ( auto& node_name : node_names ) {
             uint idx = node_idxs[node_name];
             complex<double> vnom = node_vnoms[node_name];
@@ -1231,7 +1240,20 @@ class SELoopWorker {
 
             est_vmagpu[node_name] = abs( Vpu[idx] );
             est_vargpu[node_name] = arg( Vpu[idx] );
+
+#ifdef DEBUG_PRIMARY
+            minMag = fmin(minMag, est_vmagpu[node_name]);
+            maxMag = fmax(maxMag, est_vmagpu[node_name]);
+            sumMag += est_vmagpu[node_name];
+            minArg = fmin(minArg, est_vargpu[node_name]);
+            maxArg = fmax(maxArg, est_vargpu[node_name]);
+            sumArg += est_vargpu[node_name];
+#endif
         }
+#ifdef DEBUG_PRIMARY
+        *selog << "Est vmag per-unit min: " << minMag << ", max: " << maxMag << ", mean: " << sumMag/est_vmagpu.size() << "\n" << std::flush;
+        *selog << "Est varg per-unit min: " << minArg << ", max: " << maxArg << ", mean: " << sumArg/est_vargpu.size() << "\n" << std::flush;
+#endif
 
         plint->publishEstimate(timestamp, est_v, est_angle,
             est_vvar, est_anglevar, est_vmagpu, est_vargpu);
@@ -1853,7 +1875,7 @@ class SELoopWorker {
 #endif
 
 #ifdef DEBUG_PRIMARY
-        *selog << "\n*** Total estimate time: " << 
+        *selog << "*** Total estimate time: " <<
             getMinSec(getWallTime()-estimateStartTime) << ", timestamp: " <<
             timestamp << ", timestep: " <<
             timestamp-timeZero << "\n" << std::flush;
@@ -1882,7 +1904,7 @@ class SELoopWorker {
 #endif
 #endif
         process_mem_usage(vm_used, res_used);
-        *selog << "End of estimate virtual memory: " << vm_used << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
+        *selog << "End of estimate virtual memory: " << vm_used << ", timestep: " << timestamp-timeZero << std::flush;
 //        *selog << "End of estimate resident memory: " << res_used << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
         *selog << "\n" << std::flush;
 #ifdef SBASE_TESTING
