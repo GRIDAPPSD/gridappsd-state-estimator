@@ -6,6 +6,7 @@
 #endif
 
 #define DEBUG_PRIMARY
+#define DEBUG_STATS
 //#define DEBUG_FILES
 //#define DEBUG_SIZES
 
@@ -14,7 +15,7 @@
 #define GS_OPTIMIZE
 // whether to store negligable values in sparse matrices or not
 // defining USE_NEGL indicates not to store negligable values
-//#define USE_NEGL
+//#define USE_NEGL // be careful using this as it can throw away needed values
 
 //#define WRITE_FILES
 
