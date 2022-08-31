@@ -415,7 +415,7 @@ class SELoopWorker {
                 // means the relationship between vi and vj is indeterminant
                 // this piecewise relationship is not differentiable for calc_J
             } else { 
-                *selog << "ERROR: Jshapemap unrecognized measurement type: " <<
+                *selog << "\tERROR: Jshapemap unrecognized measurement type: " <<
                           ztype << "\n" << std::flush;
                 exit(1);
             }
@@ -1371,7 +1371,7 @@ class SELoopWorker {
 #endif
 
         cs *P1 = cs_transpose(Fmat,1);
-        if (!P1) *selog << "ERROR: null P1\n" << std::flush;
+        if (!P1) *selog << "\tERROR: null P1\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         *selog << "P1 is " << P1->m << " by " << P1->n <<
             " with " << P1->nzmax << " entries\n" << std::flush;
@@ -1384,7 +1384,7 @@ class SELoopWorker {
 #endif
 
         cs *P2 = cs_multiply(Pmat,P1); cs_spfree(Pmat); cs_spfree(P1);
-        if (!P2) *selog << "ERROR: null P2\n" << std::flush;
+        if (!P2) *selog << "\tERROR: null P2\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         *selog << "P2 is " << P2->m << " by " << P2->n <<
             " with " << P2->nzmax << " entries\n" << std::flush;
@@ -1397,7 +1397,7 @@ class SELoopWorker {
 #endif
 
         cs *P3 = cs_multiply(Fmat,P2); cs_spfree(P2);
-        if (!P3) *selog << "ERROR: null P3\n" << std::flush;
+        if (!P3) *selog << "\tERROR: null P3\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         *selog << "P3 is " << P3->m << " by " << P3->n <<
             " with " << P3->nzmax << " entries\n" << std::flush;
@@ -1421,7 +1421,7 @@ class SELoopWorker {
 #endif
 
         cs *Ppre = cs_add(P3,Qmat,1,1); cs_spfree(P3); cs_spfree(Qmat);
-        if (!Ppre) *selog << "ERROR: null Ppre\n" << std::flush;
+        if (!Ppre) *selog << "\tERROR: null Ppre\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         *selog << "Ppre is " << Ppre->m << " by " << Ppre->n <<
             " with " << Ppre->nzmax << " entries\n" << std::flush;
@@ -1457,7 +1457,7 @@ class SELoopWorker {
         // -- compute S = J*P_predict*J' + R
 
         cs *S1 = cs_transpose(Jmat,1);
-        if (!S1) *selog << "ERROR: null S1\n" << std::flush;
+        if (!S1) *selog << "\tERROR: null S1\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         *selog << "S1 is " << S1->m << " by " << S1->n <<
             " with " << S1->nzmax << " entries\n" << std::flush;
@@ -1470,7 +1470,7 @@ class SELoopWorker {
 #endif
 
         cs *S2 = cs_multiply(Ppre,S1);
-        if (!S2) *selog << "ERROR: null S2\n" << std::flush;
+        if (!S2) *selog << "\tERROR: null S2\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         *selog << "S2 is " << S2->m << " by " << S2->n <<
             " with " << S2->nzmax << " entries\n" << std::flush;
@@ -1483,7 +1483,7 @@ class SELoopWorker {
 #endif
 
         cs *S3 = cs_multiply(Jmat,S2); cs_spfree(S2);
-        if (!S3) *selog << "ERROR: null S3\n" << std::flush;
+        if (!S3) *selog << "\tERROR: null S3\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         *selog << "S3 is " << S3->m << " by " << S3->n <<
             " with " << S3->nzmax << " entries\n" << std::flush;
@@ -1505,7 +1505,7 @@ class SELoopWorker {
 #endif
 
         cs *Supd = cs_add(Rmat,S3,1,1); cs_spfree(S3);
-        if (!Supd) *selog << "ERROR: null Supd\n" << std::flush;
+        if (!Supd) *selog << "\tERROR: null Supd\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         *selog << "Supd is " << Supd->m << " by " << Supd->n <<
             " with " << Supd->nzmax << " entries\n" << std::flush;
@@ -1554,7 +1554,7 @@ class SELoopWorker {
             if (!klunum) {
 #ifdef DEBUG_PRIMARY
                 *selog << "Common->status is: " << klucom.status << "\n" << std::flush;
-                if ( klucom.status == 1 ) *selog << "\tKLU_SINGULAR\n" << std::flush;
+                if ( klucom.status == 1 ) *selog << "\tERROR: KLU_SINGULAR\n" << std::flush;
 #endif
                 throw "klu_factor failed";
             }
@@ -1566,7 +1566,7 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
             // KLU condition number estimation
             (void)klu_condest(Supd->p,Supd->x,klusym,klunum,&klucom);
-            *selog << "klu_condest Supd condition number estimate: " << klucom.condest << "\n" << std::flush;
+            *selog << "klu_condest Supd condition number: " << klucom.condest << "\n" << std::flush;
             // condnum = klucom.condest;
             // *selog << timestamp << "," << condnum << ",SupdCondNum\n" << std::flush;
 #endif
@@ -1607,7 +1607,7 @@ class SELoopWorker {
             klu_free_symbolic(&klusym, &klucom);
             klu_free_numeric(&klunum, &klucom);
         } catch (const char *msg) {
-            *selog << "KLU ERROR: " << msg << "\n" << std::flush;
+            *selog << "\tERROR: KLU message: " << msg << "\n" << std::flush;
             throw "klu_error";
         }
         cs_spfree(Supd);
@@ -1642,7 +1642,7 @@ class SELoopWorker {
 //       for (uint i=0; i<K3->nzmax; i++)
 //           K3->x[i] = SET_SIGNIFICANT(K3->x[i], digits);
 
-        if (!K3) *selog << "ERROR: null K3\n" << std::flush;
+        if (!K3) *selog << "\tERROR: null K3\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         *selog << "K3 is " << K3->m << " by " << K3->n <<
             " with " << K3->nzmax << " entries\n" << std::flush;
@@ -1658,7 +1658,7 @@ class SELoopWorker {
 
         // GDB S1 and K1 are both J transpose so use S1 here
         cs *K2 = cs_multiply(Ppre,S1); cs_spfree(S1);
-        if (!K2) *selog << "ERROR: null K2\n" << std::flush;
+        if (!K2) *selog << "\tERROR: null K2\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         *selog << "K2 is " << K2->m << " by " << K2->n <<
             " with " << K2->nzmax << " entries\n" << std::flush;
@@ -1677,7 +1677,7 @@ class SELoopWorker {
         startTime = getWallTime();
 #endif
         cs *Kupd = cs_multiply(K2,K3); cs_spfree(K2); cs_spfree(K3);
-        if ( !Kupd ) *selog << "ERROR: Kupd null\n" << std::flush;
+        if ( !Kupd ) *selog << "\tERROR: Kupd null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         *selog << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
 #endif
@@ -1731,7 +1731,7 @@ class SELoopWorker {
 #endif
 
         cs *yupd = cs_add(zmat,hmat,1,-1); cs_spfree(zmat); cs_spfree(hmat);
-        if (!yupd) *selog << "ERROR: null yupd\n" << std::flush;
+        if (!yupd) *selog << "\tERROR: null yupd\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         *selog << "yupd is " << yupd->m << " by " << yupd->n <<
             " with " << yupd->nzmax << " entries\n" << std::flush;
@@ -1836,7 +1836,7 @@ class SELoopWorker {
         cs *x1 = cs_multiply(Kupd,yupd); cs_spfree(yupd);
 #endif
 
-        if ( !x1 ) *selog << "ERROR: x1 null\n" << std::flush;
+        if ( !x1 ) *selog << "\tERROR: x1 null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         *selog << "x1 is " << x1->m << " by " << x1->n <<
             " with " << x1->nzmax << " entries\n" << std::flush;
@@ -1863,7 +1863,7 @@ class SELoopWorker {
 #endif
 
         cs *xpre = cs_multiply(Fmat,xmat); cs_spfree(xmat);
-        if (!xpre) *selog << "ERROR: null xpre\n" << std::flush;
+        if (!xpre) *selog << "\tERROR: null xpre\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         *selog << "xpre is " << xpre->m << " by " << xpre->n <<
             " with " << xpre->nzmax << " entries\n" << std::flush;
@@ -1876,7 +1876,7 @@ class SELoopWorker {
 #endif
 
         cs *xupd = cs_add(xpre,x1,1,1); cs_spfree(x1); cs_spfree(xpre);
-        if ( !xupd ) *selog << "ERROR: xupd null\n" << std::flush;
+        if ( !xupd ) *selog << "\tERROR: xupd null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         *selog << "xupd is " << xupd->m << " by " << xupd->n <<
             " with " << xupd->nzmax << " entries\n" << std::flush;
@@ -1896,7 +1896,7 @@ class SELoopWorker {
         startTime = getWallTime();
 #endif
         cs *P4 = cs_multiply(Kupd,Jmat); cs_spfree(Kupd); cs_spfree(Jmat);
-        if ( !P4 ) *selog << "ERROR: P4 null\n" << std::flush;
+        if ( !P4 ) *selog << "\tERROR: P4 null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         *selog << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
 #endif
@@ -1912,7 +1912,7 @@ class SELoopWorker {
 #endif
 
         cs *P5 = cs_add(eyex,P4,1,-1); cs_spfree(P4);
-        if ( !P5 ) *selog << "ERROR: P5 null\n" << std::flush;
+        if ( !P5 ) *selog << "\tERROR: P5 null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         *selog << "P5 is " << P5->m << " by " << P5->n <<
             " with " << P5->nzmax << " entries\n" << std::flush;
@@ -1926,7 +1926,7 @@ class SELoopWorker {
 
 #ifdef DIAGONAL_P
         cs *Pupd = cs_multiply(P5,Ppre); cs_spfree(P5); cs_spfree(Ppre);
-        if ( !Pupd ) *selog << "ERROR: P updated null\n" << std::flush;
+        if ( !Pupd ) *selog << "\tERROR: P updated null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         *selog << "P updated is " << Pupd->m << " by " << Pupd->n <<
             " with " << Pupd->nzmax << " entries\n" << std::flush;
@@ -1941,7 +1941,7 @@ class SELoopWorker {
 #else
         // re-allocate P for the updated state
         Pmat = cs_multiply(P5,Ppre); cs_spfree(P5); cs_spfree(Ppre);
-        if ( !Pmat ) *selog << "ERROR: P updated null\n" << std::flush;
+        if ( !Pmat ) *selog << "\tERROR: P updated null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
         *selog << "P updated is " << Pmat->m << " by " << Pmat->n <<
             " with " << Pmat->nzmax << " entries\n" << std::flush;
@@ -2120,7 +2120,7 @@ class SELoopWorker {
         // Prepare x
 #ifdef GS_OPTIMIZE
         xmat = gs_spalloc_firstcol(xqty);
-        if (!xmat) *selog << "ERROR: null x\n" << std::flush;
+        if (!xmat) *selog << "\tERROR: null x\n" << std::flush;
 #else
         cs* xraw = cs_spalloc(xqty, 1, xqty, 1, 1);
 #endif
@@ -2153,7 +2153,7 @@ class SELoopWorker {
         // Prepare P as a diagonal matrix from state uncertanty
 #ifdef GS_OPTIMIZE
         Pmat = gs_spalloc_diagonal(xqty);
-        if (!Pmat) *selog << "ERROR: null Pmat in prep_P\n" << std::flush;
+        if (!Pmat) *selog << "\tERROR: null Pmat in prep_P\n" << std::flush;
 #else
         cs* Pmatraw = cs_spalloc(xqty, xqty, xqty, 1, 1);
 #endif
@@ -2273,7 +2273,7 @@ class SELoopWorker {
                         // standard deviation of expected initial complex power
                         uncertainty = Zary.znomvals[zid]*Zary.znomvals[zid]*0.25;
                     else {
-                        *selog << "ERROR: prep_R unrecognized measurement type: " <<
+                        *selog << "\tERROR: prep_R unrecognized measurement type: " <<
                                   Zary.ztypes[zid] << "\n" << std::flush;
                         exit(1);
                     }
@@ -2309,7 +2309,7 @@ class SELoopWorker {
                         // power per second
                         factor = Zary.znomvals[zid]*Zary.znomvals[zid]*0.0001;
                     else {
-                        *selog << "ERROR: prep_R unrecognized measurement type: " <<
+                        *selog << "\tERROR: prep_R unrecognized measurement type: " <<
                                   Zary.ztypes[zid] << "\n" << std::flush;
                         exit(1);
                     }
@@ -2410,17 +2410,21 @@ class SELoopWorker {
         // measurements have been loaded from the sim output message to Zary
 #ifdef GS_OPTIMIZE
         zmat = gs_spalloc_firstcol(zqty);
-        if (!zmat) *selog << "ERROR: null z\n" << std::flush;
+        if (!zmat) *selog << "\tERROR: null z\n" << std::flush;
 #else
         cs* zraw = cs_spalloc(zqty, 1, zqty, 1, 1);
 #endif
         for ( auto& zid : Zary.zids ) {
+            if (std::isnan(Zary.zvals[zid])) {
+                *selog << "\tERROR: sample_z zid: " << zid << ", zidx: " << Zary.zidxs[zid] << ", zvals: " << Zary.zvals[zid] << "\n" << std::flush;
+            } else {
 #ifdef GS_OPTIMIZE
-            gs_entry_firstcol_negl(zmat,Zary.zidxs[zid],Zary.zvals[zid]);
-            //*selog << "sample_z firstcol matrix entry for zid: " << zid << ", Zary.zidxs: " << Zary.zidxs[zid] << ", zvals value: " << Zary.zvals[zid] << "\n" << std::flush;
+                gs_entry_firstcol_negl(zmat,Zary.zidxs[zid],Zary.zvals[zid]);
+                //*selog << "sample_z firstcol matrix entry for zid: " << zid << ", Zary.zidxs: " << Zary.zidxs[zid] << ", zvals value: " << Zary.zvals[zid] << "\n" << std::flush;
 #else
-            cs_entry_negl(zraw,Zary.zidxs[zid],0,Zary.zvals[zid]);
+                cs_entry_negl(zraw,Zary.zidxs[zid],0,Zary.zvals[zid]);
 #endif
+            }
         }
 #ifndef GS_OPTIMIZE
         zmat = cs_compress(zraw);
@@ -2504,11 +2508,11 @@ class SELoopWorker {
                     } catch ( const std::out_of_range& oor ) {}
                 } catch ( const std::out_of_range& oor ) {}
             } catch ( const std::out_of_range& oor ) {
-                *selog << "ERROR: set_nij catch on Ypu[i].at(j) lookup\n" << std::flush;
+                *selog << "\tERROR: set_nij catch on Ypu[i].at(j) lookup\n" << std::flush;
                 exit(1);
             }
         } catch ( const std::out_of_range& oor ) {
-            *selog << "ERROR: set_nij catch on Ypu.at(i) lookup\n" << std::flush;
+            *selog << "\tERROR: set_nij catch on Ypu.at(i) lookup\n" << std::flush;
             exit(1);
         }
 
@@ -2522,7 +2526,7 @@ class SELoopWorker {
         // each z component has a measurement function component
 #ifdef GS_OPTIMIZE
         h = gs_spalloc_firstcol(zqty);
-        if (!h) *selog << "ERROR: null h\n" << std::flush;
+        if (!h) *selog << "\tERROR: null h\n" << std::flush;
 #else
         cs* hraw = cs_spalloc(zqty, 1, zqty, 1, 1);
 #endif
@@ -2560,15 +2564,19 @@ class SELoopWorker {
                     double vi, g, b;
                     set_ni(i, vi, g, b);
                     Pi += vi*vi * g;
+                    if (std::isnan(Pi))
+                        *selog << "\tERROR: calc_h zid: " << zid << ", zidx: " << zidx << ", ztype: " << ztype << ", g: " << g << ", b: " << b << "\n" << std::flush;
                 } catch ( const std::out_of_range& oor ) {}
-                // Insert the measurement component
+                if (!std::isnan(Pi)) {
+                    // Insert the measurement component
 #ifdef GS_OPTIMIZE
-                gs_entry_firstcol_negl(h,zidx,Pi);
+                    gs_entry_firstcol_negl(h,zidx,Pi);
 #else
-                cs_entry_negl(hraw,zidx,0,Pi);
+                    cs_entry_negl(hraw,zidx,0,Pi);
 #endif
+                }
             }
-            else if ( !Zary.ztypes[zid].compare("Qi") ) {
+            else if ( !ztype.compare("Qi") ) {
                 // Reactive power injection into node i
                 uint i = node_idxs[Zary.znode1s[zid]];
                 double Qi = 0;
@@ -2594,14 +2602,18 @@ class SELoopWorker {
                     double vi, g, b;
                     set_ni(i, vi, g, b);
                     Qi += - vi*vi * b;
+                    if (std::isnan(Qi))
+                        *selog << "\tERROR: calc_h zid: " << zid << ", zidx: " << zidx << ", ztype: " << ztype << ", g: " << g << ", b: " << b << "\n" << std::flush;
                 } catch ( const std::out_of_range& oor ) {}
+                if (!std::isnan(Qi)) {
 #ifdef GS_OPTIMIZE
-                gs_entry_firstcol_negl(h,zidx,Qi);
+                    gs_entry_firstcol_negl(h,zidx,Qi);
 #else
-                cs_entry_negl(hraw,zidx,0,Qi);
+                    cs_entry_negl(hraw,zidx,0,Qi);
 #endif
+                }
             }
-            else if ( !Zary.ztypes[zid].compare("aji" ) ) {
+            else if ( !ztype.compare("aji" ) ) {
                 // aji = vj/vi
                 uint i = node_idxs[Zary.znode1s[zid]];
                 uint j = node_idxs[Zary.znode2s[zid]];
@@ -2614,7 +2626,7 @@ class SELoopWorker {
                 cs_entry_negl(hraw,zidx,0,aji);
 #endif
             }
-            else if ( !Zary.ztypes[zid].compare("vi") ) {
+            else if ( !ztype.compare("vi") ) {
                 // vi is a direct state measurement
                 uint i = node_idxs[Zary.znode1s[zid]];
 #ifdef GS_OPTIMIZE
@@ -2624,7 +2636,7 @@ class SELoopWorker {
                 cs_entry_negl(hraw,zidx,0,abs(Vpu[i]));
 #endif
             }
-            else if ( !Zary.ztypes[zid].compare("Ti") ) {
+            else if ( !ztype.compare("Ti") ) {
                 // Ti is a direct state measurement
                 uint i = node_idxs[Zary.znode1s[zid]];
 #ifdef GS_OPTIMIZE
@@ -2634,7 +2646,7 @@ class SELoopWorker {
                 cs_entry_negl(hraw,zidx,0,arg(Vpu[i]));
 #endif
             }
-            else if ( !Zary.ztypes[zid].compare("switch_ij") ) {
+            else if ( !ztype.compare("switch_ij") ) {
                 // if switch is closed, vi = vj
 
                 // if switch is open, possibility of distributed generation
@@ -2642,7 +2654,7 @@ class SELoopWorker {
                 // this piecewise relationship is not differentiable for calc_J
             }
             else { 
-                *selog << "WARNING: Undefined measurement type " + ztype + "\n" << std::flush;
+                *selog << "\tERROR: Undefined measurement type " + ztype + "\n" << std::flush;
             }
         }
 #ifndef GS_OPTIMIZE
@@ -2663,7 +2675,7 @@ class SELoopWorker {
         // each z component has a Jacobian component for each state
 #ifdef GS_OPTIMIZE
         J = gs_spalloc_colorder(zqty,xqty,Jshapemap.size());
-        if (!J) *selog << "ERROR: null J\n" << std::flush;
+        if (!J) *selog << "\tERROR: null J\n" << std::flush;
 #else
         cs* Jraw = cs_spalloc(zqty, xqty, Jshapemap.size(), 1, 1);
 #endif
@@ -2701,11 +2713,15 @@ class SELoopWorker {
                 double vi, g, b;
                 set_ni(i, vi, g, b);
                 dP += 2*vi * g;
+                if (std::isnan(dP))
+                    *selog << "\tERROR: calc_J dPi/dvi zidx: " << zidx << ", xidx: " << xidx << ", g: " << g << ", b: " << b << "\n" << std::flush;
+                else {
 #ifdef GS_OPTIMIZE
-                gs_entry_colorder_negl(J,zidx,xidx,dP);
+                    gs_entry_colorder_negl(J,zidx,xidx,dP);
 #else
-                cs_entry_negl(Jraw,zidx,xidx,dP);
+                    cs_entry_negl(Jraw,zidx,xidx,dP);
 #endif
+                }
             }
 
             else
@@ -2752,11 +2768,15 @@ class SELoopWorker {
                 double vi, g, b;
                 set_ni(i, vi, g, b);
                 dQ += -2*vi*b;
+                if (std::isnan(dQ))
+                    *selog << "\tERROR: calc_J dQi/dvi zidx: " << zidx << ", xidx: " << xidx << ", g: " << g << ", b: " << b << "\n" << std::flush;
+                else {
 #ifdef GS_OPTIMIZE
-                gs_entry_colorder_negl(J,zidx,xidx,dQ);
+                    gs_entry_colorder_negl(J,zidx,xidx,dQ);
 #else
-                cs_entry_negl(Jraw,zidx,xidx,dQ);
+                    cs_entry_negl(Jraw,zidx,xidx,dQ);
 #endif
+                }
             }
 
             else
@@ -2917,7 +2937,7 @@ class SELoopWorker {
             }
 
             else {
-                *selog << "WARNING: Undefined jacobian element type type " + 
+                *selog << "\tERROR: Undefined jacobian element type type " +
                     entry_type << "\n" << std::flush;
             }
 
