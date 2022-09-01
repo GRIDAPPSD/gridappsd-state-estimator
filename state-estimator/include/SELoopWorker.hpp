@@ -1235,12 +1235,28 @@ class SELoopWorker {
         SDMAP est_vmagpu, est_vargpu;
 
 #ifdef DEBUG_PRIMARY
-        double minMag = DBL_MAX;
-        double maxMag = DBL_MIN;
-        double sumMag = 0.0;
-        double minArg = DBL_MAX;
-        double maxArg = DBL_MIN;
-        double sumArg = 0.0;
+        double measMinMag = DBL_MAX;
+        double measMaxMag = DBL_MIN;
+        double measSumMag = 0.0;
+        uint   measNumMag = 0.0;
+
+        for ( auto& zid : Zary.zids )
+            if ( !Zary.ztypes[zid].compare("vi") ) {
+                measMinMag = fmin(measMinMag, Zary.zvals[zid]);
+                measMaxMag = fmax(measMaxMag, Zary.zvals[zid]);
+                measSumMag += Zary.zvals[zid];
+                measNumMag++;
+            }
+
+        double measMeanMag = measSumMag/measNumMag;
+        *selog << "Meas vmag per-unit min: " << measMinMag << ", max: " << measMaxMag << ", mean: " << measMeanMag << "\n" << std::flush;
+
+        double estMinMag = DBL_MAX;
+        double estMaxMag = DBL_MIN;
+        double estSumMag = 0.0;
+        double estMinArg = DBL_MAX;
+        double estMaxArg = DBL_MIN;
+        double estSumArg = 0.0;
 #endif
 
         for ( auto& node_name : node_names ) {
@@ -1257,17 +1273,21 @@ class SELoopWorker {
             est_vargpu[node_name] = arg( Vpu[idx] );
 
 #ifdef DEBUG_PRIMARY
-            minMag = fmin(minMag, est_vmagpu[node_name]);
-            maxMag = fmax(maxMag, est_vmagpu[node_name]);
-            sumMag += est_vmagpu[node_name];
-            minArg = fmin(minArg, est_vargpu[node_name]);
-            maxArg = fmax(maxArg, est_vargpu[node_name]);
-            sumArg += est_vargpu[node_name];
+            estMinMag = fmin(estMinMag, est_vmagpu[node_name]);
+            estMaxMag = fmax(estMaxMag, est_vmagpu[node_name]);
+            estSumMag += est_vmagpu[node_name];
+            estMinArg = fmin(estMinArg, est_vargpu[node_name]);
+            estMaxArg = fmax(estMaxArg, est_vargpu[node_name]);
+            estSumArg += est_vargpu[node_name];
 #endif
         }
 #ifdef DEBUG_PRIMARY
-        *selog << "Est vmag per-unit min: " << minMag << ", max: " << maxMag << ", mean: " << sumMag/est_vmagpu.size() << "\n" << std::flush;
-        *selog << "Est varg per-unit min: " << minArg << ", max: " << maxArg << ", mean: " << sumArg/est_vargpu.size() << "\n" << std::flush;
+        double estMeanMag = estSumMag/est_vmagpu.size();
+        double perErrMag = 100 * abs(estMeanMag - measMeanMag)/measMeanMag;
+        double estMeanArg = estSumArg/est_vargpu.size();
+
+        *selog << "Est vmag per-unit min: " << estMinMag << ", max: " << estMaxMag << ", mean: " << estMeanMag << ", % err: " << perErrMag << "\n" << std::flush;
+        *selog << "Est varg per-unit min: " << estMinArg << ", max: " << estMaxArg << ", mean: " << estMeanArg << "\n" << std::flush;
 #endif
 
         plint->publishEstimate(timestamp, est_v, est_angle,
