@@ -12,6 +12,8 @@
 
 #SIMREQ={\"power_system_config\":{\"Line_name\":\"_49AD8E07-3BF9-A4E2-CB8F-C3722F837B62\"},\"service_configs\":[{\"id\":\"state-estimator\",\"user_options\":{\"use-sensors-for-estimates\":false}}]} # ieee13nodeckt using simulation
 
+#SIMREQ={\"power_system_config\":{\"Line_name\":\"_4F76A5F9-271D-9EB8-5E31-AA362D86F2C3\"},\"service_configs\":[{\"id\":\"state-estimator\",\"user_options\":{\"use-sensors-for-estimates\":false}}]} # ieee8500 using simulation
+
 # no command line arguments means a test harness invocation so no simulation
 # or plotter to invoke
 if [ "$#" -gt 0 ]; then
@@ -28,6 +30,11 @@ if [ "$#" -gt 0 ]; then
     #cd ../../gridappsd-state-plotter/state-plotter
     ##./state-plotter.py $SIMID "$SIMREQ" -all 2>&1 > spmagdbg.log &
     #./state-plotter.py $SIMID "$SIMREQ" -stats 2>&1 > spmagdbg.log &
+    #popd
+
+    #pushd .
+    #cd ~/git/model-validator/model_validator
+    #python3 load_flow_validator/zero_taps.py --request "$SIMREQ" --simid $SIMID 2>&1 | tee validator.log
     #popd
 
     bin/state-estimator $SIMID "$SIMREQ" 2>&1 | tee sedbg.log
