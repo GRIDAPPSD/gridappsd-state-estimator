@@ -14,7 +14,7 @@ APRINCPATH=/usr/include/apr-1.0
 GRIDAPPSD_INCLUDES=$(FILE_INCLUDES) -I$(JSONINCPATH) -I$(AMQINCPATH1) -I$(AMQINCPATH2) -I$(AMQINCPATH3) -I$(APRINCPATH)
 
 HELICS=$(dir $(shell which helics_broker))..
-SGIDAL_INCLUDES=$(FILE_INCLUDES) -I$(HELICS)/include -std=c++17
+GADAL_INCLUDES=$(FILE_INCLUDES) -I$(JSONINCPATH) -I$(HELICS)/include -std=c++17
 
 # SparseSuite libraries
 SSCONFLIBPATH=$(SSPATH)/SuiteSparse_config
@@ -36,7 +36,7 @@ AMQLIBPATH=-L$(AMQLIBDIR1) -L$(AMQLIBDIR2)
 
 GRIDAPPSD_LIBS=$(FILE_LIBS) $(AMQLIBPATH) -lactivemq-cpp -lssl -Wl,-rpath=$(AMQLIBDIR1) -Wl,-rpath=$(AMQLIBDIR2)
 
-SGIDAL_LIBS=$(FILE_LIBS) -L$(HELICS)/lib -lhelicscpp -lhelics
+GADAL_LIBS=$(FILE_LIBS) -L$(HELICS)/lib -lhelicscpp -lhelics
 
 # Changed from -Ofast to -O2 on 7/30/20 because under an Ubuntu 20 VM with
 # g++ version 9.3.0 -Ofast was giving bad numerical results in terms of
@@ -51,7 +51,7 @@ CXXFLAGS=-O
 #CXXFLAGS=-O2
 #CXXFLAGS=-Ofast
 
-all: bin/state-estimator bin/state-estimator-file bin/state-estimator-sgidal
+all: bin/state-estimator bin/state-estimator-file bin/state-estimator-gadal
 
 bin/state-estimator: obj/state-estimator.o
 	mkdir -p bin
@@ -69,13 +69,13 @@ obj/state-estimator-file.o: src/state-estimator.cpp $(wildcard include/*.hpp)
 	mkdir -p obj
 	g++ $(CXXFLAGS) -Wno-deprecated-declarations -std=c++11 -DFILE_INTERFACE -c $(FILE_INCLUDES) $< -o $@
 
-sgidal bin/state-estimator-sgidal: obj/state-estimator-sgidal.o
+gadal bin/state-estimator-gadal: obj/state-estimator-gadal.o
 	mkdir -p bin
-	g++ $(CXXFLAGS) $? $(SGIDAL_LIBS) -o bin/state-estimator-sgidal
+	g++ $(CXXFLAGS) $? $(GADAL_LIBS) -o bin/state-estimator-gadal
 
-obj/state-estimator-sgidal.o: src/state-estimator.cpp $(wildcard include/*.hpp)
+obj/state-estimator-gadal.o: src/state-estimator.cpp $(wildcard include/*.hpp)
 	mkdir -p obj
-	g++ $(CXXFLAGS) -Wno-deprecated-declarations -std=c++11 -DSGIDAL_INTERFACE -c $(SGIDAL_INCLUDES) $< -o $@
+	g++ $(CXXFLAGS) -Wno-deprecated-declarations -std=c++11 -DGADAL_INTERFACE -c $(GADAL_INCLUDES) $< -o $@
 
 clean:
 	rm -f obj/*
