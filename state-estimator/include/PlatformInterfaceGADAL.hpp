@@ -81,6 +81,7 @@ public:
 
     /* Federate init string */
     fi.setCoreInit(fedinitstring);
+	fi.setCoreName("pnnl_state_estimator");
 
     fi.setProperty(HELICS_PROPERTY_TIME_DELTA, deltat);
 
@@ -95,10 +96,13 @@ public:
 	helicscpp::Input sub_topo = vfed->registerSubscription("local_feeder/topology","");
     
 	helicscpp::Input sub_P = vfed->registerSubscription("sensors/power_real","W");
+	//helicscpp::Input sub_P = vfed->registerSubscription("sensor_power_real/publication","W");
 	
 	helicscpp::Input sub_Q = vfed->registerSubscription("sensors/power_imag","W");
+	//helicscpp::Input sub_Q = vfed->registerSubscription("sensor_power_imaginary/publication","W");
 	
 	helicscpp::Input sub_V = vfed->registerSubscription("sensors/voltages","V");
+	//helicscpp::Input sub_V = vfed->registerSubscription("sensor_voltage_magnitude/publication","V");
 	
     if(sub_topo.isValid()){
         std::cout << " Subscription registered for feeder Topology\n";
@@ -207,7 +211,8 @@ public:
 	vfed->finalize();
     std::cout << "NLIN2: Federate finalized" << std::endl;
     // Destructor for ValueFederate must be called before close library
-    delete vfed;
+    //helicscpp::cleanupHelicsLibrary();
+	delete vfed;
     helicsCloseLibrary();
     std::cout << "NLIN2: Library Closed" << std::endl;
 	
@@ -732,8 +737,9 @@ public:
 		meas_mrids.push_back(zid);
 		meas_magnitudes[zid] = 0;
 		
-		//ret = false;
-        
+		if (workQueue.empty()){
+			ret = false;
+        }
 		return ret;
     }
 
