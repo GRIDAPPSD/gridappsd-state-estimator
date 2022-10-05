@@ -46,8 +46,8 @@ std::ostream* selog = &std::cout;
 #ifdef GRIDAPPSD_INTERFACE
 #include "PlatformInterfaceGridAPPSD.hpp"
 #endif
-#ifdef SGIDAL_INTERFACE
-#include "PlatformInterfaceSGIDAL.hpp"
+#ifdef GADAL_INTERFACE
+#include "PlatformInterfaceGADAL.hpp"
 #endif
 
 // include files for all interfaces
