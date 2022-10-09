@@ -3,35 +3,6 @@
 
 #include <iomanip> // std::setprecision
 
-//#define FILE_INTERFACE_READ "test_4Ti"
-//#define FILE_INTERFACE_READ "test_3p6_Ti"
-//#define FILE_INTERFACE_READ "test_4PiQi"
-//#define FILE_INTERFACE_READ "test_13assets_noaji"
-//#define FILE_INTERFACE_READ "test_11big_jl"
-//#define FILE_INTERFACE_READ "test_4"
-//#define FILE_INTERFACE_READ "test_4vinj"
-//#define FILE_INTERFACE_READ "test_4net"
-//#define FILE_INTERFACE_READ "test_4sbase"
-//#define FILE_INTERFACE_READ "test_13assets"
-//#define FILE_INTERFACE_READ "test_11full"
-//#define FILE_INTERFACE_READ "test_11diff"
-//#define FILE_INTERFACE_READ "test_11noQ"
-//#define FILE_INTERFACE_READ "test_4withB"
-//#define FILE_INTERFACE_READ "test_4woB"
-//#define FILE_INTERFACE_READ "test_11big"
-//#define FILE_INTERFACE_READ "test_3p6"
-//#define FILE_INTERFACE_READ "test_3p6pseudo"
-//#define FILE_INTERFACE_READ "test_11_bus_full"
-//#define FILE_INTERFACE_READ "test_11_bus_diff"
-//#define FILE_INTERFACE_READ "test_11_bus_full_meas"
-//#define FILE_INTERFACE_READ "test_11_bus_diff_meas"
-//#define FILE_INTERFACE_READ "test_4_bus_full"
-//#define FILE_INTERFACE_READ "test_4_bus_diff"
-//#define FILE_INTERFACE_READ "test_3p6_bus_full"
-//#define FILE_INTERFACE_READ "test_3p6_bus_diff"
-//#define FILE_INTERFACE_READ "test_3p6_bus_full_meas"
-//#define FILE_INTERFACE_READ "test_3p6_bus_diff_meas"
-//#define FILE_INTERFACE_READ "test_files_13assets"
 #define FILE_INTERFACE_READ "test_files_123"
 
 #ifndef FILE_INTERFACE_READ
@@ -81,6 +52,7 @@ public:
 
     /* Federate init string */
     fi.setCoreInit(fedinitstring);
+	fi.setCoreName("pnnl_state_estimator");
 
     fi.setProperty(HELICS_PROPERTY_TIME_DELTA, deltat);
 
@@ -94,11 +66,14 @@ public:
 	
 	helicscpp::Input sub_topo = vfed->registerSubscription("local_feeder/topology","");
     
-	helicscpp::Input sub_P = vfed->registerSubscription("sensors/power_real","W");
+	//helicscpp::Input sub_P = vfed->registerSubscription("sensors/power_real","W");
+	helicscpp::Input sub_P = vfed->registerSubscription("sensor_power_real/publication","W");
 	
-	helicscpp::Input sub_Q = vfed->registerSubscription("sensors/power_imag","W");
+	//helicscpp::Input sub_Q = vfed->registerSubscription("sensors/power_imag","W");
+	helicscpp::Input sub_Q = vfed->registerSubscription("sensor_power_imaginary/publication","W");
 	
-	helicscpp::Input sub_V = vfed->registerSubscription("sensors/voltages","V");
+	//helicscpp::Input sub_V = vfed->registerSubscription("sensors/voltages","V");
+	helicscpp::Input sub_V = vfed->registerSubscription("sensor_voltage_magnitude/publication","V");
 	
     if(sub_topo.isValid()){
         std::cout << " Subscription registered for feeder Topology\n";
@@ -127,6 +102,14 @@ public:
 		std::cout << " Vang Publication registered\n";
 	}
 	
+	//std::ifstream ifs("input_mapping.json");
+	//json jf = json::parse(ifs);
+	
+	//std::ifstream ifs("static_inputs.json");
+	//json jf_si = json::parse(ifs);
+	
+	//std::cout <<  jf << std::endl;
+
 	 /* Enter initialization state */
     vfed->enterInitializingMode();  // can throw helicscpp::InvalidStateTransition exception
     std::cout << " Entered initialization state" << std::endl;
@@ -141,6 +124,7 @@ public:
 	std::string voltages;
 	
 	HelicsTime currenttime = 0.0;
+	ts=1;
 	
 	currenttime = vfed->requestTime(10000);
 	
@@ -150,8 +134,7 @@ public:
 	std::cout <<topo["slack_bus"][0].get<string>() << std::endl;
 	std::cout <<topo["slack_bus"][1].get<string>() << std::endl;
 	std::cout <<topo["slack_bus"][2].get<string>() << std::endl;
-    //std::cout << std::setw(4) << topo["unique_ids"] << "\n\n";
-	//std::cout << std::setw(4) << topo["y_matrix"] [0][0]<< "\n\n";
+	std::cout <<topo << std::endl;
 	
 	sub_P.getString(power_real);
 	P_meas = json::parse(power_real);
@@ -195,11 +178,6 @@ public:
 		workQueue.push(V_meas_sim);
 		workQueue.push(P_meas_sim);
 		workQueue.push(Q_meas_sim);
-	
-		//std::cout<< V_meas_sim<< std::endl;
-		//std::cout<< P_meas_sim << std::endl;
-		//std::cout<< Q_meas_sim<< std::endl;
-		
 		
 		currenttime = vfed->requestTime(10000);
 	}
@@ -207,7 +185,8 @@ public:
 	vfed->finalize();
     std::cout << "NLIN2: Federate finalized" << std::endl;
     // Destructor for ValueFederate must be called before close library
-    delete vfed;
+    //helicscpp::cleanupHelicsLibrary();
+	delete vfed;
     helicsCloseLibrary();
     std::cout << "NLIN2: Library Closed" << std::endl;
 	
@@ -233,58 +212,60 @@ public:
         //   meas_zids.push_back(cell);
 		
 		//_______________________________________________________________
-		for (int i = 0; i < V_meas["unique_ids"].size(); i++) {
-			string meas_id = V_meas["unique_ids"][i];
+		//Adding meas ids
+		std::cout << "number of meas id here" << "\n\n";
+		std::cout << std::size(meas_zids) << "\n\n";
+		
+		for (int i = 0; i < V_meas["ids"].size(); i++) {
+			string meas_id = V_meas["ids"][i];
 			meas_id = "V_" + meas_id;
 			meas_zids.push_back(meas_id); 
 		}
 		std::cout << std::size(meas_zids) << "\n\n";
-		for (int i = 0; i < P_meas["unique_ids"].size(); i++) {
-			string meas_id = P_meas["unique_ids"][i];
-			if ((meas_id !="P1UDT942-P1UHS0_1247X.1") && (meas_id !="P1UDT942-P1UHS0_1247X.2") && (meas_id !="P1UDT942-P1UHS0_1247X.3")){
-				meas_id = "P_" + meas_id;
-				meas_zids.push_back(meas_id); 
-			}
+		for (int i = 0; i < P_meas["ids"].size(); i++) {
+			string meas_id = P_meas["ids"][i];
+			meas_id = "P_" + meas_id;
+			meas_zids.push_back(meas_id); 
 		}
 		std::cout << std::size(meas_zids) << "\n\n";
-		for (int i = 0; i < Q_meas["unique_ids"].size(); i++) {
-			string meas_id = Q_meas["unique_ids"][i];
-			if ((meas_id !="P1UDT942-P1UHS0_1247X.1") && (meas_id !="P1UDT942-P1UHS0_1247X.2") && (meas_id !="P1UDT942-P1UHS0_1247X.3")){
-				meas_id = "Q_" + meas_id;
-				meas_zids.push_back(meas_id);
-			}				
-		}
-		std::cout << std::size(meas_zids) << "\n\n";
-		meas_zids.push_back("T_" + topo["slack_bus"][0].get<string>());
-		meas_zids.push_back("T_" + topo["slack_bus"][1].get<string>());
-		meas_zids.push_back("T_" + topo["slack_bus"][2].get<string>());
-		std::cout << "number of meas id" << "\n\n";
-		std::cout << std::size(meas_zids) << "\n\n";
-		//_________________________________________________________________
-		/*for (int i = 0; i < topo["unique_ids"].size(); i++) {
-			string meas_id = topo["unique_ids"][i];
-			meas_id = "V_" + meas_id;
+		for (int i = 0; i < Q_meas["ids"].size(); i++) {
+			string meas_id = Q_meas["ids"][i];
+			meas_id = "Q_" + meas_id;
 			meas_zids.push_back(meas_id);
 		}
-		for (int i = 0; i < topo["unique_ids"].size(); i++) {
-			string meas_id = topo["unique_ids"][i];
-			if ((meas_id !="P1UDT942-P1UHS0_1247X.1") && (meas_id !="P1UDT942-P1UHS0_1247X.2") && (meas_id !="P1UDT942-P1UHS0_1247X.3")){
-				meas_id = "P_" + meas_id;
-				meas_zids.push_back(meas_id);
-			}
-		}
-		for (int i = 0; i < topo["unique_ids"].size(); i++) {
-			string meas_id = topo["unique_ids"][i];
-			if ((meas_id !="P1UDT942-P1UHS0_1247X.1") && (meas_id !="P1UDT942-P1UHS0_1247X.2") && (meas_id !="P1UDT942-P1UHS0_1247X.3")){
-				meas_id = "Q_" + meas_id;
-				meas_zids.push_back(meas_id);
-			}
-		}
-		meas_zids.push_back("T_P1UDT942-P1UHS0_1247X.1");
-		meas_zids.push_back("T_P1UDT942-P1UHS0_1247X.2");
-		meas_zids.push_back("T_P1UDT942-P1UHS0_1247X.3");
 		std::cout << "number of meas id" << "\n\n";
-		std::cout << std::size(meas_zids) << "\n\n";*/
+		std::cout << std::size(meas_zids) << "\n\n";
+		
+		SLIST node_names_tmp;
+		for (int i = 0; i < topo["admittance"]["ids"].size(); i++) {
+			string node_name_new = topo["admittance"]["ids"][i];
+			//std::cout << node_name_new << "\n\n";
+			node_names_tmp.push_back(node_name_new);   //a list
+		}
+		
+		for ( auto& node : node_names_tmp ) {
+			//std::cout << "inside" << "\n\n";
+            // Check for SOURCEBUS
+            if (( node ==  topo["slack_bus"][0].get<string>()) || ( node ==  topo["slack_bus"][1].get<string>()) || ( node ==  topo["slack_bus"][2].get<string>())) {
+				//std::cout << "inside-1" << "\n\n";
+                string meas_id = "source_V_"+node;
+				meas_zids.push_back(meas_id); 
+				
+				meas_id = "source_T_"+node;
+                meas_zids.push_back(meas_id); 
+			}else{
+
+                // Add the P and Q injection
+                string meas_id = "pseudo_P_"+node;
+                meas_zids.push_back(meas_id);
+				
+				meas_id = "pseudo_Q_"+node;
+                meas_zids.push_back(meas_id);
+			}
+		}
+		std::cout << "number of meas id after appending pseudo meas" << "\n\n";
+		std::cout << std::size(meas_zids) << "\n\n";
+		//_________________________________________________________________
     }
 
 
@@ -314,8 +295,8 @@ public:
 		//_______________________________________________________________
 		
 		//std::cout << std::setw(4) << topo["unique_ids"].size()<< "\n\n";
-		for (int i = 0; i < topo["unique_ids"].size(); i++) {
-			string node_name_new = topo["unique_ids"][i];
+		for (int i = 0; i < topo["admittance"]["ids"].size(); i++) {
+			string node_name_new = topo["admittance"]["ids"][i];
 			//std::cout << node_name_new << "\n\n";
 			node_names.push_back(node_name_new);   //a list
 		}
@@ -351,12 +332,12 @@ public:
         ifs.close();
 		
 		//_______________________________________________________________
-		for (int i = 0; i < topo["y_matrix"].size(); i++) {
+		for (int i = 0; i < topo["admittance"]["admittance_matrix"].size(); i++) {
 			//std::cout<< i << std::endl;
-			for (int j = 0; j < topo["y_matrix"][i].size(); j++) {
+			for (int j = 0; j < topo["admittance"]["admittance_matrix"][i].size(); j++) {
 				//std::cout<< j << std::endl;
-				double G = (topo["y_matrix"][i][j]["real"]);
-				double B = (topo["y_matrix"][i][j]["imag"]);
+				double G = (topo["admittance"]["admittance_matrix"][i][j][0]);
+				double B = (topo["admittance"]["admittance_matrix"][i][j][1]);
 				//std::cout<< G << std::endl;
 				//std::cout<< B << std::endl;
 				
@@ -407,10 +388,14 @@ public:
         ifs.close();
 		
 		//_______________________________________________________________
-		for (int i = 0; i < topo["base_voltages"].size(); i++) {
-			string node = topo["unique_ids"][i];
-			double mag = (topo["base_voltages"][i]);
-			double arg = (topo["phases"][i]);
+		for (int i = 0; i < topo["base_voltage_magnitudes"]["ids"].size(); i++) {
+			//std::cout<< i << std::endl;
+			string node = topo["base_voltage_magnitudes"]["ids"][i];
+			//std::cout<< node << std::endl;
+			double mag = (topo["base_voltage_magnitudes"]["values"][i]);
+			//std::cout<< mag << std::endl;
+			double arg = (topo["base_voltage_angles"]["values"][i]);
+			//std::cout<< arg << std::endl;
 			double vre = mag * cos( arg /180.0 );
             double vim = mag * sin( arg /180.0 );
 			
@@ -428,115 +413,27 @@ public:
 
 
     void fillSensors() {           //loads regulators and initializes sensors (Done without regulators)
-        /*string filename = FILE_INTERFACE_READ;
-        filename += "/regid.csv";
-#ifdef DEBUG_PRIMARY
-        *selog << "Reading regulator mappings from test harness file: " <<
-            filename << "\n\n" << std::flush;
-#endif
-        std::ifstream ifs(filename);
-        if (!ifs.is_open()) {
-            *selog << "\n*** ERROR: regid file not found: " << filename <<
-                "\n\n" << std::flush;
-            exit(0);
-        }
-
-        string line;
-        getline(ifs, line); // throwaway header line
-
-        while ( getline(ifs, line) ) {
-            std::stringstream lineStream(line);
-            string regid, primnode, regnode;
-            getline(lineStream, regid, ',');
-            getline(lineStream, primnode, ',');
-            getline(lineStream, regnode, ',');
-
-            regid_primnode[regid] = primnode;
-            regid_regnode[regid] = regnode;
-
-            uint primidx = node_idxs[primnode];
-            uint regidx = node_idxs[regnode];
-            // initialize the A matrix
-            Amat[primidx][regidx] = 1; // this will change
-            Amat[regidx][primidx] = 1; // this stays unity and may not be needed
-        }
-        ifs.close();
-
-        // For the file interface, file is read for all measurements so no need
-        // to do anything for pseudo-measurements as with SensorDefConsumer
-        filename = FILE_INTERFACE_READ;
-        filename += "/measurements_1.csv";
-#ifdef DEBUG_PRIMARY
-        *selog << "Reading sensor measurements from test harness file: " <<
-            filename << "\n\n" << std::flush;
-#endif
-        ifs.open(filename);
-        if (!ifs.is_open()) {
-            *selog << "\n*** ERROR: measurements file not found: " <<
-                filename << "\n\n" << std::flush;
-            exit(0);
-        }
-
-        getline(ifs, line); // throwaway header line
-
-        /*uint zctr = 0;
-        while ( getline(ifs, line) ) {
-            std::stringstream lineStream(line);
-            string cell, zid;
-            getline(lineStream, cell, ','); // hold this value for ztypes
-            getline(lineStream, zid, ','); Zary.zids.push_back(zid);
-            Zary.zidxs[zid] = zctr++;
-            Zary.ztypes[zid] = cell;
-			//std::cout<< zid << std::endl;
-            getline(lineStream, cell, ','); Zary.znode1s[zid] = cell;
-            getline(lineStream, cell, ','); Zary.znode2s[zid] = cell;
-            getline(lineStream, cell, ','); Zary.zvals[zid] = std::stod(cell);
-            getline(lineStream, cell, ','); Zary.zsigs[zid] = std::stod(cell);
-            getline(lineStream, cell, ','); Zary.zpseudos[zid] = cell=="1";
-            getline(lineStream, cell, ','); Zary.znomvals[zid] =std::stod(cell);
-        }
-        ifs.close();*/
-		//_______________________________________________________________
-		//std::cout<< V_meas["array"] << std::endl;
-		//std::cout<< P_meas["array"] << std::endl;
-		//std::cout<< Q_meas["array"] << std::endl;
-		uint zctr = 0;
-		/*for (int i = 0; i < meas_zids.size(); i++) {
+		//uint zctr = 0;
+		uint zctr = Zary.zids.size();
+		std::cout<< Zary.zids.size() << std::endl;
+		for (int i = 0; i < V_meas["ids"].size(); i++) {
 			string node, zid;
-			std::cout<< meas_zids[i].substr(2) << std::endl;
-			node = meas_zids[i].substr(2);
-			zid = meas_zids[i];
-			if (meas_zids[i].substr(0,2) == "V_"){
-				Zary.zids.push_back(zid);
-				Zary.zidxs[zid] = zctr++;
-				Zary.znode1s[zid] = node;
-				Zary.znode2s[zid] = node;
-			
-				Zary.ztypes[zid] = "vi";
-				Zary.zvals[zid] = 1.02;
-				Zary.zsigs[zid] = 0.001;
-				Zary.zpseudos[zid] = "1";
-				Zary.znomvals[zid] = 1.02;
-			}
-		}*/
-		for (int i = 0; i < V_meas["unique_ids"].size(); i++) {
-			string node, zid;
-			node = V_meas["unique_ids"][i];
+			node = V_meas["ids"][i];
 			zid = "V_" + node;
 			Zary.zids.push_back(zid);
 			Zary.zidxs[zid] = zctr++;
 			Zary.ztypes[zid] = "vi";
 			Zary.znode1s[zid] = node;
 			Zary.znode2s[zid] = node;
-			Zary.zvals[zid] = (V_meas["array"][i].get<double>())/std::abs(node_vnoms[node]);
+			Zary.zvals[zid] = (V_meas["values"][i].get<double>())/std::abs(node_vnoms[node]);
 			//std::cout<< Zary.zvals[zid] << std::endl;
 			Zary.zsigs[zid] = 0.001;
-			Zary.zpseudos[zid] = "0";
-			Zary.znomvals[zid] = (V_meas["array"][i].get<double>())/std::abs(node_vnoms[node]);
+			Zary.zpseudos[zid] = false;
+			Zary.znomvals[zid] = (V_meas["values"][i].get<double>())/std::abs(node_vnoms[node]);
 		}
-		for (int i = 0; i < P_meas["unique_ids"].size(); i++) {
+		for (int i = 0; i < P_meas["ids"].size(); i++) {
 			string node, zid;
-			node = P_meas["unique_ids"][i];
+			node = P_meas["ids"][i];
 			if ((node !="P1UDT942-P1UHS0_1247X.1") && (node !="P1UDT942-P1UHS0_1247X.2") && (node !="P1UDT942-P1UHS0_1247X.3")){
 				zid = "P_" + node;
 				Zary.zids.push_back(zid);
@@ -544,16 +441,16 @@ public:
 				Zary.ztypes[zid] = "Pi";
 				Zary.znode1s[zid] = node;
 				Zary.znode2s[zid] = node;
-				Zary.zvals[zid] = -P_meas["array"][i].get<double>()/Sbase;
-				std::cout<< Zary.zvals[zid] << std::endl;
+				Zary.zvals[zid] = -P_meas["values"][i].get<double>()/Sbase;
+				//std::cout<< Zary.zvals[zid] << std::endl;
 				Zary.zsigs[zid] = 0.001;
-				Zary.zpseudos[zid] = "1";
-				Zary.znomvals[zid] = -P_meas["array"][i].get<double>()/Sbase;
+				Zary.zpseudos[zid] = false;
+				Zary.znomvals[zid] = -P_meas["values"][i].get<double>()/Sbase;
 			}
 		}
-		for (int i = 0; i < Q_meas["unique_ids"].size(); i++) {
+		for (int i = 0; i < Q_meas["ids"].size(); i++) {
 			string node, zid;
-			node = Q_meas["unique_ids"][i];
+			node = Q_meas["ids"][i];
 			if ((node !="P1UDT942-P1UHS0_1247X.1") && (node !="P1UDT942-P1UHS0_1247X.2") && (node !="P1UDT942-P1UHS0_1247X.3")){
 				zid = "Q_" + node;
 				Zary.zids.push_back(zid);
@@ -561,117 +458,92 @@ public:
 				Zary.ztypes[zid] = "Qi";
 				Zary.znode1s[zid] = node;
 				Zary.znode2s[zid] = node;
-				Zary.zvals[zid] = -Q_meas["array"][i].get<double>()/Sbase;
+				Zary.zvals[zid] = -Q_meas["values"][i].get<double>()/Sbase;
 				Zary.zsigs[zid] = 0.001;
-				Zary.zpseudos[zid] = "1";
-				Zary.znomvals[zid] = -Q_meas["array"][i].get<double>()/Sbase;
+				Zary.zpseudos[zid] = false;
+				Zary.znomvals[zid] = -Q_meas["values"][i].get<double>()/Sbase;
 			}
 		}
-		//meas_zids.push_back("T_P1UDT942-P1UHS0_1247X.1");
-		string node, zid;
-		node = topo["slack_bus"][0].get<string>();
-		//node = "P1UDT942-P1UHS0_1247X.1";
-		zid = "T_" + node;
-		Zary.zids.push_back(zid);
-		Zary.zidxs[zid] = zctr++;
-		Zary.ztypes[zid] = "Ti";
-		Zary.znode1s[zid] = node;
-		Zary.znode2s[zid] = node;
-		Zary.zvals[zid] = 0;
-		Zary.zsigs[zid] = 0.01;
-		Zary.zpseudos[zid] = "1";
-		Zary.znomvals[zid] = 0;
 		
-		//node = "P1UDT942-P1UHS0_1247X.2";
-		node = topo["slack_bus"][1].get<string>();
-		zid = "T_" + node;
-		Zary.zids.push_back(zid);
-		Zary.zidxs[zid] = zctr++;
-		Zary.ztypes[zid] = "Ti";
-		Zary.znode1s[zid] = node;
-		Zary.znode2s[zid] = node;
-		Zary.zvals[zid] = 0;
-		Zary.zsigs[zid] = 0.01;
-		Zary.zpseudos[zid] = "1";
-		Zary.znomvals[zid] = 0;
-		
-		//node = "P1UDT942-P1UHS0_1247X.3";
-		node = topo["slack_bus"][2].get<string>();
-		zid = "T_" + node;
-		Zary.zids.push_back(zid);
-		Zary.zidxs[zid] = zctr++;
-		Zary.ztypes[zid] = "Ti";
-		Zary.znode1s[zid] = node;
-		Zary.znode2s[zid] = node;
-		Zary.zvals[zid] = 0;
-		Zary.zsigs[zid] = 0.01;
-		Zary.zpseudos[zid] = "1";
-		Zary.znomvals[zid] = 0;
+		//inserting pseudo meas
+		//uint zctr = Zary.zids.size();
+		std::cout<< Zary.zids.size() << std::endl;
+        for ( auto& node : node_names ) {
+
+            // Check for SOURCEBUS
+            if (( node ==  topo["slack_bus"][0].get<string>()) || ( node ==  topo["slack_bus"][1].get<string>()) || ( node ==  topo["slack_bus"][2].get<string>())) {
+                //std::cout<< "Source bus detected" << std::endl;
+                // Add sourcebus voltage magnitude
+                string vmag_zid = "source_V_"+node;
+                Zary.zids.push_back(vmag_zid);
+                Zary.zidxs   [vmag_zid] = zctr++;
+                Zary.ztypes  [vmag_zid] = "vi";
+                Zary.znode1s [vmag_zid] = node;
+                Zary.znode2s [vmag_zid] = node;
+                Zary.zvals   [vmag_zid] = 1.00;
+                Zary.zsigs   [vmag_zid] = 0.001; // 1 sigma = 0.1%
+                Zary.zpseudos[vmag_zid] = true;
+                Zary.znomvals[vmag_zid] = Zary.zvals[vmag_zid];
+				
+				string varg_zid = "source_T_"+node;
+                Zary.zids.push_back(varg_zid);
+                Zary.zidxs   [varg_zid] = zctr++;
+                Zary.ztypes  [varg_zid] = "Ti";
+                Zary.znode1s [varg_zid] = node;
+                Zary.znode2s [varg_zid] = node;
+                Zary.zvals   [varg_zid] = 0.0;
+                Zary.zsigs   [varg_zid] = 0.001;
+                Zary.zpseudos[varg_zid] = true;
+                Zary.znomvals[varg_zid] = Zary.zvals[varg_zid];
+			}else{
+
+                // Add the P and Q injections
+                string pinj_zid = "pseudo_P_"+node;
+                Zary.zids.push_back(pinj_zid);
+                Zary.zidxs   [pinj_zid] = zctr++;
+                Zary.ztypes  [pinj_zid] = "Pi";
+                Zary.znode1s [pinj_zid] = node;
+                Zary.znode2s [pinj_zid] = node;
+				double val=0;
+				for (int i = 0; i < topo["injections"]["power_real"]["ids"].size(); i++) {
+					if (topo["injections"]["power_real"]["ids"][i] == node){
+						val = (topo["injections"]["power_real"]["values"][i].get<double>())/Sbase;
+					}
+				}
+				//std::cout << "value assigned is: " << std::endl;
+				//std::cout << val << std::endl;
+                Zary.zvals   [pinj_zid] = val/Sbase;
+                Zary.zsigs   [pinj_zid] = 0.001; // load + leakage
+                Zary.zpseudos[pinj_zid] = true;
+                Zary.znomvals[pinj_zid] = Zary.zvals[pinj_zid];
+				
+				string qinj_zid = "pseudo_Q_"+node;
+                Zary.zids.push_back(qinj_zid);
+                Zary.zidxs   [qinj_zid] = zctr++;
+                Zary.ztypes  [qinj_zid] = "Qi";
+                Zary.znode1s [qinj_zid] = node;
+                Zary.znode2s [qinj_zid] = node;
+				
+				double val_q=0;
+				for (int i = 0; i < topo["injections"]["power_imaginary"]["ids"].size(); i++) {
+					if (topo["injections"]["power_imaginary"]["ids"][i] == node){
+						val_q = (topo["injections"]["power_imaginary"]["values"][i].get<double>())/Sbase;
+					}
+				}
+				
+                Zary.zvals   [qinj_zid] = val_q/Sbase;
+                Zary.zsigs   [qinj_zid] = 0.001; // load + leakage
+                Zary.zpseudos[qinj_zid] = true;
+                Zary.znomvals[qinj_zid] = Zary.zvals[qinj_zid];
+				
+			}
+		}
 		//_________________________________________________________________
-		//uint zctr = 0;
-		/*for (int i = 0; i < meas_zids.size(); i++) {
-			string node, zid;
-			std::cout<< meas_zids[i].substr(2) << std::endl;
-			node = meas_zids[i].substr(2);
-			zid = meas_zids[i];
-			Zary.zids.push_back(zid);
-			Zary.zidxs[zid] = zctr++;
-			Zary.znode1s[zid] = node;
-			Zary.znode2s[zid] = node;
-			if (meas_zids[i].substr(0,2) == "V_"){
-				Zary.ztypes[zid] = "vi";
-				Zary.zvals[zid] = 1.02;
-				Zary.zsigs[zid] = 0.001;
-				Zary.zpseudos[zid] = "1";
-				Zary.znomvals[zid] = 1.02;
-			}
-			if (meas_zids[i].substr(0,2) == "P_"){
-				Zary.ztypes[zid] = "vi";
-				Zary.zvals[zid] = 1.02;
-				Zary.zsigs[zid] = 0.001;
-				Zary.zpseudos[zid] = "1";
-				Zary.znomvals[zid] = 1.02;
-			}
-			if (meas_zids[i].substr(0,2) == "Q_"){
-				Zary.ztypes[zid] = "vi";
-				Zary.zvals[zid] = 1.02;
-				Zary.zsigs[zid] = 0.001;
-				Zary.zpseudos[zid] = "1";
-				Zary.znomvals[zid] = 1.02;
-			}
-		}*/
+		std::cout<< Zary.zids.size() << std::endl;
     }
 
 
     bool fillMeasurement() {         //Todo --------how to form workqueue
-        /*bool ret = true;
-
-        meas_timestamp = 0;
-        meas_mrids.clear();
-        meas_magnitudes.clear();
-
-        string meas_line;
-        if ( getline(meas_fh, meas_line) ) {
-			//std::cout<< "inside" << std::endl;
-            std::stringstream lineStream(meas_line);
-            string cell, zid;
-            getline(lineStream, cell, ',');
-            double doubletime = stod(cell);
-            meas_timestamp = (uint)doubletime;
-
-            uint idx = 0;
-            while ( getline(lineStream, cell, ',') ) {
-                zid = meas_zids[idx++];
-                meas_mrids.push_back(zid);
-                meas_magnitudes[zid] = stod(cell);
-            }
-        } else {
-#ifdef DEBUG_PRIMARY
-            *selog << "Reached end of measurement_data.csv file, normal exit\n" << std::flush;
-#endif
-            ret = false;
-        }*/
-		
 		//_________________________________________________________________
 		bool ret = true;
 		
@@ -687,53 +559,47 @@ public:
         meas_mrids.clear();
         meas_magnitudes.clear();
 		
-		meas_timestamp = (uint)1000;
+		meas_timestamp = (uint)(ts++);
 		
 		string zid;
 		uint idx = 0;
-		for (int i = 0; i < V_message["unique_ids"].size(); i++) {
-			string node = V_message["unique_ids"][i];
+		for (int i = 0; i < V_message["ids"].size(); i++) {
+			string node = V_message["ids"][i];
 			zid = meas_zids[idx++];
 			meas_mrids.push_back(zid);
-			meas_magnitudes[zid] = (V_message["array"][i].get<double>())/std::abs(node_vnoms[node]);
+			meas_magnitudes[zid] = (V_message["values"][i].get<double>())/std::abs(node_vnoms[node]);
 			std::cout<< meas_magnitudes[zid] << std::endl;
 		}
-		for (int i = 0; i < P_message["unique_ids"].size(); i++) {
-			string node = P_message["unique_ids"][i];
+		for (int i = 0; i < P_message["ids"].size(); i++) {
+			string node = P_message["ids"][i];
 			if ((node !="P1UDT942-P1UHS0_1247X.1") && (node !="P1UDT942-P1UHS0_1247X.2") && (node !="P1UDT942-P1UHS0_1247X.3")){
 				zid = meas_zids[idx++];
 				meas_mrids.push_back(zid);
-				meas_magnitudes[zid] = -(P_message["array"][i].get<double>()/Sbase);
+				meas_magnitudes[zid] = -(P_message["values"][i].get<double>()/Sbase);
 				//std::cout<< meas_magnitudes[zid] << std::endl;
 			}
 		}
-		for (int i = 0; i < Q_message["unique_ids"].size(); i++) {
-			string node = Q_message["unique_ids"][i];
+		for (int i = 0; i < Q_message["ids"].size(); i++) {
+			string node = Q_message["ids"][i];
 			if ((node !="P1UDT942-P1UHS0_1247X.1") && (node !="P1UDT942-P1UHS0_1247X.2") && (node !="P1UDT942-P1UHS0_1247X.3")){
 				zid = meas_zids[idx++];
 				meas_mrids.push_back(zid);
-				meas_magnitudes[zid] = -(Q_message["array"][i].get<double>()/Sbase);
+				meas_magnitudes[zid] = -(Q_message["values"][i].get<double>()/Sbase);
 				//std::cout<< meas_magnitudes[zid] << std::endl;
 			}
 		}
 		
-		//zid = "T_P1UDT942-P1UHS0_1247X.1";
-		zid = "T_" + topo["slack_bus"][0].get<string>();
-		meas_mrids.push_back(zid);
-		meas_magnitudes[zid] = 0;
+		for (int i = idx; i < meas_zids.size(); i++) {
+			zid = meas_zids[idx++];
+			meas_mrids.push_back(zid);
+			//std::cout<< zid << std::endl;
+			//std::cout<< Zary.zvals[zid] << std::endl;
+			meas_magnitudes[zid] = Zary.zvals[zid];
+		}
 		
-		//zid = "T_P1UDT942-P1UHS0_1247X.2";
-		zid = "T_" + topo["slack_bus"][1].get<string>();;
-		meas_mrids.push_back(zid);
-		meas_magnitudes[zid] = 0;
-		
-		//zid = "T_P1UDT942-P1UHS0_1247X.3";
-		zid = "T_" + topo["slack_bus"][2].get<string>();;
-		meas_mrids.push_back(zid);
-		meas_magnitudes[zid] = 0;
-		
-		//ret = false;
-        
+		if (workQueue.empty()){
+			ret = false;
+        }
 		return ret;
     }
 
@@ -804,6 +670,7 @@ private:
 	json V_meas;
 	SharedQueue<json> workQueue;
 	double Sbase;
+	double ts;
 };
 
 #endif
