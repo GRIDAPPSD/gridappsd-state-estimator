@@ -254,31 +254,78 @@ public:
     void fillTopo() {    //reads nodes list and y matrix info (Done)
 		
 		//std::cout << std::setw(4) << topo["unique_ids"].size()<< "\n\n";
-		for (int i = 0; i < topo["admittance"]["ids"].size(); i++) {
-			string node_name_new = topo["admittance"]["ids"][i];
+		for (int i = 0; i < topo["base_voltage_magnitudes"]["ids"].size(); i++) {
+			string node_name_new = topo["base_voltage_magnitudes"]["ids"][i];
 			//std::cout << node_name_new << "\n\n";
 			node_names.push_back(node_name_new);   //a list
 		}
 		std::cout << node_names.size() << "\n\n";
 		//___________________________________________________________________
-		for (int i = 0; i < topo["admittance"]["admittance_matrix"].size(); i++) {
-			//std::cout<< i << std::endl;
-			for (int j = 0; j < topo["admittance"]["admittance_matrix"][i].size(); j++) {
-				//std::cout<< j << std::endl;
-				double G = (topo["admittance"]["admittance_matrix"][i][j][0]);
-				double B = (topo["admittance"]["admittance_matrix"][i][j][1]);
-				//std::cout<< G << std::endl;
-				//std::cout<< B << std::endl;
-				
-				if ((G!=0) || (B!=0)){
-				Yphys[i+1][j+1] = complex<double>(G,B);
-				if ( (i+1) != (j+1) ) Yphys[j+1][i+1] = complex<double>(G,B);
-				//std::cout<< Yphys[i+1][j+1] << std::endl;
+		if (!sparse_impl){
+			std::cout<< "Not a sparse matrix implementation" << std::endl;
+			for (int i = 0; i < topo["admittance"]["admittance_matrix"].size(); i++) {
+				//std::cout<< i << std::endl;
+				for (int j = 0; j < topo["admittance"]["admittance_matrix"][i].size(); j++) {
+					//std::cout<< j << std::endl;
+					double G = (topo["admittance"]["admittance_matrix"][i][j][0]);
+					double B = (topo["admittance"]["admittance_matrix"][i][j][1]);
+					//std::cout<< G << std::endl;
+					//std::cout<< B << std::endl;
+					
+					if ((G!=0) || (B!=0)){
+					Yphys[i+1][j+1] = complex<double>(G,B);
+					if ( (i+1) != (j+1) ) Yphys[j+1][i+1] = complex<double>(G,B);
+					//std::cout<< Yphys[i+1][j+1] << std::endl;
+					}
 				}
 			}
+		}else{
+			std::cout<< "Sparse matrix implementation" << std::endl;
+			//____________________ now for sparse implementation:
+			for (int a = 0; a < topo["admittance"]["admittance_list"].size(); a++) {
+				int i = 0;
+				int i_locked = 0;
+				int j = 0;
+				int j_locked = 0;
+				for ( auto& node : node_names ) {
+					if (node ==  topo["admittance"]["from_equipment"][a].get<string>()){
+						i_locked = i;
+					}else{
+						i++;
+					}					
+				}
+				for ( auto& node : node_names ) {
+					if (node ==  topo["admittance"]["to_equipment"][a].get<string>()){
+						j_locked = j;
+					}else{
+						j++;
+					}					
+				}
+				//std::cout<< "i locked is" << std::endl;
+				//std::cout<< i_locked << std::endl;
+				//std::cout<< "j locked is" << std::endl;
+				//std::cout<< j_locked << std::endl;
+				double G = (topo["admittance"]["admittance_list"][a][0]);
+				double B = (topo["admittance"]["admittance_list"][a][1]);
+				//std::cout<< G << std::endl;
+				//std::cout<< B << std::endl;
+				//need to find i and j?
+				
+				
+				if ((G!=0) || (B!=0)){
+				Yphys[i_locked+1][j_locked+1] = complex<double>(G,B);
+				if ( (i_locked+1) != (j_locked+1) ) Yphys[j_locked+1][i_locked+1] = complex<double>(G,B);
+				//std::cout<< Yphys[i+1][j+1] << std::endl;
+				}
+				
+			}
 		}
-		//__________________________________________________________________
-		
+		//for (int l = 1; l < 5; l++) {
+		//	for (int m = 1; m < 5; m++) {
+		//		std::cout<< Yphys[l][m] << std::endl;
+		//	}
+		//}
+		//std::cout<< "Last enteries:" << std::endl;
 		
     }
 
@@ -560,6 +607,7 @@ private:
 	SharedQueue<json> workQueue;
 	double Sbase;
 	double ts;
+	bool sparse_impl = false;
 };
 
 //#endif
