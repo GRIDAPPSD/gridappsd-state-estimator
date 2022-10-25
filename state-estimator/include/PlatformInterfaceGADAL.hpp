@@ -219,8 +219,8 @@ public:
 		std::cout << std::size(meas_zids) << "\n\n";
 		
 		SLIST node_names_tmp;
-		for (int i = 0; i < topo["admittance"]["ids"].size(); i++) {
-			string node_name_new = topo["admittance"]["ids"][i];
+		for (int i = 0; i < topo["base_voltage_magnitudes"]["ids"].size(); i++) {
+			string node_name_new = topo["base_voltage_magnitudes"]["ids"][i];
 			//std::cout << node_name_new << "\n\n";
 			node_names_tmp.push_back(node_name_new);   //a list
 		}
