@@ -1288,7 +1288,7 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
         double measMeanMag = measSumMag/numSum;
         double estMeanMag = estSumMag/numSum;
-        double perErrMag = 100 * diffSumMag/(numSum*measMeanMag);
+        double perErrMag = 100 * diffSumMag/measSumMag;
         double estMeanArg = estSumArg/numSum;
 
         *selog << "Meas vmag per-unit min: " << measMinMag << ", max: " << measMaxMag << ", mean: " << measMeanMag << "\n" << std::flush;
