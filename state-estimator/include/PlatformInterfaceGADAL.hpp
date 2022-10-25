@@ -1,9 +1,9 @@
-#ifndef PLATFORMINTERFACEGADAL_HPP
+//#ifndef PLATFORMINTERFACEGADAL_HPP
 #define PLATFORMINTERFACEGADAL_HPP
 
 #include <iomanip> // std::setprecision
 
-#define FILE_INTERFACE_READ "test_files_123"
+#define FILE_INTERFACE_READ "Results"
 
 #ifndef FILE_INTERFACE_READ
 #include "OOPS, NEED TO DEFINE FILE_INTERFACE_READ!"
@@ -64,7 +64,7 @@ public:
     helicscpp::ValueFederate* vfed = new helicscpp::ValueFederate("pnnl_state_estimator", fi);
     std::cout << " Value federate created\n";
 	
-	helicscpp::Input sub_topo = vfed->registerSubscription("local_feeder/topology","");
+	helicscpp::Input sub_topo = vfed->registerSubscription("feeder/topology","");
     
 	//helicscpp::Input sub_P = vfed->registerSubscription("sensors/power_real","W");
 	helicscpp::Input sub_P = vfed->registerSubscription("sensor_power_real/publication","W");
@@ -194,24 +194,6 @@ public:
 
 
     void setupMeasurements() {               //measurement ids are loaded here (Done)
-        string filename = FILE_INTERFACE_READ;
-        filename += "/measurement_data_1.csv";
-#ifdef DEBUG_PRIMARY
-        *selog << "Reading measurements from test harness file: " << filename << "\n\n" << std::flush;
-#endif
-        meas_fh.open(filename);
-
-        // header line is an ordered list of zids
-        // parse measurement file header to get the zids into an STL vector
-        string meas_line;
-        getline(meas_fh, meas_line);
-        string cell;
-        std::stringstream headerStream(meas_line);
-        getline(headerStream, cell, ','); // throwaway timestamp header token
-        //while ( getline(headerStream, cell, ',') )
-        //   meas_zids.push_back(cell);
-		
-		//_______________________________________________________________
 		//Adding meas ids
 		std::cout << "number of meas id here" << "\n\n";
 		std::cout << std::size(meas_zids) << "\n\n";
@@ -270,29 +252,6 @@ public:
 
 
     void fillTopo() {    //reads nodes list and y matrix info (Done)
-        string filename = FILE_INTERFACE_READ;
-        filename += "/nodelist.csv";
-#ifdef DEBUG_PRIMARY
-        *selog << "Reading nodelist from test harness file: " << filename <<
-            "\n\n" << std::flush;
-#endif
-        std::ifstream ifs(filename);
-        if (!ifs.is_open()) {
-            *selog << "\n*** ERROR: nodelist file not found: " << filename <<
-                "\n\n" << std::flush;
-            exit(0);
-        }
-
-        string line;
-        while ( getline(ifs, line) ) {
-            // Extract the node name
-            string node_name = regex_replace(line,regex("\""),"");
-            // Store the node information
-            //node_names.push_back(node_name);   //a list
-        }
-        ifs.close();
-		
-		//_______________________________________________________________
 		
 		//std::cout << std::setw(4) << topo["unique_ids"].size()<< "\n\n";
 		for (int i = 0; i < topo["admittance"]["ids"].size(); i++) {
@@ -302,36 +261,6 @@ public:
 		}
 		std::cout << node_names.size() << "\n\n";
 		//___________________________________________________________________
-
-        filename = FILE_INTERFACE_READ;
-        filename += "/ysparse.csv";
-#ifdef DEBUG_PRIMARY
-        *selog << "Reading ybus from test harness file: " << filename <<
-            "\n\n" << std::flush;
-#endif
-        ifs.open(filename);
-        if (!ifs.is_open()) {
-            *selog << "\n*** ERROR: ysparse file not found: " << filename <<
-                "\n\n" << std::flush;
-            exit(0);
-        }
-
-        getline(ifs, line);  // throwaway header line
-        while ( getline(ifs, line) ) {
-            std::stringstream lineStream(line);
-            string cell;
-            getline(lineStream, cell, ','); int i = std::stoi(cell);
-            getline(lineStream, cell, ','); int j = std::stoi(cell);
-            getline(lineStream, cell, ','); double G = std::stod(cell);
-            getline(lineStream, cell, ','); double B = std::stod(cell);
-
-            //Yphys[i][j] = complex<double>(G,B);      //dictionary, only contains entries that are non zero. (only take non-zero entries out of y_matrix and assign to this disctionary)
-            //if ( i != j ) Yphys[j][i] = complex<double>(G,B);
-			//std::cout<< Yphys[i][j] << std::endl;
-        }
-        ifs.close();
-		
-		//_______________________________________________________________
 		for (int i = 0; i < topo["admittance"]["admittance_matrix"].size(); i++) {
 			//std::cout<< i << std::endl;
 			for (int j = 0; j < topo["admittance"]["admittance_matrix"][i].size(); j++) {
@@ -355,39 +284,6 @@ public:
 
 
     void fillVnoms() {     //Vnoms are loaded here (Done)
-#ifdef FILE_INTERFACE_VNOM
-        string filename = FILE_INTERFACE_READ;
-        filename += "/vnom.csv";
-#ifdef DEBUG_PRIMARY
-        *selog << "Reading vnom from test harness file: " << filename <<
-            "\n" << std::flush;
-#endif
-        std::ifstream ifs(filename);
-        if (!ifs.is_open()) {
-            *selog << "\n*** ERROR: vnom file not found: " << filename <<
-                "\n\n" << std::flush;
-            exit(0);
-        }
-
-        string line;
-        getline(ifs, line);  // throwaway header line
-
-        while ( getline(ifs, line) ) {
-            std::stringstream lineStream(line);
-            string node, cell;
-            getline(lineStream, node, ',');
-            getline(lineStream, cell, ','); double mag = std::stod(cell);
-            getline(lineStream, cell, ','); double arg = std::stod(cell);
-            double vre = mag * cos( arg * M_PI/180.0 );
-            double vim = mag * sin( arg * M_PI/180.0 );
-            complex<double> vnom = complex<double>(vre,vim);
-			//std::cout<< node << std::endl;
-			//std::cout<< vnom << std::endl;
-            //node_vnoms[node] = vnom;      //a complex with both mag and angle. 
-        }
-        ifs.close();
-		
-		//_______________________________________________________________
 		for (int i = 0; i < topo["base_voltage_magnitudes"]["ids"].size(); i++) {
 			//std::cout<< i << std::endl;
 			string node = topo["base_voltage_magnitudes"]["ids"][i];
@@ -405,10 +301,6 @@ public:
             node_vnoms[node] = vnom;      //a complex with both mag and angle. 
 		}
 		//__________________________________________________________________
-#else
-        for ( auto& node_name : *node_names_ref )
-            node_vnoms[node_name] = 1;
-#endif
     }
 
 
@@ -434,35 +326,33 @@ public:
 		for (int i = 0; i < P_meas["ids"].size(); i++) {
 			string node, zid;
 			node = P_meas["ids"][i];
-			if ((node !="P1UDT942-P1UHS0_1247X.1") && (node !="P1UDT942-P1UHS0_1247X.2") && (node !="P1UDT942-P1UHS0_1247X.3")){
-				zid = "P_" + node;
-				Zary.zids.push_back(zid);
-				Zary.zidxs[zid] = zctr++;
-				Zary.ztypes[zid] = "Pi";
-				Zary.znode1s[zid] = node;
-				Zary.znode2s[zid] = node;
-				Zary.zvals[zid] = -P_meas["values"][i].get<double>()/Sbase;
-				//std::cout<< Zary.zvals[zid] << std::endl;
-				Zary.zsigs[zid] = 0.001;
-				Zary.zpseudos[zid] = false;
-				Zary.znomvals[zid] = -P_meas["values"][i].get<double>()/Sbase;
-			}
+			zid = "P_" + node;
+			Zary.zids.push_back(zid);
+			Zary.zidxs[zid] = zctr++;
+			Zary.ztypes[zid] = "Pi";
+			Zary.znode1s[zid] = node;
+			Zary.znode2s[zid] = node;
+			Zary.zvals[zid] = -P_meas["values"][i].get<double>()/Sbase;
+			//std::cout<< Zary.zvals[zid] << std::endl;
+			Zary.zsigs[zid] = 0.001;
+			Zary.zpseudos[zid] = false;
+			Zary.znomvals[zid] = -P_meas["values"][i].get<double>()/Sbase;
+			//}
 		}
 		for (int i = 0; i < Q_meas["ids"].size(); i++) {
 			string node, zid;
 			node = Q_meas["ids"][i];
-			if ((node !="P1UDT942-P1UHS0_1247X.1") && (node !="P1UDT942-P1UHS0_1247X.2") && (node !="P1UDT942-P1UHS0_1247X.3")){
-				zid = "Q_" + node;
-				Zary.zids.push_back(zid);
-				Zary.zidxs[zid] = zctr++;
-				Zary.ztypes[zid] = "Qi";
-				Zary.znode1s[zid] = node;
-				Zary.znode2s[zid] = node;
-				Zary.zvals[zid] = -Q_meas["values"][i].get<double>()/Sbase;
-				Zary.zsigs[zid] = 0.001;
-				Zary.zpseudos[zid] = false;
-				Zary.znomvals[zid] = -Q_meas["values"][i].get<double>()/Sbase;
-			}
+			zid = "Q_" + node;
+			Zary.zids.push_back(zid);
+			Zary.zidxs[zid] = zctr++;
+			Zary.ztypes[zid] = "Qi";
+			Zary.znode1s[zid] = node;
+			Zary.znode2s[zid] = node;
+			Zary.zvals[zid] = -Q_meas["values"][i].get<double>()/Sbase;
+			Zary.zsigs[zid] = 0.001;
+			Zary.zpseudos[zid] = false;
+			Zary.znomvals[zid] = -Q_meas["values"][i].get<double>()/Sbase;
+			//}
 		}
 		
 		//inserting pseudo meas
@@ -512,7 +402,7 @@ public:
 				}
 				//std::cout << "value assigned is: " << std::endl;
 				//std::cout << val << std::endl;
-                Zary.zvals   [pinj_zid] = val/Sbase;
+                Zary.zvals   [pinj_zid] = val;
                 Zary.zsigs   [pinj_zid] = 0.001; // load + leakage
                 Zary.zpseudos[pinj_zid] = true;
                 Zary.znomvals[pinj_zid] = Zary.zvals[pinj_zid];
@@ -525,14 +415,15 @@ public:
                 Zary.znode2s [qinj_zid] = node;
 				
 				double val_q=0;
+				double val_q_adj=0;
 				for (int i = 0; i < topo["injections"]["power_imaginary"]["ids"].size(); i++) {
 					if (topo["injections"]["power_imaginary"]["ids"][i] == node){
-						val_q = (topo["injections"]["power_imaginary"]["values"][i].get<double>())/Sbase;
+				        val_q = (topo["injections"]["power_imaginary"]["values"][i].get<double>())/Sbase;
 					}
 				}
 				
-                Zary.zvals   [qinj_zid] = val_q/Sbase;
-                Zary.zsigs   [qinj_zid] = 0.001; // load + leakage
+                Zary.zvals   [qinj_zid] = val_q;
+                Zary.zsigs   [qinj_zid] = 0.001; 
                 Zary.zpseudos[qinj_zid] = true;
                 Zary.znomvals[qinj_zid] = Zary.zvals[qinj_zid];
 				
@@ -572,21 +463,19 @@ public:
 		}
 		for (int i = 0; i < P_message["ids"].size(); i++) {
 			string node = P_message["ids"][i];
-			if ((node !="P1UDT942-P1UHS0_1247X.1") && (node !="P1UDT942-P1UHS0_1247X.2") && (node !="P1UDT942-P1UHS0_1247X.3")){
-				zid = meas_zids[idx++];
-				meas_mrids.push_back(zid);
-				meas_magnitudes[zid] = -(P_message["values"][i].get<double>()/Sbase);
-				//std::cout<< meas_magnitudes[zid] << std::endl;
-			}
+			zid = meas_zids[idx++];
+			meas_mrids.push_back(zid);
+			meas_magnitudes[zid] = -(P_message["values"][i].get<double>()/Sbase);
+			//std::cout<< meas_magnitudes[zid] << std::endl;
+			//}
 		}
 		for (int i = 0; i < Q_message["ids"].size(); i++) {
 			string node = Q_message["ids"][i];
-			if ((node !="P1UDT942-P1UHS0_1247X.1") && (node !="P1UDT942-P1UHS0_1247X.2") && (node !="P1UDT942-P1UHS0_1247X.3")){
-				zid = meas_zids[idx++];
-				meas_mrids.push_back(zid);
-				meas_magnitudes[zid] = -(Q_message["values"][i].get<double>()/Sbase);
-				//std::cout<< meas_magnitudes[zid] << std::endl;
-			}
+			zid = meas_zids[idx++];
+			meas_mrids.push_back(zid);
+			meas_magnitudes[zid] = -(Q_message["values"][i].get<double>()/Sbase);
+			//std::cout<< meas_magnitudes[zid] << std::endl;
+			//}
 		}
 		
 		for (int i = idx; i < meas_zids.size(); i++) {
@@ -673,4 +562,4 @@ private:
 	double ts;
 };
 
-#endif
+//#endif
