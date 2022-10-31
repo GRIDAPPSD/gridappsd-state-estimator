@@ -607,7 +607,7 @@ private:
 	SharedQueue<json> workQueue;
 	double Sbase;
 	double ts;
-	bool sparse_impl = false;
+	bool sparse_impl = true;
 };
 
 //#endif
