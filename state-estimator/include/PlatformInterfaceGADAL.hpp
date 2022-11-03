@@ -600,14 +600,14 @@ private:
     std::ifstream meas_fh;
     std::ofstream est_fh;
     std::vector<string> meas_zids;
-    json topo;
-    json P_meas;
-    json Q_meas;
-    json V_meas;
-    SharedQueue<json> workQueue;
-    double Sbase;
-    double ts;
-    bool sparse_impl = true;
+	json topo;
+	json P_meas;
+	json Q_meas;
+	json V_meas;
+	SharedQueue<json> workQueue;
+	double Sbase;
+	double ts;
+	bool sparse_impl = true;
 };
 
 //#endif
