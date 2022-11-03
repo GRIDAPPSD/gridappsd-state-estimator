@@ -39,7 +39,7 @@ if [ "$#" -gt 0 ]; then
 
     bin/state-estimator $SIMID "$SIMREQ" 2>&1 | tee sedbg.log
 else
-    #bin/state-estimator-file 2>&1 | tee sedbg.log
-    bin/state-estimator-sgidal --startbroker "-f1" --name=fed1 --target=fed1 2>&1 | tee sedbg.log
+    bin/state-estimator-file 2>&1 | tee sedbg.log
+    #bin/state-estimator-gadal --startbroker "-f1" --name=fed1 --target=fed1 2>&1 | tee sedbg.log
 fi
 
