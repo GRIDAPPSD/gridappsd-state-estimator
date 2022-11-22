@@ -494,6 +494,19 @@ public:
 		
 		if (currenttime <= Total_ts) {
 			std::cout <<currenttime << std::endl;
+			
+
+			//currenttime = vfed->requestTime(10000);
+    
+
+			V_message = workQueue.pop();
+			json P_message = workQueue.pop();
+			json Q_message = workQueue.pop();
+
+			std::cout<< V_message<< std::endl;
+			std::cout<< P_message << std::endl;
+			std::cout<< Q_message<< std::endl;
+			
 			json V_meas_sim, P_meas_sim, Q_meas_sim;
 
         
@@ -509,17 +522,6 @@ public:
 			workQueue.push(V_meas_sim);
 			workQueue.push(P_meas_sim);
 			workQueue.push(Q_meas_sim);
-
-			//currenttime = vfed->requestTime(10000);
-    
-
-			json V_message = workQueue.pop();
-			json P_message = workQueue.pop();
-			json Q_message = workQueue.pop();
-
-			std::cout<< V_message<< std::endl;
-			std::cout<< P_message << std::endl;
-			std::cout<< Q_message<< std::endl;
 
 			meas_timestamp = 0;
 			meas_mrids.clear();
@@ -623,7 +625,7 @@ public:
 		std::list<double> est_volt;
 		std::list<double> est_ang;
         for ( auto& node_name : node_names ){
-            est_fh << est_v[node_name] << ",";
+            est_fh << est_vmagpu[node_name] << ",";
 			//std::cout<< "-------------------------------" << std::endl;
 			//std::cout<< est_v[node_name] << std::endl;
 			//std::cout<< node_name << std::endl;
@@ -636,18 +638,21 @@ public:
             est_fh << est_vargpu[node_name] << ( ++nctr < node_qty ? "," : "\n" );
 
         est_fh.close();
-		
+		time_t now = time(0);
+   
+		// convert now to string form
+		char* dt = ctime(&now);
 		json jmessage_vmag;
 		jmessage_vmag["values"] = est_volt;//{2331.1810216005406, 2331.177966421088, 2331.1820742949385};
 		jmessage_vmag["ids"] = node_names;//{"150.1", "150.2", "150.3"};
-		jmessage_vmag["time"] = "2017-01-01T00:15:00";
+		jmessage_vmag["time"] = V_message["time"];//std::to_string(currenttime);//"2017-01-01T00:15:00";
 		jmessage_vmag["units"] =  "kV";
 		pub_Vmag.publish(jmessage_vmag.dump());
 		
 		json jmessage_vang;
 		jmessage_vang["values"] = est_ang;//{2331.1810216005406, 2331.177966421088, 2331.1820742949385};
 		jmessage_vang["ids"] = node_names;//{"150.1", "150.2", "150.3"};
-		jmessage_vang["time"] = "2017-01-01T00:15:00";
+		jmessage_vang["time"] = V_message["time"];//"2017-01-01T00:15:00";
 		jmessage_vang["units"] =  "deg";
 		pub_Vang.publish(jmessage_vang.dump());
 			
@@ -687,7 +692,8 @@ private:
     std::string power_imag;
     std::string voltages;
 	SLIST node_est_v;
-	int Total_ts = 96;
+	int Total_ts = 97;
+	json V_message;
 };
 
 //#endif
