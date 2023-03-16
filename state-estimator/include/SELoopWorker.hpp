@@ -1383,6 +1383,7 @@ class SELoopWorker {
         // -- compute p_predict = F*P*F' + Q | F=I (can be simplified)
 
 #ifdef DIAGONAL_P
+        // prepare P as a diagonal matrix from state uncertainity
         cs *Pmat; this->prep_P(Pmat);
 #endif
 #ifdef DEBUG_PRIMARY
@@ -1435,6 +1436,7 @@ class SELoopWorker {
         print_cs_compress(P3,tspath+"P3.csv");
 #endif
 
+       // update process covariance matrix
        cs *Qmat; this->prep_Q(Qmat, timestamp, timestampLastEstimate);
 #ifdef DEBUG_PRIMARY
         *selog << "Q is " << Qmat->m << " by " << Qmat->n << " with " << Qmat->nzmax << " entries\n" << std::flush;
@@ -1459,10 +1461,40 @@ class SELoopWorker {
         print_cs_compress(Ppre,tspath+"Ppre.csv");
 #endif
 
+#ifdef GADAL_INTERFACE
+        cs *xmat; this->prep_x(xmat);
+#ifdef DEBUG_PRIMARY
+        *selog << "x is " << xmat->m << " by " << xmat->n <<
+            " with " << xmat->nzmax << " entries\n" << std::flush;
+#endif
+#ifdef DEBUG_STATS
+        print_cs_stats(xmat, "xmat");
+#endif
+#ifdef DEBUG_FILES
+        print_cs_compress(xmat,tspath+"x.csv");
+#endif
+
+        cs *xpre = cs_multiply(Fmat,xmat); cs_spfree(xmat);
+        if (!xpre) *selog << "\tERROR: null xpre\n" << std::flush;
+#ifdef DEBUG_PRIMARY
+        *selog << "xpre is " << xpre->m << " by " << xpre->n <<
+            " with " << xpre->nzmax << " entries\n" << std::flush;
+#endif
+#ifdef DEBUG_STATS
+        print_cs_stats(xpre, "xpre");
+#endif
+#ifdef DEBUG_FILES
+        print_cs_compress(xpre,tspath+"xpre.csv");
+#endif
+#endif
+
         // --------------------------------------------------------------------
         // Update Step
         // --------------------------------------------------------------------
 
+#ifdef GADAL_INTERFACE
+        for (uint iter_count=0; iter_count < 1; iter_count++) {
+#endif
 #ifdef DEBUG_PRIMARY
         *selog << "calc_J time -- " << std::flush;
 #endif
@@ -1636,7 +1668,9 @@ class SELoopWorker {
             *selog << "\tERROR: KLU message: " << msg << "\n" << std::flush;
             throw "klu_error";
         }
+#ifndef GADAL_INTERFACE
         cs_spfree(Supd);
+#endif
 
 #if 000
         if (estimateExitCount == 40) {
@@ -1774,6 +1808,36 @@ class SELoopWorker {
 #endif
         //stdout_cs_compress(yupd);
 
+#ifdef GADAL_INTERFACE
+        // check for bad measurement data using normalized residuals
+        std::vector<double> residuals_calc(Zary.zids.size());
+        double resmin = DBL_MAX;
+        double resmax = -DBL_MAX;
+        int ii=0;
+        for ( auto& zid : Zary.zids ) {
+            uint zidx = Zary.zidxs[zid];
+            double yval = yupd->x[zidx];
+            double rval = Rmat->x[zidx];
+
+            // iterate over Supd compressed-column data in column zidx
+            for ( uint p = Supd->p[zidx] ; p < Supd->p[zidx+1] ; p++  ) {
+                // get the row index for existing data
+                if ( Supd->i[p] == zidx ) {
+                    // if this is the diagonal entry, extract it
+                    double sval = Supd->x[p];
+                    residuals_calc[ii] = abs(yval)/sqrt(rval*abs(sval));
+                    ii++;
+                    break;
+                }
+            }
+        }
+        resmax = *max_element(residuals_calc.begin(),residuals_calc.end());
+        resmin = *min_element(residuals_calc.begin(),residuals_calc.end());
+        *selog << "Max resi is " << resmax << "\n" <<std::flush;
+        *selog << "Min resi is " << resmin << "\n" <<std::flush;
+        cs_spfree(Supd);
+#endif
+
         // Residual calculation needs further investigation to be
         // properly formulated before inclusion in released SE code
 #if 000
@@ -1876,6 +1940,7 @@ class SELoopWorker {
 
         // TODO: potential future spot for more targeted smart/soft reset
 
+#ifndef GADAL_INTERFACE
         cs *xmat; this->prep_x(xmat);
 #ifdef DEBUG_PRIMARY
         *selog << "x is " << xmat->m << " by " << xmat->n <<
@@ -1899,6 +1964,7 @@ class SELoopWorker {
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(xpre,tspath+"xpre.csv");
+#endif
 #endif
 
         cs *xupd = cs_add(xpre,x1,1,1); cs_spfree(x1); cs_spfree(xpre);
@@ -1981,7 +2047,7 @@ class SELoopWorker {
 #endif
 
         // --------------------------------------------------------------------
-        // Update persistant state (Vpu and A)
+        // Update persistent state (Vpu and A)
         // --------------------------------------------------------------------
         if (xupd) {
             decompress_state(xupd);
@@ -2036,6 +2102,10 @@ class SELoopWorker {
 #endif
 #endif
 
+#ifdef GADAL_INTERFACE
+        print_est_err();
+        }
+#endif
         return true;
     }
 
@@ -3409,7 +3479,36 @@ class SELoopWorker {
         }
         res_used = std::to_string(resident_set) + units;
     }
-};
 #endif
 
+#ifdef GADAL_INTERFACE
+    private:
+    void print_est_err() {
+        SDMAP est_vmagpu;
+
+        double measSumMag = 0.0;
+        double diffSumMag = 0.0;
+        uint numSum = 0;
+
+        SDMAP meas_vmagpu;
+        for ( auto& zid : Zary.zids )
+            if ( !Zary.ztypes[zid].compare("vi") )
+                meas_vmagpu[Zary.znode1s[zid]] = Zary.zvals[zid];
+
+        for ( auto& node_name : node_names ) {
+            uint idx = node_idxs[node_name];
+            est_vmagpu[node_name] = abs( Vpu[idx] );
+
+            if (meas_vmagpu.find(node_name) != meas_vmagpu.end()) {
+                measSumMag += meas_vmagpu[node_name];
+                diffSumMag += abs(est_vmagpu[node_name] - meas_vmagpu[node_name]);
+            }
+        }
+
+        double perErrMag = 100.0 * diffSumMag/measSumMag;
+
+        *selog << "% err: " << perErrMag << "\n" << std::flush;
+    }
+#endif
+};
 #endif
