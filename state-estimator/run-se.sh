@@ -26,11 +26,11 @@ if [ "$#" -gt 0 ]; then
     fi
 
     # comment out the following 5 lines to keep state-plotter from running
-    #pushd .
-    #cd ../../gridappsd-state-plotter/state-plotter
+    pushd .
+    cd ../../gridappsd-state-plotter/state-plotter
     ##./state-plotter.py $SIMID "$SIMREQ" -all 2>&1 > spmagdbg.log &
-    #./state-plotter.py $SIMID "$SIMREQ" -stats 2>&1 > spmagdbg.log &
-    #popd
+    ./state-plotter.py $SIMID "$SIMREQ" -stats 2>&1 > spmagdbg.log &
+    popd
 
     #pushd .
     #cd ~/git/model-validator/model_validator
