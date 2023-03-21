@@ -7,6 +7,9 @@
 
 #define DEBUG_PRIMARY
 #define DEBUG_STATS
+#if defined(DEBUG_PRIMARY) && defined(DEBUG_STATS)
+#define TEST_SUITE
+#endif
 //#define DEBUG_FILES
 //#define DEBUG_SIZES
 

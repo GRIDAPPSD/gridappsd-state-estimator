@@ -10,7 +10,7 @@
 #include <array>
 
 // for mkdir and opendir
-#ifdef DEBUG_FILES
+#if defined(DEBUG_FILES) || defined(TEST_SUITE)
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
@@ -127,7 +127,7 @@ class SELoopWorker {
     uint estimateExitCount = 0;
 #endif
 
-#ifdef DEBUG_FILES
+#if defined(DEBUG_FILES) || defined(TEST_SUITE)
     std::ofstream state_fh;  // file to record states
 #endif
 
@@ -328,7 +328,7 @@ class SELoopWorker {
 
     private:
     void init() {
-#ifdef DEBUG_FILES
+#if defined(DEBUG_FILES) || defined(TEST_SUITE)
         // create the output directory if needed
         if (!opendir("output")) {
             // if output is already a symbolic link to a shared
@@ -340,9 +340,16 @@ class SELoopWorker {
         string simpath = "output/" + plint->getOutputDir() + "/";
         mkdir(simpath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
+#ifdef DEBUG_FILES
         // create init directory
         string initpath = simpath + "init/";
         mkdir(initpath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#endif
+#ifdef TEST_SUITE
+        // create test_suite directory
+        string testpath = simpath + "test_suite/";
+        mkdir(testpath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#endif
 #endif
 
         // --------------------------------------------------------------------
@@ -797,11 +804,19 @@ class SELoopWorker {
         // --------------------------------------------------------------------
         // Initialize the state recorder file
         // --------------------------------------------------------------------
-        state_fh.open(simpath+"vmag_per-unit.csv",std::ofstream::out);
+        state_fh.open(simpath+"vmag_pu.csv",std::ofstream::out);
         state_fh << "timestamp,";
         uint nctr = 0;
         for ( auto& node_name : node_names )
             state_fh << "\'"+node_name+"\'" << ( ++nctr < node_qty ? "," : "\n" );
+        state_fh.close();
+#endif
+#ifdef TEST_SUITE
+        state_fh.open(simpath+"test_suite/vmag_pu.csv",std::ofstream::out);
+        state_fh << "timestamp,meas_min,meas_max,mean_mean,est_min,est_max,est_mean,est_pererr,";
+        uint tctr = 0;
+        for ( auto& node_name : node_names )
+            state_fh << "\'"+node_name+"\'" << ( ++tctr < node_qty ? "," : "\n" );
         state_fh.close();
 #endif
 #ifdef WRITE_FILE
@@ -1301,12 +1316,26 @@ class SELoopWorker {
 
 #ifdef DEBUG_FILES
         string simpath = "output/" + plint->getOutputDir() + "/";
-        state_fh.open(simpath+"vmag_per-unit.csv",std::ofstream::app);
+        state_fh.open(simpath+"vmag_pu.csv",std::ofstream::app);
         state_fh << timestamp << ',';
         uint nctr = 0;
         for ( auto& node_name : node_names ) {
             double vmag_pu = abs( Vpu[ node_idxs[node_name] ] );
-            state_fh << vmag_pu << ( ++nctr < node_qty ? "," : "\n" );
+            state_fh << vmag_pu << ( ++nctr < node_qty ? ',' : '\n' );
+        }
+        state_fh.close();
+#endif
+#ifdef TEST_SUITE
+        string testpath = "output/" + plint->getOutputDir() + "/test_suite/";
+        state_fh.open(testpath+"vmag_pu.csv",std::ofstream::app);
+        state_fh << timestamp << ',';
+        state_fh << measMinMag << ',' << measMaxMag << ',' << measMeanMag << ',';
+        state_fh << estMinMag << ',' << estMaxMag << ',' << estMeanMag << ',' << perErrMag << ',';
+
+        uint tctr = 0;
+        for ( auto& node_name : node_names ) {
+            double vmag_pu = abs( Vpu[ node_idxs[node_name] ] );
+            state_fh << vmag_pu << ( ++tctr < node_qty ? ',' : '\n' );
         }
         state_fh.close();
 #endif
