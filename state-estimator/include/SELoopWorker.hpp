@@ -731,10 +731,10 @@ class SELoopWorker {
         print_cs_compress(Fmat,initpath+"F.csv");
 #endif
 #ifdef DEBUG_PRIMARY
-        print_cs_summary(Fmat, "F");
+        print_cs_summary(Fmat, "F", true);
 #endif
 #ifdef DEBUG_STATS
-        print_cs_stats(Fmat, "F");
+        print_cs_stats(Fmat, "F", true);
 #endif
 
         // identity matrix of dimension x (constant)
@@ -754,10 +754,10 @@ class SELoopWorker {
         print_cs_compress(eyex,initpath+"eyex.csv");
 #endif
 #ifdef DEBUG_PRIMARY
-        print_cs_summary(eyex, "eyex");
+        print_cs_summary(eyex, "eyex", true);
 #endif
 #ifdef DEBUG_STATS
-        print_cs_stats(eyex, "eyex");
+        print_cs_stats(eyex, "eyex", true);
 #endif
 
         // R is the measurement covariance matrix (constant)
@@ -794,10 +794,10 @@ class SELoopWorker {
         //print_cs_compress_triples(Rmat,"R_sbase1e6_trip.csv", 8);
 #endif
 #ifdef DEBUG_PRIMARY
-        print_cs_summary(Rmat, "R");
+        print_cs_summary(Rmat, "R", true);
 #endif
 #ifdef DEBUG_STATS
-        print_cs_stats(Rmat, "R");
+        print_cs_stats(Rmat, "R", true);
 #endif
 
 #ifdef DEBUG_FILES
@@ -3176,14 +3176,14 @@ class SELoopWorker {
 
 
 #ifdef DEBUG_PRIMARY
-    void print_cs_summary(cs *&a, const string &matname) {
+    void print_cs_summary(cs *&a, const string &matname, const bool &initFlag=false) {
         *selog << matname << " is " << a->m << " by " << a->n << " with " << a->nzmax << " entries\n" << std::flush;
     }
 #endif
 
 
 #ifdef DEBUG_STATS
-    void print_cs_stats(cs *&a, const string &matname) {
+    void print_cs_stats(cs *&a, const string &matname, const bool &initFlag=false) {
         double minVal = DBL_MAX;
         double maxVal = DBL_MIN;
         double sumVal = 0.0;
