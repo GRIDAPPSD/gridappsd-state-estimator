@@ -135,6 +135,12 @@ class SELoopWorker {
     std::ofstream results_fh;  // file to record results
 #endif
 
+#ifdef TEST_SUITE
+    std::ofstream testinit_accy_fh;  // file to record accuracy before estimate
+    std::ofstream testest_accy_fh;   // file to record accuracy for estimates
+    std::ofstream testest_perf_fh;   // file to record performance for estimates
+#endif
+
     public:
     SELoopWorker(PlatformInterface* plint) {
         this->plint = plint;
@@ -349,6 +355,10 @@ class SELoopWorker {
         // create test_suite directory
         string testpath = simpath + "test_suite/";
         mkdir(testpath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+
+        testinit_accy_fh.open(simpath+"test_suite/init_accy.csv",std::ofstream::out);
+        testinit_accy_fh << "nodeqty,xqty,zqty,Jacobian_elements,Yphys_scaled_terms,F_width,F_height,F_entries,F_min,F_max,F_sum,F_mean,eyex_width,eyex_height,eyex_entries,eyex_min,eyex_max,eyex_sum,eyex_mean,R_width,R_height,R_entries,R_min,R_max,R_sum,R_mean\n";
+        testinit_accy_fh.close();
 #endif
 #endif
 
@@ -362,6 +372,11 @@ class SELoopWorker {
         *selog << "node_qty is " << node_qty << "; " << std::flush;
         *selog << "xqty is " << xqty << "; " << std::flush;
         *selog << "zqty is " << zqty << "\n" << std::flush;
+#endif
+#ifdef TEST_SUITE
+        testinit_accy_fh.open(simpath+"test_suite/init_accy.csv",std::ofstream::app);
+        testinit_accy_fh << node_qty << "," << xqty << "," << zqty;
+        testinit_accy_fh.close();
 #endif
 
         // --------------------------------------------------------------------
@@ -430,6 +445,11 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
         *selog << "Jshapemap Jacobian elements: " << Jshapemap.size() << "\n" << std::flush;
 #endif
+#ifdef TEST_SUITE
+        testinit_accy_fh.open(simpath+"test_suite/init_accy.csv",std::ofstream::app);
+        testinit_accy_fh << "," << Jshapemap.size();
+        testinit_accy_fh.close();
+#endif
 
         // Cap Yphys with magnitude greater than 1e3 threshold
         double thresh = 1e+3;
@@ -474,6 +494,11 @@ class SELoopWorker {
         }
 #ifdef DEBUG_PRIMARY
         *selog << "Yphys # of scaled terms: " << ctr << "\n" << std::flush;
+#endif
+#ifdef TEST_SUITE
+        testinit_accy_fh.open(simpath+"test_suite/init_accy.csv",std::ofstream::app);
+        testinit_accy_fh << "," << ctr;
+        testinit_accy_fh.close();
 #endif
 
         // Overwrite Yphys entries for switches to (-500,500)
@@ -812,6 +837,39 @@ class SELoopWorker {
         state_fh.close();
 #endif
 #ifdef TEST_SUITE
+        testest_accy_fh.open(simpath+"test_suite/est_accy.csv",std::ofstream::out);
+        testest_accy_fh << "timestamp,";
+        testest_accy_fh << "P_width,P_height,P_entries,P_min,P_max,P_sum,P_mean,";
+        testest_accy_fh << "P1_width,P1_height,P1_entries,P1_min,P1_max,P1_sum,P1_mean,";
+        testest_accy_fh << "P2_width,P2_height,P2_entries,P2_min,P2_max,P2_sum,P2_mean,";
+        testest_accy_fh << "P3_width,P3_height,P3_entries,P3_min,P3_max,P3_sum,P3_mean,";
+        testest_accy_fh << "Q_width,Q_height,Q_entries,Q_min,Q_max,Q_sum,Q_mean,";
+        testest_accy_fh << "Ppre_width,Ppre_height,Ppre_entries,Ppre_min,Ppre_max,Ppre_sum,Ppre_mean,";
+        testest_accy_fh << "x_width,x_height,x_entries,x_min,x_max,x_sum,x_mean,";
+        testest_accy_fh << "xpre_width,xpre_height,xpre_entries,xpre_min,xpre_max,xpre_sum,xpre_mean,";
+        testest_accy_fh << "J_width,J_height,J_entries,J_min,J_max,J_sum,J_mean,";
+        testest_accy_fh << "S1_width,S1_height,S1_entries,S1_min,S1_max,S1_sum,S1_mean,";
+        testest_accy_fh << "S2_width,S2_height,S2_entries,S2_min,S2_max,S2_sum,S2_mean,";
+        testest_accy_fh << "S3_width,S3_height,S3_entries,S3_min,S3_max,S3_sum,S3_mean,";
+        testest_accy_fh << "R_min,R_max,R_sum,R_mean,";
+        testest_accy_fh << "Supd_width,Supd_height,Supd_entries,Supd_min,Supd_max,Supd_sum,Supd_mean,";
+        testest_accy_fh << "Supd_condnum,";
+        testest_accy_fh << "K3_width,K3_height,K3_entries,K3_min,K3_max,K3_sum,K3_mean,";
+        testest_accy_fh << "K2_width,K2_height,K2_entries,K2_min,K2_max,K2_sum,K2_mean,";
+        testest_accy_fh << "Kupd_width,Kupd_height,Kupd_entries,Kupd_min,Kupd_max,Kupd_sum,Kupd_mean,";
+        testest_accy_fh << "z_width,z_height,z_entries,z_min,z_max,z_sum,z_mean,";
+        testest_accy_fh << "h_width,h_height,h_entries,h_min,h_max,h_sum,h_mean,";
+        testest_accy_fh << "yupd_width,yupd_height,yupd_entries,yupd_min,yupd_max,yupd_sum,yupd_mean,";
+        testest_accy_fh << "x1_width,x1_height,x1_entries,x1_min,x1_max,x1_sum,x1_mean,";
+        testest_accy_fh << "x_width,x_height,x_entries,x_min,x_max,x_sum,x_mean,";
+        testest_accy_fh << "xpre_width,xpre_height,xpre_entries,xpre_min,xpre_max,xpre_sum,xpre_mean,";
+        testest_accy_fh << "xupd_width,xupd_height,xupd_entries,xupd_min,xupd_max,xupd_sum,xupd_mean,";
+        testest_accy_fh << "P4_width,P4_height,P4_entries,P4_min,P4_max,P4_sum,P4_mean,";
+        testest_accy_fh << "P5_width,P5_height,P5_entries,P5_min,P5_max,P5_sum,P5_mean,";
+        testest_accy_fh << "Pupd_width,Pupd_height,Pupd_entries,Pupd_min,Pupd_max,Pupd_sum,Pupd_mean,";
+        testest_accy_fh << "meas_min,meas_max,meas_mean,est_min,est_max,est_mean,est_pererr\n";
+        testest_accy_fh.close();
+
         state_fh.open(simpath+"test_suite/vmag_pu.csv",std::ofstream::out);
         state_fh << "timestamp,meas_min,meas_max,mean_mean,est_min,est_max,est_mean,est_pererr,";
         uint tctr = 0;
@@ -1327,10 +1385,15 @@ class SELoopWorker {
 #endif
 #ifdef TEST_SUITE
         string testpath = "output/" + plint->getOutputDir() + "/test_suite/";
+        testest_accy_fh.open(testpath+"est_accy.csv",std::ofstream::app);
+        testest_accy_fh << measMinMag << ',' << measMaxMag << ',' << measMeanMag << ',';
+        testest_accy_fh << estMinMag << ',' << estMaxMag << ',' << estMeanMag << ',' << perErrMag << '\n';
+        testest_accy_fh.close();
+
         state_fh.open(testpath+"vmag_pu.csv",std::ofstream::app);
-        state_fh << timestamp << ',';
         state_fh << measMinMag << ',' << measMaxMag << ',' << measMeanMag << ',';
         state_fh << estMinMag << ',' << estMaxMag << ',' << estMeanMag << ',' << perErrMag << ',';
+        state_fh << timestamp << ',';
 
         uint tctr = 0;
         for ( auto& node_name : node_names ) {
@@ -1369,6 +1432,13 @@ class SELoopWorker {
 #endif
 
         // TODO: WE NEED TO HANDLE R-MASK IN HERE SOMEWHERE
+
+#ifdef TEST_SUITE
+        string testpath = "output/" + plint->getOutputDir() + "/test_suite/";
+        testest_accy_fh.open(testpath+"est_accy.csv",std::ofstream::app);
+        testest_accy_fh << timestamp;
+        testest_accy_fh.close();
+#endif
 
 #ifdef DEBUG_FILES
         // set filename path based on timestamp
@@ -1642,6 +1712,11 @@ class SELoopWorker {
             *selog << "klu_condest Supd condition number: " << klucom.condest << "\n" << std::flush;
             // condnum = klucom.condest;
             // *selog << timestamp << "," << condnum << ",SupdCondNum\n" << std::flush;
+#endif
+#ifdef TEST_SUITE
+            testest_accy_fh.open(testpath+"est_accy.csv",std::ofstream::app);
+            testest_accy_fh << "," << klucom.condest;
+            testest_accy_fh.close();
 #endif
 
             // initialize an identity right-hand side
@@ -2037,10 +2112,10 @@ class SELoopWorker {
         Pmat = cs_multiply(P5,Ppre); cs_spfree(P5); cs_spfree(Ppre);
         if ( !Pmat ) *selog << "\tERROR: P updated null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        print_cs_summary(Pmat, "P");
+        print_cs_summary(Pmat, "Pupd");
 #endif
 #ifdef DEBUG_STATS
-        print_cs_stats(Pmat, "P");
+        print_cs_stats(Pmat, "Pupd");
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(Pmat,tspath+"Pupd.csv");
@@ -3178,6 +3253,19 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
     void print_cs_summary(cs *&a, const string &matname, const bool &initFlag=false) {
         *selog << matname << " is " << a->m << " by " << a->n << " with " << a->nzmax << " entries\n" << std::flush;
+
+#ifdef TEST_SUITE
+        string testpath = "output/" + plint->getOutputDir() + "/test_suite/";
+        if (initFlag) {
+          testinit_accy_fh.open(testpath+"init_accy.csv",std::ofstream::app);
+          testinit_accy_fh << "," << a->m << "," << a->n << "," << a->nzmax;
+          testinit_accy_fh.close();
+        } else {
+          testest_accy_fh.open(testpath+"est_accy.csv",std::ofstream::app);
+          testest_accy_fh << "," << a->m << "," << a->n << "," << a->nzmax;
+          testest_accy_fh.close();
+        }
+#endif
     }
 #endif
 
@@ -3196,7 +3284,22 @@ class SELoopWorker {
             }
         }
 
-        *selog << matname << " min: " << minVal << ", max: " << maxVal << ", sum: " << sumVal << ", mean: " << sumVal/a->nzmax << "\n" << std::flush;
+        double mean = sumVal/a->nzmax;
+
+        *selog << matname << " min: " << minVal << ", max: " << maxVal << ", sum: " << sumVal << ", mean: " << mean << "\n" << std::flush;
+
+#ifdef TEST_SUITE
+        string testpath = "output/" + plint->getOutputDir() + "/test_suite/";
+        if (initFlag) {
+          testinit_accy_fh.open(testpath+"init_accy.csv",std::ofstream::app);
+          testinit_accy_fh << "," << minVal << "," << maxVal << "," << sumVal << "," << mean;
+          testinit_accy_fh.close();
+        } else {
+          testest_accy_fh.open(testpath+"est_accy.csv",std::ofstream::app);
+          testest_accy_fh << "," << minVal << "," << maxVal << "," << sumVal << "," << mean;
+          testest_accy_fh.close();
+        }
+#endif
     }
 #endif
 
