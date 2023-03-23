@@ -870,6 +870,10 @@ class SELoopWorker {
         testest_accy_fh << "meas_min,meas_max,meas_mean,est_min,est_max,est_mean,est_pererr\n";
         testest_accy_fh.close();
 
+        testest_perf_fh.open(simpath+"test_suite/est_perf.csv",std::ofstream::out);
+        testest_perf_fh << "timestamp,Supd_time,Supd_mem,Kupd_time,Kupd_mem,est_time,est_mem\n";
+        testest_perf_fh.close();
+
         state_fh.open(simpath+"test_suite/vmag_pu.csv",std::ofstream::out);
         state_fh << "timestamp,meas_min,meas_max,mean_mean,est_min,est_max,est_mean,est_pererr,";
         uint tctr = 0;
@@ -1438,6 +1442,10 @@ class SELoopWorker {
         testest_accy_fh.open(testpath+"est_accy.csv",std::ofstream::app);
         testest_accy_fh << timestamp;
         testest_accy_fh.close();
+
+        testest_perf_fh.open(testpath+"est_perf.csv",std::ofstream::app);
+        testest_perf_fh << timestamp;
+        testest_perf_fh.close();
 #endif
 
 #ifdef DEBUG_FILES
@@ -1666,7 +1674,7 @@ class SELoopWorker {
         // TODO December 21, 2020 CHECK Supd, Kupd between C++ and MATLAB
 
 #ifdef DEBUG_PRIMARY
-        double startTime;
+        double startTime, sec, gb_used;
         string vm_used, res_used;
 #endif
 
@@ -1742,13 +1750,20 @@ class SELoopWorker {
             }
 
 #ifdef DEBUG_PRIMARY
-            *selog << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
+            sec = getWallTime() - startTime;
+            *selog << getMinSec(sec) << "\n" << std::flush;
 #endif
 
 #ifdef DEBUG_PRIMARY
-            process_mem_usage(vm_used, res_used);
+            process_mem_usage(vm_used, res_used, gb_used);
             *selog << "klu_solve virtual memory: " << vm_used << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
 //            *selog << "klu_solve resident memory: " << res_used << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
+#endif
+
+#ifdef TEST_SUITE
+            testest_perf_fh.open(testpath+"est_perf.csv",std::ofstream::app);
+            testest_perf_fh << "," << sec << "," << gb_used;
+            testest_perf_fh.close();
 #endif
 
             // free klusym and klunum or memory leak results
@@ -1827,7 +1842,8 @@ class SELoopWorker {
         cs *Kupd = cs_multiply(K2,K3); cs_spfree(K2); cs_spfree(K3);
         if ( !Kupd ) *selog << "\tERROR: Kupd null\n" << std::flush;
 #ifdef DEBUG_PRIMARY
-        *selog << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
+        sec = getWallTime() - startTime;
+        *selog << getMinSec(sec) << "\n" << std::flush;
 #endif
 #ifdef DEBUG_PRIMARY
         print_cs_summary(Kupd, "Kupd");
@@ -1843,10 +1859,16 @@ class SELoopWorker {
         //print_cs_compress_triples(Kupd, "Kupd_sbase1e12_trip.csv", 4);
 #endif
 #ifdef DEBUG_PRIMARY
-        process_mem_usage(vm_used, res_used);
+        process_mem_usage(vm_used, res_used, gb_used);
         *selog << "Kupd Peak virtual memory: " << vm_used << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
         //print_cs_full(Kupd,"benchmarks/Kupd.csv");
         //print_cs_compress_triples(Kupd,"benchmarks/Kupd_trip.csv");
+#endif
+
+#ifdef TEST_SUITE
+        testest_perf_fh.open(testpath+"est_perf.csv",std::ofstream::app);
+        testest_perf_fh << "," << sec << "," << gb_used;
+        testest_perf_fh.close();
 #endif
 
         // -- compute y = z - h
@@ -2139,8 +2161,9 @@ class SELoopWorker {
 #endif
 
 #ifdef DEBUG_PRIMARY
+        sec = getWallTime() - estimateStartTime;
         *selog << "*** Total estimate time: " <<
-            getMinSec(getWallTime()-estimateStartTime) << ", timestamp: " <<
+            getMinSec(sec) << ", timestamp: " <<
             timestamp << ", timestep: " <<
             timestamp-timeZero << "\n" << std::flush;
 #ifdef DEBUG_SIZES
@@ -2167,15 +2190,28 @@ class SELoopWorker {
         print_sizeof(Fsize+Rsize+eyexsize+Vpusize+Uvmagsize+Uvargsize, "Total");
 #endif
 #endif
-        process_mem_usage(vm_used, res_used);
+        process_mem_usage(vm_used, res_used, gb_used);
         *selog << "End of estimate virtual memory: " << vm_used << ", timestep: " << timestamp-timeZero << std::flush;
 //        *selog << "End of estimate resident memory: " << res_used << ", timestep: " << timestamp-timeZero << "\n" << std::flush;
         *selog << "\n" << std::flush;
+
+#ifdef TEST_SUITE
+        testest_perf_fh.open(testpath+"est_perf.csv",std::ofstream::app);
+        testest_perf_fh << "," << sec << "," << gb_used;
+        testest_perf_fh.close();
+#endif
+
 #ifdef SBASE_TESTING
         // when needed for debugging, exit after first estimate call
         if (++estimateExitCount == 20)
             exit(0);
 #endif
+#endif
+
+#ifdef TEST_SUITE
+        testest_perf_fh.open(testpath+"est_perf.csv",std::ofstream::app);
+        testest_perf_fh << "\n";
+        testest_perf_fh.close();
 #endif
 
 #ifdef GADAL_INTERFACE
@@ -3541,7 +3577,7 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
 #include <ios>
     private:
-    void process_mem_usage(string& vm_used, string& res_used) {
+    void process_mem_usage(string& vm_used, string& res_used, double& gb_used) {
         double vm_usage     = 0.0;
         double resident_set = 0.0;
 
@@ -3567,6 +3603,8 @@ class SELoopWorker {
         long page_size_kb = sysconf(_SC_PAGE_SIZE) / 1024; // in case x86-64 is configured to use 2MB pages
         vm_usage     = vsize / 1024.0;
         resident_set = rss * page_size_kb;
+
+        gb_used = vm_usage/(1024.0*1024.0);
 
         string units = " KB";
         if (vm_usage > 1024.0) {
