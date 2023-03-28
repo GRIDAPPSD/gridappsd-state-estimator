@@ -10,6 +10,27 @@ import argparse
 import csv
 
 
+NearZero = 1e-12
+FlagPerDiff = 5.0
+
+def checkDiff(value1, value2, message):
+  equalFlag = True
+  if value1 == value2:
+    print(message + ' values are equal', flush=True)
+  else:
+    if abs(value1)<NearZero and abs(value2)<NearZero:
+      print(message + ' values are both within computational precision of zero and considered equal', flush=True)
+    else:
+      equalFlag = False
+      perdiff = 100 * abs(value1 - value2)/((value1 + value2)/2)
+      if perdiff >= FlagPerDiff:
+        print('==> ' + message + ' values % diff: ' + str(round(perdiff, 4)) + ' <==', flush=True)
+      else:
+        print(message + ' values % diff: ' + str(round(perdiff, 4)), flush=True)
+
+  return equalFlag
+
+
 def checkEqual(value1, value2, message):
   equalFlag = True
   if value1 != value2:
@@ -47,15 +68,13 @@ def _main():
 
   # init_accy.csv entries: nodeqty,xqty,zqty,Jacobian_elements,Yphys_scaled_terms,F_width,F_height,F_entries,F_min,F_max,F_sum,F_mean,eyex_width,eyex_height,eyex_entries,eyex_min,eyex_max,eyex_sum,eyex_mean,R_width,R_height,R_entries,R_min,R_max,R_sum,R_mean
 
-  matchFlag = True
-
   # compare nodeqty, xqty, zqty to make sure it's the same model being compared
   # across simulations
-  matchFlag = checkEqual(initRow1[0], initRow2[0], 'Different number of nodes')
+  matchFlag = checkEqual(initRow1[0], initRow2[0], 'Different model number of nodes')
 
-  matchFlag = matchFlag and checkEqual(initRow1[1], initRow2[1], 'Different X dimension')
+  matchFlag = matchFlag and checkEqual(initRow1[1], initRow2[1], 'Different model X dimension')
 
-  matchFlag = matchFlag and checkEqual(initRow1[2], initRow2[2], 'Different Z dimension')
+  matchFlag = matchFlag and checkEqual(initRow1[2], initRow2[2], 'Different model Z dimension')
 
   if not matchFlag:
     print('Mismatched models being compared--exiting!\n', flush=True)
@@ -66,10 +85,17 @@ def _main():
   checkEqual(initRow1[4], initRow2[4], 'Different number of Yphys scaled terms')
 
   checkEqual(initRow1[5], initRow2[5], 'Different F matrix width')
-
   checkEqual(initRow1[6], initRow2[6], 'Different F matrix height')
-
   checkEqual(initRow1[7], initRow2[7], 'Different number of F matrix entries')
+
+  checkDiff(initRow1[8], initRow2[8], 'F matrix min')
+  checkDiff(initRow1[9], initRow2[9], 'F matrix max')
+  checkDiff(initRow1[11], initRow2[11], 'F matrix mean')
+
+  # tests of checkDiff
+  checkDiff(10.0, 8.0, 'Test')
+  checkDiff(1e-13, 1e-16, 'Zero')
+  checkDiff(1e-8, 1e-16, 'Low')
 
   print('End INITALIZATION comparison\n', flush=True)
 
