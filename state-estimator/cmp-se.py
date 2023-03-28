@@ -10,7 +10,11 @@ import argparse
 import csv
 
 
+# absolute values less than this are considered zero due to limits on
+# computational precision
 NearZero = 1e-12
+
+# print a warning flag for percent difference values greater than this
 FlagPerDiff = 5.0
 
 def checkDiff(value1, value2, message):
@@ -23,7 +27,7 @@ def checkDiff(value1, value2, message):
     else:
       equalFlag = False
       perdiff = 100 * abs(value1 - value2)/((value1 + value2)/2)
-      if perdiff >= FlagPerDiff:
+      if perdiff > FlagPerDiff:
         print('==> ' + message + ' values % diff: ' + str(round(perdiff, 4)) + ' <==', flush=True)
       else:
         print(message + ' values % diff: ' + str(round(perdiff, 4)), flush=True)
@@ -71,9 +75,7 @@ def _main():
   # compare nodeqty, xqty, zqty to make sure it's the same model being compared
   # across simulations
   matchFlag = checkEqual(initRow1[0], initRow2[0], 'Different model number of nodes')
-
   matchFlag = matchFlag and checkEqual(initRow1[1], initRow2[1], 'Different model X dimension')
-
   matchFlag = matchFlag and checkEqual(initRow1[2], initRow2[2], 'Different model Z dimension')
 
   if not matchFlag:
