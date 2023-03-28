@@ -9,6 +9,16 @@ Created on March 28, 2023
 import argparse
 import csv
 
+
+def checkEqual(value1, value2, message):
+  equalFlag = True
+  if value1 != value2:
+    equalFlag = False
+    print(message + ', sim 1: ' + str(value1) + ', sim 2: ' + str(value2), flush=True)
+
+  return equalFlag
+
+
 def _main():
   parser = argparse.ArgumentParser()
   parser.add_argument("sim_dir1", help="Simulation Directory 1")
@@ -17,6 +27,8 @@ def _main():
 
   simDir1 = opts.sim_dir1 + '/test_suite/'
   simDir2 = opts.sim_dir2 + '/test_suite/'
+
+  print('Begin INITALIZATION comparison:', flush=True)
 
   fp1 = open(simDir1 + 'init_accy.csv', 'r')
   fp2 = open(simDir2 + 'init_accy.csv', 'r')
@@ -35,31 +47,31 @@ def _main():
 
   # init_accy.csv entries: nodeqty,xqty,zqty,Jacobian_elements,Yphys_scaled_terms,F_width,F_height,F_entries,F_min,F_max,F_sum,F_mean,eyex_width,eyex_height,eyex_entries,eyex_min,eyex_max,eyex_sum,eyex_mean,R_width,R_height,R_entries,R_min,R_max,R_sum,R_mean
 
-  exitFlag = False
+  matchFlag = True
 
   # compare nodeqty, xqty, zqty to make sure it's the same model being compared
   # across simulations
-  if initRow1[0] != initRow2[0]:
-    exitFlag = True
-    print('Different number of nodes, sim 1: ' + str(initRow1[0]) + ', sim 2: ' + str(initRow2[0]), flush=True)
+  matchFlag = checkEqual(initRow1[0], initRow2[0], 'Different number of nodes')
 
-  if initRow1[1] != initRow2[1]:
-    exitFlag = True
-    print('Different X dimension, sim 1: ' + str(initRow1[1]) + ', sim 2: ' + str(initRow2[1]), flush=True)
+  matchFlag = matchFlag and checkEqual(initRow1[1], initRow2[1], 'Different X dimension')
 
-  if initRow1[2] != initRow2[2]:
-    exitFlag = True
-    print('Different Z dimension, sim 1: ' + str(initRow1[2]) + ', sim 2: ' + str(initRow2[2]), flush=True)
+  matchFlag = matchFlag and checkEqual(initRow1[2], initRow2[2], 'Different Z dimension')
 
-  if exitFlag:
+  if not matchFlag:
     print('Mismatched models being compared--exiting!\n', flush=True)
     exit()
 
-  if initRow1[3] != initRow2[3]:
-    print('Different number of Jacobian elements, sim 1: ' + str(initRow1[3]) + ', sim 2: ' + str(initRow2[3]), flush=True)
+  checkEqual(initRow1[3], initRow2[3], 'Different number of Jacobian elements')
 
-  if initRow1[4] != initRow2[4]:
-    print('Different number of Yphys scaled terms, sim 1: ' + str(initRow1[4]) + ', sim 2: ' + str(initRow2[4]), flush=True)
+  checkEqual(initRow1[4], initRow2[4], 'Different number of Yphys scaled terms')
+
+  checkEqual(initRow1[5], initRow2[5], 'Different F matrix width')
+
+  checkEqual(initRow1[6], initRow2[6], 'Different F matrix height')
+
+  checkEqual(initRow1[7], initRow2[7], 'Different number of F matrix entries')
+
+  print('End INITALIZATION comparison\n', flush=True)
 
   print('DONE!', flush=True)
 
