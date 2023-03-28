@@ -115,7 +115,95 @@ def _main():
   checkDiff(1e-13, 1e-16, 'Zero')
   checkDiff(1e-8, 1e-16, 'Low')
 
+  fp1.close()
+  fp2.close()
+
   print('End INITALIZATION comparison\n', flush=True)
+
+  # for this pass just process the first row of data in each file to compare
+  # matrix dimensions that should be the same across all timestamps
+
+  print('Begin ESTIMATE matrix dimensions comparison:', flush=True)
+
+  fp1 = open(simDir1 + 'est_accy.csv', 'r')
+  fp2 = open(simDir2 + 'est_accy.csv', 'r')
+
+  reader1 = csv.reader(fp1)
+  reader2 = csv.reader(fp2)
+
+  next(reader1) # skip header rows
+  next(reader2)
+
+  estRow1 = next(reader1)
+  estRow2 = next(reader2)
+
+  #print(estRow1)
+  #print(estRow2)
+
+  # P
+  checkEqual(estRow1[1], estRow2[1], 'Different P matrix width')
+  checkEqual(estRow1[2], estRow2[2], 'Different P matrix height')
+  checkEqual(estRow1[3], estRow2[3], 'Different number of P matrix entries')
+
+  # P1
+  checkEqual(estRow1[8], estRow2[8], 'Different P1 matrix width')
+  checkEqual(estRow1[9], estRow2[9], 'Different P1 matrix height')
+  checkEqual(estRow1[10], estRow2[10], 'Different number of P1 matrix entries')
+
+  # P2
+  checkEqual(estRow1[15], estRow2[15], 'Different P2 matrix width')
+  checkEqual(estRow1[16], estRow2[16], 'Different P2 matrix height')
+  checkEqual(estRow1[17], estRow2[17], 'Different number of P2 matrix entries')
+
+  # P3
+  checkEqual(estRow1[22], estRow2[22], 'Different P3 matrix width')
+  checkEqual(estRow1[23], estRow2[23], 'Different P3 matrix height')
+  checkEqual(estRow1[24], estRow2[24], 'Different number of P3 matrix entries')
+
+  # Q
+  checkEqual(estRow1[29], estRow2[29], 'Different Q matrix width')
+  checkEqual(estRow1[30], estRow2[30], 'Different Q matrix height')
+  checkEqual(estRow1[31], estRow2[31], 'Different number of Q matrix entries')
+
+  # Ppre
+  checkEqual(estRow1[36], estRow2[36], 'Different Ppre matrix width')
+  checkEqual(estRow1[37], estRow2[37], 'Different Ppre matrix height')
+  checkEqual(estRow1[38], estRow2[38], 'Different number of Ppre matrix entries')
+
+  # x
+  checkEqual(estRow1[43], estRow2[43], 'Different x matrix width')
+  checkEqual(estRow1[44], estRow2[44], 'Different x matrix height')
+  checkEqual(estRow1[45], estRow2[45], 'Different number of x matrix entries')
+
+  # xpre
+  checkEqual(estRow1[50], estRow2[50], 'Different xpre matrix width')
+  checkEqual(estRow1[51], estRow2[51], 'Different xpre matrix height')
+  checkEqual(estRow1[52], estRow2[52], 'Different number of xpre matrix entries')
+
+  # J
+  checkEqual(estRow1[57], estRow2[57], 'Different J matrix width')
+  checkEqual(estRow1[58], estRow2[58], 'Different J matrix height')
+  checkEqual(estRow1[59], estRow2[59], 'Different number of J matrix entries')
+
+  # S1
+  checkEqual(estRow1[64], estRow2[64], 'Different S1 matrix width')
+  checkEqual(estRow1[65], estRow2[65], 'Different S1 matrix height')
+  checkEqual(estRow1[66], estRow2[66], 'Different number of S1 matrix entries')
+
+  # S2
+  checkEqual(estRow1[71], estRow2[71], 'Different S2 matrix width')
+  checkEqual(estRow1[72], estRow2[72], 'Different S2 matrix height')
+  checkEqual(estRow1[73], estRow2[73], 'Different number of S2 matrix entries')
+
+  # S3
+  checkEqual(estRow1[78], estRow2[78], 'Different S3 matrix width')
+  checkEqual(estRow1[79], estRow2[79], 'Different S3 matrix height')
+  checkEqual(estRow1[80], estRow2[80], 'Different number of S3 matrix entries')
+
+  fp1.close()
+  fp2.close()
+
+  print('End ESTIMATE matrix dimensions comparison\n', flush=True)
 
   print('DONE!', flush=True)
 
