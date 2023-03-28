@@ -63,8 +63,8 @@ def _main():
   initRow1 = next(reader1)
   initRow2 = next(reader2)
 
-  print(initRow1)
-  print(initRow2)
+  #print(initRow1)
+  #print(initRow2)
 
   # init_accy.csv entries: nodeqty,xqty,zqty,Jacobian_elements,Yphys_scaled_terms,F_width,F_height,F_entries,F_min,F_max,F_sum,F_mean,eyex_width,eyex_height,eyex_entries,eyex_min,eyex_max,eyex_sum,eyex_mean,R_width,R_height,R_entries,R_min,R_max,R_sum,R_mean
 
@@ -84,13 +84,29 @@ def _main():
 
   checkEqual(initRow1[4], initRow2[4], 'Different number of Yphys scaled terms')
 
+  # F
   checkEqual(initRow1[5], initRow2[5], 'Different F matrix width')
   checkEqual(initRow1[6], initRow2[6], 'Different F matrix height')
   checkEqual(initRow1[7], initRow2[7], 'Different number of F matrix entries')
-
   checkDiff(initRow1[8], initRow2[8], 'F matrix min')
   checkDiff(initRow1[9], initRow2[9], 'F matrix max')
   checkDiff(initRow1[11], initRow2[11], 'F matrix mean')
+
+  # eyex
+  checkEqual(initRow1[12], initRow2[12], 'Different eyex matrix width')
+  checkEqual(initRow1[13], initRow2[13], 'Different eyex matrix height')
+  checkEqual(initRow1[14], initRow2[14], 'Different number of eyex matrix entries')
+  checkDiff(initRow1[15], initRow2[15], 'eyex matrix min')
+  checkDiff(initRow1[16], initRow2[16], 'eyex matrix max')
+  checkDiff(initRow1[18], initRow2[18], 'eyex matrix mean')
+
+  # R
+  checkEqual(initRow1[19], initRow2[19], 'Different R matrix width')
+  checkEqual(initRow1[20], initRow2[20], 'Different R matrix height')
+  checkEqual(initRow1[21], initRow2[21], 'Different number of R matrix entries')
+  checkDiff(initRow1[22], initRow2[22], 'R matrix min')
+  checkDiff(initRow1[23], initRow2[23], 'R matrix max')
+  checkDiff(initRow1[25], initRow2[25], 'R matrix mean')
 
   # tests of checkDiff
   checkDiff(10.0, 8.0, 'Test')
