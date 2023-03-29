@@ -14,8 +14,9 @@ import csv
 # computational precision
 NearZero = 1e-12
 
-# print a warning flag for percent difference values greater than this
-FlagPerDiff = 2.0
+# print a warning flag for difference values greater than this
+FlagPerDiff = 4.0
+FlagAbsDiff = 0.1
 
 def checkDiff(value1, value2, message):
   value1 = float(value1)
@@ -31,11 +32,12 @@ def checkDiff(value1, value2, message):
       pass
     else:
       equalFlag = False
-      perdiff = abs(100 * abs(value1 - value2)/((value1 + value2)/2))
-      if perdiff > FlagPerDiff:
-        print('*** ' + message + ' values % diff: ' + str(round(perdiff, 4)), flush=True)
+      absdiff = abs(value1 - value2)
+      perdiff = abs(100 * absdiff/((value1 + value2)/2))
+      if perdiff>FlagPerDiff and absdiff>FlagAbsDiff:
+        print('*** ' + message + ' values abs diff: ' + str(round(absdiff, 4)) + ', % diff: ' + str(round(perdiff, 4)), flush=True)
       #else:
-      #  print(message + ' values % diff: ' + str(round(perdiff, 4)), flush=True)
+      #  print(message + ' values abs diff: ' + str(round(absdiff, 4)) + ', % diff: ' + str(round(perdiff, 4)), flush=True)
 
   return equalFlag
 
@@ -222,6 +224,12 @@ def _main():
 
       checkSizes('Kupd', 95, estRow1, estRow2)
       checkStats('Kupd', 98, estRow1, estRow2)
+      #print('Kupd min 1: ' + str(estRow1[98]), flush=True)
+      #print('Kupd min 2: ' + str(estRow2[98]), flush=True)
+      #print('Kupd max 1: ' + str(estRow1[99]), flush=True)
+      #print('Kupd max 2: ' + str(estRow2[99]), flush=True)
+      #print('Kupd mean 1: ' + str(estRow1[100]), flush=True)
+      #print('Kupd mean 2: ' + str(estRow2[100]), flush=True)
 
       checkSizes('z', 101, estRow1, estRow2)
       checkStats('z', 104, estRow1, estRow2)
@@ -259,6 +267,10 @@ def _main():
 
       sumPerErr1 += float(estRow1[155])
       sumPerErr2 += float(estRow2[155])
+
+      # break after first timestamp for debugging
+      #if itCount == 1:
+      #  break
 
     except:
       break
