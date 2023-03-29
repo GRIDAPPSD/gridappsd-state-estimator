@@ -1388,8 +1388,8 @@ class SELoopWorker {
 #ifdef TEST_SUITE
         string testpath = "output/" + plint->getOutputDir() + "/test_suite/";
         testest_accy_fh.open(testpath+"est_accy.csv",std::ofstream::app);
-        testest_accy_fh << measMinMag << ',' << measMaxMag << ',' << measMeanMag << ',';
-        testest_accy_fh << estMinMag << ',' << estMaxMag << ',' << estMeanMag << ',' << perErrMag << '\n';
+        testest_accy_fh << ',' << measMinMag << ',' << measMaxMag << ',' << measMeanMag;
+        testest_accy_fh << ',' << estMinMag << ',' << estMaxMag << ',' << estMeanMag << ',' << perErrMag << '\n';
         testest_accy_fh.close();
 
         state_fh.open(testpath+"vmag_pu.csv",std::ofstream::app);
