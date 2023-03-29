@@ -161,68 +161,91 @@ def _main():
   #print(estRow1)
   #print(estRow2)
 
-  checkSizes('P', 1, initRow1, initRow2)
-  checkStats('P', 4, initRow1, initRow2)
+  checkSizes('P', 1, estRow1, estRow2)
+  checkStats('P', 4, estRow1, estRow2)
 
-  checkSizes('P1', 7, initRow1, initRow2)
-  checkStats('P1', 10, initRow1, initRow2)
+  checkSizes('P1', 7, estRow1, estRow2)
+  checkStats('P1', 10, estRow1, estRow2)
 
-  exit()
+  checkSizes('P2', 13, estRow1, estRow2)
+  checkStats('P2', 16, estRow1, estRow2)
 
-  # P2
-  checkEqual(estRow1[15], estRow2[15], 'Different P2 matrix width')
-  checkEqual(estRow1[16], estRow2[16], 'Different P2 matrix height')
-  checkEqual(estRow1[17], estRow2[17], 'Different number of P2 matrix entries')
+  checkSizes('P3', 19, estRow1, estRow2)
+  checkStats('P3', 22, estRow1, estRow2)
 
-  # P3
-  checkEqual(estRow1[22], estRow2[22], 'Different P3 matrix width')
-  checkEqual(estRow1[23], estRow2[23], 'Different P3 matrix height')
-  checkEqual(estRow1[24], estRow2[24], 'Different number of P3 matrix entries')
+  checkSizes('Q', 25, estRow1, estRow2)
+  checkStats('Q', 28, estRow1, estRow2)
 
-  # Q
-  checkEqual(estRow1[29], estRow2[29], 'Different Q matrix width')
-  checkEqual(estRow1[30], estRow2[30], 'Different Q matrix height')
-  checkEqual(estRow1[31], estRow2[31], 'Different number of Q matrix entries')
+  checkSizes('Ppre', 31, estRow1, estRow2)
+  checkStats('Ppre', 34, estRow1, estRow2)
 
-  # Ppre
-  checkEqual(estRow1[36], estRow2[36], 'Different Ppre matrix width')
-  checkEqual(estRow1[37], estRow2[37], 'Different Ppre matrix height')
-  checkEqual(estRow1[38], estRow2[38], 'Different number of Ppre matrix entries')
+  checkSizes('x', 37, estRow1, estRow2)
+  checkStats('x', 40, estRow1, estRow2)
 
-  # x
-  checkEqual(estRow1[43], estRow2[43], 'Different x matrix width')
-  checkEqual(estRow1[44], estRow2[44], 'Different x matrix height')
-  checkEqual(estRow1[45], estRow2[45], 'Different number of x matrix entries')
+  checkSizes('xpre', 43, estRow1, estRow2)
+  checkStats('xpre', 46, estRow1, estRow2)
 
-  # xpre
-  checkEqual(estRow1[50], estRow2[50], 'Different xpre matrix width')
-  checkEqual(estRow1[51], estRow2[51], 'Different xpre matrix height')
-  checkEqual(estRow1[52], estRow2[52], 'Different number of xpre matrix entries')
+  checkSizes('J', 49, estRow1, estRow2)
+  checkStats('J', 52, estRow1, estRow2)
 
-  # J
-  checkEqual(estRow1[57], estRow2[57], 'Different J matrix width')
-  checkEqual(estRow1[58], estRow2[58], 'Different J matrix height')
-  checkEqual(estRow1[59], estRow2[59], 'Different number of J matrix entries')
+  checkSizes('S1', 55, estRow1, estRow2)
+  checkStats('S1', 58, estRow1, estRow2)
 
-  # S1
-  checkEqual(estRow1[64], estRow2[64], 'Different S1 matrix width')
-  checkEqual(estRow1[65], estRow2[65], 'Different S1 matrix height')
-  checkEqual(estRow1[66], estRow2[66], 'Different number of S1 matrix entries')
+  checkSizes('S2', 61, estRow1, estRow2)
+  checkStats('S2', 64, estRow1, estRow2)
 
-  # S2
-  checkEqual(estRow1[71], estRow2[71], 'Different S2 matrix width')
-  checkEqual(estRow1[72], estRow2[72], 'Different S2 matrix height')
-  checkEqual(estRow1[73], estRow2[73], 'Different number of S2 matrix entries')
+  checkSizes('S3', 67, estRow1, estRow2)
+  checkStats('S3', 70, estRow1, estRow2)
 
-  # S3
-  checkEqual(estRow1[78], estRow2[78], 'Different S3 matrix width')
-  checkEqual(estRow1[79], estRow2[79], 'Different S3 matrix height')
-  checkEqual(estRow1[80], estRow2[80], 'Different number of S3 matrix entries')
+  checkStats('R', 73, estRow1, estRow2)
 
-  # Supd
-  checkEqual(estRow1[89], estRow2[89], 'Different Supd matrix width')
-  checkEqual(estRow1[90], estRow2[90], 'Different Supd matrix height')
-  checkEqual(estRow1[91], estRow2[91], 'Different number of Supd matrix entries')
+  checkSizes('Supd', 76, estRow1, estRow2)
+  checkStats('Supd', 79, estRow1, estRow2)
+
+  checkDiff(estRow1[82], estRow2[82], 'Supd matrix condition number estimate')
+
+  checkSizes('K3', 83, estRow1, estRow2)
+  checkStats('K3', 86, estRow1, estRow2)
+
+  checkSizes('K2', 89, estRow1, estRow2)
+  checkStats('K2', 92, estRow1, estRow2)
+
+  checkSizes('Kupd', 95, estRow1, estRow2)
+  checkStats('Kupd', 98, estRow1, estRow2)
+
+  checkSizes('z', 101, estRow1, estRow2)
+  checkStats('z', 104, estRow1, estRow2)
+
+  checkSizes('h', 107, estRow1, estRow2)
+  checkStats('h', 110, estRow1, estRow2)
+
+  checkSizes('yupd', 113, estRow1, estRow2)
+  checkStats('yupd', 116, estRow1, estRow2)
+
+  checkSizes('x1', 119, estRow1, estRow2)
+  checkStats('x1', 122, estRow1, estRow2)
+
+  checkSizes('xupd', 125, estRow1, estRow2)
+  checkStats('xupd', 128, estRow1, estRow2)
+
+  checkSizes('P4', 131, estRow1, estRow2)
+  checkStats('P4', 134, estRow1, estRow2)
+
+  checkSizes('P5', 137, estRow1, estRow2)
+  checkStats('P5', 140, estRow1, estRow2)
+
+  checkSizes('Pupd', 143, estRow1, estRow2)
+  checkStats('Pupd', 146, estRow1, estRow2)
+
+  checkDiff(estRow1[149], estRow2[149], 'Measurement voltage magnitude min')
+  checkDiff(estRow1[150], estRow2[150], 'Measurement voltage magnitude max')
+  checkDiff(estRow1[151], estRow2[151], 'Measurement voltage magnitude mean')
+
+  checkDiff(estRow1[152], estRow2[152], 'Estimate voltage magnitude min')
+  checkDiff(estRow1[153], estRow2[153], 'Estimate voltage magnitude max')
+  checkDiff(estRow1[154], estRow2[154], 'Estimate voltage magnitude mean')
+
+  checkDiff(estRow1[155], estRow2[155], 'Estimate voltage magnitude percent error')
 
   fp1.close()
   fp2.close()
