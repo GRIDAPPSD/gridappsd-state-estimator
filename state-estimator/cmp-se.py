@@ -20,7 +20,8 @@ FlagPerDiff = 5.0
 def checkDiff(value1, value2, message):
   equalFlag = True
   if value1 == value2:
-    print(message + ' values are equal', flush=True)
+    #print(message + ' values are equal', flush=True)
+    pass
   else:
     if abs(value1)<NearZero and abs(value2)<NearZero:
       print(message + ' values are both within computational precision of zero and considered equal', flush=True)
@@ -94,9 +95,6 @@ def _main():
   initRow1 = next(reader1)
   initRow2 = next(reader2)
 
-  #print(initRow1)
-  #print(initRow2)
-
   # init_accy.csv entries: nodeqty,xqty,zqty,Jacobian_elements,Yphys_scaled_terms,F_width,F_height,F_entries,F_min,F_max,F_mean,eyex_width,eyex_height,eyex_entries,eyex_min,eyex_max,eyex_mean,R_width,R_height,R_entries,R_min,R_max,R_mean
 
   # compare nodeqty, xqty, zqty to make sure it's the same model being compared
@@ -132,10 +130,7 @@ def _main():
 
   print('End INITALIZATION comparison\n', flush=True)
 
-  # for this pass just process the first row of data in each file to compare
-  # matrix dimensions that should be the same across all timestamps
-
-  print('Begin ESTIMATE matrix dimensions comparison:', flush=True)
+  print('Begin ESTIMATE comparison:', flush=True)
 
   fp1 = open(simDir1 + 'est_accy.csv', 'r')
   fp2 = open(simDir2 + 'est_accy.csv', 'r')
@@ -153,104 +148,125 @@ def _main():
   estRow1 = next(reader1)
   estRow2 = next(reader2)
 
+  # to get index numbers
   #ct = 0
   #for item in estHeader1:
   #  print (str(ct) + ': ' + item + ', ' + str(estRow1[ct]), flush=True)
   #  ct += 1
 
-  #print(estRow1)
-  #print(estRow2)
+  itCount = 0
+  sumPerErr1 = 0.0
+  sumPerErr2 = 0.0
 
-  checkSizes('P', 1, estRow1, estRow2)
-  checkStats('P', 4, estRow1, estRow2)
+  while True:
+    try:
+      # if either of these next calls fails, bail from comparison loop
+      estRow1 = next(reader1)
+      estRow2 = next(reader2)
 
-  checkSizes('P1', 7, estRow1, estRow2)
-  checkStats('P1', 10, estRow1, estRow2)
+      itCount += 1
+      print('timestamp #' + str(itCount) + ': ' + estRow1[0], flush=True)
 
-  checkSizes('P2', 13, estRow1, estRow2)
-  checkStats('P2', 16, estRow1, estRow2)
+      checkSizes('P', 1, estRow1, estRow2)
+      checkStats('P', 4, estRow1, estRow2)
 
-  checkSizes('P3', 19, estRow1, estRow2)
-  checkStats('P3', 22, estRow1, estRow2)
+      checkSizes('P1', 7, estRow1, estRow2)
+      checkStats('P1', 10, estRow1, estRow2)
 
-  checkSizes('Q', 25, estRow1, estRow2)
-  checkStats('Q', 28, estRow1, estRow2)
+      checkSizes('P2', 13, estRow1, estRow2)
+      checkStats('P2', 16, estRow1, estRow2)
 
-  checkSizes('Ppre', 31, estRow1, estRow2)
-  checkStats('Ppre', 34, estRow1, estRow2)
+      checkSizes('P3', 19, estRow1, estRow2)
+      checkStats('P3', 22, estRow1, estRow2)
 
-  checkSizes('x', 37, estRow1, estRow2)
-  checkStats('x', 40, estRow1, estRow2)
+      checkSizes('Q', 25, estRow1, estRow2)
+      checkStats('Q', 28, estRow1, estRow2)
 
-  checkSizes('xpre', 43, estRow1, estRow2)
-  checkStats('xpre', 46, estRow1, estRow2)
+      checkSizes('Ppre', 31, estRow1, estRow2)
+      checkStats('Ppre', 34, estRow1, estRow2)
 
-  checkSizes('J', 49, estRow1, estRow2)
-  checkStats('J', 52, estRow1, estRow2)
+      checkSizes('x', 37, estRow1, estRow2)
+      checkStats('x', 40, estRow1, estRow2)
 
-  checkSizes('S1', 55, estRow1, estRow2)
-  checkStats('S1', 58, estRow1, estRow2)
+      checkSizes('xpre', 43, estRow1, estRow2)
+      checkStats('xpre', 46, estRow1, estRow2)
 
-  checkSizes('S2', 61, estRow1, estRow2)
-  checkStats('S2', 64, estRow1, estRow2)
+      checkSizes('J', 49, estRow1, estRow2)
+      checkStats('J', 52, estRow1, estRow2)
 
-  checkSizes('S3', 67, estRow1, estRow2)
-  checkStats('S3', 70, estRow1, estRow2)
+      checkSizes('S1', 55, estRow1, estRow2)
+      checkStats('S1', 58, estRow1, estRow2)
 
-  checkStats('R', 73, estRow1, estRow2)
+      checkSizes('S2', 61, estRow1, estRow2)
+      checkStats('S2', 64, estRow1, estRow2)
 
-  checkSizes('Supd', 76, estRow1, estRow2)
-  checkStats('Supd', 79, estRow1, estRow2)
+      checkSizes('S3', 67, estRow1, estRow2)
+      checkStats('S3', 70, estRow1, estRow2)
 
-  checkDiff(estRow1[82], estRow2[82], 'Supd matrix condition number estimate')
+      checkStats('R', 73, estRow1, estRow2)
 
-  checkSizes('K3', 83, estRow1, estRow2)
-  checkStats('K3', 86, estRow1, estRow2)
+      checkSizes('Supd', 76, estRow1, estRow2)
+      checkStats('Supd', 79, estRow1, estRow2)
 
-  checkSizes('K2', 89, estRow1, estRow2)
-  checkStats('K2', 92, estRow1, estRow2)
+      checkDiff(estRow1[82], estRow2[82], 'Supd matrix condition number estimate')
 
-  checkSizes('Kupd', 95, estRow1, estRow2)
-  checkStats('Kupd', 98, estRow1, estRow2)
+      checkSizes('K3', 83, estRow1, estRow2)
+      checkStats('K3', 86, estRow1, estRow2)
 
-  checkSizes('z', 101, estRow1, estRow2)
-  checkStats('z', 104, estRow1, estRow2)
+      checkSizes('K2', 89, estRow1, estRow2)
+      checkStats('K2', 92, estRow1, estRow2)
 
-  checkSizes('h', 107, estRow1, estRow2)
-  checkStats('h', 110, estRow1, estRow2)
+      checkSizes('Kupd', 95, estRow1, estRow2)
+      checkStats('Kupd', 98, estRow1, estRow2)
 
-  checkSizes('yupd', 113, estRow1, estRow2)
-  checkStats('yupd', 116, estRow1, estRow2)
+      checkSizes('z', 101, estRow1, estRow2)
+      checkStats('z', 104, estRow1, estRow2)
 
-  checkSizes('x1', 119, estRow1, estRow2)
-  checkStats('x1', 122, estRow1, estRow2)
+      checkSizes('h', 107, estRow1, estRow2)
+      checkStats('h', 110, estRow1, estRow2)
 
-  checkSizes('xupd', 125, estRow1, estRow2)
-  checkStats('xupd', 128, estRow1, estRow2)
+      checkSizes('yupd', 113, estRow1, estRow2)
+      checkStats('yupd', 116, estRow1, estRow2)
 
-  checkSizes('P4', 131, estRow1, estRow2)
-  checkStats('P4', 134, estRow1, estRow2)
+      checkSizes('x1', 119, estRow1, estRow2)
+      checkStats('x1', 122, estRow1, estRow2)
 
-  checkSizes('P5', 137, estRow1, estRow2)
-  checkStats('P5', 140, estRow1, estRow2)
+      checkSizes('xupd', 125, estRow1, estRow2)
+      checkStats('xupd', 128, estRow1, estRow2)
 
-  checkSizes('Pupd', 143, estRow1, estRow2)
-  checkStats('Pupd', 146, estRow1, estRow2)
+      checkSizes('P4', 131, estRow1, estRow2)
+      checkStats('P4', 134, estRow1, estRow2)
 
-  checkDiff(estRow1[149], estRow2[149], 'Measurement voltage magnitude min')
-  checkDiff(estRow1[150], estRow2[150], 'Measurement voltage magnitude max')
-  checkDiff(estRow1[151], estRow2[151], 'Measurement voltage magnitude mean')
+      checkSizes('P5', 137, estRow1, estRow2)
+      checkStats('P5', 140, estRow1, estRow2)
 
-  checkDiff(estRow1[152], estRow2[152], 'Estimate voltage magnitude min')
-  checkDiff(estRow1[153], estRow2[153], 'Estimate voltage magnitude max')
-  checkDiff(estRow1[154], estRow2[154], 'Estimate voltage magnitude mean')
+      checkSizes('Pupd', 143, estRow1, estRow2)
+      checkStats('Pupd', 146, estRow1, estRow2)
 
-  checkDiff(estRow1[155], estRow2[155], 'Estimate voltage magnitude percent error')
+      checkDiff(estRow1[149], estRow2[149], 'Measurement voltage magnitude min')
+      checkDiff(estRow1[150], estRow2[150], 'Measurement voltage magnitude max')
+      checkDiff(estRow1[151], estRow2[151], 'Measurement voltage magnitude mean')
+
+      checkDiff(estRow1[152], estRow2[152], 'Estimate voltage magnitude min')
+      checkDiff(estRow1[153], estRow2[153], 'Estimate voltage magnitude max')
+      checkDiff(estRow1[154], estRow2[154], 'Estimate voltage magnitude mean')
+
+      checkDiff(estRow1[155], estRow2[155], 'Estimate voltage magnitude percent error')
+
+      sumPerErr1 += float(estRow1[155])
+      sumPerErr2 += float(estRow2[155])
+
+    except:
+      break
 
   fp1.close()
   fp2.close()
 
-  print('End ESTIMATE matrix dimensions comparison\n', flush=True)
+  meanPerErr1 = sumPerErr1/itCount
+  meanPerErr2 = sumPerErr2/itCount
+  print('Mean estimate voltage magnitude percent error sim1: ' + str(round(meanPerErr1, 4)) + ', sim2: ' + str(round(meanPerErr2, 4)), flush=True)
+
+  print('End ESTIMATE comparison\n', flush=True)
 
   print('DONE!', flush=True)
 
