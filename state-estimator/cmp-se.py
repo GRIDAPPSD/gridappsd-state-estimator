@@ -15,23 +15,27 @@ import csv
 NearZero = 1e-12
 
 # print a warning flag for percent difference values greater than this
-FlagPerDiff = 5.0
+FlagPerDiff = 2.0
 
 def checkDiff(value1, value2, message):
+  value1 = float(value1)
+  value2 = float(value2)
   equalFlag = True
+
   if value1 == value2:
     #print(message + ' values are equal', flush=True)
     pass
   else:
     if abs(value1)<NearZero and abs(value2)<NearZero:
-      print(message + ' values are both within computational precision of zero and considered equal', flush=True)
+      #print(message + ' values are both within computational precision of zero and considered equal', flush=True)
+      pass
     else:
       equalFlag = False
-      perdiff = 100 * abs(value1 - value2)/((value1 + value2)/2)
+      perdiff = abs(100 * abs(value1 - value2)/((value1 + value2)/2))
       if perdiff > FlagPerDiff:
-        print('==> ' + message + ' values % diff: ' + str(round(perdiff, 4)) + ' <==', flush=True)
-      else:
-        print(message + ' values % diff: ' + str(round(perdiff, 4)), flush=True)
+        print('*** ' + message + ' values % diff: ' + str(round(perdiff, 4)), flush=True)
+      #else:
+      #  print(message + ' values % diff: ' + str(round(perdiff, 4)), flush=True)
 
   return equalFlag
 
@@ -264,7 +268,7 @@ def _main():
 
   meanPerErr1 = sumPerErr1/itCount
   meanPerErr2 = sumPerErr2/itCount
-  print('Mean estimate voltage magnitude percent error sim1: ' + str(round(meanPerErr1, 4)) + ', sim2: ' + str(round(meanPerErr2, 4)), flush=True)
+  print('\nMean estimate voltage magnitude percent error sim1: ' + str(round(meanPerErr1, 4)) + ', sim2: ' + str(round(meanPerErr2, 4)), flush=True)
 
   print('End ESTIMATE comparison\n', flush=True)
 
