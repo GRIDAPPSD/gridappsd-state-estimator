@@ -845,10 +845,8 @@ class SELoopWorker {
         testest_accy_fh << "P3_width,P3_height,P3_entries,P3_min,P3_max,P3_mean,";
         testest_accy_fh << "Q_width,Q_height,Q_entries,Q_min,Q_max,Q_mean,";
         testest_accy_fh << "Ppre_width,Ppre_height,Ppre_entries,Ppre_min,Ppre_max,Ppre_mean,";
-#ifdef GADAL_INTERFACE
         testest_accy_fh << "x_width,x_height,x_entries,x_min,x_max,x_mean,";
         testest_accy_fh << "xpre_width,xpre_height,xpre_entries,xpre_min,xpre_max,xpre_mean,";
-#endif
         testest_accy_fh << "J_width,J_height,J_entries,J_min,J_max,J_mean,";
         testest_accy_fh << "S1_width,S1_height,S1_entries,S1_min,S1_max,S1_mean,";
         testest_accy_fh << "S2_width,S2_height,S2_entries,S2_min,S2_max,S2_mean,";
@@ -863,10 +861,6 @@ class SELoopWorker {
         testest_accy_fh << "h_width,h_height,h_entries,h_min,h_max,h_mean,";
         testest_accy_fh << "yupd_width,yupd_height,yupd_entries,yupd_min,yupd_max,yupd_mean,";
         testest_accy_fh << "x1_width,x1_height,x1_entries,x1_min,x1_max,x1_mean,";
-#ifndef GADAL_INTERFACE
-        testest_accy_fh << "x_width,x_height,x_entries,x_min,x_max,x_mean,";
-        testest_accy_fh << "xpre_width,xpre_height,xpre_entries,xpre_min,xpre_max,xpre_mean,";
-#endif
         testest_accy_fh << "xupd_width,xupd_height,xupd_entries,xupd_min,xupd_max,xupd_mean,";
         testest_accy_fh << "P4_width,P4_height,P4_entries,P4_min,P4_max,P4_mean,";
         testest_accy_fh << "P5_width,P5_height,P5_entries,P5_min,P5_max,P5_mean,";
@@ -1567,7 +1561,6 @@ class SELoopWorker {
         print_cs_compress(Ppre,tspath+"Ppre.csv");
 #endif
 
-#ifdef GADAL_INTERFACE
         cs *xmat; this->prep_x(xmat);
 #ifdef DEBUG_PRIMARY
         print_cs_summary(xmat, "x");
@@ -1589,7 +1582,6 @@ class SELoopWorker {
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(xpre,tspath+"xpre.csv");
-#endif
 #endif
 
         // --------------------------------------------------------------------
@@ -2048,31 +2040,6 @@ class SELoopWorker {
 #endif
 
         // TODO: potential future spot for more targeted smart/soft reset
-
-#ifndef GADAL_INTERFACE
-        cs *xmat; this->prep_x(xmat);
-#ifdef DEBUG_PRIMARY
-        print_cs_summary(xmat, "x");
-#endif
-#ifdef DEBUG_STATS
-        print_cs_stats(xmat, "x");
-#endif
-#ifdef DEBUG_FILES
-        print_cs_compress(xmat,tspath+"x.csv");
-#endif
-
-        cs *xpre = cs_multiply(Fmat,xmat); cs_spfree(xmat);
-        if (!xpre) *selog << "\tERROR: null xpre\n" << std::flush;
-#ifdef DEBUG_PRIMARY
-        print_cs_summary(xpre, "xpre");
-#endif
-#ifdef DEBUG_STATS
-        print_cs_stats(xpre, "xpre");
-#endif
-#ifdef DEBUG_FILES
-        print_cs_compress(xpre,tspath+"xpre.csv");
-#endif
-#endif
 
         cs *xupd = cs_add(xpre,x1,1,1); cs_spfree(x1); cs_spfree(xpre);
         if ( !xupd ) *selog << "\tERROR: xupd null\n" << std::flush;
