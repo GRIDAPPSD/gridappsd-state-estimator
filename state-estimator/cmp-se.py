@@ -113,22 +113,19 @@ def _main():
 
   checkEqual(initRow1[4], initRow2[4], 'Different number of Yphys scaled terms')
 
-  # F
   checkSizes('F', 5, initRow1, initRow2)
   checkStats('F', 8, initRow1, initRow2)
 
-  # eyex
   checkSizes('eyex', 11, initRow1, initRow2)
   checkStats('eyex', 14, initRow1, initRow2)
 
-  # R
   checkSizes('R', 17, initRow1, initRow2)
   checkStats('R', 20, initRow1, initRow2)
 
   # tests of checkDiff
-  checkDiff(10.0, 8.0, 'Test')
-  checkDiff(1e-13, 1e-16, 'Zero')
-  checkDiff(1e-8, 1e-16, 'Low')
+  #checkDiff(10.0, 8.0, 'Test')
+  #checkDiff(1e-13, 1e-16, 'Zero')
+  #checkDiff(1e-8, 1e-16, 'Low')
 
   fp1.close()
   fp2.close()
@@ -156,25 +153,21 @@ def _main():
   estRow1 = next(reader1)
   estRow2 = next(reader2)
 
-  exit()
-
-  ct = 0
-  for item in row:
-    print (str(ct) + ': ' + item + ', ' + str(estRow1[ct]), flush=True)
-    ct += 1
+  #ct = 0
+  #for item in estHeader1:
+  #  print (str(ct) + ': ' + item + ', ' + str(estRow1[ct]), flush=True)
+  #  ct += 1
 
   #print(estRow1)
   #print(estRow2)
 
-  # P
-  checkEqual(estRow1[1], estRow2[1], 'Different P matrix width')
-  checkEqual(estRow1[2], estRow2[2], 'Different P matrix height')
-  checkEqual(estRow1[3], estRow2[3], 'Different number of P matrix entries')
+  checkSizes('P', 1, initRow1, initRow2)
+  checkStats('P', 4, initRow1, initRow2)
 
-  # P1
-  checkEqual(estRow1[8], estRow2[8], 'Different P1 matrix width')
-  checkEqual(estRow1[9], estRow2[9], 'Different P1 matrix height')
-  checkEqual(estRow1[10], estRow2[10], 'Different number of P1 matrix entries')
+  checkSizes('P1', 7, initRow1, initRow2)
+  checkStats('P1', 10, initRow1, initRow2)
+
+  exit()
 
   # P2
   checkEqual(estRow1[15], estRow2[15], 'Different P2 matrix width')
