@@ -44,6 +44,29 @@ def checkEqual(value1, value2, message):
   return equalFlag
 
 
+def checkSizes(matName, startIndex, row1, row2):
+  equalFlag = True
+  if row1[startIndex] != row2[startIndex]:
+    equalFlag = False
+    print(matName + ' matrix width mismatch, sim 1: ' + str(row1[startIndex]) + ', sim 2: ' + str(row2[startIndex]), flush=True)
+
+  if row1[startIndex+1] != row2[startIndex+1]:
+    equalFlag = False
+    print(matName + ' matrix height mismatch, sim 1: ' + str(row1[startIndex+1]) + ', sim 2: ' + str(row2[startIndex+1]), flush=True)
+
+  if row1[startIndex+2] != row2[startIndex+2]:
+    equalFlag = False
+    print(matName + ' matrix number of entries mismatch, sim 1: ' + str(row1[startIndex+2]) + ', sim 2: ' + str(row2[startIndex+2]), flush=True)
+
+    return equalFlag
+
+
+def checkStats(matName, startIndex, row1, row2):
+  checkDiff(row1[startIndex], row2[startIndex], matName + ' matrix min')
+  checkDiff(row1[startIndex+1], row2[startIndex+1], matName + ' matrix max')
+  checkDiff(row1[startIndex+2], row2[startIndex+2], matName + ' matrix mean')
+
+
 def _main():
   parser = argparse.ArgumentParser()
   parser.add_argument("sim_dir1", help="Simulation Directory 1")
@@ -61,8 +84,12 @@ def _main():
   reader1 = csv.reader(fp1)
   reader2 = csv.reader(fp2)
 
-  next(reader1) # skip header rows
-  next(reader2)
+  initHeader1 = next(reader1)
+  initHeader2 = next(reader2)
+
+  if initHeader1 != initHeader2:
+    print('Mismatched init_accy.csv headers being compared--exiting!\n', flush=True)
+    exit()
 
   initRow1 = next(reader1)
   initRow2 = next(reader2)
@@ -70,7 +97,7 @@ def _main():
   #print(initRow1)
   #print(initRow2)
 
-  # init_accy.csv entries: nodeqty,xqty,zqty,Jacobian_elements,Yphys_scaled_terms,F_width,F_height,F_entries,F_min,F_max,F_sum,F_mean,eyex_width,eyex_height,eyex_entries,eyex_min,eyex_max,eyex_sum,eyex_mean,R_width,R_height,R_entries,R_min,R_max,R_sum,R_mean
+  # init_accy.csv entries: nodeqty,xqty,zqty,Jacobian_elements,Yphys_scaled_terms,F_width,F_height,F_entries,F_min,F_max,F_mean,eyex_width,eyex_height,eyex_entries,eyex_min,eyex_max,eyex_mean,R_width,R_height,R_entries,R_min,R_max,R_mean
 
   # compare nodeqty, xqty, zqty to make sure it's the same model being compared
   # across simulations
@@ -87,28 +114,16 @@ def _main():
   checkEqual(initRow1[4], initRow2[4], 'Different number of Yphys scaled terms')
 
   # F
-  checkEqual(initRow1[5], initRow2[5], 'Different F matrix width')
-  checkEqual(initRow1[6], initRow2[6], 'Different F matrix height')
-  checkEqual(initRow1[7], initRow2[7], 'Different number of F matrix entries')
-  checkDiff(initRow1[8], initRow2[8], 'F matrix min')
-  checkDiff(initRow1[9], initRow2[9], 'F matrix max')
-  checkDiff(initRow1[11], initRow2[11], 'F matrix mean')
+  checkSizes('F', 5, initRow1, initRow2)
+  checkStats('F', 8, initRow1, initRow2)
 
   # eyex
-  checkEqual(initRow1[12], initRow2[12], 'Different eyex matrix width')
-  checkEqual(initRow1[13], initRow2[13], 'Different eyex matrix height')
-  checkEqual(initRow1[14], initRow2[14], 'Different number of eyex matrix entries')
-  checkDiff(initRow1[15], initRow2[15], 'eyex matrix min')
-  checkDiff(initRow1[16], initRow2[16], 'eyex matrix max')
-  checkDiff(initRow1[18], initRow2[18], 'eyex matrix mean')
+  checkSizes('eyex', 11, initRow1, initRow2)
+  checkStats('eyex', 14, initRow1, initRow2)
 
   # R
-  checkEqual(initRow1[19], initRow2[19], 'Different R matrix width')
-  checkEqual(initRow1[20], initRow2[20], 'Different R matrix height')
-  checkEqual(initRow1[21], initRow2[21], 'Different number of R matrix entries')
-  checkDiff(initRow1[22], initRow2[22], 'R matrix min')
-  checkDiff(initRow1[23], initRow2[23], 'R matrix max')
-  checkDiff(initRow1[25], initRow2[25], 'R matrix mean')
+  checkSizes('R', 17, initRow1, initRow2)
+  checkStats('R', 20, initRow1, initRow2)
 
   # tests of checkDiff
   checkDiff(10.0, 8.0, 'Test')
@@ -131,11 +146,22 @@ def _main():
   reader1 = csv.reader(fp1)
   reader2 = csv.reader(fp2)
 
-  next(reader1) # skip header rows
-  next(reader2)
+  estHeader1 = next(reader1)
+  estHeader2 = next(reader2)
+
+  if estHeader1 != estHeader2:
+    print('Mismatched est_accy.csv headers being compared--exiting!\n', flush=True)
+    exit()
 
   estRow1 = next(reader1)
   estRow2 = next(reader2)
+
+  exit()
+
+  ct = 0
+  for item in row:
+    print (str(ct) + ': ' + item + ', ' + str(estRow1[ct]), flush=True)
+    ct += 1
 
   #print(estRow1)
   #print(estRow2)
@@ -199,6 +225,11 @@ def _main():
   checkEqual(estRow1[78], estRow2[78], 'Different S3 matrix width')
   checkEqual(estRow1[79], estRow2[79], 'Different S3 matrix height')
   checkEqual(estRow1[80], estRow2[80], 'Different number of S3 matrix entries')
+
+  # Supd
+  checkEqual(estRow1[89], estRow2[89], 'Different Supd matrix width')
+  checkEqual(estRow1[90], estRow2[90], 'Different Supd matrix height')
+  checkEqual(estRow1[91], estRow2[91], 'Different number of Supd matrix entries')
 
   fp1.close()
   fp2.close()
