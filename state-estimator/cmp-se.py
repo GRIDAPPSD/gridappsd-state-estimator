@@ -15,10 +15,10 @@ import csv
 NearZero = 1e-12
 
 # print a warning flag for difference values greater than this
-FlagPerDiff = 4.0
+FlagPerDiff = 2.0
 FlagAbsDiff = 0.1
 
-def checkDiff(value1, value2, message):
+def checkDiff(value1, value2, message, absFlag=True, printFlag=False):
   value1 = float(value1)
   value2 = float(value2)
   equalFlag = True
@@ -34,10 +34,12 @@ def checkDiff(value1, value2, message):
       equalFlag = False
       absdiff = abs(value1 - value2)
       perdiff = abs(100 * absdiff/((value1 + value2)/2))
-      if perdiff>FlagPerDiff and absdiff>FlagAbsDiff:
+      if not absFlag and perdiff>FlagPerDiff:
+        print('*** ' + message + ' values % diff: ' + str(round(perdiff, 4)), flush=True)
+      elif perdiff>FlagPerDiff and absdiff>FlagAbsDiff:
         print('*** ' + message + ' values abs diff: ' + str(round(absdiff, 4)) + ', % diff: ' + str(round(perdiff, 4)), flush=True)
-      #else:
-      #  print(message + ' values abs diff: ' + str(round(absdiff, 4)) + ', % diff: ' + str(round(perdiff, 4)), flush=True)
+      elif printFlag:
+        print(message + ' values abs diff: ' + str(round(absdiff, 4)) + ', % diff: ' + str(round(perdiff, 4)), flush=True)
 
   return equalFlag
 
@@ -83,7 +85,7 @@ def _main():
   simDir1 = opts.sim_dir1 + '/test_suite/'
   simDir2 = opts.sim_dir2 + '/test_suite/'
 
-  print('Begin INITALIZATION comparison:', flush=True)
+  print('Begin INITALIZATION accuracy comparison:', flush=True)
 
   fp1 = open(simDir1 + 'init_accy.csv', 'r')
   fp2 = open(simDir2 + 'init_accy.csv', 'r')
@@ -134,9 +136,9 @@ def _main():
   fp1.close()
   fp2.close()
 
-  print('End INITALIZATION comparison\n', flush=True)
+  print('End INITALIZATION accuracy comparison\n', flush=True)
 
-  print('Begin ESTIMATE comparison:', flush=True)
+  print('Begin ESTIMATE accuracy comparison:', flush=True)
 
   fp1 = open(simDir1 + 'est_accy.csv', 'r')
   fp2 = open(simDir2 + 'est_accy.csv', 'r')
@@ -282,7 +284,61 @@ def _main():
   meanPerErr2 = sumPerErr2/itCount
   print('\nMean estimate voltage magnitude percent error sim1: ' + str(round(meanPerErr1, 4)) + ', sim2: ' + str(round(meanPerErr2, 4)), flush=True)
 
-  print('End ESTIMATE comparison\n', flush=True)
+  print('End ESTIMATE accuracy comparison\n', flush=True)
+
+  print('Begin ESTIMATE performance comparison:', flush=True)
+
+  fp1 = open(simDir1 + 'est_perf.csv', 'r')
+  fp2 = open(simDir2 + 'est_perf.csv', 'r')
+
+  reader1 = csv.reader(fp1)
+  reader2 = csv.reader(fp2)
+
+  estHeader1 = next(reader1)
+  estHeader2 = next(reader2)
+
+  if estHeader1 != estHeader2:
+    print('Mismatched est_perf.csv headers being compared--exiting!\n', flush=True)
+    exit()
+
+  estRow1 = next(reader1)
+  estRow2 = next(reader2)
+
+  itCount = 0
+  sumEstTime1 = 0.0
+  sumEstTime2 = 0.0
+
+  while True:
+    try:
+      # if either of these next calls fails, bail from comparison loop
+      estRow1 = next(reader1)
+      estRow2 = next(reader2)
+
+      itCount += 1
+      print('timestamp #' + str(itCount) + ': ' + estRow1[0], flush=True)
+
+      checkDiff(estRow1[1], estRow2[1], 'Supd inverse time')
+      checkDiff(estRow1[2], estRow2[2], 'Supd inverse virtual memory')
+      checkDiff(estRow1[3], estRow2[3], 'Kupd multiply time')
+      checkDiff(estRow1[4], estRow2[4], 'Kupd multiply virtual memory')
+      checkDiff(estRow1[5], estRow2[5], 'Total estimate time')
+      checkDiff(estRow1[6], estRow2[6], 'Total estimate virtual memory')
+
+      sumEstTime1 += float(estRow1[5])
+      sumEstTime2 += float(estRow2[5])
+
+    except:
+      break
+
+  fp1.close()
+  fp2.close()
+
+  meanEstTime1 = sumEstTime1/itCount
+  meanEstTime2 = sumEstTime2/itCount
+  print('\nMean total estimate time sim1: ' + str(round(meanEstTime1, 4)) + ', sim2: ' + str(round(meanEstTime2, 4)), flush=True)
+  checkDiff(meanEstTime1, meanEstTime2, 'Mean total estimate time', False, True)
+
+  print('End ESTIMATE performance comparison\n', flush=True)
 
   print('DONE!', flush=True)
 
