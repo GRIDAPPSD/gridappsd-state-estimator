@@ -873,7 +873,7 @@ class SELoopWorker {
         testest_perf_fh.close();
 
         state_fh.open(simpath+"test_suite/vmag_pu.csv",std::ofstream::out);
-        state_fh << "timestamp,meas_min,meas_max,mean_mean,est_min,est_max,est_mean,est_pererr,";
+        state_fh << "timestamp,";
         uint tctr = 0;
         for ( auto& node_name : node_names )
             state_fh << "\'"+node_name+"\'" << ( ++tctr < node_qty ? "," : "\n" );
@@ -1393,10 +1393,7 @@ class SELoopWorker {
         testest_accy_fh.close();
 
         state_fh.open(testpath+"vmag_pu.csv",std::ofstream::app);
-        state_fh << measMinMag << ',' << measMaxMag << ',' << measMeanMag << ',';
-        state_fh << estMinMag << ',' << estMaxMag << ',' << estMeanMag << ',' << perErrMag << ',';
         state_fh << timestamp << ',';
-
         uint tctr = 0;
         for ( auto& node_name : node_names ) {
             double vmag_pu = abs( Vpu[ node_idxs[node_name] ] );
