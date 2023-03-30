@@ -153,14 +153,11 @@ def _main():
     print('Mismatched est_accy.csv headers being compared--exiting!\n', flush=True)
     exit()
 
-  estRow1 = next(reader1)
-  estRow2 = next(reader2)
-
   # to get index numbers
-  #ct = 0
+  #ctr = 0
   #for item in estHeader1:
-  #  print (str(ct) + ': ' + item + ', ' + str(estRow1[ct]), flush=True)
-  #  ct += 1
+  #  print (str(ctr) + ': ' + item, flush=True)
+  #  ctr += 1
 
   itCount = 0
   sumPerErr1 = 0.0
@@ -300,9 +297,6 @@ def _main():
   if estHeader1 != estHeader2:
     print('Mismatched est_perf.csv headers being compared--exiting!\n', flush=True)
     exit()
-
-  estRow1 = next(reader1)
-  estRow2 = next(reader2)
 
   itCount = 0
   sumEstTime1 = 0.0
