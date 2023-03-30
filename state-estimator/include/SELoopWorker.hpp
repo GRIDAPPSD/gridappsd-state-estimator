@@ -874,7 +874,14 @@ class SELoopWorker {
         testest_perf_fh << "timestamp,Supd_time,Supd_mem,Kupd_time,Kupd_mem,est_time,est_mem\n";
         testest_perf_fh.close();
 
-        state_fh.open(simpath+"test_suite/vmag_pu.csv",std::ofstream::out);
+        state_fh.open(simpath+"test_suite/meas_vmagpu.csv",std::ofstream::out);
+        state_fh << "timestamp";
+        for ( auto& node_name : node_names )
+            state_fh << ',' << node_name;
+        state_fh << '\n';
+        state_fh.close();
+
+        state_fh.open(simpath+"test_suite/est_vmagpu.csv",std::ofstream::out);
         state_fh << "timestamp";
         for ( auto& node_name : node_names )
             state_fh << ',' << node_name;
@@ -1389,7 +1396,14 @@ class SELoopWorker {
         testest_accy_fh << ',' << estMinMag << ',' << estMaxMag << ',' << estMeanMag << ',' << perErrMag << '\n';
         testest_accy_fh.close();
 
-        state_fh.open(testpath+"vmag_pu.csv",std::ofstream::app);
+        state_fh.open(testpath+"meas_vmagpu.csv",std::ofstream::app);
+        state_fh << timestamp;
+        for ( auto& node_name : node_names )
+            state_fh << ',' << meas_vmagpu[node_name];
+        state_fh << '\n';
+        state_fh.close();
+
+        state_fh.open(testpath+"est_vmagpu.csv",std::ofstream::app);
         state_fh << timestamp;
         for ( auto& node_name : node_names )
             state_fh << ',' << est_vmagpu[node_name];
