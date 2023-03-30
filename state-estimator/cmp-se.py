@@ -385,6 +385,57 @@ def _main():
 
   print('End ESTIMATE vs. measurement for ' + opts.sim_dir1 + '\n', flush=True)
 
+  print('Begin ESTIMATE vs. measurement for ' + opts.sim_dir2 + ':', flush=True)
+
+  fpM = open(simDir2 + 'meas_vmagpu.csv', 'r')
+  fpE = open(simDir2 + 'est_vmagpu.csv', 'r')
+
+  readerM = csv.reader(fpM)
+  readerE = csv.reader(fpE)
+
+  headerM = next(readerM)
+  headerE = next(readerE)
+
+  if headerM != headerE:
+    print('Mismatched meas_vmagpu.csv and est_vmagpu.csv headers being compared--exiting!\n', flush=True)
+    exit()
+
+  numNodes = len(headerM)-1
+  itCount = 0
+  sumCount = 0
+  sumMeasVMag = 0.0
+  sumEstVMag = 0.0
+
+  while True:
+    try:
+      # if either of these next calls fails, bail from comparison loop
+      rowM = next(readerM)
+      rowE = next(readerE)
+
+      itCount += 1
+      print('timestamp #' + str(itCount) + ': ' + rowM[0], flush=True)
+
+      for inode in range(1, numNodes+1):
+        checkDiff(rowM[inode], rowE[inode],
+                  headerM[inode] + ' estimate vs. measurement')
+        sumMeasVMag += float(rowM[inode])
+        sumEstVMag += float(rowE[inode])
+
+      sumCount += numNodes
+
+    except:
+      break
+
+  fpM.close()
+  fpE.close()
+
+  meanMeasVMag = sumMeasVMag/sumCount
+  meanEstVMag = sumEstVMag/sumCount
+  print('\nMean measurement vmag: ' + str(round(meanMeasVMag, 4)) + ', estimate vmag: ' + str(round(meanEstVMag, 4)), flush=True)
+  checkDiff(meanMeasVMag, meanEstVMag, 'Mean measurement vs. estimate vmag', False, True)
+
+  print('End ESTIMATE vs. measurement for ' + opts.sim_dir2 + '\n', flush=True)
+
   print('DONE!', flush=True)
 
 
