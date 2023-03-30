@@ -24,12 +24,12 @@ def checkDiff(value1, value2, message, absFlag=True, printFlag=False):
   equalFlag = True
 
   if value1 == value2:
-    #print(message + ' values are equal', flush=True)
-    pass
+    if printFlag:
+      print(message + ' values are equal', flush=True)
   else:
     if abs(value1)<NearZero and abs(value2)<NearZero:
-      #print(message + ' values are both within computational precision of zero and considered equal', flush=True)
-      pass
+      if printFlag:
+        print(message + ' values are both within computational precision of zero and considered equal', flush=True)
     else:
       equalFlag = False
       absdiff = abs(value1 - value2)
@@ -436,7 +436,56 @@ def _main():
 
   print('End ESTIMATE vs. measurement for ' + opts.sim_dir2 + '\n', flush=True)
 
-  print('DONE!', flush=True)
+  print('Begin ESTIMATE voltage magnitude comparison:', flush=True)
+
+  fp1 = open(simDir1 + 'est_vmagpu.csv', 'r')
+  fp2 = open(simDir2 + 'est_vmagpu.csv', 'r')
+
+  reader1 = csv.reader(fp1)
+  reader2 = csv.reader(fp2)
+
+  estHeader1 = next(reader1)
+  estHeader2 = next(reader2)
+
+  if estHeader1 != estHeader2:
+    print('Mismatched est_vmagpu.csv headers being compared--exiting!\n', flush=True)
+    exit()
+
+  numNodes = len(estHeader1)-1
+  itCount = 0
+  sumCount = 0
+  sumEstVMag1 = 0.0
+  sumEstVMag2 = 0.0
+
+  while True:
+    try:
+      # if either of these next calls fails, bail from comparison loop
+      estRow1 = next(reader1)
+      estRow2 = next(reader2)
+
+      itCount += 1
+      print('timestamp #' + str(itCount) + ': ' + estRow1[0], flush=True)
+
+      for inode in range(1, numNodes+1):
+        checkDiff(estRow1[inode], estRow2[inode],
+                  estHeader1[inode] + ' estimate')
+        sumEstVMag1 += float(estRow1[inode])
+        sumEstVMag2 += float(estRow2[inode])
+
+      sumCount += numNodes
+
+    except:
+      break
+
+  fp1.close()
+  fp2.close()
+
+  meanEstVMag1 = sumEstVMag1/sumCount
+  meanEstVMag2 = sumEstVMag2/sumCount
+  print('\nMean estimate vmag sim1: ' + str(round(meanEstVMag1, 4)) + ', sim2: ' + str(round(meanEstVMag2, 4)), flush=True)
+  checkDiff(meanEstVMag1, meanEstVMag2, 'Mean estimate vmag', False, True)
+
+  print('End ESTIMATE voltage magnitude comparison\n', flush=True)
 
 
 if __name__ == "__main__":
