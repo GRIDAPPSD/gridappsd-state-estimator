@@ -599,15 +599,13 @@ public:
         string filename = FILE_INTERFACE_READ;
         filename += "/results_data.csv";
         est_fh.open(filename, std::ofstream::trunc);
-        est_fh << "timestamp,";
+        est_fh << "timestamp";
 
         for ( auto& node_name : node_names )
-            est_fh << "vmag_"+node_name+",";
-        uint node_qty = node_names.size();
-        uint nctr = 0;
+            est_fh << ',' << "vmag_"+node_name;
         for ( auto& node_name : node_names )
-            est_fh << "varg_"+node_name << ( ++nctr < node_qty ? "," : "\n" );
-
+            est_fh << ',' << "varg_"+node_name;
+        est_fh << '\n';
         est_fh.close();
     }
 
@@ -619,24 +617,22 @@ public:
         filename += "/results_data.csv";
         est_fh.open(filename, std::ofstream::app);
 
-        est_fh << timestamp << ',';
+        est_fh << timestamp;
         est_fh << std::fixed;
         est_fh << std::setprecision(10);
 		std::list<double> est_volt;
 		std::list<double> est_ang;
         for ( auto& node_name : node_names ){
-            est_fh << est_vmagpu[node_name] << ",";
-			//std::cout<< "-------------------------------" << std::endl;
-			//std::cout<< est_v[node_name] << std::endl;
-			//std::cout<< node_name << std::endl;
-			est_volt.push_back(est_v[node_name]);
-			est_ang.push_back(est_angle[node_name]);
-		}
-        uint node_qty = node_names.size();
-        uint nctr = 0;
+            est_fh << ',' << est_vmagpu[node_name];
+            //std::cout<< "-------------------------------" << std::endl;
+            //std::cout<< est_v[node_name] << std::endl;
+            //std::cout<< node_name << std::endl;
+            est_volt.push_back(est_v[node_name]);
+            est_ang.push_back(est_angle[node_name]);
+        }
         for ( auto& node_name : node_names )
-            est_fh << est_vargpu[node_name] << ( ++nctr < node_qty ? "," : "\n" );
-
+            est_fh << ',' << est_vargpu[node_name];
+        est_fh << '\n';
         est_fh.close();
 		time_t now = time(0);
    

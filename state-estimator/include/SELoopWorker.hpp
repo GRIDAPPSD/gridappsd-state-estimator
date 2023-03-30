@@ -613,25 +613,25 @@ class SELoopWorker {
             uint i = node_idxs[inode];
             try {
                 auto& row = Ypu.at(i);
-                uint jctr = 0;
                 for ( auto& jnode : node_names ) {
                     uint j = node_idxs[jnode];
                     try {
                         complex<double> tmp = row.at(j);
                         double tmpre = tmp.real();
                         double tmpim = tmp.imag();
-                        ofh << tmpre 
+                        ofh << ','
+                            << tmpre
                             << ( tmpim >= 0 ? "+" : "-" )
-                            << std::abs(tmpim) << "i" 
-                            << ( ++jctr < node_qty ? "," : "\n" );
+                            << std::abs(tmpim) << "i";
                     } catch ( const std::out_of_range& oor ) {
-                        ofh << "0+0i" << ( ++jctr < node_qty ? "," : "\n" );
+                        ofh << ",0+0i";
                     }
                 }
+                ofh << '\n';
             } catch ( const std::out_of_range& oor ) {
-                uint jctr = 0;
                 for ( auto& jnode : node_names )
-                    ofh << "0+0i" << ( ++jctr < node_qty ? "," : "\n" );
+                    ofh << ",0+0i";
+                ofh << '\n';
             }
         } ofh.close();
 #endif
@@ -649,17 +649,19 @@ class SELoopWorker {
                         complex<double> tmp = row.at(j);
                         double tmpre = tmp.real();
                         double tmpim = tmp.imag();
-                        ofh << tmpre
+                        ofh << ','
+                            << tmpre
                             << ( tmpim >= 0 ? "+" : "-" )
-                            << std::abs(tmpim) << "i"
-                            << ( j < node_qty ? "," : "\n" );
+                            << std::abs(tmpim) << "i";
                     } catch ( const std::out_of_range& oor ) {
-                        ofh << "0+0i" << ( j < node_qty ? "," : "\n" );
+                        ofh << ",0+0i";
                     }
                 }
+                ofh << '\n';
             } catch ( const std::out_of_range& oor ) {
                 for ( uint j = 0 ; j < node_qty ; j++ )
-                    ofh << "0+0i" << ( j < node_qty ? "," : "\n" );
+                    ofh << ",0+0i";
+                ofh << '\n';
             }
         } ofh.close();
 #endif
@@ -830,10 +832,10 @@ class SELoopWorker {
         // Initialize the state recorder file
         // --------------------------------------------------------------------
         state_fh.open(simpath+"vmag_pu.csv",std::ofstream::out);
-        state_fh << "timestamp,";
-        uint nctr = 0;
+        state_fh << "timestamp";
         for ( auto& node_name : node_names )
-            state_fh << "\'"+node_name+"\'" << ( ++nctr < node_qty ? "," : "\n" );
+            state_fh << ',' << node_name;
+        state_fh << '\n';
         state_fh.close();
 #endif
 #ifdef TEST_SUITE
@@ -873,10 +875,10 @@ class SELoopWorker {
         testest_perf_fh.close();
 
         state_fh.open(simpath+"test_suite/vmag_pu.csv",std::ofstream::out);
-        state_fh << "timestamp,";
-        uint tctr = 0;
+        state_fh << "timestamp";
         for ( auto& node_name : node_names )
-            state_fh << "\'"+node_name+"\'" << ( ++tctr < node_qty ? "," : "\n" );
+            state_fh << ',' << node_name;
+        state_fh << '\n';
         state_fh.close();
 #endif
 #ifdef WRITE_FILE
@@ -886,11 +888,11 @@ class SELoopWorker {
 #endif
         results_fh.open(filename,std::ofstream::out);
         results_fh << "timestamp,";
-        nctr = 0;
         for ( auto& node_name : node_names )
-            results_fh << "vmag_"+node_name+",";
+            results_fh << ',' << "vmag_"+node_name;
         for ( auto& node_name : node_names )
-            results_fh << "varg_"+node_name << ( ++nctr < node_qty ? "," : "\n" );
+            results_fh << ',' << "varg_"+node_name;
+        results_fh << '\n';
         results_fh.close();
 #endif
     }
@@ -1220,29 +1222,26 @@ class SELoopWorker {
         // in SE test harness runs without the platform
         static bool firstTimeFlag = true;
         std::ofstream ofh_data;
-        string filename;
-        uint ctr = 0;
-        uint num_nodes = node_names.size();
 
         if (firstTimeFlag) {
             //firstTimeFlag = false;
             ofh_data.open("test_files/simulation_data.csv", std::ofstream::out);
 
-            ofh_data << "timestamp,";
+            ofh_data << "timestamp";
             for ( auto& node_name : node_names )
-                ofh_data << "vmag_" << node_name << ",varg_" << node_name << ( ++ctr < num_nodes ? "," : "\n" );
+                ofh_data << ',' << "vmag_" << node_name << ",varg_" << node_name;
+            ofh_data << '\n';
             ofh_data.close();
 
         }
         ofh_data.open("test_files/simulation_data.csv", std::ofstream::app);
         ofh_data << std::setprecision(16);
 
-        ofh_data << timestamp << ",";
+        ofh_data << timestamp;
 
-        ctr = 0;
         for ( auto& node_name : node_names )
-            ofh_data << node_mag[node_name] << "," << node_ang[node_name] << ( ++ctr < num_nodes ? "," : "\n" );
-
+            ofh_data << ',' << node_mag[node_name] << ',' << node_ang[node_name];
+        ofh_data << '\n';
         ofh_data.close();
 
         // write measurement_data files from a running simulation for use
@@ -1255,21 +1254,21 @@ class SELoopWorker {
             firstTimeFlag = false;
             ofh_data.open("test_files/measurement_data.csv", std::ofstream::out);
 
-            ofh_data << "timestamp,";
+            ofh_data << "timestamp";
             for ( auto& zid : Zary.zids )
-                ofh_data << zid << ( ++ctr < zqty ? "," : "\n" );
+                ofh_data << ',' << zid;
+            ofh_data << '\n';
             ofh_data.close();
 
         }
         ofh_data.open("test_files/measurement_data.csv", std::ofstream::app);
         ofh_data << std::setprecision(16);
 
-        ofh_data << timestamp << ",";
+        ofh_data << timestamp;
 
-        ctr = 0;
         for ( auto& zid : Zary.zids )
-            ofh_data << Zary.zvals[zid] << ( ++ctr < zqty ? "," : "\n" );
-
+            ofh_data << ',' << Zary.zvals[zid];
+        ofh_data << '\n';
         ofh_data.close();
 #endif
 
@@ -1377,12 +1376,10 @@ class SELoopWorker {
 #ifdef DEBUG_FILES
         string simpath = "output/" + plint->getOutputDir() + "/";
         state_fh.open(simpath+"vmag_pu.csv",std::ofstream::app);
-        state_fh << timestamp << ',';
-        uint nctr = 0;
-        for ( auto& node_name : node_names ) {
-            double vmag_pu = abs( Vpu[ node_idxs[node_name] ] );
-            state_fh << vmag_pu << ( ++nctr < node_qty ? ',' : '\n' );
-        }
+        state_fh << timestamp;
+        for ( auto& node_name : node_names )
+            state_fh << ',' << est_vmagpu[node_name];
+        state_fh << '\n';
         state_fh.close();
 #endif
 #ifdef TEST_SUITE
@@ -1393,12 +1390,10 @@ class SELoopWorker {
         testest_accy_fh.close();
 
         state_fh.open(testpath+"vmag_pu.csv",std::ofstream::app);
-        state_fh << timestamp << ',';
-        uint tctr = 0;
-        for ( auto& node_name : node_names ) {
-            double vmag_pu = abs( Vpu[ node_idxs[node_name] ] );
-            state_fh << vmag_pu << ( ++tctr < node_qty ? ',' : '\n' );
-        }
+        state_fh << timestamp;
+        for ( auto& node_name : node_names )
+            state_fh << ',' << est_vmagpu[node_name];
+        state_fh << '\n';
         state_fh.close();
 #endif
 
@@ -1406,18 +1401,14 @@ class SELoopWorker {
         string filename = "test_files/results_data.csv";
         results_fh.open(filename,std::ofstream::app);
 
-        results_fh << timestamp << ',';
+        results_fh << timestamp;
         results_fh << std::fixed;
         results_fh << std::setprecision(10);
-        for ( auto& node_name : node_names ) {
-            double vmag_pu = abs( Vpu[ node_idxs[node_name] ] );
-            results_fh << vmag_pu << ",";
-        }
-        uint nctr2 = 0;
-        for ( auto& node_name : node_names ) {
-            double varg_pu = arg( Vpu[ node_idxs[node_name] ] );
-            results_fh << varg_pu << ( ++nctr2 < node_qty ? "," : "\n" );
-        }
+        for ( auto& node_name : node_names )
+            results_fh << ',' << est_vmagpu[node_name];
+        for ( auto& node_name : node_names )
+            results_fh << ',' << est_vargpu[node_name];
+        results_fh << '\n';
         results_fh.close();
 #endif
     }
