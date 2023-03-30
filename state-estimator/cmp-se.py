@@ -254,15 +254,15 @@ def _main():
       checkSizes('Pupd', 143, estRow1, estRow2)
       checkStats('Pupd', 146, estRow1, estRow2)
 
-      checkDiff(estRow1[149], estRow2[149], 'Measurement voltage magnitude min')
-      checkDiff(estRow1[150], estRow2[150], 'Measurement voltage magnitude max')
-      checkDiff(estRow1[151], estRow2[151], 'Measurement voltage magnitude mean')
+      checkDiff(estRow1[149], estRow2[149], 'Measurement vmag min')
+      checkDiff(estRow1[150], estRow2[150], 'Measurement vmag max')
+      checkDiff(estRow1[151], estRow2[151], 'Measurement vmag mean')
 
-      checkDiff(estRow1[152], estRow2[152], 'Estimate voltage magnitude min')
-      checkDiff(estRow1[153], estRow2[153], 'Estimate voltage magnitude max')
-      checkDiff(estRow1[154], estRow2[154], 'Estimate voltage magnitude mean')
+      checkDiff(estRow1[152], estRow2[152], 'Estimate vmag min')
+      checkDiff(estRow1[153], estRow2[153], 'Estimate vmag max')
+      checkDiff(estRow1[154], estRow2[154], 'Estimate vmag mean')
 
-      checkDiff(estRow1[155], estRow2[155], 'Estimate voltage magnitude percent error')
+      checkDiff(estRow1[155], estRow2[155], 'Estimate vmag percent error')
 
       sumPerErr1 += float(estRow1[155])
       sumPerErr2 += float(estRow2[155])
@@ -279,7 +279,7 @@ def _main():
 
   meanPerErr1 = sumPerErr1/itCount
   meanPerErr2 = sumPerErr2/itCount
-  print('\nMean estimate voltage magnitude percent error sim1: ' + str(round(meanPerErr1, 4)) + ', sim2: ' + str(round(meanPerErr2, 4)), flush=True)
+  print('\nMean estimate vmag percent error sim1: ' + str(round(meanPerErr1, 4)) + ', sim2: ' + str(round(meanPerErr2, 4)), flush=True)
 
   print('End ESTIMATE accuracy comparison\n', flush=True)
 
@@ -333,6 +333,57 @@ def _main():
   checkDiff(meanEstTime1, meanEstTime2, 'Mean total estimate time', False, True)
 
   print('End ESTIMATE performance comparison\n', flush=True)
+
+  print('Begin ESTIMATE vs. measurement for ' + opts.sim_dir1 + ':', flush=True)
+
+  fpM = open(simDir1 + 'meas_vmagpu.csv', 'r')
+  fpE = open(simDir1 + 'est_vmagpu.csv', 'r')
+
+  readerM = csv.reader(fpM)
+  readerE = csv.reader(fpE)
+
+  headerM = next(readerM)
+  headerE = next(readerE)
+
+  if headerM != headerE:
+    print('Mismatched meas_vmagpu.csv and est_vmagpu.csv headers being compared--exiting!\n', flush=True)
+    exit()
+
+  numNodes = len(headerM)-1
+  itCount = 0
+  sumCount = 0
+  sumMeasVMag = 0.0
+  sumEstVMag = 0.0
+
+  while True:
+    try:
+      # if either of these next calls fails, bail from comparison loop
+      rowM = next(readerM)
+      rowE = next(readerE)
+
+      itCount += 1
+      print('timestamp #' + str(itCount) + ': ' + rowM[0], flush=True)
+
+      for inode in range(1, numNodes+1):
+        checkDiff(rowM[inode], rowE[inode],
+                  headerM[inode] + ' estimate vs. measurement')
+        sumMeasVMag += float(rowM[inode])
+        sumEstVMag += float(rowE[inode])
+
+      sumCount += numNodes
+
+    except:
+      break
+
+  fpM.close()
+  fpE.close()
+
+  meanMeasVMag = sumMeasVMag/sumCount
+  meanEstVMag = sumEstVMag/sumCount
+  print('\nMean measurement vmag: ' + str(round(meanMeasVMag, 4)) + ', estimate vmag: ' + str(round(meanEstVMag, 4)), flush=True)
+  checkDiff(meanMeasVMag, meanEstVMag, 'Mean measurement vs. estimate vmag', False, True)
+
+  print('End ESTIMATE vs. measurement for ' + opts.sim_dir1 + '\n', flush=True)
 
   print('DONE!', flush=True)
 
