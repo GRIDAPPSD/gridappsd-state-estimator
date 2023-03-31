@@ -263,6 +263,7 @@ def _main():
       checkDiff(estRow1[154], estRow2[154], 'Estimate vmag mean')
 
       checkDiff(estRow1[155], estRow2[155], 'Estimate vmag percent error')
+      print('Estimate vmag percent error for timestamp sim1: ' + str(round(float(estRow1[155]), 4)) + ', sim2: ' + str(round(float(estRow2[155]), 4)), flush=True)
 
       sumPerErr1 += float(estRow1[155])
       sumPerErr2 += float(estRow2[155])
@@ -279,7 +280,7 @@ def _main():
 
   meanPerErr1 = sumPerErr1/itCount
   meanPerErr2 = sumPerErr2/itCount
-  print('\nMean estimate vmag percent error sim1: ' + str(round(meanPerErr1, 4)) + ', sim2: ' + str(round(meanPerErr2, 4)), flush=True)
+  print('\nMean estimate vmag percent error over all timestamps sim1: ' + str(round(meanPerErr1, 4)) + ', sim2: ' + str(round(meanPerErr2, 4)), flush=True)
 
   print('End ESTIMATE accuracy comparison\n', flush=True)
 
@@ -381,7 +382,7 @@ def _main():
   meanMeasVMag = sumMeasVMag/sumCount
   meanEstVMag = sumEstVMag/sumCount
   print('\nMean measurement vmag: ' + str(round(meanMeasVMag, 4)) + ', estimate vmag: ' + str(round(meanEstVMag, 4)), flush=True)
-  checkDiff(meanMeasVMag, meanEstVMag, 'Mean measurement vs. estimate vmag', False, True)
+  checkDiff(meanMeasVMag, meanEstVMag, 'Mean measurement vs. estimate vmag over all nodes and timestamps', False, True)
 
   print('End ESTIMATE vs. measurement for ' + opts.sim_dir1 + '\n', flush=True)
 
@@ -432,7 +433,7 @@ def _main():
   meanMeasVMag = sumMeasVMag/sumCount
   meanEstVMag = sumEstVMag/sumCount
   print('\nMean measurement vmag: ' + str(round(meanMeasVMag, 4)) + ', estimate vmag: ' + str(round(meanEstVMag, 4)), flush=True)
-  checkDiff(meanMeasVMag, meanEstVMag, 'Mean measurement vs. estimate vmag', False, True)
+  checkDiff(meanMeasVMag, meanEstVMag, 'Mean measurement vs. estimate vmag over all nodes and timestamps', False, True)
 
   print('End ESTIMATE vs. measurement for ' + opts.sim_dir2 + '\n', flush=True)
 
