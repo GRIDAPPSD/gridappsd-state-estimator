@@ -11,7 +11,7 @@
   },
   "simulation_config": {
     "start_time": "1593118960",
-    "duration": "60",
+    "duration": "90",
     "simulator": "GridLAB-D",
     "timestep_frequency": 1000,
     "timestep_increment": 1000,
