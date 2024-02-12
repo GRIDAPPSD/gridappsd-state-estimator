@@ -66,14 +66,11 @@ public:
 
     helicscpp::Input sub_topo = vfed->registerSubscription("local_feeder/topology","");
 
-    //helicscpp::Input sub_P = vfed->registerSubscription("sensors/power_real","W");
-    sub_P = vfed->registerSubscription("sensor_power_real/publication","W");
+    helicscpp::Input sub_P = vfed->registerSubscription("sensor_power_real/publication","W");
 
-    //helicscpp::Input sub_Q = vfed->registerSubscription("sensors/power_imag","W");
-    sub_Q = vfed->registerSubscription("sensor_power_imaginary/publication","W");
+    helicscpp::Input sub_Q = vfed->registerSubscription("sensor_power_imaginary/publication","W");
 
-    //helicscpp::Input sub_V = vfed->registerSubscription("sensors/voltages","V");
-    sub_V = vfed->registerSubscription("sensor_voltage_magnitude/publication","V");
+    helicscpp::Input sub_V = vfed->registerSubscription("sensor_voltage_magnitude/publication","V");
 
     if(sub_topo.isValid()){
         std::cout << " Subscription registered for feeder Topology\n";
@@ -119,43 +116,50 @@ public:
     std::cout << " Entered execution state\n";
 
     std::string topology;
-    //std::string power_real;
-    //std::string power_imag;
-    //std::string voltages;
+    std::string power_real;
+    std::string power_imag;
+    std::string voltages;
 
     currenttime = 0.0;
     ts=1;
 
     currenttime = vfed->requestTime(10000);
 
-    sub_topo.getString(topology);
-    //std::cout <<topology << std::endl;
-    topo = json::parse(topology);
-    std::cout <<topo["slack_bus"][0].get<string>() << std::endl;
-    std::cout <<topo["slack_bus"][1].get<string>() << std::endl;
-    std::cout <<topo["slack_bus"][2].get<string>() << std::endl;
-    std::cout <<topo << std::endl;
+    if (sub_topo.isUpdated())
+    {
+        sub_topo.getString(topology);
+        topo = json::parse(topology);
+        std::cout <<topo["slack_bus"][0].get<string>() << std::endl;
+        std::cout <<topo["slack_bus"][1].get<string>() << std::endl;
+        std::cout <<topo["slack_bus"][2].get<string>() << std::endl;
+        std::cout <<topo << std::endl;
+    }
 
-    sub_P.getString(power_real);
-    P_meas = json::parse(power_real);
-    //std::cout <<P_meas << std::endl;
+    if (sub_P.isUpdated())
+    {
+        sub_P.getString(power_real);
+        P_meas = json::parse(power_real);
+        std::cout <<P_meas << std::endl;
+        workQueue.push(P_meas);
+    }
 
-    sub_Q.getString(power_imag);
-    Q_meas = json::parse(power_imag);
-    //std::cout <<Q_meas << std::endl;
+    if (sub_Q.isUpdated())
+    {
+        sub_Q.getString(power_imag);
+        Q_meas = json::parse(power_imag);
+        std::cout <<Q_meas << std::endl;
+        workQueue.push(Q_meas);
+    }
 
-    sub_V.getString(voltages);
-    V_meas = json::parse(voltages);
-    //std::cout <<V_meas["array"] << std::endl;
-    //std::cout <<V_meas["unique_ids"] << std::endl;
-
-    workQueue.push(V_meas);
-    workQueue.push(P_meas);
-    workQueue.push(Q_meas);
-
-    std::cout<< V_meas<< std::endl;
-    std::cout<< P_meas << std::endl;
-    std::cout<< Q_meas<< std::endl;
+    if (sub_V.isUpdated())
+    {
+        sub_V.getString(voltages);
+        V_meas = json::parse(voltages);
+        //std::cout <<V_meas["array"] << std::endl;
+        //std::cout <<V_meas["unique_ids"] << std::endl;
+        std::cout<< V_meas<< std::endl;
+        workQueue.push(V_meas);
+    }
 
     /*while (currenttime < 10000) {
         std::cout <<currenttime << std::endl;
