@@ -66,11 +66,11 @@ public:
 
     helicscpp::Input sub_topo = vfed->registerSubscription("local_feeder/topology","");
 
-    helicscpp::Input sub_P = vfed->registerSubscription("sensor_power_real/publication","W");
+    sub_P = vfed->registerSubscription("sensor_power_real/publication","W");
 
-    helicscpp::Input sub_Q = vfed->registerSubscription("sensor_power_imaginary/publication","W");
+    sub_Q = vfed->registerSubscription("sensor_power_imaginary/publication","W");
 
-    helicscpp::Input sub_V = vfed->registerSubscription("sensor_voltage_magnitude/publication","V");
+    sub_V = vfed->registerSubscription("sensor_voltage_magnitude/publication","V");
 
     if(sub_topo.isValid()){
         std::cout << " Subscription registered for feeder Topology\n";
@@ -116,9 +116,9 @@ public:
     std::cout << " Entered execution state\n";
 
     std::string topology;
-    std::string power_real;
-    std::string power_imag;
-    std::string voltages;
+    // std::string power_real;
+    // std::string power_imag;
+    // std::string voltages;
 
     currenttime = 0.0;
     ts=1;
@@ -272,7 +272,8 @@ public:
         }
         std::cout << node_names.size() << "\n\n";
         //___________________________________________________________________
-        if (!sparse_impl){
+        if (!sparse_impl)
+        {
             std::cout<< "Not a sparse matrix implementation" << std::endl;
             for (int i = 0; i < topo["admittance"]["admittance_matrix"].size(); i++) {
                 //std::cout<< i << std::endl;
@@ -290,7 +291,9 @@ public:
                     }
                 }
             }
-        }else{
+        }
+        else
+        {
             std::cout<< "Sparse matrix implementation" << std::endl;
             //____________________ now for sparse implementation:
             for (int a = 0; a < topo["admittance"]["admittance_list"].size(); a++) {
@@ -341,8 +344,12 @@ public:
     }
 
 
-    void fillVnoms() {     //Vnoms are loaded here (Done)
-        for (int i = 0; i < topo["base_voltage_magnitudes"]["ids"].size(); i++) {
+    void fillVnoms() 
+    {
+        std::cout << "Filling Vnoms" << std::endl;
+        //Vnoms are loaded here (Done)
+        for (int i = 0; i < topo["base_voltage_magnitudes"]["ids"].size(); i++) 
+        {
             //std::cout<< i << std::endl;
             string node = topo["base_voltage_magnitudes"]["ids"][i];
             //std::cout<< node << std::endl;
@@ -496,7 +503,8 @@ public:
         //_________________________________________________________________
         bool ret = true;
 		
-		if (currenttime <= Total_ts) {
+		if (currenttime <= Total_ts) 
+        {
 			std::cout <<currenttime << std::endl;
 			
 
@@ -575,8 +583,10 @@ public:
 			pub_Vmag.publish(jmessage.dump());
 			
 			currenttime = vfed->requestTime(10000);*/
-		} else{
-
+		} 
+        
+        else
+        {
 			//if (workQueue.empty()){
 			ret = false;
 			vfed->finalize();
@@ -600,6 +610,7 @@ public:
 
 
     void setupPublishing() {
+        std::cout << "Setting up publishing" << std::endl;
         string filename = FILE_INTERFACE_READ;
         filename += "/results_data.csv";
         est_fh.open(filename, std::ofstream::trunc);
