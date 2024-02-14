@@ -76,13 +76,14 @@ public:
     vfed = new helicscpp::ValueFederate(staticInput["name"], fi);
     std::cout << " Value federate created\n";
 
-    helicscpp::Input sub_topo = vfed->registerSubscription(inputMap["topology"],"");
+    // Set up subscriptions
+    sub_topo = vfed->registerSubscription(inputMap["topology"],"");
 
-    helicscpp::Input sub_V = vfed->registerSubscription(inputMap["sensor_voltage_magnitude"],"V");
+    sub_V = vfed->registerSubscription(inputMap["sensor_voltage_magnitude"],"V");
     
-    helicscpp::Input sub_P = vfed->registerSubscription(inputMap["sensor_power_real"],"W");
+    sub_P = vfed->registerSubscription(inputMap["sensor_power_real"],"W");
     
-    helicscpp::Input sub_Q = vfed->registerSubscription(inputMap["sensor_power_imaginary"],"W");
+    sub_Q = vfed->registerSubscription(inputMap["sensor_power_imaginary"],"W");
 
     
 
@@ -102,6 +103,7 @@ public:
         std::cout << " Subscription registered for feeder voltage V\n";
     }
 
+    // Set up publications
     pub_Vmag = vfed->registerPublication("Vmag_SE", HELICS_DATA_TYPE_STRING);
 
     pub_Vang = vfed->registerPublication("Vang_SE", HELICS_DATA_TYPE_STRING);
@@ -113,14 +115,6 @@ public:
         std::cout << " Vang Publication registered\n";
     }
 
-    //std::ifstream ifs("input_mapping.json");
-    //json jf = json::parse(ifs);
-
-    //std::ifstream ifs("static_inputs.json");
-    //json jf_si = json::parse(ifs);
-
-    //std::cout <<  jf << std::endl;
-
      /* Enter initialization state */
     vfed->enterInitializingMode();  // can throw helicscpp::InvalidStateTransition exception
     std::cout << " Entered initialization state" << std::endl;
@@ -129,87 +123,31 @@ public:
     vfed->enterExecutingMode();  // can throw helicscpp::InvalidStateTransition exception
     std::cout << " Entered execution state\n";
 
-    std::string topology;
-    // std::string power_real;
-    // std::string power_imag;
-    // std::string voltages;
-
     currenttime = 0.0;
     ts=1;
-
     currenttime = vfed->requestTime(10000);
 
-    if (sub_topo.isUpdated())
-    {
-        sub_topo.getString(topology);
-        topo = json::parse(topology);
-    }
+    // Get the topology subscription
+    sub_topo.getString(topology);
+    topo = json::parse(topology);
 
-    if (sub_V.isUpdated())
-    {
-        sub_V.getString(voltages);
-        V_meas = json::parse(voltages);
-        //std::cout <<V_meas["array"] << std::endl;
-        //std::cout <<V_meas["unique_ids"] << std::endl;
-        std::cout<< V_meas<< std::endl;
-        workQueue.push(V_meas);
-    }
+    // Get the voltage magnitude subscription
+    sub_V.getString(voltages);
+    V_meas = json::parse(voltages);
+    std::cout<< V_meas<< std::endl;
+    workQueue.push(V_meas);
 
-    if (sub_P.isUpdated())
-    {
-        sub_P.getString(power_real);
-        P_meas = json::parse(power_real);
-        std::cout <<P_meas << std::endl;
-        workQueue.push(P_meas);
-    }
+    // Get the real power subscription
+    sub_P.getString(power_real);
+    P_meas = json::parse(power_real);
+    std::cout <<P_meas << std::endl;
+    workQueue.push(P_meas);
 
-    if (sub_Q.isUpdated())
-    {
-        sub_Q.getString(power_imag);
-        Q_meas = json::parse(power_imag);
-        std::cout <<Q_meas << std::endl;
-        workQueue.push(Q_meas);
-    }
-
-    /*while (currenttime < 10000) {
-        std::cout <<currenttime << std::endl;
-        json V_meas_sim, P_meas_sim, Q_meas_sim;
-
-        //if (currenttime > 90) {
-        sub_P.getString(power_real);
-        P_meas_sim = json::parse(power_real);
-        //std::cout <<P_meas_sim << std::endl;
-
-        sub_Q.getString(power_imag);
-        Q_meas_sim = json::parse(power_imag);
-        //std::cout <<Q_meas_sim << std::endl;
-
-        sub_V.getString(voltages);
-        V_meas_sim = json::parse(voltages);
-        //std::cout <<V_meas_sim << std::endl;
-        //}
-
-        workQueue.push(V_meas_sim);
-        workQueue.push(P_meas_sim);
-        workQueue.push(Q_meas_sim);
-		
-		//json jmessage;
-		//jmessage["values"] = {2331.1810216005406, 2331.177966421088, 2331.1820742949385};
-		//jmessage["ids"] = {"150.1", "150.2", "150.3"};
-		//jmessage["time"] = "2017-01-01T00:15:00";
-		//jmessage["units"] =  "kV";
-		//pub_Vmag.publish(jmessage.dump());
-
-        currenttime = vfed->requestTime(10000);
-    }*/
-
-    //vfed->finalize();
-    //std::cout << "NLIN2: Federate finalized" << std::endl;
-    // Destructor for ValueFederate must be called before close library
-    //helicscpp::cleanupHelicsLibrary();
-    //delete vfed;
-    //helicsCloseLibrary();
-    //std::cout << "NLIN2: Library Closed" << std::endl;
+    // Get the reactive power subscription
+    sub_Q.getString(power_imag);
+    Q_meas = json::parse(power_imag);
+    std::cout <<Q_meas << std::endl;
+    workQueue.push(Q_meas);
 
     }
 
@@ -532,8 +470,7 @@ public:
 			json V_meas_sim, P_meas_sim, Q_meas_sim;
 
 			sub_V.getString(voltages);
-            std::cout << voltages << std::endl;
-			V_meas_sim = json::parse(voltages);
+            V_meas_sim = json::parse(voltages);
 			workQueue.push(V_meas_sim);
 
             sub_P.getString(power_real);
@@ -697,30 +634,41 @@ private:
     std::ifstream meas_fh;
     std::ofstream est_fh;
     std::vector<string> meas_zids;
-	json topo;
+	
+    json topo;
 	json P_meas;
 	json Q_meas;
 	json V_meas;
-	SharedQueue<json> workQueue;
+	
+    SharedQueue<json> workQueue;
 	double Sbase;
 	double ts;
 	bool sparse_impl = false;
-	helicscpp::Publication pub_Vmag;
+	
+    helicscpp::Publication pub_Vmag;
 	helicscpp::Publication pub_Vang;
-	helicscpp::ValueFederate* vfed;
-	HelicsTime currenttime;
+	
+    helicscpp::ValueFederate* vfed;
+	
+    HelicsTime currenttime;
+    
+    helicscpp::Input sub_topo;
 	helicscpp::Input sub_P;
 	helicscpp::Input sub_Q;
 	helicscpp::Input sub_V;
-	std::string power_real;
+	
+    std::string topology;
+    std::string power_real;
     std::string power_imag;
     std::string voltages;
-	SLIST node_est_v;
-	int Total_ts = 97;
-	json V_message;
+	
+    SLIST node_est_v;
+	
+    int Total_ts = 97;
+	
+    json V_message;
 
     json inputMap;
     json staticInput;
 };
 
-//#endif
