@@ -143,10 +143,6 @@ public:
     {
         sub_topo.getString(topology);
         topo = json::parse(topology);
-        std::cout <<topo["slack_bus"][0].get<string>() << std::endl;
-        std::cout <<topo["slack_bus"][1].get<string>() << std::endl;
-        std::cout <<topo["slack_bus"][2].get<string>() << std::endl;
-        std::cout <<topo << std::endl;
     }
 
     if (sub_V.isUpdated())
@@ -522,8 +518,8 @@ public:
 			std::cout <<currenttime << std::endl;
 			
 
-			//currenttime = vfed->requestTime(10000);
-    
+			// currenttime = vfed->requestTime(10000);
+            std::cout << "\n\n\nCurrent Queue size : " << workQueue.size() << std::endl;
 
 			V_message = workQueue.pop();
 			json P_message = workQueue.pop();
@@ -535,18 +531,17 @@ public:
 			
 			json V_meas_sim, P_meas_sim, Q_meas_sim;
 
-        
-			sub_P.getString(power_real);
+			sub_V.getString(voltages);
+            std::cout << voltages << std::endl;
+			V_meas_sim = json::parse(voltages);
+			workQueue.push(V_meas_sim);
+
+            sub_P.getString(power_real);
 			P_meas_sim = json::parse(power_real);
+			workQueue.push(P_meas_sim);
 
 			sub_Q.getString(power_imag);
 			Q_meas_sim = json::parse(power_imag);
-
-			sub_V.getString(voltages);
-			V_meas_sim = json::parse(voltages);
-
-			workQueue.push(V_meas_sim);
-			workQueue.push(P_meas_sim);
 			workQueue.push(Q_meas_sim);
 
 			meas_timestamp = 0;
