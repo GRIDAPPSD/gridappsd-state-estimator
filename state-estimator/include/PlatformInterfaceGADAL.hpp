@@ -149,6 +149,16 @@ public:
         std::cout <<topo << std::endl;
     }
 
+    if (sub_V.isUpdated())
+    {
+        sub_V.getString(voltages);
+        V_meas = json::parse(voltages);
+        //std::cout <<V_meas["array"] << std::endl;
+        //std::cout <<V_meas["unique_ids"] << std::endl;
+        std::cout<< V_meas<< std::endl;
+        workQueue.push(V_meas);
+    }
+
     if (sub_P.isUpdated())
     {
         sub_P.getString(power_real);
@@ -163,16 +173,6 @@ public:
         Q_meas = json::parse(power_imag);
         std::cout <<Q_meas << std::endl;
         workQueue.push(Q_meas);
-    }
-
-    if (sub_V.isUpdated())
-    {
-        sub_V.getString(voltages);
-        V_meas = json::parse(voltages);
-        //std::cout <<V_meas["array"] << std::endl;
-        //std::cout <<V_meas["unique_ids"] << std::endl;
-        std::cout<< V_meas<< std::endl;
-        workQueue.push(V_meas);
     }
 
     /*while (currenttime < 10000) {
