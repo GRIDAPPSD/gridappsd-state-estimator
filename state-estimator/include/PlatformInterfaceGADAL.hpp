@@ -27,7 +27,9 @@ using json = nlohmann::json;
 
 #include "SharedQueue.hpp"
 
+#include <filesystem>
 #include <iostream>
+#include <fstream>
 #include <thread>
 
 
@@ -37,6 +39,16 @@ public:
     std::string fedinitstring = "--federates=1";
     double deltat = 1;
     Sbase = sbase;
+
+    std::filesystem::path inputMapFile = std::filesystem::current_path() / "input_mapping.json";
+    std::filesystem::path staticInFile = std::filesystem::current_path() / "static_inputs.json";
+    std::cout << "Reading OEDISI configurations from : " << inputMapFile << " and " << staticInFile << std::endl;
+
+    std::ifstream f1(inputMapFile.string());
+    inputMap = json::parse(f1);
+    std::ifstream f2(staticInFile.string());
+    staticInput = json::parse(f2);
+
     std::cout <<sbase << std::endl;
     std::string helicsversion = helicscpp::getHelicsVersionString();
 
@@ -52,7 +64,7 @@ public:
 
     /* Federate init string */
     fi.setCoreInit(fedinitstring);
-    fi.setCoreName("pnnl_state_estimator");
+    fi.setCoreName(staticInput["name"]);
 
     fi.setProperty(HELICS_PROPERTY_TIME_DELTA, deltat);
 
@@ -61,16 +73,18 @@ public:
     fi.setProperty(HELICS_PROPERTY_INT_LOG_LEVEL, HELICS_LOG_LEVEL_WARNING);
 
     /* Create value federate */
-    vfed = new helicscpp::ValueFederate("pnnl_state_estimator", fi);
+    vfed = new helicscpp::ValueFederate(staticInput["name"], fi);
     std::cout << " Value federate created\n";
 
-    helicscpp::Input sub_topo = vfed->registerSubscription("local_feeder/topology","");
+    helicscpp::Input sub_topo = vfed->registerSubscription(inputMap["topology"],"");
 
-    helicscpp::Input sub_P = vfed->registerSubscription("sensor_power_real/publication","W");
+    helicscpp::Input sub_V = vfed->registerSubscription(inputMap["sensor_voltage_magnitude"],"V");
+    
+    helicscpp::Input sub_P = vfed->registerSubscription(inputMap["sensor_power_real"],"W");
+    
+    helicscpp::Input sub_Q = vfed->registerSubscription(inputMap["sensor_power_imaginary"],"W");
 
-    helicscpp::Input sub_Q = vfed->registerSubscription("sensor_power_imaginary/publication","W");
-
-    helicscpp::Input sub_V = vfed->registerSubscription("sensor_voltage_magnitude/publication","V");
+    
 
     if(sub_topo.isValid()){
         std::cout << " Subscription registered for feeder Topology\n";
@@ -698,6 +712,9 @@ private:
 	SLIST node_est_v;
 	int Total_ts = 97;
 	json V_message;
+
+    json inputMap;
+    json staticInput;
 };
 
 //#endif
