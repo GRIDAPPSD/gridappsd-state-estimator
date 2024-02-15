@@ -133,22 +133,31 @@ public:
     topo = json::parse(topology);
 
     // Get the voltage magnitude subscription
-    sub_V.getString(voltages);
-    V_meas = json::parse(voltages);
-    std::cout<< V_meas<< std::endl;
-    workQueue.push(V_meas);
+    if (sub_V.isUpdated())
+    {
+        sub_V.getString(voltages);
+        V_meas = json::parse(voltages);
+        std::cout<< V_meas<< std::endl;
+        workQueue.push(V_meas);
+    }
 
     // Get the real power subscription
-    sub_P.getString(power_real);
-    P_meas = json::parse(power_real);
-    std::cout <<P_meas << std::endl;
-    workQueue.push(P_meas);
+    if (sub_P.isUpdated())
+    {
+        sub_P.getString(power_real);
+        P_meas = json::parse(power_real);
+        std::cout <<P_meas << std::endl;
+        workQueue.push(P_meas);
+    }
 
     // Get the reactive power subscription
-    sub_Q.getString(power_imag);
-    Q_meas = json::parse(power_imag);
-    std::cout <<Q_meas << std::endl;
-    workQueue.push(Q_meas);
+    if (sub_Q.isUpdated())
+    {
+        sub_Q.getString(power_imag);
+        Q_meas = json::parse(power_imag);
+        std::cout <<Q_meas << std::endl;
+        workQueue.push(Q_meas);
+    }
 
     }
 
