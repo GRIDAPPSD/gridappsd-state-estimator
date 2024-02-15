@@ -30,6 +30,7 @@ using json = nlohmann::json;
 #include <filesystem>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <thread>
 
 
@@ -88,19 +89,19 @@ public:
     
 
     if(sub_topo.isValid()){
-        std::cout << " Subscription registered for feeder Topology\n";
+        std::cout << " Subscription registered for feeder Topology with port " << inputMap["topology"] << std::endl;
     }
 
     if(sub_P.isValid()){
-        std::cout << " Subscription registered for feeder real power P\n";
+        std::cout << " Subscription registered for feeder real power P with port " << inputMap["sensor_power_real"] << std::endl;
     }
 
     if(sub_Q.isValid()){
-        std::cout << " Subscription registered for feeder reactive power Q\n";
+        std::cout << " Subscription registered for feeder reactive power Q with port " << inputMap["sensor_power_imaginary"] << std::endl;
     }
 
     if(sub_V.isValid()){
-        std::cout << " Subscription registered for feeder voltage V\n";
+        std::cout << " Subscription registered for feeder voltage V with port " << inputMap["sensor_voltage_magnitude"] << std::endl;
     }
 
     // Set up publications
@@ -457,7 +458,6 @@ public:
 			
 
 			// currenttime = vfed->requestTime(10000);
-            std::cout << "\n\n\nCurrent Queue size : " << workQueue.size() << std::endl;
 
 			V_message = workQueue.pop();
 			json P_message = workQueue.pop();
