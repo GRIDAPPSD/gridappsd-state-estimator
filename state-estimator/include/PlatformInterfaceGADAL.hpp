@@ -129,29 +129,39 @@ public:
     currenttime = vfed->requestTime(10000);
 
     // Get the topology subscription
-    if ((sub_topo.isUpdated()) && (sub_V.isUpdated()) && (sub_Q.isUpdated()) && (sub_V.isUpdated()))
+    while (1)
     {
-        sub_topo.getString(topology);
-        topo = json::parse(topology);
-
-        // Get the voltage magnitude subscription
-        sub_V.getString(voltages);
-        V_meas = json::parse(voltages);
-        std::cout<< V_meas<< std::endl;
-        workQueue.push(V_meas);
-
-        // Get the real power subscription
-        sub_P.getString(power_real);
-        P_meas = json::parse(power_real);
-        std::cout <<P_meas << std::endl;
-        workQueue.push(P_meas);
-
-        // Get the reactive power subscription
-        sub_Q.getString(power_imag);
-        Q_meas = json::parse(power_imag);
-        std::cout <<Q_meas << std::endl;
-        workQueue.push(Q_meas);
+        if ((sub_topo.isUpdated()) && (sub_V.isUpdated()) && (sub_Q.isUpdated()) && (sub_V.isUpdated()))
+        {
+            break;
+        }
+        else
+        {
+            std::cout << "Not updated" << std::endl;
+            currenttime = vfed->requestTime(10000);
+        }
     }
+    std::cout<< "IT IS TRUE" <<std::endl;
+    sub_topo.getString(topology);
+    topo = json::parse(topology);
+
+    // Get the voltage magnitude subscription
+    sub_V.getString(voltages);
+    V_meas = json::parse(voltages);
+    std::cout<< V_meas<< std::endl;
+    workQueue.push(V_meas);
+
+    // Get the real power subscription
+    sub_P.getString(power_real);
+    P_meas = json::parse(power_real);
+    std::cout <<P_meas << std::endl;
+    workQueue.push(P_meas);
+
+    // Get the reactive power subscription
+    sub_Q.getString(power_imag);
+    Q_meas = json::parse(power_imag);
+    std::cout <<Q_meas << std::endl;
+    workQueue.push(Q_meas);
 
     }
 
@@ -457,7 +467,7 @@ public:
 		
 		if (currenttime <= Total_ts) 
         {
-			std::cout <<currenttime << std::endl;
+			std::cout << "Current Time: " << currenttime << std::endl;
 			
 
 			// currenttime = vfed->requestTime(10000);
