@@ -129,30 +129,24 @@ public:
     currenttime = vfed->requestTime(10000);
 
     // Get the topology subscription
-    sub_topo.getString(topology);
-    topo = json::parse(topology);
-
-    // Get the voltage magnitude subscription
-    if (sub_V.isUpdated())
+    if ((sub_topo.isUpdated()) && (sub_V.isUpdated()) && (sub_Q.isUpdated()) && (sub_V.isUpdated()))
     {
+        sub_topo.getString(topology);
+        topo = json::parse(topology);
+
+        // Get the voltage magnitude subscription
         sub_V.getString(voltages);
         V_meas = json::parse(voltages);
         std::cout<< V_meas<< std::endl;
         workQueue.push(V_meas);
-    }
 
-    // Get the real power subscription
-    if (sub_P.isUpdated())
-    {
+        // Get the real power subscription
         sub_P.getString(power_real);
         P_meas = json::parse(power_real);
         std::cout <<P_meas << std::endl;
         workQueue.push(P_meas);
-    }
 
-    // Get the reactive power subscription
-    if (sub_Q.isUpdated())
-    {
+        // Get the reactive power subscription
         sub_Q.getString(power_imag);
         Q_meas = json::parse(power_imag);
         std::cout <<Q_meas << std::endl;
