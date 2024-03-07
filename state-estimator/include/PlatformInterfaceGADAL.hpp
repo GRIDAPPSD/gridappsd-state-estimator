@@ -128,7 +128,8 @@ public:
     ts=1;
     currenttime = vfed->requestTime(10000);
 
-    // Get the topology subscription
+    // check whether all subscriptions are updated or not
+    // if not request more time
     while (1)
     {
         if ((sub_topo.isUpdated()) && (sub_V.isUpdated()) && (sub_Q.isUpdated()) && (sub_V.isUpdated()))
@@ -141,7 +142,8 @@ public:
             currenttime = vfed->requestTime(10000);
         }
     }
-    std::cout<< "IT IS TRUE" <<std::endl;
+
+    // Get the topology subscription
     sub_topo.getString(topology);
     topo = json::parse(topology);
 
