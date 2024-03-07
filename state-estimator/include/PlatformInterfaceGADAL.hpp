@@ -138,7 +138,7 @@ public:
         }
         else
         {
-            std::cout << "Not updated" << std::endl;
+            std::cout << "Inputs not updated... Requesting more time..." << std::endl;
             currenttime = vfed->requestTime(10000);
         }
     }
