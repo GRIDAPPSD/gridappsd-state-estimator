@@ -132,7 +132,7 @@ public:
     // if not request more time
     while (1)
     {
-        if ((sub_topo.isUpdated()) && (sub_V.isUpdated()) && (sub_Q.isUpdated()) && (sub_V.isUpdated()))
+        if ((sub_topo.isUpdated()) && (sub_V.isUpdated()) && (sub_Q.isUpdated()) && (sub_P.isUpdated()))
         {
             break;
         }
