@@ -82,11 +82,7 @@ public:
     // Set up subscriptions
     sub_topo = vfed->registerSubscription(inputMap["topology"], "");
 
-    sub_inj = vfed->registerSubscription(inputMap["injections"], "W");
-
     sub_V = vfed->registerSubscription(inputMap["voltage_mag"], "V");
-
-    sub_A = vfed->registerSubscription(inputMap["voltage_angle"], "V");
 
     sub_P = vfed->registerSubscription(inputMap["power_real"], "W");
 
@@ -95,11 +91,6 @@ public:
     if (sub_topo.isValid()) {
       std::cout << " Subscription registered for feeder Topology with port "
                 << inputMap["topology"] << std::endl;
-    }
-
-    if (sub_inj.isValid()) {
-      std::cout << " Subscription registered for feeder Topology with port "
-                << inputMap["injections"] << std::endl;
     }
 
     if (sub_P.isValid()) {
@@ -116,11 +107,6 @@ public:
     if (sub_V.isValid()) {
       std::cout << " Subscription registered for feeder voltage V with port "
                 << inputMap["voltage_mag"] << std::endl;
-    }
-
-    if (sub_A.isValid()) {
-      std::cout << " Subscription registered for feeder voltage V with port "
-                << inputMap["voltage_angle"] << std::endl;
     }
 
     // Set up publications
@@ -163,19 +149,14 @@ public:
     // check whether all subscriptions are updated or not
     // if not request more time
     try {
-      while (!sub_V.isUpdated()) {
-        std::cout << "Inputs not updated... Requesting more time..."
-                  << std::endl;
+      while (!sub_topo.isUpdated()) {
+        std::cout << "Topology not updated..." << std::endl;
         currenttime = vfed->requestTime(HELICS_TIME_MAXTIME);
-        std::cout << "Received Time: " << currenttime << std::endl;
       }
-
-      std::cout << "Inputs updated at " << currenttime << std::endl;
 
       // Get the topology subscription
       std::string str_topo;
       sub_topo.getString(str_topo);
-      json::parse(str_topo);
       topo = json::parse(str_topo);
 
       SDMAP voltages_mag = extractBaseVoltagesMagnitudes(topo);
@@ -184,9 +165,9 @@ public:
 
       std::cout << "Voltage Nodes : " << base_voltages.size() << std::endl;
 
-      SDMAP powers_real = extractInjections(topo["injections"]["powers_real"]);
+      SDMAP powers_real = extractInjections(topo["injections"]["power_real"]);
       SDMAP powers_imag =
-          extractInjections(topo["injections"]["powers_imaginary"]);
+          extractInjections(topo["injections"]["power_imaginary"]);
       base_powers = cartMap(powers_real, powers_imag);
 
       std::cout << "Injection Nodes : " << base_powers.size() << std::endl;
@@ -196,43 +177,67 @@ public:
       }
 
       total_power = totalInjections(base_powers);
-      double sbase_new = ceilingPowerOfTen(total_power);
-      sbase_ref = &sbase_new;
+      Sbase = ceilingPowerOfTen(total_power);
+      sbase_ref = &Sbase;
+      std::cout << "updated sbase = " << getsbase() << std::endl;
 
-      double average_p = (total_power.real() / *sbase_ref) / powers.size();
-      double average_q = (total_power.imag() / *sbase_ref) / powers.size();
-      std::cout << "Average Power : " << average_p << "+ i*" << average_q
+      double average_p = (total_power.real() / Sbase) / base_powers.size();
+      double average_q = (total_power.imag() / Sbase) / base_powers.size();
+      std::cout << "Average Power : " << average_p << " + i*" << average_q
                 << std::endl;
-      base_psuedo_sigma_p = 0.05 * average_p;
-      base_psuedo_sigma_q = 0.05 * average_q;
-      base_sigma_p = 0.005 * average_p;
-      base_sigma_q = 0.005 * average_q;
 
+      sigma_v = staticInput["sigma_v"];
+      sigma_p = staticInput["sigma_p"];
+      sigma_q = staticInput["sigma_q"];
+
+      base_psuedo_sigma_p = sigma_p * std::abs(average_p);
+      base_psuedo_sigma_q = sigma_q * std::abs(average_q);
+      base_sigma_p = (sigma_p / 10) * std::abs(average_p);
+      base_sigma_q = (sigma_q / 10) * std::abs(average_q);
+
+      while (!sub_V.isUpdated()) {
+        std::cout << "Voltage not updated..." << std::endl;
+        currenttime = vfed->requestTime(HELICS_TIME_MAXTIME);
+      }
       // Get the voltage magnitude subscription
       std::string str_v;
       sub_V.getString(str_v);
       json V_meas = json::parse(str_v);
-      std::cout << V_meas << std::endl;
       workQueue.push(V_meas);
 
+      while (!sub_P.isUpdated()) {
+        std::cout << "Real Power not updated..." << std::endl;
+        currenttime = vfed->requestTime(HELICS_TIME_MAXTIME);
+      }
       // Get the real power subscription
       std::string str_p;
       sub_P.getString(str_p);
       json P_meas = json::parse(str_p);
-      std::cout << P_meas << std::endl;
       workQueue.push(P_meas);
 
+      while (!sub_Q.isUpdated()) {
+        std::cout << "Imaginary Power not updated..." << std::endl;
+        currenttime = vfed->requestTime(HELICS_TIME_MAXTIME);
+      }
       // Get the reactive power subscription
       std::string str_q;
       sub_Q.getString(str_q);
       json Q_meas = json::parse(str_q);
-      std::cout << Q_meas << std::endl;
       workQueue.push(Q_meas);
 
       voltages = extractVoltages(V_meas);
+      std::cout << "Measured Voltage Nodes : " << voltages.size() << std::endl;
+
       SDMAP measured_p = extractPowers(P_meas);
+      std::cout << "Measured Real Power Nodes : " << measured_p.size()
+                << std::endl;
+
       SDMAP measured_q = extractPowers(Q_meas);
+      std::cout << "Measured Imag Power Nodes : " << measured_q.size()
+                << std::endl;
+
       powers = cartMap(measured_p, measured_q);
+
     } catch (...) {
 
       std::cout << "Error in PlatformInterfaceGADAL initialization"
@@ -250,7 +255,7 @@ public:
       scale = 1000.0;
 
     SDMAP mapping;
-    for (size_t i = 0; i <= ids.size(); i++) {
+    for (size_t i = 0; i < ids.size(); i++) {
       double x = -scale * (double)values[i];
       if (mapping.count(ids[i]) > 0) {
         mapping[ids[i]] += x;
@@ -272,11 +277,8 @@ public:
       scale = 1000.0;
 
     SDMAP mapping;
-    for (size_t i = 0; i <= ids.size(); i++) {
+    for (size_t i = 0; i < ids.size(); i++) {
       std::string eq = eqids[i];
-      if (eq.find("Capacitor") == std::string::npos)
-        continue;
-
       double x = -scale * (double)values[i];
       if (mapping.count(ids[i]) > 0) {
         mapping[ids[i]] += x;
@@ -292,7 +294,7 @@ public:
     json values = voltages["values"];
 
     SDMAP mapping;
-    for (size_t i = 0; i <= ids.size(); i++) {
+    for (size_t i = 0; i < ids.size(); i++) {
       mapping.insert({ids[i], (double)values[i]});
     }
     return mapping;
@@ -304,7 +306,7 @@ public:
     json values = obj["values"];
 
     SDMAP mapping;
-    for (size_t i = 0; i <= ids.size(); i++) {
+    for (size_t i = 0; i < ids.size(); i++) {
       mapping.insert({ids[i], (double)values[i]});
     }
     return mapping;
@@ -316,7 +318,7 @@ public:
     json values = obj["values"];
 
     SDMAP mapping;
-    for (size_t i = 0; i <= ids.size(); i++) {
+    for (size_t i = 0; i < ids.size(); i++) {
       mapping.insert({ids[i], (double)values[i]});
     }
     return mapping;
@@ -326,7 +328,12 @@ public:
     SCMAP mapping;
     for (const auto &e : real) {
       std::string key = e.first;
-      mapping.insert({key, std::complex<double>(real.at(key), imag.at(key))});
+      if (imag.count(key) == 0)
+        continue;
+
+      std::complex<double> value =
+          std::complex<double>(real.at(key), imag.at(key));
+      mapping.insert({key, value});
     }
     return mapping;
   }
@@ -335,6 +342,8 @@ public:
     SCMAP mapping;
     for (const auto &e : mag) {
       std::string key = e.first;
+      if (ang.count(key) == 0)
+        continue;
       std::complex<double> value = std::polar(mag.at(key), ang.at(key));
       mapping.insert({key, value});
     }
@@ -363,7 +372,7 @@ public:
     tag = "pseudo_";
     pos = str.find(tag);
     if (pos != std::string::npos)
-      return str.substr(0, pos + tag.size() + 2); // for V_, T_
+      return str.substr(0, pos + tag.size() + 2); // for P_, Q_
 
     pos = str.find("_");
     return str.substr(0, pos + 1);
@@ -378,7 +387,7 @@ public:
     tag = "pseudo_";
     pos = str.find(tag);
     if (pos != std::string::npos)
-      return str.substr(pos + tag.size() + 2); // for V_, T_
+      return str.substr(pos + tag.size() + 2); // for P_, Q_
 
     pos = str.find("_");
     return str.substr(pos + 1);
@@ -390,9 +399,13 @@ public:
     std::cout << std::size(meas_zids) << "\n\n";
 
     for (const auto voltage : base_voltages) {
+      if (voltages.count(voltage.first) == 0)
+        continue;
       meas_zids.push_back("V_" + voltage.first);
     }
     for (const auto power : base_powers) {
+      if (powers.count(power.first) == 0)
+        continue;
       meas_zids.push_back("P_" + power.first);
       meas_zids.push_back("Q_" + power.first);
     }
@@ -416,7 +429,6 @@ public:
     std::cout << std::setw(4) << topo["unique_ids"].size() << "\n\n";
     for (int i = 0; i < topo["base_voltage_magnitudes"]["ids"].size(); i++) {
       string node_name_new = topo["base_voltage_magnitudes"]["ids"][i];
-      std::cout << node_name_new << "\n\n";
       node_names.push_back(node_name_new); // a list
     }
     std::cout << node_names.size() << "\n\n";
@@ -500,12 +512,9 @@ public:
   }
 
   void fillSensors() {
-    if (Zary.zids.size() != meas_zids.size())
-      Zary.zids.resize(meas_zids.size());
-
     for (size_t i = 0; i < meas_zids.size(); i++) {
       std::string zid = meas_zids[i];
-      Zary.zids.insert(std::next(Zary.zids.begin(), i), zid);
+      Zary.zids.push_back(zid);
       Zary.zidxs[zid] = i;
 
       std::string node = splitName(zid);
@@ -517,20 +526,20 @@ public:
         Zary.ztypes[zid] = "vi";
         Zary.zvals[zid] =
             std::abs(voltages[node]) / std::abs(base_voltages[node]);
-        Zary.zsigs[zid] = 0.01;
+        Zary.zsigs[zid] = sigma_v;
         Zary.zpseudos[zid] = false;
         Zary.znomvals[zid] = Zary.zvals[zid];
       }
       if (tag == "P_") {
         Zary.ztypes[zid] = "Pi";
-        Zary.zvals[zid] = powers[node].real() / std::abs(*sbase_ref);
+        Zary.zvals[zid] = powers[node].real() / std::abs(Sbase);
         Zary.zsigs[zid] = 0.01 * Zary.zvals[zid] + base_sigma_p;
         Zary.zpseudos[zid] = false;
         Zary.znomvals[zid] = Zary.zvals[zid];
       }
       if (tag == "Q_") {
         Zary.ztypes[zid] = "Qi";
-        Zary.zvals[zid] = powers[node].imag() / std::abs(*sbase_ref);
+        Zary.zvals[zid] = powers[node].imag() / std::abs(Sbase);
         Zary.zsigs[zid] = 0.01 * Zary.zvals[zid] + base_sigma_q;
         Zary.zpseudos[zid] = false;
         Zary.znomvals[zid] = Zary.zvals[zid];
@@ -538,32 +547,34 @@ public:
       if (tag == "source_V_") {
         Zary.ztypes[zid] = "vi";
         Zary.zvals[zid] = 1.0;
-        Zary.zsigs[zid] = 0.05;
+        Zary.zsigs[zid] = 5 * sigma_v;
         Zary.zpseudos[zid] = true;
         Zary.znomvals[zid] = Zary.zvals[zid];
       }
       if (tag == "source_T_") {
         Zary.ztypes[zid] = "Ti";
         Zary.zvals[zid] = 0.0;
-        Zary.zsigs[zid] = 0.001;
+        Zary.zsigs[zid] = 0.1 * sigma_v;
         Zary.zpseudos[zid] = true;
         Zary.znomvals[zid] = Zary.zvals[zid];
       }
       if (tag == "pseudo_P_") {
         Zary.ztypes[zid] = "Pi";
-        Zary.zvals[zid] = (base_powers[node].real() / std::abs(*sbase_ref)) / 2;
+        Zary.zvals[zid] = (base_powers[node].real() / std::abs(Sbase)) / 2;
         Zary.zsigs[zid] = Zary.zvals[zid] + base_psuedo_sigma_p;
         Zary.zpseudos[zid] = true;
         Zary.znomvals[zid] = Zary.zvals[zid];
       }
       if (tag == "pseudo_Q_") {
         Zary.ztypes[zid] = "Qi";
-        Zary.zvals[zid] = (base_powers[node].imag() / std::abs(*sbase_ref)) / 2;
+        Zary.zvals[zid] = (base_powers[node].imag() / std::abs(Sbase)) / 2;
         Zary.zsigs[zid] = Zary.zvals[zid] + base_psuedo_sigma_q;
         Zary.zpseudos[zid] = true;
         Zary.znomvals[zid] = Zary.zvals[zid];
       }
     }
+
+    std::cout << "Zary size : " << Zary.zids.size() << std::endl;
   }
 
   bool fillMeasurement() { // Todo --------how to form workqueue
@@ -613,18 +624,17 @@ public:
       meas_magnitudes[zid] = v.second / std::abs(base_voltages[v.first]);
     }
     SDMAP measured_p = extractPowers(P_meas);
-    for (const auto p : measured_p) {
+    SDMAP measured_q = extractPowers(Q_meas);
+    SCMAP measured_powers = cartMap(measured_p, measured_q);
+    for (const auto p : measured_powers) {
       std::string zid = "P_" + p.first;
       meas_zids.push_back(zid);
-      meas_magnitudes[zid] = p.second / *sbase_ref;
-    }
-    SDMAP measured_q = extractPowers(Q_meas);
-    for (const auto q : measured_p) {
-      std::string zid = "Q_" + q.first;
-      meas_zids.push_back(zid);
-      meas_magnitudes[zid] = q.second / *sbase_ref;
-    }
+      meas_magnitudes[zid] = p.second.real() / Sbase;
 
+      zid = "Q_" + p.first;
+      meas_zids.push_back(zid);
+      meas_magnitudes[zid] = p.second.imag() / Sbase;
+    }
     return true;
   }
 
@@ -715,6 +725,10 @@ private:
   std::complex<double> total_power;
   SLIST slack_bus;
   double ts;
+  double Sbase;
+  double sigma_v;
+  double sigma_p;
+  double sigma_q;
   double base_psuedo_sigma_p;
   double base_psuedo_sigma_q;
   double base_sigma_p;
