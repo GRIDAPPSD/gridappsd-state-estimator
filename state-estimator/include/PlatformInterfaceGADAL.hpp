@@ -172,9 +172,11 @@ public:
 
       std::cout << "Injection Nodes : " << base_powers.size() << std::endl;
 
-      SDMAP pv_systems = extractPVSystems(topo["injections"]["power_real"]);
-
+      pv_systems = filterPVSystems(topo["injections"]["power_real"]);
       std::cout << "PVSystem Nodes : " << pv_systems.size() << std::endl;
+
+      regulators = filterRegulators(topo["incidences"]);
+      std::cout << "Regulator Nodes : " << regulators.size() << std::endl;
 
       for (const auto bus : topo["slack_bus"]) {
         slack_bus.push_back(bus);
@@ -270,7 +272,7 @@ public:
     return mapping;
   };
 
-  SDMAP extractPVSystems(const json &injections) {
+  SDMAP filterPVSystems(const json &injections) {
     json ids = injections["ids"];
     json eqids = injections["equipment_ids"];
     json values = injections["values"];
@@ -283,6 +285,7 @@ public:
     SDMAP mapping;
     for (size_t i = 0; i < ids.size(); i++) {
       std::string eq = eqids[i];
+
       auto pos = eq.find("PVSystem");
       if (pos == std::string::npos)
         continue;
@@ -293,6 +296,33 @@ public:
       } else {
         mapping.insert({ids[i], x});
       }
+    }
+
+    return mapping;
+  };
+
+  SSMAP filterRegulators(const json &incidences) {
+    json from_eq = incidences["from_equipment"];
+    json to_eq = incidences["to_equipment"];
+    json ids = incidences["ids"];
+
+    SSMAP mapping;
+    for (size_t i = 0; i < ids.size(); i++) {
+      std::string eq = ids[i];
+
+      bool found = false;
+      SLIST tags = {"reg", "xfm", "tr"};
+      for (const auto tag : tags) {
+        auto pos = eq.find(tag);
+        if (pos != std::string::npos)
+          found = true;
+      }
+      if (!found)
+        continue;
+
+      std::string src = splitNode(from_eq[i]);
+      std::string dst = splitNode(to_eq[i]);
+      mapping.insert({src, dst});
     }
     return mapping;
   };
@@ -422,6 +452,22 @@ public:
 
     pos = str.find("_");
     return str.substr(pos + 1);
+  }
+
+  std::string splitPhase(std::string str) {
+    auto pos = str.find(".");
+    if (pos != std::string::npos)
+      return str.substr(pos);
+
+    return str;
+  }
+
+  std::string splitNode(std::string str) {
+    auto pos = str.find(".");
+    if (pos != std::string::npos)
+      return str.substr(0, pos);
+
+    return str;
   }
 
   void setupMeasurements() { // measurement ids are loaded here (Done)
@@ -650,10 +696,23 @@ public:
 
     SDMAP measured_v = extractVoltages(V_meas);
     for (const auto v : measured_v) {
+      std::string from = splitNode(v.first);
+      std::string phase = splitPhase(v.first);
+
+      if (regulators.count(from) != 0) {
+        std::string to = regulators[from] + phase;
+        if (measured_v.count(to) != 0) {
+          double src = v.second / std::abs(base_voltages[v.first]);
+          double dst = measured_v[to] / std::abs(base_voltages[to]);
+          double tap = src / dst;
+          std::cout << from << " -> " << to << " tap: " << tap << std::endl;
+        }
+      }
       std::string zid = "V_" + v.first;
       meas_mrids.push_back(zid);
       meas_magnitudes[zid] = v.second / std::abs(base_voltages[v.first]);
     }
+
     SDMAP measured_p = extractPowers(P_meas);
     SDMAP measured_q = extractPowers(Q_meas);
     SCMAP measured_powers = cartMap(measured_p, measured_q);
@@ -661,7 +720,6 @@ public:
       std::string zid = "P_" + p.first;
       meas_mrids.push_back(zid);
       meas_magnitudes[zid] = p.second.real() / Sbase;
-      std::cout << zid << " = " << p.second << std::endl;
 
       zid = "Q_" + p.first;
       meas_mrids.push_back(zid);
@@ -785,6 +843,7 @@ private:
   SCMAP base_powers;
   SDMAP voltages;
   SDMAP pv_systems;
+  SSMAP regulators;
   SCMAP powers;
 
   SLIST node_est_v;
