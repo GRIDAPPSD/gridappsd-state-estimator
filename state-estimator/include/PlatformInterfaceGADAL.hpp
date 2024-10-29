@@ -172,6 +172,10 @@ public:
 
       std::cout << "Injection Nodes : " << base_powers.size() << std::endl;
 
+      SDMAP pv_systems = extractPVSystems(topo["injections"]["power_real"]);
+
+      std::cout << "PVSystem Nodes : " << pv_systems.size() << std::endl;
+
       for (const auto bus : topo["slack_bus"]) {
         slack_bus.push_back(bus);
       }
@@ -256,6 +260,33 @@ public:
 
     SDMAP mapping;
     for (size_t i = 0; i < ids.size(); i++) {
+      double x = -scale * (double)values[i];
+      if (mapping.count(ids[i]) > 0) {
+        mapping[ids[i]] += x;
+      } else {
+        mapping.insert({ids[i], x});
+      }
+    }
+    return mapping;
+  };
+
+  SDMAP extractPVSystems(const json &injections) {
+    json ids = injections["ids"];
+    json eqids = injections["equipment_ids"];
+    json values = injections["values"];
+    json units = injections["units"];
+
+    double scale = 1.0;
+    if (units == "kW" || units == "kVAR")
+      scale = 1000.0;
+
+    SDMAP mapping;
+    for (size_t i = 0; i < ids.size(); i++) {
+      std::string eq = eqids[i];
+      auto pos = eq.find("PVSystem");
+      if (pos == std::string::npos)
+        continue;
+
       double x = -scale * (double)values[i];
       if (mapping.count(ids[i]) > 0) {
         mapping[ids[i]] += x;
@@ -404,7 +435,7 @@ public:
       meas_zids.push_back("V_" + voltage.first);
     }
     for (const auto power : base_powers) {
-      if (powers.count(power.first) == 0)
+      if (pv_systems.count(power.first) == 0)
         continue;
       meas_zids.push_back("P_" + power.first);
       meas_zids.push_back("Q_" + power.first);
@@ -620,7 +651,7 @@ public:
     SDMAP measured_v = extractVoltages(V_meas);
     for (const auto v : measured_v) {
       std::string zid = "V_" + v.first;
-      meas_zids.push_back(zid);
+      meas_mrids.push_back(zid);
       meas_magnitudes[zid] = v.second / std::abs(base_voltages[v.first]);
     }
     SDMAP measured_p = extractPowers(P_meas);
@@ -628,11 +659,12 @@ public:
     SCMAP measured_powers = cartMap(measured_p, measured_q);
     for (const auto p : measured_powers) {
       std::string zid = "P_" + p.first;
-      meas_zids.push_back(zid);
+      meas_mrids.push_back(zid);
       meas_magnitudes[zid] = p.second.real() / Sbase;
+      std::cout << zid << " = " << p.second << std::endl;
 
       zid = "Q_" + p.first;
-      meas_zids.push_back(zid);
+      meas_mrids.push_back(zid);
       meas_magnitudes[zid] = p.second.imag() / Sbase;
     }
     return true;
@@ -752,6 +784,7 @@ private:
   SCMAP base_voltages;
   SCMAP base_powers;
   SDMAP voltages;
+  SDMAP pv_systems;
   SCMAP powers;
 
   SLIST node_est_v;
