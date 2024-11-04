@@ -32,6 +32,8 @@ using json = nlohmann::json;
 #include <iostream>
 #include <sstream>
 #include <thread>
+#include <unordered_map>
+#include <vector>
 
 class PlatformInterface : public PlatformInterfaceBase {
 public:
@@ -172,8 +174,8 @@ public:
 
       std::cout << "Injection Nodes : " << base_powers.size() << std::endl;
 
-      pv_systems = filterPVSystems(topo["injections"]["power_real"]);
-      std::cout << "PVSystem Nodes : " << pv_systems.size() << std::endl;
+      focus_nodes = filterFocus(topo["injections"]["power_real"]);
+      std::cout << "PV+Cap Nodes : " << focus_nodes.size() << std::endl;
 
       regulators = filterRegulators(topo["incidences"]);
       std::cout << "Regulator Nodes : " << regulators.size() << std::endl;
@@ -234,6 +236,8 @@ public:
       voltages = extractVoltages(V_meas);
       std::cout << "Measured Voltage Nodes : " << voltages.size() << std::endl;
 
+      ratios = getTapRatios(voltages);
+
       SDMAP measured_p = extractPowers(P_meas);
       std::cout << "Measured Real Power Nodes : " << measured_p.size()
                 << std::endl;
@@ -262,6 +266,7 @@ public:
 
     SDMAP mapping;
     for (size_t i = 0; i < ids.size(); i++) {
+      std::string node = ids[i];
       double x = -scale * (double)values[i];
       if (mapping.count(ids[i]) > 0) {
         mapping[ids[i]] += x;
@@ -272,11 +277,23 @@ public:
     return mapping;
   };
 
-  SDMAP filterPVSystems(const json &injections) {
+  SDMAP filterFocus(const json &injections) {
     json ids = injections["ids"];
     json eqids = injections["equipment_ids"];
     json values = injections["values"];
     json units = injections["units"];
+
+    std::vector<double> numbers;
+    for (const double val : values) {
+      numbers.push_back(std::abs(val));
+    }
+
+    std::sort(numbers.begin(), numbers.end(), std::greater<double>());
+    for (const auto val : numbers) {
+      std::cout << val << ", ";
+    }
+    double threshold = numbers[5];
+    std::cout << "\nFocus Threshold = " << threshold << std::endl;
 
     double scale = 1.0;
     if (units == "kW" || units == "kVAR")
@@ -284,17 +301,14 @@ public:
 
     SDMAP mapping;
     for (size_t i = 0; i < ids.size(); i++) {
-      std::string eq = eqids[i];
-
-      auto pos = eq.find("PVSystem");
-      if (pos == std::string::npos)
+      if (std::abs((double)values[i]) >= threshold)
         continue;
 
       double x = -scale * (double)values[i];
       if (mapping.count(ids[i]) > 0) {
         mapping[ids[i]] += x;
       } else {
-        mapping.insert({ids[i], x});
+        mapping[ids[i]] = x;
       }
     }
 
@@ -308,6 +322,7 @@ public:
 
     SSMAP mapping;
     for (size_t i = 0; i < ids.size(); i++) {
+      std::string node = ids[i];
       std::string eq = ids[i];
 
       bool found = false;
@@ -322,7 +337,25 @@ public:
 
       std::string src = splitNode(from_eq[i]);
       std::string dst = splitNode(to_eq[i]);
-      mapping.insert({src, dst});
+      if (src.length() < 3 and dst.length() < 3)
+        continue;
+
+      bool has_r = src.back() == 'R' or dst.back() == 'R';
+      bool has_lv = src.substr(src.length() - 2) == "LV";
+      has_lv = has_lv or dst.substr(dst.length() - 2) == "LV";
+
+      if (!has_r and !has_lv)
+        continue;
+
+      bool r_at_end = src.back() == 'R';
+      bool lv_at_end = src.substr(src.length() - 2) == "LV";
+      if (r_at_end or lv_at_end) {
+        mapping.insert({dst, src});
+        std::cout << src << " -> " << dst << std::endl;
+      } else {
+        mapping.insert({src, dst});
+        std::cout << src << " -> " << dst << std::endl;
+      }
     }
     return mapping;
   };
@@ -339,6 +372,7 @@ public:
 
     SDMAP mapping;
     for (size_t i = 0; i < ids.size(); i++) {
+      std::string node = ids[i];
       std::string eq = eqids[i];
       double x = -scale * (double)values[i];
       if (mapping.count(ids[i]) > 0) {
@@ -356,6 +390,7 @@ public:
 
     SDMAP mapping;
     for (size_t i = 0; i < ids.size(); i++) {
+      std::string node = ids[i];
       mapping.insert({ids[i], (double)values[i]});
     }
     return mapping;
@@ -368,6 +403,7 @@ public:
 
     SDMAP mapping;
     for (size_t i = 0; i < ids.size(); i++) {
+      std::string node = ids[i];
       mapping.insert({ids[i], (double)values[i]});
     }
     return mapping;
@@ -380,6 +416,7 @@ public:
 
     SDMAP mapping;
     for (size_t i = 0; i < ids.size(); i++) {
+      std::string node = ids[i];
       mapping.insert({ids[i], (double)values[i]});
     }
     return mapping;
@@ -424,7 +461,7 @@ public:
     return std::pow(10, exponent + 1);
   }
 
-  std::string splitTag(std::string &str) {
+  std::string splitTag(std::string str) {
     std::string tag = "source_";
     auto pos = str.find(tag);
     if (pos != std::string::npos)
@@ -435,11 +472,16 @@ public:
     if (pos != std::string::npos)
       return str.substr(0, pos + tag.size() + 2); // for P_, Q_
 
+    tag = "_tap";
+    pos = str.find(tag);
+    if (pos != std::string::npos)
+      return tag;
+
     pos = str.find("_");
     return str.substr(0, pos + 1);
   }
 
-  std::string splitName(std::string &str) {
+  std::string splitName(std::string str) {
     std::string tag = "source_";
     auto pos = str.find(tag);
     if (pos != std::string::npos)
@@ -449,6 +491,11 @@ public:
     pos = str.find(tag);
     if (pos != std::string::npos)
       return str.substr(pos + tag.size() + 2); // for P_, Q_
+
+    tag = "_tap";
+    pos = str.find(tag);
+    if (pos != std::string::npos)
+      return str.substr(0, pos); // for P_, Q_
 
     pos = str.find("_");
     return str.substr(pos + 1);
@@ -470,19 +517,46 @@ public:
     return str;
   }
 
+  SDMAP getTapRatios(SDMAP voltages) {
+    ratios;
+    for (const auto v : voltages) {
+      std::string from = splitNode(v.first);
+      std::string phase = splitPhase(v.first);
+
+      if (regulators.count(from) != 0) {
+        std::string to = regulators[from] + phase;
+        if (voltages.count(to) != 0) {
+          double src = v.second / std::abs(base_voltages[v.first]);
+          double dst = voltages[to] / std::abs(base_voltages[to]);
+          double tap = src / dst;
+          ratios[from + phase] = std::round(tap * 100.0) / 100.0;
+        }
+      }
+    }
+    return ratios;
+  }
+
   void setupMeasurements() { // measurement ids are loaded here (Done)
     // Adding meas ids
     std::cout << "number of meas id here" << "\n\n";
     std::cout << std::size(meas_zids) << "\n\n";
 
-    for (const auto voltage : base_voltages) {
-      if (voltages.count(voltage.first) == 0)
+    for (const auto voltage : voltages) {
+
+      if (base_voltages.count(voltage.first) == 0)
         continue;
+
       meas_zids.push_back("V_" + voltage.first);
+
+      if (ratios.count(voltage.first) != 0)
+        meas_zids.push_back(voltage.first + "_tap");
     }
-    for (const auto power : base_powers) {
-      if (pv_systems.count(power.first) == 0)
+    for (const auto power : powers) {
+      continue; // skip due to singular klu error when they are added
+
+      if (base_powers.count(power.first) == 0)
         continue;
+
       meas_zids.push_back("P_" + power.first);
       meas_zids.push_back("Q_" + power.first);
     }
@@ -506,7 +580,11 @@ public:
     std::cout << std::setw(4) << topo["unique_ids"].size() << "\n\n";
     for (int i = 0; i < topo["base_voltage_magnitudes"]["ids"].size(); i++) {
       string node_name_new = topo["base_voltage_magnitudes"]["ids"][i];
-      node_names.push_back(node_name_new); // a list
+      if (base_voltages.count(node_name_new) == 0)
+        continue;
+    }
+    for (const auto voltage : base_voltages) {
+      node_names.push_back(voltage.first);
     }
     std::cout << node_names.size() << "\n\n";
     //___________________________________________________________________
@@ -515,7 +593,6 @@ public:
       std::cout << "admittance_matrix size: "
                 << topo["admittance"]["admittance_matrix"].size() << std::endl;
       for (int i = 0; i < topo["admittance"]["admittance_matrix"].size(); i++) {
-        //                std::cout<< "i: "<< i << std::endl;
         for (int j = 0; j < topo["admittance"]["admittance_matrix"][i].size();
              j++) {
           std::cout << "i: " << i << " j: " << j << std::endl;
@@ -537,33 +614,37 @@ public:
       std::cout << "admittance_matrix size: "
                 << topo["admittance"]["admittance_list"].size() << std::endl;
       //____________________ now for sparse implementation:
-      for (int a = 0; a < topo["admittance"]["admittance_list"].size(); a++) {
+      json obj = topo["admittance"];
+      json admittance = obj["admittance_list"];
+      json from = obj["from_equipment"];
+      json to = obj["to_equipment"];
+      for (size_t a = 0; a < admittance.size(); a++) {
+        if (base_voltages.count(from[a]) == 0)
+          continue;
+        if (base_voltages.count(to[a]) == 0)
+          continue;
+
         int i = 0;
         int i_locked = 0;
         int j = 0;
         int j_locked = 0;
         for (auto &node : node_names) {
-          if (node == topo["admittance"]["from_equipment"][a].get<string>()) {
+          if (node == from[a].get<string>()) {
             i_locked = i;
           } else {
             i++;
           }
         }
         for (auto &node : node_names) {
-          if (node == topo["admittance"]["to_equipment"][a].get<string>()) {
+          if (node == to[a].get<string>()) {
             j_locked = j;
           } else {
             j++;
           }
         }
-        // std::cout<< "i locked is" << std::endl;
-        // std::cout<< i_locked << std::endl;
-        // std::cout<< "j locked is" << std::endl;
-        // std::cout<< j_locked << std::endl;
-        double G = (topo["admittance"]["admittance_list"][a][0]);
-        double B = (topo["admittance"]["admittance_list"][a][1]);
-        // std::cout<< G << std::endl;
-        // std::cout<< B << std::endl;
+
+        double G = (admittance[a][0]);
+        double B = (admittance[a][1]);
         // need to find i and j?
 
         if ((G != 0) || (B != 0)) {
@@ -574,6 +655,7 @@ public:
         }
       }
     }
+
     // for (int l = 1; l < 5; l++) {
     //     for (int m = 1; m < 5; m++) {
     //         std::cout<< Yphys[l][m] << std::endl;
@@ -589,6 +671,19 @@ public:
   }
 
   void fillSensors() {
+    // this has to go here due to state_estimator and base class method order
+    for (const auto reg : ratios) {
+      std::string node = splitNode(reg.first);
+      std::string phase = splitPhase(reg.first);
+      std::string regid = reg.first + "_tap";
+      regid_primnode[regid] = reg.first;
+      regid_regnode[regid] = regulators[node] + phase;
+      size_t i = node_idxs[reg.first];
+      size_t j = node_idxs[regulators[node] + phase];
+      Amat[i][j] = 1; // may change
+      Amat[j][i] = 1; // stays unity
+    }
+
     for (size_t i = 0; i < meas_zids.size(); i++) {
       std::string zid = meas_zids[i];
       Zary.zids.push_back(zid);
@@ -599,6 +694,21 @@ public:
       Zary.znode2s[zid] = node;
 
       std::string tag = splitTag(zid);
+      if (tag == "V_") {
+        Zary.ztypes[zid] = "vi";
+        Zary.zvals[zid] =
+            std::abs(voltages[node]) / std::abs(base_voltages[node]);
+        Zary.zsigs[zid] = sigma_v;
+        Zary.zpseudos[zid] = false;
+        Zary.znomvals[zid] = Zary.zvals[zid];
+      }
+      if (tag == "_tap") {
+        Zary.ztypes[zid] = "aji";
+        Zary.zvals[zid] = ratios[node];
+        Zary.zsigs[zid] = 0.1 * sigma_v;
+        Zary.zpseudos[zid] = false;
+        Zary.znomvals[zid] = Zary.zvals[zid];
+      }
       if (tag == "V_") {
         Zary.ztypes[zid] = "vi";
         Zary.zvals[zid] =
@@ -623,7 +733,9 @@ public:
       }
       if (tag == "source_V_") {
         Zary.ztypes[zid] = "vi";
-        Zary.zvals[zid] = 1.0;
+        // Zary.zvals[zid] = 1.0;
+        Zary.zvals[zid] =
+            std::abs(voltages[node]) / std::abs(base_voltages[node]);
         Zary.zsigs[zid] = 5 * sigma_v;
         Zary.zpseudos[zid] = true;
         Zary.znomvals[zid] = Zary.zvals[zid];
@@ -637,14 +749,16 @@ public:
       }
       if (tag == "pseudo_P_") {
         Zary.ztypes[zid] = "Pi";
-        Zary.zvals[zid] = (base_powers[node].real() / std::abs(Sbase)) / 2;
+        Zary.zvals[zid] = powers[node].real() / std::abs(Sbase);
+        // Zary.zvals[zid] = (base_powers[node].real() / std::abs(Sbase)) / 2;
         Zary.zsigs[zid] = Zary.zvals[zid] + base_psuedo_sigma_p;
         Zary.zpseudos[zid] = true;
         Zary.znomvals[zid] = Zary.zvals[zid];
       }
       if (tag == "pseudo_Q_") {
         Zary.ztypes[zid] = "Qi";
-        Zary.zvals[zid] = (base_powers[node].imag() / std::abs(Sbase)) / 2;
+        Zary.zvals[zid] = powers[node].imag() / std::abs(Sbase);
+        // Zary.zvals[zid] = (base_powers[node].imag() / std::abs(Sbase)) / 2;
         Zary.zsigs[zid] = Zary.zvals[zid] + base_psuedo_sigma_q;
         Zary.zpseudos[zid] = true;
         Zary.znomvals[zid] = Zary.zvals[zid];
@@ -695,28 +809,27 @@ public:
     meas_timestamp = (uint)(ts++);
 
     SDMAP measured_v = extractVoltages(V_meas);
-    for (const auto v : measured_v) {
-      std::string from = splitNode(v.first);
-      std::string phase = splitPhase(v.first);
+    ratios = getTapRatios(measured_v);
 
-      if (regulators.count(from) != 0) {
-        std::string to = regulators[from] + phase;
-        if (measured_v.count(to) != 0) {
-          double src = v.second / std::abs(base_voltages[v.first]);
-          double dst = measured_v[to] / std::abs(base_voltages[to]);
-          double tap = src / dst;
-          std::cout << from << " -> " << to << " tap: " << tap << std::endl;
-        }
-      }
+    for (const auto v : measured_v) {
+
       std::string zid = "V_" + v.first;
       meas_mrids.push_back(zid);
       meas_magnitudes[zid] = v.second / std::abs(base_voltages[v.first]);
+
+      if (ratios.count(v.first) != 0) {
+        zid = v.first + "_tap";
+        std::cout << zid << " updated to " << ratios[v.first] << std::endl;
+        meas_mrids.push_back(zid);
+        meas_magnitudes[zid] = ratios[v.first];
+      }
     }
 
     SDMAP measured_p = extractPowers(P_meas);
     SDMAP measured_q = extractPowers(Q_meas);
     SCMAP measured_powers = cartMap(measured_p, measured_q);
     for (const auto p : measured_powers) {
+
       std::string zid = "P_" + p.first;
       meas_mrids.push_back(zid);
       meas_magnitudes[zid] = p.second.real() / Sbase;
@@ -842,8 +955,9 @@ private:
   SCMAP base_voltages;
   SCMAP base_powers;
   SDMAP voltages;
-  SDMAP pv_systems;
+  SDMAP focus_nodes;
   SSMAP regulators;
+  SDMAP ratios;
   SCMAP powers;
 
   SLIST node_est_v;
