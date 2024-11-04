@@ -34,3 +34,5 @@ bin
 # Suitsparse and Json
 json
 SuiteSparse
+.cache
+*compile_commands.json
