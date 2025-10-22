@@ -78,7 +78,7 @@ The remainder of these instructions apply only when building the state estimator
 	- https://github.com/GRIDAPPSD/json
 ````
 
-3. The ActiveMQ C++ client library, ActiveMQ-CPP, should be downloaded from the URL below as a Unix source code distrubtion.  Both the 3.9.4 and 3.9.5 releases have been successfully used with state estimator.  The tar.gz or tar.bz2 distribution should be extracted under the gridappsd-state-estimator directory, the same location as the SuiteSparse and json repositories.
+3. The ActiveMQ C++ client library, ActiveMQ-CPP, should be downloaded via web browser from the URL below as a Unix source code distrubtion.  Both the 3.9.4 and 3.9.5 releases have been successfully used with state estimator.  The tar.gz or tar.bz2 distribution should be extracted under the gridappsd-state-estimator directory, the same location as the SuiteSparse and json repositories.
 
 ````
     - https://activemq.apache.org/components/cms/download
