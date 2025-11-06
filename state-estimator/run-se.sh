@@ -19,7 +19,10 @@
 if [ "$#" -gt 0 ]; then
     if [ -z "$SIMREQ" ]; then
     #   main.py invocation when sim_starter.py will start the simulation
-        read -d "\n" SIMID SIMREQ <<< $(sim_starter/sim_starter.py $1)
+        # older version of sim_starter has an underscore while newer version
+        # taken from app-deconfliction has a dash.
+        #read -d "\n" SIMID SIMREQ <<< $(sim_starter/sim_starter.py $1)
+        read -d "\n" SIMID SIMREQ <<< $(sim_starter/sim-starter.py $1)
     else
     #   main.py invocation when simulation is already started from platform viz
         SIMID=$1
