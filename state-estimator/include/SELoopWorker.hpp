@@ -1255,7 +1255,7 @@ class SELoopWorker {
         // with test harness
         // The measurement_data file is used to generate estimate results
         // in SE test harness runs without the platform
-        ctr = 0;
+        //ctr = 0;
 
         if (firstTimeFlag) {
             firstTimeFlag = false;
