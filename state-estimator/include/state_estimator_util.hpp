@@ -11,7 +11,7 @@ namespace state_estimator_util{
 
     void get_nodes(gridappsd_session& gad, SSMAP& node_bmrids, SSMAP& node_phs) {
         json jnodes = sparql_query(gad,"nodes",sparq_nodes(gad.modelID)); 
-        //*selog << jnodes.dump(2); 
+        //*selog << "SPARQ_NODES returns (" << jnodes.dump(2) << ")\n";
         for ( auto& binding : jnodes["data"]["results"]["bindings"] ) { 
             string busname = binding["busname"]["value"]; 
             string busid = binding["busid"]["value"]; 
@@ -56,6 +56,12 @@ namespace state_estimator_util{
                 node_phs[busname+".3"] = "C";
             }
         }
+        /*
+        for ( auto& pair : node_bmrids) {
+            string bus = pair.first;
+            *selog << "SPARQ_NODES MAPS node_bmrid (" << node_bmrids[bus] << "), node_phs (" << node_phs[bus] << ")\n";
+        }
+        */
     }
 
 
@@ -328,6 +334,7 @@ namespace state_estimator_util{
 
         json jregs = sparql_query(gad,"regs",
                 sparq_ratio_tap_changer_nodes(gad.modelID));
+        //*selog << "SPARQ_RATIO_TAP_CHANGER returns (" << jregs.dump(2) << ")\n";
             
         // *selog << jregs.dump(2);
 #ifdef WRITE_FILES
@@ -342,11 +349,11 @@ namespace state_estimator_util{
             string primph = reg["primphs"]["value"];
             for ( auto& c : primbus ) c = toupper(c);
             string primnode = primbus;
-            if (!primph.compare("A")) primnode += ".1";
-            if (!primph.compare("B")) primnode += ".2";
-            if (!primph.compare("C")) primnode += ".3";
-            if (!primph.compare("s1")) primnode += ".1";
-            if (!primph.compare("s2")) primnode += ".2";
+            if (primph.find("A")!=string::npos) primnode += ".1";
+            if (primph.find("B")!=string::npos) primnode += ".2";
+            if (primph.find("C")!=string::npos) primnode += ".3";
+            if (primph.find("s1")!=string::npos) primnode += ".1";
+            if (primph.find("s2")!=string::npos) primnode += ".2";
             uint primidx = node_idxs[primnode];
 
             // get the regulation node
@@ -354,19 +361,21 @@ namespace state_estimator_util{
             string regph = reg["regphs"]["value"];
             for ( auto& c : regbus ) c = toupper(c);
             string regnode = regbus;
-            if (!regph.compare("A")) regnode += ".1";
-            if (!regph.compare("B")) regnode += ".2";
-            if (!regph.compare("C")) regnode += ".3";
-            if (!regph.compare("s1")) regnode += ".1";
-            if (!regph.compare("s2")) regnode += ".2";
+            if (regph.find("A")!=string::npos) regnode += ".1";
+            if (regph.find("B")!=string::npos) regnode += ".2";
+            if (regph.find("C")!=string::npos) regnode += ".3";
+            if (regph.find("s1")!=string::npos) regnode += ".1";
+            if (regph.find("s2")!=string::npos) regnode += ".2";
             uint regidx = node_idxs[regnode];
 
-//            // print
-//            *selog << "reg: " << reg << "\n" << std::flush;
-//            *selog << "\tprimnode: " << primnode <<
-//                "\tregnode: " << regnode << "\n" << std::flush;
-//            *selog << "\tprimph: " << primph << 
-//                "\tregph: " << regph << "\n" << std::flush;
+            // print
+            /*
+            *selog << "reg: " << reg << "\n" << std::flush;
+            *selog << "\tprimnode: " << primnode <<
+                "\tregnode: " << regnode << "\n" << std::flush;
+            *selog << "\tprimph: " << primph <<
+                "\tregph: " << regph << "\n" << std::flush;
+            */
 
             // initialize the A matrix
             Amat[primidx][regidx] = 1;    // this will change
