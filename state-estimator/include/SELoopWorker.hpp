@@ -2689,11 +2689,11 @@ class SELoopWorker {
                     } catch ( const std::out_of_range& oor ) {}
                 } catch ( const std::out_of_range& oor ) {}
             } catch ( const std::out_of_range& oor ) {
-                *selog << "\tERROR: set_nij catch on Ypu[i].at(j) lookup\n" << std::flush;
+                *selog << "\tERROR: set_nij catch on Ypu[i].at(j) lookup, i=" << i << ", j=" << j << "\n" << std::flush;
                 exit(1);
             }
         } catch ( const std::out_of_range& oor ) {
-            *selog << "\tERROR: set_nij catch on Ypu.at(i) lookup\n" << std::flush;
+            *selog << "\tERROR: set_nij catch on Ypu.at(i) lookup, i=" << i << "\n" << std::flush;
             exit(1);
         }
 
@@ -3095,6 +3095,7 @@ class SELoopWorker {
             if ( entry_type == daji_dvj) {
                 // daji/dvj = 1/vi
                 double vi, vj, T, ai, aj, bij, g, b;
+                *selog << "BEFORE 9 set_nij(" << i << ")\n";
                 set_nij(i, j, vi, vj, T, ai, aj, bij, g, b);
                 double daji = 1.0/vi;
 #ifdef GS_OPTIMIZE
@@ -3133,8 +3134,7 @@ class SELoopWorker {
 #endif
 #ifdef DEBUG_PRIMARY
         double endTime = getWallTime();
-        *selog << 
-            getMinSec(endTime-startTime) << "\n" << std::flush;
+        *selog << getMinSec(endTime-startTime) << "\n" << std::flush;
 #endif
     }
     
