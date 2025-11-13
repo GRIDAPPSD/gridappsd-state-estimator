@@ -147,33 +147,43 @@ class SensorDefConsumer : public SEConsumer {
                         //string primnode = regid_primnode[cemrid];
                         //string regnode = regid_regnode[cemrid];
 
-                        string phase = m["phases"];
-                        string primnode = primbus;
-                        string regnode = regbus;
-                        if (!phase.compare("A")) { primnode += ".1"; regnode += ".1"; }
-                        if (!phase.compare("B")) { primnode += ".2"; regnode += ".2"; }
-                        if (!phase.compare("C")) { primnode += ".3"; regnode += ".3"; }
-                        if (!phase.compare("s1")) { primnode += ".1"; regnode += ".1"; }
-                        if (!phase.compare("s2")) { primnode += ".2"; regnode += ".2"; }
+                        // GDB 11/13/25: For the newer GridAPPS-D platform
+                        // releases the sparql query for ratio tap changer nodes
+                        // does not return all values to match all cemrids here.
+			// I am tossing out any cemrids that don't match here.
+                        if (!primbus.compare("")) {
+                            *selog << "WARNING: No match in reg_cemrid_primbus for cemrid=" << cemrid << " -- SKIPPING add to Zary\n";
 
-                        // add the position measurement 
-                        string zid = mmrid + "_tap";
-                        Zary.zids.push_back( zid );
-                        Zary.zidxs[zid] = zctr++;
-                        Zary.ztypes[zid] = "aji";
-                        Zary.znode1s[zid] = primnode;
-                        Zary.znode2s[zid] = regnode;
-                        //Zary.zsigs[zid] = 0.0000625; // 1% of 1 tap
-                        Zary.zsigs[zid] = 0.001; // 1% of span
-                        Zary.zvals[zid] = 1.0;
-                        Zary.znomvals[zid] = Zary.zvals[zid];
+			} else {
+                            string phase = m["phases"];
+                            string primnode = primbus;
+                            string regnode = regbus;
+
+                            if (!phase.compare("A")) { primnode += ".1"; regnode += ".1"; }
+                            if (!phase.compare("B")) { primnode += ".2"; regnode += ".2"; }
+                            if (!phase.compare("C")) { primnode += ".3"; regnode += ".3"; }
+                            if (!phase.compare("s1")) { primnode += ".1"; regnode += ".1"; }
+                            if (!phase.compare("s2")) { primnode += ".2"; regnode += ".2"; }
+
+                            // add the position measurement
+                            string zid = mmrid + "_tap";
+                            Zary.zids.push_back( zid );
+                            Zary.zidxs[zid] = zctr++;
+                            Zary.ztypes[zid] = "aji";
+                            Zary.znode1s[zid] = primnode;
+                            Zary.znode2s[zid] = regnode;
+                            //Zary.zsigs[zid] = 0.0000625; // 1% of 1 tap
+                            Zary.zsigs[zid] = 0.001; // 1% of span
+                            Zary.zvals[zid] = 1.0;
+                            Zary.znomvals[zid] = Zary.zvals[zid];
 #ifdef WRITE_FILES
-                        ofs << Zary.ztypes[zid] << "," << zid << "," << Zary.znode1s[zid] << "," << Zary.znode2s[zid] << "," << Zary.zvals[zid] << "," << Zary.zsigs[zid] << ",0," << Zary.znomvals[zid] << "\n";
+                            ofs << Zary.ztypes[zid] << "," << zid << "," << Zary.znode1s[zid] << "," << Zary.znode2s[zid] << "," << Zary.zvals[zid] << "," << Zary.zsigs[zid] << ",0," << Zary.znomvals[zid] << "\n";
 #endif
 
-//                        *selog << m.dump(2);
-//                        *selog << "primnode: " << primnode << std::endl;
-//                        *selog << "regnode: " << regnode << std::endl;
+//                            *selog << m.dump(2);
+//                            *selog << "primnode: " << primnode << std::endl;
+//                            *selog << "regnode: " << regnode << std::endl;
+                        }
                     } else if ( !ce_type.compare("LoadBreakSwitch") ) {
                         // TODO: use Zary.mcetypes instead of mmrid_pos_type
                         mmrid_pos_type[mmrid] = "load_break_switch";
