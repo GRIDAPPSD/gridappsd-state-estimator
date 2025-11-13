@@ -38,15 +38,20 @@ namespace sparql_queries {
             "  OPTIONAL { # Transformers and Tap Changers\n"
             "    ?tt c:TransformerTank.PowerTransformer ?ce.\n"
             "    ?tte c:TransformerTankEnd.TransformerTank ?tt.\n"
+#ifdef PLATFORM_OLD
             "    ?tte c:TransformerTankEnd.phases ?phasesraw.\n"
-            "    ?tte c:TransformerEnd.Terminal ?term\n"
             "    bind(strafter(str(?phasesraw),\\\"PhaseCode.\\\") as ?phases)\n"
+#else
+            "    ?tte c:TransformerTankEnd.orderedPhases ?phasesraw.\n"
+            "    bind(strafter(str(?phasesraw),\\\"PhaseCodeKind.\\\") as ?phases)\n"
+#endif
+            "    ?tte c:TransformerEnd.Terminal ?term\n"
             "  }\n"
             "  OPTIONAL { # Power electronics\n"
             "    ?cep c:PowerElectronicsConnectionPhase.PowerElectronicsConnection ?ce.\n"
             "    ?cep c:PowerElectronicsConnectionPhase.phase ?phsraw.\n"
             "    bind(strafter(str(?phsraw),\\\"SinglePhaseKind.\\\") as ?phases)\n"
-            "  }\n"    
+            "  }\n"
             "  VALUES ?fdrid {\\\""+fdrid+"\\\"}\n"
             "  ?term c:Terminal.ConductingEquipment ?ce.\n"
             "  ?ce c:Equipment.EquipmentContainer ?fdr.\n"
@@ -59,6 +64,11 @@ namespace sparql_queries {
             "GROUP BY ?busid ?busname ?phases\n"
             "#ORDER by ?fname ?busname\n"
             "ORDER by ?busname\n";
+#ifdef PLATFORM_OLD
+        //*selog << "SPARQ_NODES PLATFORM_OLD query (" << sparq << ")\n";
+#else
+        //*selog << "SPARQ_NODES PLATFORM_NEW query (" << sparq << ")\n";
+#endif
         return sparq;
     }
 
@@ -112,13 +122,23 @@ namespace sparql_queries {
             "  ?xt c:TransformerTank.PowerTransformer ?ce.\n"
             "  ?ce c:IdentifiedObject.mRID ?cemrid.\n"
             "  ?rte c:TransformerEnd.Terminal ?rterm.\n"
+#ifdef PLATFORM_OLD
             "  ?rte c:TransformerTankEnd.phases ?rphsraw.\n"
             "  bind(strafter(str(?rphsraw),\\\"PhaseCode.\\\") as ?regphs)\n"
+#else
+            "  ?rte c:TransformerTankEnd.orderedPhases ?rphsraw.\n"
+            "  bind(strafter(str(?rphsraw),\\\"PhaseCodeKind.\\\") as ?regphs)\n"
+#endif
             "  ?rterm c:Terminal.ConnectivityNode ?rcn.\n"
             "  ?rcn c:IdentifiedObject.name ?regbus.\n"
             "  ?te c:TransformerTankEnd.TransformerTank ?xt.\n"
+#ifdef PLATFORM_OLD
             "  ?te c:TransformerTankEnd.phases ?phsraw.\n"
             "  bind(strafter(str(?phsraw),\\\"PhaseCode.\\\") as ?primphs)\n"
+#else
+            "  ?te c:TransformerTankEnd.orderedPhases ?phsraw.\n"
+            "  bind(strafter(str(?phsraw),\\\"PhaseCodeKind.\\\") as ?primphs)\n"
+#endif
             "  ?xt c:IdentifiedObject.name ?xtname.\n"
             "  ?te c:TransformerEnd.Terminal ?term.\n"
             "  ?term c:Terminal.ConnectivityNode ?cn.\n"
@@ -130,6 +150,11 @@ namespace sparql_queries {
             "}\n"
             "GROUP BY ?rtcname ?rtcid ?xtname ?cemrid ?primbus ?primphs ?regbus ?regphs\n"
             "ORDER by ?rtcname\n";
+#ifdef PLATFORM_OLD
+        //*selog << "SPARQ_RATIO_TAP_CHANGER_NODES PLATFORM_OLD query (" << sparq << ")\n";
+#else
+        //*selog << "SPARQ_RATIO_TAP_CHANGER_NODES PLATFORM_NEW query (" << sparq << ")\n";
+#endif
         return sparq;
     }
 
