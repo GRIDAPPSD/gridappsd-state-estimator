@@ -3095,7 +3095,6 @@ class SELoopWorker {
             if ( entry_type == daji_dvj) {
                 // daji/dvj = 1/vi
                 double vi, vj, T, ai, aj, bij, g, b;
-                *selog << "BEFORE 9 set_nij(" << i << ")\n";
                 set_nij(i, j, vi, vj, T, ai, aj, bij, g, b);
                 double daji = 1.0/vi;
 #ifdef GS_OPTIMIZE
