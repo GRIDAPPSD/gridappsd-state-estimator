@@ -152,7 +152,7 @@ class SensorDefConsumer : public SEConsumer {
                         // does not return all values to match all cemrids here.
 			// I am tossing out any cemrids that don't match here.
                         if (!primbus.compare("")) {
-                            *selog << "WARNING: No match in reg_cemrid_primbus for cemrid=" << cemrid << " -- SKIPPING add to Zary\n";
+                            *selog << "\nWARNING: No match in reg_cemrid_primbus for cemrid=" << cemrid << " -- SKIPPING add to Zary\n";
 
 			} else {
                             string phase = m["phases"];
