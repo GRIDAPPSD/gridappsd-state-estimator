@@ -239,8 +239,12 @@ public:
         if (jmessage.find("message") != jmessage.end()) {
             meas_timestamp = jmessage["message"]["timestamp"];
 
+            //*selog << "SIMULATION TIMESTAMP: " << meas_timestamp << ", MEASUREMENTS: " << jmessage["message"]["measurements"] << "\n";
+
             string mmrid;
             for ( auto& m : jmessage["message"]["measurements"] ) {
+                //*selog << "SIMULATION MEASUREMENT: " << m << "\n";
+
                 mmrid = m["measurement_mrid"];
                 meas_mrids.push_back(mmrid);
                 if (m.find("magnitude") != m.end())
