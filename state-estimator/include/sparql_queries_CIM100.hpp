@@ -109,7 +109,7 @@ namespace sparql_queries {
     }
 
 
-    string sparq_ratio_tap_changer_nodes(string fdrid) { 
+    string sparq_ratio_tap_changer_nodes_old(string fdrid) {
         string sparq = "# Find the nodes of each regulator\n"
             "PREFIX r:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
             "PREFIX c: <http://iec.ch/TC57/CIM100#>\n"
@@ -159,7 +159,7 @@ namespace sparql_queries {
     }
 
 
-    string sparq_ratio_tap_changer_nodes_new(string fdrid) {
+    string sparq_ratio_tap_changer_nodes(string fdrid) {
         string sparq = "# Find the nodes of each regulator\n"
             "PREFIX r: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
             "PREFIX cim: <http://iec.ch/TC57/CIM100#>\n"

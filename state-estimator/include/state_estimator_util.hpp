@@ -4,6 +4,7 @@
 using sparql_queries::sparq_nodes;
 using sparql_queries::sparq_energy_consumer_pq;
 using sparql_queries::sparq_ratio_tap_changer_nodes;
+using sparql_queries::sparq_ratio_tap_changer_nodes_old;
 using sparql_queries::sparq_energy_source_buses;
 using sparql_queries::sparq_cemrid_busnames;
 
@@ -334,8 +335,97 @@ namespace state_estimator_util{
 
         json jregs = sparql_query(gad,"regs",
                 sparq_ratio_tap_changer_nodes(gad.modelID));
-        //*selog << "SPARQ_RATIO_TAP_CHANGER returns (" << jregs.dump(2) << ")\n";
-            
+        *selog << "SPARQ_RATIO_TAP_CHANGER returns (" << jregs.dump(2) << ")\n";
+
+        // *selog << jregs.dump(2);
+#ifdef WRITE_FILES
+        std::ofstream ofs("test_files/regid.csv", ofstream::out);
+        ofs << "Regid,Primnode,Regnode\n";
+#endif
+
+        for ( auto& reg : jregs["data"]["results"]["bindings"] ) {
+            // get the primary node
+            string primbus = reg["primbus"]["value"];
+            for ( auto& c : primbus ) c = toupper(c);
+            // get the regulation node
+            string regbus = reg["regbus"]["value"];
+            for ( auto& c : regbus ) c = toupper(c);
+
+	    //
+            // map the power transformer mrid to prim and reg nodes
+            // NOTE: This is over-written when multiple single-phase regulators
+            //      are attached to a single multi-phase transformer
+            string cemrid = reg["cemrid"]["value"];
+            reg_cemrid_primbus[cemrid] = primbus;
+            reg_cemrid_regbus[cemrid] = regbus;
+
+            string primph = reg["primphs"]["value"];
+            //string regph = reg["regphs"]["value"];
+            std::vector<std::string> primnodes;
+            std::vector<std::string> regnodes;
+
+            if (primph.find("A")!=string::npos) {
+                primnodes.push_back(primbus + ".1");
+                regnodes.push_back(regbus + ".1");
+            }
+            if (primph.find("B")!=string::npos) {
+                primnodes.push_back(primbus + ".2");
+                regnodes.push_back(regbus + ".2");
+            }
+            if (primph.find("C")!=string::npos) {
+                primnodes.push_back(primbus + ".3");
+                regnodes.push_back(regbus + ".3");
+            }
+            if (primph.find("s1")!=string::npos) {
+                primnodes.push_back(primbus + ".1");
+                regnodes.push_back(regbus + ".1");
+            }
+            if (primph.find("s2")!=string::npos) {
+                primnodes.push_back(primbus + ".2");
+                regnodes.push_back(regbus + ".2");
+            }
+
+            string regid = reg["rtcid"]["value"];
+
+            for (uint it=0; it<primnodes.size(); it++) {
+                uint primidx = node_idxs[primnodes[it]];
+                uint regidx = node_idxs[regnodes[it]];
+
+                // initialize the A matrix
+                Amat[primidx][regidx] = 1;    // this will change
+                Amat[regidx][primidx] = 1;    // this stays unity and may not be required
+
+                // map the regulator id to prim and reg nodes
+                regid_primnode[regid] = primnodes[it];
+                regid_regnode[regid] = regnodes[it];
+
+#ifdef WRITE_FILES
+                ofs << regid << "," << primnodes[it] << "," << regnodes[it] << "\n";
+#endif
+            }
+        }
+#ifdef WRITE_FILES
+        ofs.close();
+#endif
+#ifdef DEBUG_PRIMARY
+        *selog << "complete.\n\n" << std::flush;
+#endif
+    }
+
+
+    void build_A_matrix_old(gridappsd_session& gad, IMDMAP& Amat,
+            SIMAP& node_idxs,
+            SSMAP& reg_cemrid_primbus, SSMAP& reg_cemrid_regbus,
+            SSMAP& regid_primnode, SSMAP& regid_regnode) {
+
+#ifdef DEBUG_PRIMARY
+        *selog << "Building A matrix old -- " << std::flush;
+#endif
+
+        json jregs = sparql_query(gad,"regs",
+                sparq_ratio_tap_changer_nodes_old(gad.modelID));
+        *selog << "SPARQ_RATIO_TAP_CHANGER_OLD returns (" << jregs.dump(2) << ")\n";
+
         // *selog << jregs.dump(2);
 #ifdef WRITE_FILES
         std::ofstream ofs("test_files/regid.csv", ofstream::out);
@@ -386,10 +476,13 @@ namespace state_estimator_util{
             //      are attached to a single multi-phase transformer
             string cemrid = reg["cemrid"]["value"];
             reg_cemrid_primbus[cemrid] = primbus;
+            *selog << "SHIVA reg_cemrid_primbus[" << cemrid << "]: " << reg_cemrid_primbus[cemrid] << endl;
             reg_cemrid_regbus[cemrid] = regbus;
+            *selog << "SHIVA reg_cemrid_regbus[" << cemrid << "]: " << reg_cemrid_regbus[cemrid] << endl;
 
             // map the regulator id to prim and reg nodes
             string regid = reg["rtcid"]["value"];
+            *selog << "SHIVA regid: " << regid << endl;
             regid_primnode[regid] = primnode;
             regid_regnode[regid] = regnode;
 
