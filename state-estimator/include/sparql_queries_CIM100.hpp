@@ -159,6 +159,67 @@ namespace sparql_queries {
     }
 
 
+    string sparq_ratio_tap_changer_nodes_new(string fdrid) {
+        string sparq = "# Find the nodes of each regulator\n"
+            "PREFIX r: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+            "PREFIX cim: <http://iec.ch/TC57/CIM100#>\n"
+            "SELECT DISTINCT ?rtcid ?rtcname ?xtname ?cemrid ?primbus ?primphs ?regbus ?regphs WHERE {\n"
+
+            "  ?tap r:type cim:RatioTapChanger.\n"
+            "  ?tap cim:IdentifiedObject.name ?rtcname.\n"
+            "  ?tap cim:IdentifiedObject.mRID ?rtcid.\n"
+            "  ?tap cim:RatioTapChanger.TransformerEnd ?end.\n"
+
+            "  ?end cim:TransformerEnd.Terminal ?terminal.\n"
+            "  ?terminal cim:Terminal.ConnectivityNode ?node.\n"
+
+            "  ?node cim:IdentifiedObject.name ?regbus.\n"
+            "  ?node cim:ConnectivityNode.ConnectivityNodeContainer ?fdr.\n"
+            "  ?fdr cim:IdentifiedObject.mRID ?fdrid.\n"
+            "  VALUES ?fdrid {\\\""+fdrid+"\\\"}\n"
+
+            "  OPTIONAL {?end cim:TransformerTank.phases ?phsraw.\n"
+            "            BIND(strafter(str(?phsraw),\\\"PhaseCode.\\\") as ?regphsraw)}\n"
+
+            "  OPTIONAL {?end cim:TransformerTankEnd.orderedPhases ?phsraw.\n"
+            "            BIND(strafter(str(?phsraw),\\\"PhaseCodeKind.\\\") as ?regphsraw)}\n"
+            "  BIND(COALESCE(?regphsraw, \\\"ABCN\\\") AS ?regphs)\n"
+
+            "  OPTIONAL {?end cim:TransformerTankEnd.TransformerTank ?tank.\n"
+            "            ?tank cim:TransformerTank.PowerTransformer ?xfmr.\n"
+            "            ?tank cim:IdentifiedObject.name ?xtname.\n"
+            "            ?xfmr cim:IdentifiedObject.mRID ?cemrid.\n"
+
+            "            ?tanks cim:TransformerTank.PowerTransformer ?xfmr.\n"
+            "            ?ends cim:TransformerTankEnd.TransformerTank ?tank.\n"
+            "            ?ends cim:TransformerEnd.Terminal? ?terms.\n"
+            "            ?terms cim:Terminal.ConnectivityNode ?nodes.\n"
+            "            ?nodes cim:IdentifiedObject.name ?primbus.}\n"
+
+            "  OPTIONAL {?end cim:PowerTransformerEnd.PowerTransformer ?xfmr.\n"
+            "            ?xfmr cim:IdentifiedObject.mRID ?cemrid.\n"
+
+            "            ?ends cim:PowerTransformerEnd.PowerTransformer ?xfmr.\n"
+            "            ?ends cim:TransformerEnd.Terminal? ?terms.\n"
+            "            ?terms cim:Terminal.ConnectivityNode ?nodes.\n"
+            "            ?nodes cim:IdentifiedObject.name ?primbus.}\n"
+
+            "  OPTIONAL {?ends cim:TransformerTank.phases ?phasesraw.\n"
+            "            BIND(strafter(str(?phasesraw),\\\"PhaseCode.\\\") as ?primphsraw)}\n"
+
+            "  OPTIONAL {?ends cim:TransformerTankEnd.orderedPhases ?phasesraw.\n"
+            "            BIND(strafter(str(?phasesraw),\\\"PhaseCodeKind.\\\") as ?primphsraw)}\n"
+            "  BIND(COALESCE(?primphsraw, \\\"ABCN\\\") AS ?primphs)\n"
+
+            "  FILTER ( ?primbus NOT IN ( ?regbus ) )\n"
+            "}\n"
+            "ORDER by ?rtcname\n";
+
+        //*selog << "SPARQ_RATIO_TAP_CHANGER_NODES_NEW query (" << sparq << ")\n";
+        return sparq;
+    }
+
+
     string sparq_energy_source_buses(string fdrid) {
         string sparq =
             "# substation source - DistSubstation\n"
