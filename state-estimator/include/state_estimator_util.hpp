@@ -370,28 +370,42 @@ namespace state_estimator_util{
             std::vector<std::string> primnodes;
             std::vector<std::string> regnodes;
 
+            string regid = reg["rtcid"]["value"];
+
             if (primph.find("A")!=string::npos) {
                 primnodes.push_back(primbus + ".1");
                 regnodes.push_back(regbus + ".1");
+                //TODO: update these dictionaries to be SSLISTMAP after
+                //figuring out if I can properly retrieve the values for
+                //those in decompress_state to update Amat. I'm not sure
+                //how to iterate through two parallel maps.
+                //regid_primnode[regid].push_back(primbus + ".1");
+                //regid_regnode[regid].push_back(regbus + ".1");
             }
             if (primph.find("B")!=string::npos) {
                 primnodes.push_back(primbus + ".2");
                 regnodes.push_back(regbus + ".2");
+                //regid_primnode[regid].push_back(primbus + ".2");
+                //regid_regnode[regid].push_back(regbus + ".2");
             }
             if (primph.find("C")!=string::npos) {
                 primnodes.push_back(primbus + ".3");
                 regnodes.push_back(regbus + ".3");
+                //regid_primnode[regid].push_back(primbus + ".3");
+                //regid_regnode[regid].push_back(regbus + ".3");
             }
             if (primph.find("s1")!=string::npos) {
                 primnodes.push_back(primbus + ".1");
                 regnodes.push_back(regbus + ".1");
+                //regid_primnode[regid].push_back(primbus + ".1");
+                //regid_regnode[regid].push_back(regbus + ".1");
             }
             if (primph.find("s2")!=string::npos) {
                 primnodes.push_back(primbus + ".2");
                 regnodes.push_back(regbus + ".2");
+                //regid_primnode[regid].push_back(primbus + ".2");
+                //regid_regnode[regid].push_back(regbus + ".2");
             }
-
-            string regid = reg["rtcid"]["value"];
 
             for (uint it=0; it<primnodes.size(); it++) {
                 uint primidx = node_idxs[primnodes[it]];
@@ -402,6 +416,9 @@ namespace state_estimator_util{
                 Amat[regidx][primidx] = 1;    // this stays unity and may not be required
 
                 // map the regulator id to prim and reg nodes
+                // WARNING: making this assignment will overwrite anything
+                // assigned from earlier primnodes/regnodes values so only
+                // the last phase matched will be used
                 regid_primnode[regid] = primnodes[it];
                 regid_regnode[regid] = regnodes[it];
 
@@ -419,6 +436,7 @@ namespace state_estimator_util{
     }
 
 
+#if 000
     void build_A_matrix_old(gridappsd_session& gad, IMDMAP& Amat,
             SIMAP& node_idxs,
             SSMAP& reg_cemrid_primbus, SSMAP& reg_cemrid_regbus,
@@ -503,6 +521,7 @@ namespace state_estimator_util{
         *selog << "complete.\n\n" << std::flush;
 #endif
     }
+#endif
 
 
     void build_cemrid_busnames(gridappsd_session& gad,

@@ -180,10 +180,11 @@ namespace sparql_queries {
 
             "  OPTIONAL {?end cim:TransformerTank.phases ?phsraw.\n"
             "            BIND(strafter(str(?phsraw),\\\"PhaseCode.\\\") as ?regphsraw)}\n"
-
+#ifndef PLATFORM_OLD
             "  OPTIONAL {?end cim:TransformerTankEnd.orderedPhases ?phsraw.\n"
             "            BIND(strafter(str(?phsraw),\\\"PhaseCodeKind.\\\") as ?regphsraw)}\n"
             "  BIND(COALESCE(?regphsraw, \\\"ABCN\\\") AS ?regphs)\n"
+#endif
 
             "  OPTIONAL {?end cim:TransformerTankEnd.TransformerTank ?tank.\n"
             "            ?tank cim:TransformerTank.PowerTransformer ?xfmr.\n"
@@ -207,9 +208,11 @@ namespace sparql_queries {
             "  OPTIONAL {?ends cim:TransformerTank.phases ?phasesraw.\n"
             "            BIND(strafter(str(?phasesraw),\\\"PhaseCode.\\\") as ?primphsraw)}\n"
 
+#ifndef PLATFORM_OLD
             "  OPTIONAL {?ends cim:TransformerTankEnd.orderedPhases ?phasesraw.\n"
             "            BIND(strafter(str(?phasesraw),\\\"PhaseCodeKind.\\\") as ?primphsraw)}\n"
             "  BIND(COALESCE(?primphsraw, \\\"ABCN\\\") AS ?primphs)\n"
+#endif
 
             "  FILTER ( ?primbus NOT IN ( ?regbus ) )\n"
             "}\n"
