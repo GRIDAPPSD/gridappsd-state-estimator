@@ -88,8 +88,7 @@ class SELoopWorker {
     //    -- gij = std::real(-1.0*Yphys[i][j]);
     //    -- bij = std::imag(-1.0*Yphys[i][j]);
     IMDMAP             Amat;         // regulator tap ratios
-    SSMAP              regid_primnode;
-    SSMAP              regid_regnode;
+    SSLISTMAP          regid_nodes;
     SSMAP              mmrid_pos_type; // type of position measurement
     SSMAP              switch_node1s;
     SSMAP              switch_node2s;
@@ -155,8 +154,7 @@ class SELoopWorker {
         this->sbase = plint->getsbase();
         this->Yphys = plint->getYphys();
         this->Amat = plint->getAmat();
-        this->regid_primnode = plint->getregid_primnode();
-        this->regid_regnode = plint->getregid_regnode();
+        this->regid_nodes = plint->getregid_nodes();
         this->mmrid_pos_type = plint->getmmrid_pos_type();
         this->switch_node1s = plint->getswitch_node1s();
         this->switch_node2s = plint->getswitch_node2s();
@@ -2215,30 +2213,36 @@ class SELoopWorker {
             Vpu[idx] = complex<double>(vrei,vimi);
         }
         // update A
-        for ( auto& map_pair : regid_primnode ) {
+        for ( auto& map_pair : regid_nodes ) {
 //            *selog << map_pair.first << std::endl;
             string regid = map_pair.first;
-            string primnode = regid_primnode[regid];
-            string regnode = regid_regnode[regid];
+            SLIST nodes = regid_nodes[regid];
+            for ( auto it=nodes.begin(); it!=nodes.end(); ++it) {
+                string nodepair = *it;
+                // split node pairs into primnode and regnode with '|' delimiter
+                std::string::size_type pos = nodepair.find('|');
+                string primnode = nodepair.substr(0, pos);
+                string regnode = nodepair.substr(pos+1);
 
-//            *selog << "primnode: " << primnode << 
-//                "\tregnode: " << regnode << std::endl;
+//                *selog << "primnode: " << primnode <<
+//                    "\tregnode: " << regnode << std::endl;
 
-            // get i and j
-            uint i = node_idxs[primnode];
-            uint j = node_idxs[regnode];
+                // get i and j
+                uint i = node_idxs[primnode];
+                uint j = node_idxs[regnode];
             
-            // get vi and vj
-            double vi = abs(xvec[i-1]);
-            double vj = abs(xvec[j-1]);
+                // get vi and vj
+                double vi = abs(xvec[i-1]);
+                double vj = abs(xvec[j-1]);
 
-//            *selog << "vi: " << vi << "\tvj: " << vj << std::endl;
+//                *selog << "vi: " << vi << "\tvj: " << vj << std::endl;
 
-            // assign vj/vi to Amat[j][i]
-            Amat[j][i] = vj/vi;
+                // assign vj/vi to Amat[j][i]
+                Amat[j][i] = vj/vi;
 
-//            *selog << "Amat[j][i]: " << Amat[j][i] << std::endl;
+//                *selog << "Amat[j][i]: " << Amat[j][i] << std::endl;
 
+            }
         }
     }
 

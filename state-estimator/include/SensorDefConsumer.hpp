@@ -144,8 +144,6 @@ class SensorDefConsumer : public SEConsumer {
                         string cemrid = m["ConductingEquipment_mRID"];
                         string primbus = reg_cemrid_primbus[cemrid];
                         string regbus = reg_cemrid_regbus[cemrid];
-                        //string primnode = regid_primnode[cemrid];
-                        //string regnode = regid_regnode[cemrid];
 
                         // GDB 11/13/25: For the newer GridAPPS-D platform
                         // releases the sparql query for ratio tap changer nodes

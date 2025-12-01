@@ -170,8 +170,7 @@ public:
         SSMAP reg_cemrid_primbus;
         SSMAP reg_cemrid_regbus;
         state_estimator_util::build_A_matrix(*gad_ref, Amat, node_idxs,
-            reg_cemrid_primbus, reg_cemrid_regbus,
-            regid_primnode, regid_regnode);
+            reg_cemrid_primbus, reg_cemrid_regbus, regid_nodes);
 
         // map conducting equipment to bus names
         SSLISTMAP cemrid_busnames;

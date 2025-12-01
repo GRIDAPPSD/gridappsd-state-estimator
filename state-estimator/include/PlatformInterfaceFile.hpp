@@ -184,8 +184,7 @@ public:
             getline(lineStream, primnode, ',');
             getline(lineStream, regnode, ',');
 
-            regid_primnode[regid] = primnode;
-            regid_regnode[regid] = regnode;
+            regid_nodes[regid].push_back(primnode + "|" + regnode);
 
             uint primidx = node_idxs[primnode];
             uint regidx = node_idxs[regnode];

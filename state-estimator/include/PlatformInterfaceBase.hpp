@@ -79,10 +79,8 @@ public:
     //                       below and SensorArray.hpp)
     //     IMDMAP Amat: regulator tap ratio matrix referenced by the primary
     //                  and regulator node indices (double)
-    //     SSMAP regid_primnode: primary node name for each regulator id
-    //                           (string)
-    //     SSMAP regid_regnode: regulated node name for each regulator id
-    //                          (string)
+    //     SSLISTMAP regid_nodes: pairs of primary and regulator node names for
+    //                            each regulator id (list of strings)
     //
     // You should populate these if distinct measurement types are identified
     // by the platform including regulator tap position and switch state
@@ -233,12 +231,8 @@ public:
         return Amat;
     }
 
-    SSMAP getregid_primnode() {
-        return regid_primnode;
-    }
-
-    SSMAP getregid_regnode() {
-        return regid_regnode;
+    SSLISTMAP getregid_nodes() {
+        return regid_nodes;
     }
 
     SSMAP getmmrid_pos_type() {
@@ -299,8 +293,7 @@ protected:
     // You must populate these in PlatformInterface::fillSensors:
     SensorArray Zary;
     IMDMAP Amat;
-    SSMAP regid_primnode;
-    SSMAP regid_regnode;
+    SSLISTMAP regid_nodes;
     // You may populate these in PlatformInterface::fillSensors if the
     // platform identifies different measurement types such as switch state
     // and regulator tap position changes. Note also that some optional Zary
