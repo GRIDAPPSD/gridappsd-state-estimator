@@ -1664,6 +1664,7 @@ class SELoopWorker {
         //print_cs_compress(Supd,tspath+"Supd.csv");
         //print_cs_compress_triples(Supd, "Supd_sbase1e6_trip.csv");
         print_cs_compress_triples(Supd,"Supd_trip.csv");
+        //exit(0); // bail after writing the first Supd_trip.csv file
 #endif
 
         // -- compute K = P_predict*J'*S^-1
@@ -3357,11 +3358,17 @@ class SELoopWorker {
         // write to file
         std::ofstream ofh;
         ofh << std::setprecision(precision);
-        ofh.open(filename,std::ofstream::out);
+        //string fullname = filename + ".27000";
+        ofh.open(fullname,std::ofstream::out);
         *selog << "writing " + filename + "\n\n" << std::flush;
+        //for ( uint j = 27000 ; j < a->n ; j++ ) {
         for ( uint j = 0 ; j < a->n ; j++ ) {
-            if (j % 1000 == 0)
+            if (j % 1000 == 0) {
               *selog << "  writing j = " << j << "\n" << std::flush;
+              //ofh.close();
+              //fullname = filename + "." + std::to_string(j);
+              //ofh.open(fullname,std::ofstream::out);
+            }
             for ( uint i = 0 ; i < a->m ; i++ ) {
                 double val = mat[i][j];
 #if 000
