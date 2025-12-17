@@ -75,6 +75,7 @@ class SensorDefConsumer : public SEConsumer {
 #ifdef WRITE_FILES
         std::ofstream ofs("test_files/measurements.csv", ofstream::out);
         ofs << "ztype,zid,znode1,znode2,zval,zsig,zpseudo,znomval\n";
+        ofs << std::setprecision(16);
 #endif
 
         json jtext = json::parse(text);

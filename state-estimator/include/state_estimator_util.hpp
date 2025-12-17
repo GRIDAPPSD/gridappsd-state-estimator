@@ -169,6 +169,7 @@ namespace state_estimator_util{
 #ifdef WRITE_FILES
         // append to the existing measurements.csv started by SensorDefConsumer
         std::ofstream ofs("test_files/measurements.csv", ofstream::app);
+        ofs << std::setprecision(16);
 #endif
 
         uint zctr = Zary.zids.size();
