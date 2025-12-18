@@ -886,7 +886,7 @@ class SELoopWorker {
         state_fh << '\n';
         state_fh.close();
 #endif
-#ifdef WRITE_FILE
+#ifdef WRITE_FILES
         string filename = "test_files/results_data.csv";
 #ifdef DEBUG_PRIMARY
         *selog << "Writing results to test harness file: " << filename << "\n\n" << std::flush;
