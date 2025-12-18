@@ -558,6 +558,9 @@ class SELoopWorker {
         *selog << getMinSec(getWallTime()-startTime) << "\n" << std::flush;
 #endif
 #ifdef WRITE_FILES
+// GDB: 12/18/25: These 2 files can take a long time to write so suppress
+// them when not really needed.
+#if 000
         std::ofstream wofh;
         wofh.open("test_files/ypu.csv", std::ofstream::out);
         wofh << std::setprecision(10);  // match OpenDSS ysparse
@@ -600,6 +603,7 @@ class SELoopWorker {
             } catch ( const std::out_of_range& oor ) {
             }
         } wofh.close();
+#endif
 #endif
 #ifdef DEBUG_FILES
         // write to file
