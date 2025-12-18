@@ -20,8 +20,12 @@
 // defining USE_NEGL indicates not to store negligable values
 //#define USE_NEGL // be careful using this as it can throw away needed values
 
-//#define WRITE_FILES
-
+// GDB 12/18/25: Can't set WRITE_FILES for a file interface build because
+// that is designed to consume file and not generate them--chaos results if
+// they are both set
+#ifndef FILE_INTERFACE
+#define WRITE_FILES
+#endif
 
 //#define PLATFORM_OLD
 // different sparql queries are needed if the GridAPPS-D platform version
