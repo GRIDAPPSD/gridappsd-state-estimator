@@ -87,6 +87,10 @@ int main(int argc, char** argv) {
 #endif
 #endif
 
+    // GDB 12/18/25: Cut down on default 6 digits of precision when helpful for
+    // comparing logs between runs
+    //*selog << std::setprecision(4);
+
     PlatformInterface plint(argc, argv, sbase);
 
     plint.setupMeasurements();
