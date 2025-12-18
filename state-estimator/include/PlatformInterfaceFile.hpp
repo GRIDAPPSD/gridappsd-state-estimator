@@ -33,7 +33,8 @@
 //#define FILE_INTERFACE_READ "test_3p6_bus_diff_meas"
 //#define FILE_INTERFACE_READ "test_files_13assets"
 //#define FILE_INTERFACE_READ "test_files_123"
-#define FILE_INTERFACE_READ "test_files_13assetsnew"
+//#define FILE_INTERFACE_READ "test_files_13assetsnew"
+#define FILE_INTERFACE_READ "test_files"
 
 #ifndef FILE_INTERFACE_READ
 #include "OOPS, NEED TO DEFINE FILE_INTERFACE_READ!"
