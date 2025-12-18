@@ -110,19 +110,6 @@ public:
 
 
     void fillTopo() {
-#ifdef DEBUG_PRIMARY
-        extern bool blockedFlag;
-        // only block initialization for command line invocations
-        //if (false) {
-        if (!gad_ref->stateEstimatorFromPlatformFlag) {
-            *selog << "\nWaiting for simulation to start before continuing with initialization\n" << std::flush;
-            while (blockedFlag) sleep(1);
-            *selog << "\nSimulation started--continuing with initialization\n" << std::flush;
-        } else {
-            *selog << "\nNOT waiting before continuing with initialization\n" << std::flush;
-        }
-#endif
-
         // Set up the ybus consumer
         string ybusTopic = "goss.gridappsd.se.response."+gad_ref->simid+".ybus";
         TopoProcConsumer ybusConsumer(gad_ref->brokerURI, gad_ref->username,
@@ -280,6 +267,21 @@ public:
             gad_ref->simid+".output";
         publisher_ref = new SEProducer(gad_ref->brokerURI, gad_ref->username,
             gad_ref->password, publisherTopic, "topic");
+
+#ifdef DEBUG_PRIMARY
+        extern bool blockedFlag;
+        // only block initialization for command line invocations
+        //if (false) {
+        if (!gad_ref->stateEstimatorFromPlatformFlag) {
+            if (blockedFlag) {
+                *selog << "\nWaiting for simulation to start before continuing with initialization\n" << std::flush;
+                while (blockedFlag) sleep(1);
+                *selog << "\nSimulation started--continuing with initialization\n" << std::flush;
+            }
+        } else {
+            *selog << "\nNOT waiting before continuing with initialization\n" << std::flush;
+        }
+#endif
     }
 
 
