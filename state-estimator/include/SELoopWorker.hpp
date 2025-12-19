@@ -1662,6 +1662,7 @@ class SELoopWorker {
         print_cs_summary(Supd, "Supd");
 #endif
 #ifdef DEBUG_STATS
+        //*selog << std::setprecision(16);
         print_cs_stats(Supd, "Supd");
 #endif
 #ifdef DEBUG_FILES
@@ -1814,6 +1815,7 @@ class SELoopWorker {
 #endif
 #ifdef DEBUG_STATS
         print_cs_stats(K3, "K3");
+        //*selog << std::setprecision(6);
 #endif
 #ifdef DEBUG_FILES
         print_cs_compress(K3,tspath+"K3.csv");
