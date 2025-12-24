@@ -83,13 +83,15 @@ int main(int argc, char** argv) {
 #ifdef SBASE_NONE
     const double sbase = 1;
 #else
-    const double sbase = 1.0e+6;
+    //const double sbase = 1.0e+6; // my go-to sbase for a long time
+    //const double sbase = 1.0e+7; // for 9500 model, lowest condition #
+    const double sbase = 1.0e+8; // best 9500 model % error results
 #endif
 #endif
 
     // GDB 12/18/25: Cut down on default 6 digits of precision when helpful for
     // comparing logs between runs
-    *selog << std::setprecision(4);
+    *selog << std::setprecision(16);
 
     PlatformInterface plint(argc, argv, sbase);
 
