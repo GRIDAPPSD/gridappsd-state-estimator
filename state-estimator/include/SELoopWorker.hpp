@@ -58,13 +58,15 @@
 //#define SET_PRECISION8(val) round(val*1e+8)/1e+8
 //#define SET_PRECISION6(val) round(val*1e+6)/1e+6
 
-//double SET_SIGNIFICANT(double value, uint digits) {
-//    if (value == 0.0)
-//        return 0.0;
+#if 000
+double SET_SIGNIFICANT(double value, uint digits) {
+    if (value == 0.0)
+        return 0.0;
 
-//    double factor = pow(10.0, digits - ceil(log10(fabs(value))));
-//    return round(value*factor)/factor;
-//}
+    double factor = pow(10.0, digits - ceil(log10(fabs(value))));
+    return round(value*factor)/factor;
+}
+#endif
 
 // This class listens for system state messages
 class SELoopWorker {
@@ -1660,16 +1662,12 @@ class SELoopWorker {
         if (!Supd) *selog << "\tERROR: null Supd\n" << std::flush;
 
 #if 000
-        // GARY DEBUG ROUNDING: trying to figure out why the matrix inverse
+        // GARY MAGIC ROUNDING: trying to figure out why the matrix inverse
 	// is so sensitive to very tiny changes in Supd values for the 9500
 	// node model by only storing 10 digits of precision to compare live
 	// and file based invocations.
-        double p10 = std::pow(10.0, 10);
-        for ( uint i = 0 ; i < Supd->n ; i++ ) {
-             for ( uint j = Supd->p[i] ; j < Supd->p[i+1] ; j++ ) {
-                 Supd->x[j] = std::round(Supd->x[j] * p10) / p10;
-             }
-        }
+        for (uint i=0; i<Supd->nzmax; i++)
+            Supd->x[i] = SET_SIGNIFICANT(Supd->x[i], 10);
 #endif
 
 #ifdef DEBUG_PRIMARY
