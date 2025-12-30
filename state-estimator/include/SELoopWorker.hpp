@@ -30,11 +30,11 @@
 #define NEGL 1.0e-16
 //#define NEGL 1.0e-8 // this can throw away some needed values so be careful
 #ifdef GS_OPTIMIZE
-//#define gs_entry_diagonal_negl(A,ij,val) if (val>NEGL || -val>NEGL) gs_entry_diagonal(A,ij,val); else gs_entry_diagonal(A,ij,0.0)
+#define gs_entry_diagonal_negl(A,ij,val) if (val>NEGL || -val>NEGL) gs_entry_diagonal(A,ij,val); else gs_entry_diagonal(A,ij,0.0)
 //#define gs_entry_firstcol_negl(A,i,val) if (val>NEGL || -val>NEGL) gs_entry_firstcol(A,i,val); else gs_entry_firstcol(A,i,0.0)
 //#define gs_entry_fullsquare_negl(A,i,j,val) if (val>NEGL || -val>NEGL) gs_entry_fullsquare(A,i,j,val); else gs_entry_fullsquare(A,i,j,0.0)
 //#define gs_entry_colorder_negl(A,i,j,val) if (val>NEGL || -val>NEGL) gs_entry_colorder(A,i,j,val); else gs_entry_colorder(A,i,j,0.0)
-#define gs_entry_diagonal_negl(A,ij,val) if (val>NEGL || -val>NEGL) gs_entry_diagonal(A,ij,val)
+//#define gs_entry_diagonal_negl(A,ij,val) if (val>NEGL || -val>NEGL) gs_entry_diagonal(A,ij,val)
 #define gs_entry_firstcol_negl(A,i,val) if (val>NEGL || -val>NEGL) gs_entry_firstcol(A,i,val)
 #define gs_entry_fullsquare_negl(A,i,j,val) if (val>NEGL || -val>NEGL) gs_entry_fullsquare(A,i,j,val)
 #define gs_entry_colorder_negl(A,i,j,val) if (val>NEGL || -val>NEGL) gs_entry_colorder(A,i,j,val)
@@ -1658,6 +1658,20 @@ class SELoopWorker {
 
         cs *Supd = cs_add(Rmat,S3,1,1); cs_spfree(S3);
         if (!Supd) *selog << "\tERROR: null Supd\n" << std::flush;
+
+#if 000
+        // GARY DEBUG ROUNDING: trying to figure out why the matrix inverse
+	// is so sensitive to very tiny changes in Supd values for the 9500
+	// node model by only storing 10 digits of precision to compare live
+	// and file based invocations.
+        double p10 = std::pow(10.0, 10);
+        for ( uint i = 0 ; i < Supd->n ; i++ ) {
+             for ( uint j = Supd->p[i] ; j < Supd->p[i+1] ; j++ ) {
+                 Supd->x[j] = std::round(Supd->x[j] * p10) / p10;
+             }
+        }
+#endif
+
 #ifdef DEBUG_PRIMARY
         print_cs_summary(Supd, "Supd");
 #endif
@@ -3293,19 +3307,22 @@ class SELoopWorker {
     void print_cs_stats(cs *&a, const string &matname, const bool &initFlag=false) {
         double minVal = DBL_MAX;
         double maxVal = DBL_MIN;
+        double minAbsVal = DBL_MAX;
         double sumVal = 0.0;
 
         for ( uint i = 0 ; i < a->n ; i++ ) {
             for ( uint j = a->p[i] ; j < a->p[i+1] ; j++ ) {
                 minVal = fmin(minVal, a->x[j]);
                 maxVal = fmax(maxVal, a->x[j]);
+                if (fabs(a->x[j]) > 0.0)
+                  minAbsVal = fmin(minAbsVal, fabs(a->x[j]));
                 sumVal += a->x[j];
             }
         }
 
         double mean = sumVal/a->nzmax;
 
-        *selog << matname << " min: " << minVal << ", max: " << maxVal << ", sum: " << sumVal << ", mean: " << mean << "\n" << std::flush;
+        *selog << matname << " min: " << minVal << ", max: " << maxVal << ", absmin: " << minAbsVal << ", sum: " << sumVal << ", mean: " << mean << "\n" << std::flush;
 
 #ifdef TEST_SUITE
         string testpath = "output/" + plint->getOutputDir() + "/test_suite/";
@@ -3365,7 +3382,7 @@ class SELoopWorker {
         std::ofstream ofh;
         ofh << std::setprecision(precision);
         //string fullname = filename + ".27000";
-        ofh.open(fullname,std::ofstream::out);
+        ofh.open(filename,std::ofstream::out);
         *selog << "writing " + filename + "\n\n" << std::flush;
         //for ( uint j = 27000 ; j < a->n ; j++ ) {
         for ( uint j = 0 ; j < a->n ; j++ ) {
@@ -3463,12 +3480,14 @@ class SELoopWorker {
             }
         }
 
+#if 000
         std::unordered_map<uint,bool> powerMap;
         for ( auto& zid : Zary.zids ) {
             uint zidx = Zary.zidxs[zid];
             string ztype = Zary.ztypes[zid];
             powerMap[zidx] = (ztype=="Qi" || ztype=="Pi");
         }
+#endif
 
         // write to file
         std::ofstream ofh;
@@ -3478,8 +3497,8 @@ class SELoopWorker {
         for ( uint j = 0 ; j < a->n ; j++ )
             for ( uint i = 0 ; i < a->m ; i++ ) {
                 double val = mat[i][j];
-                string prefix = "";
 #if 000
+                string prefix = "";
                 if ( powerMap[j] ) {
                     prefix = " Pi/Qi column ";
                     //val *= sbase; // R, Supd
@@ -3489,9 +3508,11 @@ class SELoopWorker {
                     prefix += " Pi/Qi row ";
                     //val *= sbase; // R, Supd, Y, z, h, J
                 }
-#endif
                 if (val != 0.0)
                     ofh << prefix << i << ", " << j << ", " << val << "\n";
+#endif
+                if (val != 0.0)
+                    ofh << i << ", " << j << ", " << val << "\n";
             }
         ofh.close();
     }
