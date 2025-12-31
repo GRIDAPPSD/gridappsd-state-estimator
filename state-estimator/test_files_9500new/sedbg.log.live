@@ -1,0 +1,2027 @@
+topic: goss.gridappsd.simulation.log.1561937847
+
+Listening for simulation log messages on goss.gridappsd.simulation.log.1561937847
+topic: goss.gridappsd.simulation.output.1561937847
+
+Listening for simulation output on goss.gridappsd.simulation.output.1561937847
+Publishing to goss.gridappsd.process.request.config
+
+Received ybus message of 1307441 bytes
+
+Parsing ybus -- complete.
+
+Parsing nodelist -- complete.
+
+Publishing to goss.gridappsd.process.request.config
+
+
+SELoopConsumer received STARTED log message
+..................Received vnom message of 522135 bytes
+
+Parsing vnom -- complete.
+
+Building A matrix -- Publishing to goss.gridappsd.process.request.data.powergridmodel
+
+.
+SELoopConsumer received COMPLETE/CLOSED log message
+
+SELoopConsumer received COMPLETE/CLOSED log message
+SPARQ_RATIO_TAP_CHANGER returns ({
+  "data": {
+    "head": {
+      "vars": [
+        "rtcid",
+        "rtcname",
+        "xtname",
+        "cemrid",
+        "primbus",
+        "primphs",
+        "regbus",
+        "regphs"
+      ]
+    },
+    "results": {
+      "bindings": [
+        {
+          "cemrid": {
+            "type": "literal",
+            "value": "E4838FAC-15D1-48DB-B6AA-6A6A1D56D5A1"
+          },
+          "primbus": {
+            "type": "literal",
+            "value": "regxfmr_hvmv11sub1_lsb"
+          },
+          "primphs": {
+            "type": "literal",
+            "value": "AN"
+          },
+          "regbus": {
+            "type": "literal",
+            "value": "hvmv11sub1_lsb"
+          },
+          "regphs": {
+            "type": "literal",
+            "value": "AN"
+          },
+          "rtcid": {
+            "type": "literal",
+            "value": "83B9C813-2AC0-42E7-99CA-2F8D71BD5A23"
+          },
+          "rtcname": {
+            "type": "literal",
+            "value": "feeder_reg1a"
+          },
+          "xtname": {
+            "type": "literal",
+            "value": "feeder_reg1a"
+          }
+        },
+        {
+          "cemrid": {
+            "type": "literal",
+            "value": "E79B111A-7AC4-46BC-832C-4912BFC17685"
+          },
+          "primbus": {
+            "type": "literal",
+            "value": "regxfmr_hvmv11sub1_lsb"
+          },
+          "primphs": {
+            "type": "literal",
+            "value": "BN"
+          },
+          "regbus": {
+            "type": "literal",
+            "value": "hvmv11sub1_lsb"
+          },
+          "regphs": {
+            "type": "literal",
+            "value": "BN"
+          },
+          "rtcid": {
+            "type": "literal",
+            "value": "1C7E9E56-8645-45A1-B6E3-8B48FEBDF4B5"
+          },
+          "rtcname": {
+            "type": "literal",
+            "value": "feeder_reg1b"
+          },
+          "xtname": {
+            "type": "literal",
+            "value": "feeder_reg1b"
+          }
+        },
+        {
+          "cemrid": {
+            "type": "literal",
+            "value": "7E9FA841-5FFD-489A-98C8-674757F1BFE4"
+          },
+          "primbus": {
+            "type": "literal",
+            "value": "regxfmr_hvmv11sub1_lsb"
+          },
+          "primphs": {
+            "type": "literal",
+            "value": "CN"
+          },
+          "regbus": {
+            "type": "literal",
+            "value": "hvmv11sub1_lsb"
+          },
+          "regphs": {
+            "type": "literal",
+            "value": "CN"
+          },
+          "rtcid": {
+            "type": "literal",
+            "value": "43D3C659-1EFA-4654-9FF3-D948E0FE03BF"
+          },
+          "rtcname": {
+            "type": "literal",
+            "value": "feeder_reg1c"
+          },
+          "xtname": {
+            "type": "literal",
+            "value": "feeder_reg1c"
+          }
+        },
+        {
+          "cemrid": {
+            "type": "literal",
+            "value": "EACF6153-58DE-40DE-A872-0995ABEEF991"
+          },
+          "primbus": {
+            "type": "literal",
+            "value": "regxfmr_hvmv11sub2_lsb"
+          },
+          "primphs": {
+            "type": "literal",
+            "value": "AN"
+          },
+          "regbus": {
+            "type": "literal",
+            "value": "hvmv11sub2_lsb"
+          },
+          "regphs": {
+            "type": "literal",
+            "value": "AN"
+          },
+          "rtcid": {
+            "type": "literal",
+            "value": "1A0288B6-1D4F-4684-B4FE-5FA88F3A8CCE"
+          },
+          "rtcname": {
+            "type": "literal",
+            "value": "feeder_reg2a"
+          },
+          "xtname": {
+            "type": "literal",
+            "value": "feeder_reg2a"
+          }
+        },
+        {
+          "cemrid": {
+            "type": "literal",
+            "value": "BA2580D7-EC24-4B3C-9B03-613F39618611"
+          },
+          "primbus": {
+            "type": "literal",
+            "value": "regxfmr_hvmv11sub2_lsb"
+          },
+          "primphs": {
+            "type": "literal",
+            "value": "BN"
+          },
+          "regbus": {
+            "type": "literal",
+            "value": "hvmv11sub2_lsb"
+          },
+          "regphs": {
+            "type": "literal",
+            "value": "BN"
+          },
+          "rtcid": {
+            "type": "literal",
+            "value": "D8610C82-7E69-4B13-A9EF-59D3511ACB0F"
+          },
+          "rtcname": {
+            "type": "literal",
+            "value": "feeder_reg2b"
+          },
+          "xtname": {
+            "type": "literal",
+            "value": "feeder_reg2b"
+          }
+        },
+        {
+          "cemrid": {
+            "type": "literal",
+            "value": "02499890-D1F4-4E90-A730-594BD962EADF"
+          },
+          "primbus": {
+            "type": "literal",
+            "value": "regxfmr_hvmv11sub2_lsb"
+          },
+          "primphs": {
+            "type": "literal",
+            "value": "CN"
+          },
+          "regbus": {
+            "type": "literal",
+            "value": "hvmv11sub2_lsb"
+          },
+          "regphs": {
+            "type": "literal",
+            "value": "CN"
+          },
+          "rtcid": {
+            "type": "literal",
+            "value": "3A2A6C3C-3EEE-4436-B899-400617ABCC2E"
+          },
+          "rtcname": {
+            "type": "literal",
+            "value": "feeder_reg2c"
+          },
+          "xtname": {
+            "type": "literal",
+            "value": "feeder_reg2c"
+          }
+        },
+        {
+          "cemrid": {
+            "type": "literal",
+            "value": "ED548B90-D0FF-4643-BC0F-634C12FE55C5"
+          },
+          "primbus": {
+            "type": "literal",
+            "value": "regxfmr_hvmv11sub3_lsb"
+          },
+          "primphs": {
+            "type": "literal",
+            "value": "AN"
+          },
+          "regbus": {
+            "type": "literal",
+            "value": "hvmv11sub3_lsb"
+          },
+          "regphs": {
+            "type": "literal",
+            "value": "AN"
+          },
+          "rtcid": {
+            "type": "literal",
+            "value": "A7374EB9-8146-4675-8E04-FEAF2FEDADA7"
+          },
+          "rtcname": {
+            "type": "literal",
+            "value": "feeder_reg3a"
+          },
+          "xtname": {
+            "type": "literal",
+            "value": "feeder_reg3a"
+          }
+        },
+        {
+          "cemrid": {
+            "type": "literal",
+            "value": "024D90C4-C2BC-41F2-B9B0-27B135B1278B"
+          },
+          "primbus": {
+            "type": "literal",
+            "value": "regxfmr_hvmv11sub3_lsb"
+          },
+          "primphs": {
+            "type": "literal",
+            "value": "BN"
+          },
+          "regbus": {
+            "type": "literal",
+            "value": "hvmv11sub3_lsb"
+          },
+          "regphs": {
+            "type": "literal",
+            "value": "BN"
+          },
+          "rtcid": {
+            "type": "literal",
+            "value": "62B747D6-EA3B-4806-9F8B-BDD010FCB594"
+          },
+          "rtcname": {
+            "type": "literal",
+            "value": "feeder_reg3b"
+          },
+          "xtname": {
+            "type": "literal",
+            "value": "feeder_reg3b"
+          }
+        },
+        {
+          "cemrid": {
+            "type": "literal",
+            "value": "D9C7ECCD-D94F-446F-A489-D7877705AE08"
+          },
+          "primbus": {
+            "type": "literal",
+            "value": "regxfmr_hvmv11sub3_lsb"
+          },
+          "primphs": {
+            "type": "literal",
+            "value": "CN"
+          },
+          "regbus": {
+            "type": "literal",
+            "value": "hvmv11sub3_lsb"
+          },
+          "regphs": {
+            "type": "literal",
+            "value": "CN"
+          },
+          "rtcid": {
+            "type": "literal",
+            "value": "295D1CAD-14E1-4EEA-9568-DFF4AE3EF068"
+          },
+          "rtcname": {
+            "type": "literal",
+            "value": "feeder_reg3c"
+          },
+          "xtname": {
+            "type": "literal",
+            "value": "feeder_reg3c"
+          }
+        },
+        {
+          "cemrid": {
+            "type": "literal",
+            "value": "0571F7BB-9C6A-4C57-96D3-2F47BDA636D0"
+          },
+          "primbus": {
+            "type": "literal",
+            "value": "regxfmr_190-8593"
+          },
+          "primphs": {
+            "type": "literal",
+            "value": "AN"
+          },
+          "regbus": {
+            "type": "literal",
+            "value": "190-8593"
+          },
+          "regphs": {
+            "type": "literal",
+            "value": "AN"
+          },
+          "rtcid": {
+            "type": "literal",
+            "value": "14239F57-9B5A-41CA-B28D-0AA18DF40149"
+          },
+          "rtcname": {
+            "type": "literal",
+            "value": "vreg2_a"
+          },
+          "xtname": {
+            "type": "literal",
+            "value": "vreg2_a"
+          }
+        },
+        {
+          "cemrid": {
+            "type": "literal",
+            "value": "9042CDE7-FA05-4FF6-AE5F-2B2E5F684E68"
+          },
+          "primbus": {
+            "type": "literal",
+            "value": "regxfmr_190-8593"
+          },
+          "primphs": {
+            "type": "literal",
+            "value": "BN"
+          },
+          "regbus": {
+            "type": "literal",
+            "value": "190-8593"
+          },
+          "regphs": {
+            "type": "literal",
+            "value": "BN"
+          },
+          "rtcid": {
+            "type": "literal",
+            "value": "E37DD82C-6A9C-44AF-A8D0-909593E805E3"
+          },
+          "rtcname": {
+            "type": "literal",
+            "value": "vreg2_b"
+          },
+          "xtname": {
+            "type": "literal",
+            "value": "vreg2_b"
+          }
+        },
+        {
+          "cemrid": {
+            "type": "literal",
+            "value": "08E47762-65C2-4BAC-A4DC-7222DBD1A6DE"
+          },
+          "primbus": {
+            "type": "literal",
+            "value": "regxfmr_190-8593"
+          },
+          "primphs": {
+            "type": "literal",
+            "value": "CN"
+          },
+          "regbus": {
+            "type": "literal",
+            "value": "190-8593"
+          },
+          "regphs": {
+            "type": "literal",
+            "value": "CN"
+          },
+          "rtcid": {
+            "type": "literal",
+            "value": "38C3530D-4042-4C0D-8022-2FADAF691153"
+          },
+          "rtcname": {
+            "type": "literal",
+            "value": "vreg2_c"
+          },
+          "xtname": {
+            "type": "literal",
+            "value": "vreg2_c"
+          }
+        },
+        {
+          "cemrid": {
+            "type": "literal",
+            "value": "C0ACB823-31BD-4E88-8648-29BB417A06DE"
+          },
+          "primbus": {
+            "type": "literal",
+            "value": "regxfmr_190-8581"
+          },
+          "primphs": {
+            "type": "literal",
+            "value": "AN"
+          },
+          "regbus": {
+            "type": "literal",
+            "value": "190-8581"
+          },
+          "regphs": {
+            "type": "literal",
+            "value": "AN"
+          },
+          "rtcid": {
+            "type": "literal",
+            "value": "ECAE730A-872C-4932-B09F-94F79AB5A0CF"
+          },
+          "rtcname": {
+            "type": "literal",
+            "value": "vreg3_a"
+          },
+          "xtname": {
+            "type": "literal",
+            "value": "vreg3_a"
+          }
+        },
+        {
+          "cemrid": {
+            "type": "literal",
+            "value": "293FEB9B-C8AE-4944-BFE6-CDB0E40C25A1"
+          },
+          "primbus": {
+            "type": "literal",
+            "value": "regxfmr_190-8581"
+          },
+          "primphs": {
+            "type": "literal",
+            "value": "BN"
+          },
+          "regbus": {
+            "type": "literal",
+            "value": "190-8581"
+          },
+          "regphs": {
+            "type": "literal",
+            "value": "BN"
+          },
+          "rtcid": {
+            "type": "literal",
+            "value": "1D26FA5B-2C24-4985-A8B5-E4122294674E"
+          },
+          "rtcname": {
+            "type": "literal",
+            "value": "vreg3_b"
+          },
+          "xtname": {
+            "type": "literal",
+            "value": "vreg3_b"
+          }
+        },
+        {
+          "cemrid": {
+            "type": "literal",
+            "value": "20AE7DCD-A024-46A2-B73D-36F9F93740F3"
+          },
+          "primbus": {
+            "type": "literal",
+            "value": "regxfmr_190-8581"
+          },
+          "primphs": {
+            "type": "literal",
+            "value": "CN"
+          },
+          "regbus": {
+            "type": "literal",
+            "value": "190-8581"
+          },
+          "regphs": {
+            "type": "literal",
+            "value": "CN"
+          },
+          "rtcid": {
+            "type": "literal",
+            "value": "5D67EBEE-9158-4C56-9E39-12A9AC0D7B8D"
+          },
+          "rtcname": {
+            "type": "literal",
+            "value": "vreg3_c"
+          },
+          "xtname": {
+            "type": "literal",
+            "value": "vreg3_c"
+          }
+        },
+        {
+          "cemrid": {
+            "type": "literal",
+            "value": "14A4103C-C153-45AC-9947-97C2DE0E10BB"
+          },
+          "primbus": {
+            "type": "literal",
+            "value": "regxfmr_190-7361"
+          },
+          "primphs": {
+            "type": "literal",
+            "value": "AN"
+          },
+          "regbus": {
+            "type": "literal",
+            "value": "190-7361"
+          },
+          "regphs": {
+            "type": "literal",
+            "value": "AN"
+          },
+          "rtcid": {
+            "type": "literal",
+            "value": "8B7CC6A2-B498-4103-96B0-A8122066CBCD"
+          },
+          "rtcname": {
+            "type": "literal",
+            "value": "vreg4_a"
+          },
+          "xtname": {
+            "type": "literal",
+            "value": "vreg4_a"
+          }
+        },
+        {
+          "cemrid": {
+            "type": "literal",
+            "value": "74FC71EB-F372-41D8-A32F-8812E474EE28"
+          },
+          "primbus": {
+            "type": "literal",
+            "value": "regxfmr_190-7361"
+          },
+          "primphs": {
+            "type": "literal",
+            "value": "BN"
+          },
+          "regbus": {
+            "type": "literal",
+            "value": "190-7361"
+          },
+          "regphs": {
+            "type": "literal",
+            "value": "BN"
+          },
+          "rtcid": {
+            "type": "literal",
+            "value": "1917DB57-8D52-4B9C-8887-9029164C5B69"
+          },
+          "rtcname": {
+            "type": "literal",
+            "value": "vreg4_b"
+          },
+          "xtname": {
+            "type": "literal",
+            "value": "vreg4_b"
+          }
+        },
+        {
+          "cemrid": {
+            "type": "literal",
+            "value": "AE97079A-A112-40CB-BE5A-B5868CD7E727"
+          },
+          "primbus": {
+            "type": "literal",
+            "value": "regxfmr_190-7361"
+          },
+          "primphs": {
+            "type": "literal",
+            "value": "CN"
+          },
+          "regbus": {
+            "type": "literal",
+            "value": "190-7361"
+          },
+          "regphs": {
+            "type": "literal",
+            "value": "CN"
+          },
+          "rtcid": {
+            "type": "literal",
+            "value": "7C8CFB6C-CB34-4218-8828-8A8819EBF82C"
+          },
+          "rtcname": {
+            "type": "literal",
+            "value": "vreg4_c"
+          },
+          "xtname": {
+            "type": "literal",
+            "value": "vreg4_c"
+          }
+        }
+      ]
+    }
+  },
+  "id": "12153880",
+  "responseComplete": true
+})
+complete.
+
+Publishing to goss.gridappsd.process.request.data.powergridmodel
+
+Publishing to goss.gridappsd.process.request.config
+
+Received sensor message of 16239034 bytes
+
+Parsing sensors -- complete.
+
+Publishing to goss.gridappsd.process.request.data.powergridmodel
+
+Inserting pseudo measurements -- Publishing to goss.gridappsd.process.request.data.powergridmodel
+
+complete.
+
+Publishing to goss.gridappsd.process.request.data.powergridmodel
+
+Starting the State Estimator work loop...
+node_qty is 9549; xqty is 19098; zqty is 31575
+Jshapemap Jacobian elements: 223425
+Yphys # of scaled terms: 576
+Computing Ypu time -- 0:00.040605
+Initializing F -- F is 19098 by 19098 with 19098 entries
+F min: 1, max: 1, absmin: 1, sum: 19098, mean: 1
+Initializing eyex -- eyex is 19098 by 19098 with 19098 entries
+eyex min: 1, max: 1, absmin: 1, sum: 19098, mean: 1
+Initializing R -- R is 31575 by 31575 with 31575 entries
+R min: 9.796778365340498e-15, max: 0.0001, absmin: 9.796778365340498e-15, sum: 1.246223991349261, mean: 3.946869331272403e-05
+Writing results to test harness file: test_files/results_data.csv
+
+Voltages Initialized.
+State Covariance Matrix Initialized.
+
+
+Estimating state for timestep: 0
+P is 19098 by 19098 with 19098 entries
+P min: 0.04000000000000001, max: 0.04188790204786391, absmin: 0.04000000000000001, sum: 781.9475766549397, mean: 0.04094395102392605
+P1 is 19098 by 19098 with 19098 entries
+P1 min: 1, max: 1, absmin: 1, sum: 19098, mean: 1
+P2 is 19098 by 19098 with 19098 entries
+P2 min: 0.04000000000000001, max: 0.04188790204786391, absmin: 0.04000000000000001, sum: 781.9475766549397, mean: 0.04094395102392605
+P3 is 19098 by 19098 with 19098 entries
+P3 min: 0.04000000000000001, max: 0.04188790204786391, absmin: 0.04000000000000001, sum: 781.9475766549397, mean: 0.04094395102392605
+Q uncertainty scale factor: 0.1
+Q is 19098 by 19098 with 19098 entries
+Q min: 0.1, max: 0.3141592653589793, absmin: 0.1, sum: 3954.806824914303, mean: 0.2070796326795635
+Ppre is 19098 by 19098 with 19098 entries
+Ppre min: 0.14, max: 0.3560471674068432, absmin: 0.14, sum: 4736.754401568622, mean: 0.248023583703457
+x is 19098 by 1 with 19098 entries
+x min: 0, max: 1, absmin: 1, sum: 9549, mean: 0.5
+xpre is 19098 by 1 with 19098 entries
+xpre min: 0, max: 1, absmin: 1, sum: 9549, mean: 0.5
+calc_J time -- 0:06.614223
+J is 31575 by 19098 with 223425 entries
+J min: -47669.8496652, max: 47669.84966519998, absmin: 6.162975822039155e-33, sum: 12465.58156850931, mean: 0.05579313670587135
+S1 is 19098 by 31575 with 223425 entries
+S1 min: -47669.8496652, max: 47669.84966519998, absmin: 6.162975822039155e-33, sum: 12465.58156850926, mean: 0.05579313670587115
+S2 is 19098 by 31575 with 223425 entries
+S2 min: -16972.71494400451, max: 15704.07729983312, absmin: 8.628166150854817e-34, sum: 1745.82956109381, mean: 0.007813940074270158
+S3 is 31575 by 31575 with 662041 entries
+S3 min: -1385317900.906391, max: 1385324720.334957, absmin: 8.628166150854817e-34, sum: 2739.878738992852, mean: 0.004138533321943583
+Rmat min: 9.796778365340498e-15, max: 0.0001, absmin: 9.796778365340498e-15, sum: 1.246223991349261, mean: 3.946869331272403e-05
+Supd is 31575 by 31575 with 662041 entries
+Supd min: -1385317900.906391, max: 1385324720.334957, absmin: 8.628166150854817e-34, sum: 2741.124962452319, mean: 0.004140415718138785
+klu_factor time -- 0:00.056903
+klu_condest Supd condition number: 1.997552531967206e+20
+klu_solve time (bottleneck) -- 0:58.611062
+klu_solve virtual memory: 13.835659 GB, timestep: 0
+K3 is 31575 by 31575 with 996980625 entries
+K3 min: -2271071991.297542, max: 5570772972.474631, absmin: 9.850066817570197e-10, sum: 167194195100652.6, mean: 167700.5459365398
+K2 is 19098 by 31575 with 223425 entries
+K2 min: -16972.71494400451, max: 15704.07729983312, absmin: 8.628166150854817e-34, sum: 1745.82956109381, mean: 0.007813940074270158
+Kupd time (bottleneck) -- 0:40.521958
+Kupd is 19098 by 31575 with 603019350 entries
+Kupd min: -793.6303281541914, max: 500.349232852459, absmin: 5.684341886080801e-14, sum: 3327968.634560762, mean: 0.005518842197287304
+Kupd Peak virtual memory: 9.432804 GB, timestep: 0
+z is 31575 by 1 with 31575 entries
+z min: -0.00025425, max: 1.03125, absmin: 2.22428465e-06, sum: 12009.06536321994, mean: 0.3803346116617559
+calc_h time -- 0:01.181102
+h is 31575 by 1 with 31575 entries
+h min: -1.731332760790906, max: 1.742192938387916, absmin: 7.338871608884225e-29, sum: 12480.2907842551, mean: 0.3952586154950151
+yupd is 31575 by 1 with 31575 entries
+yupd min: -1.742192938387916, max: 1.731332760790906, absmin: 7.338871608884225e-29, sum: -471.2254210350534, mean: -0.01492400383325585
+x1 is 19098 by 1 with 19098 entries
+x1 min: -0.1848171987661854, max: 0.08326285456444354, absmin: 1.66430258226602e-05, sum: -747.9608124820688, mean: -0.03916435294177761
+xupd is 19098 by 1 with 19098 entries
+xupd min: -0.1848171987661854, max: 0.999259858466265, absmin: 1.66430258226602e-05, sum: 8801.039187517914, mean: 0.4608356470582215
+P4 time -- 0:13.884787
+P4 is 19098 by 19098 with 364733604 entries
+P4 min: -15.69102395949689, max: 15.6934155959932, absmin: 9.193780312792901e-17, sum: 14506.92442525758, mean: 3.977402758112077e-05
+P5 is 19098 by 19098 with 364733604 entries
+P5 min: -15.6934155959932, max: 15.69102395949689, absmin: 9.193780312792901e-17, sum: 4591.075574751555, mean: 1.258747624129406e-05
+Pupd is 19098 by 19098 with 364733604 entries
+Pupd min: -5.587596169891755, max: 5.586744634491777, absmin: 1.287129243791006e-17, sum: 1634.137284231913, mean: 4.480358448770499e-06
+Uvmag min: 2.184890490752878e-11, max: 0.01760806293910298
+Uvarg min: 4.816773703435014e-09, max: 1.57008468612307
+*** Total estimate time: 2:49.931596, timestamp: 1373814482, timestep: 0
+End of estimate virtual memory: 2.693531 GB, timestep: 0
+Meas vmag per-unit min: 0.8979428431584681, max: 1.001490233912207, mean: 0.9628513886923801
+Est vmag per-unit min: 0.888909436981093, max: 0.999259858466265, mean: 0.9641723066756961, % err: 0.6490539486888751
+Est varg per-unit min: -0.1848171987661854, max: 0.08326285456444356, mean: -0.04250101255925199
+Publishing to goss.gridappsd.simulation.state-estimator.1561937847.output
+
+
+Estimating state for timestep: 3
+P is 19098 by 19098 with 19098 entries
+P min: -1.57008468612307, max: 1.568708349472327, absmin: 2.184890490752878e-11, sum: 0.2791680060973021, mean: 1.461765661835282e-05
+P1 is 19098 by 19098 with 19098 entries
+P1 min: 1, max: 1, absmin: 1, sum: 19098, mean: 1
+P2 is 19098 by 19098 with 19098 entries
+P2 min: -1.57008468612307, max: 1.568708349472327, absmin: 2.184890490752878e-11, sum: 0.2791680060973021, mean: 1.461765661835282e-05
+P3 is 19098 by 19098 with 19098 entries
+P3 min: -1.57008468612307, max: 1.568708349472327, absmin: 2.184890490752878e-11, sum: 0.2791680060973021, mean: 1.461765661835282e-05
+Q uncertainty scale factor: 0.0003
+Q is 19098 by 19098 with 19098 entries
+Q min: 0.0003, max: 0.000942477796076938, absmin: 0.0003, sum: 11.86442047473735, mean: 0.0006212388980383995
+Ppre is 19098 by 19098 with 19098 entries
+Ppre min: -1.569142208326993, max: 1.569650827268404, absmin: 1.593384689542086e-06, sum: 12.14358848083601, mean: 0.000635856554656823
+x is 19098 by 1 with 19098 entries
+x min: -0.1848171987661854, max: 0.999259858466265, absmin: 1.664302582266019e-05, sum: 8801.039187517914, mean: 0.4608356470582215
+xpre is 19098 by 1 with 19098 entries
+xpre min: -0.1848171987661854, max: 0.999259858466265, absmin: 1.664302582266019e-05, sum: 8801.039187517914, mean: 0.4608356470582215
+calc_J time -- 0:04.703135
+J is 31575 by 19098 with 223425 entries
+J min: -46436.25852025348, max: 47041.22353738292, absmin: 3.243894894077148e-11, sum: 12465.38260579476, mean: 0.05579224619355379
+S1 is 19098 by 31575 with 223425 entries
+S1 min: -46436.25852025348, max: 47041.22353738292, absmin: 3.243894894077148e-11, sum: 12465.38260579464, mean: 0.05579224619355327
+S2 is 19098 by 31575 with 223425 entries
+S2 min: -66160.76828114736, max: 66160.71616392193, absmin: 1.004830741206968e-14, sum: 9.711166268375484, mean: 4.346499392805409e-05
+S3 is 31575 by 31575 with 662041 entries
+S3 min: -753079599.5254226, max: 257759018.2197246, absmin: 1.004830741206968e-14, sum: 25.37859116345903, mean: 3.833386627634698e-05
+Rmat min: 9.796778365340498e-15, max: 0.0001, absmin: 9.796778365340498e-15, sum: 1.246223991349261, mean: 3.946869331272403e-05
+Supd is 31575 by 31575 with 662041 entries
+Supd min: -753079599.5254226, max: 257759018.2197246, absmin: 1.004830741206968e-14, sum: 26.62481507506972, mean: 4.021626315450208e-05
+klu_factor time -- 0:00.039544
+klu_condest Supd condition number: 1.743023390812448e+20
+klu_solve time (bottleneck) -- 0:41.552796
+klu_solve virtual memory: 13.854076 GB, timestep: 3
+K3 is 31575 by 31575 with 996980625 entries
+K3 min: -3470841882.822878, max: 8198966660.172722, absmin: 1.984645225938664e-10, sum: 195688942598903.6, mean: 196281.5903256932
+K2 is 19098 by 31575 with 223425 entries
+K2 min: -66160.76828114736, max: 66160.71616392193, absmin: 1.004830741206968e-14, sum: 9.711166268375484, mean: 4.346499392805409e-05
+Kupd time (bottleneck) -- 0:53.061391
+Kupd is 19098 by 31575 with 603019350 entries
+Kupd min: -906.1444863009128, max: 537.3164035850205, absmin: 1.984643596382799e-14, sum: 3259155.542418957, mean: 0.005404727961746098
+Kupd Peak virtual memory: 9.451221 GB, timestep: 3
+z is 31575 by 1 with 31575 entries
+z min: -0.00025425, max: 1.03125, absmin: 2.22428465e-06, sum: 12009.05178827377, mean: 0.3803341817347196
+calc_h time -- 0:00.877312
+h is 31575 by 1 with 31575 entries
+h min: -3.42813157267576, max: 3.574599369317694, absmin: 6.504068269884812e-14, sum: 12018.40274516781, mean: 0.3806303323885292
+yupd is 31575 by 1 with 31575 entries
+yupd min: -3.574599369317694, max: 3.42813157267576, absmin: 6.504068269884812e-14, sum: -9.350956894356436, mean: -0.0002961506538196812
+x1 is 19098 by 1 with 19098 entries
+x1 min: -0.02443315883801031, max: 0.02570641370890769, absmin: 1.602392936421101e-07, sum: -9.652956096657402, mean: -0.0005054432975524873
+xupd is 19098 by 1 with 19098 entries
+xupd min: -0.1864198649421847, max: 0.9985440479519074, absmin: 2.36527388001416e-05, sum: 8791.386231421226, mean: 0.4603302037606674
+P4 time -- 0:11.675537
+P4 is 19098 by 19098 with 364733604 entries
+P4 min: -0.3107201409629639, max: 1.962316120968314, absmin: 4.716030592032041e-14, sum: 7682.64687258313, mean: 2.106372099616884e-05
+P5 is 19098 by 19098 with 364733604 entries
+P5 min: -1.238577621912402, max: 0.3107201409629639, absmin: 4.716030592032041e-14, sum: 11415.35312742404, mean: 3.12977828262406e-05
+Pupd is 19098 by 19098 with 364733604 entries
+Pupd min: -0.02614791891882813, max: 0.01599634611834286, absmin: 1.504610605639624e-17, sum: 13.64352207508943, mean: 3.74068139745342e-08
+Uvmag min: 1.078963652420414e-08, max: 3.957635451185045e-05
+Uvarg min: 5.326154314405544e-08, max: 0.01599634611834286
+*** Total estimate time: 2:47.857781, timestamp: 1373814485, timestep: 3
+End of estimate virtual memory: 2.711948 GB, timestep: 3
+Meas vmag per-unit min: 0.8979389801366287, max: 1.001492576327639, mean: 0.9628503105030002
+Est vmag per-unit min: 0.8888366035391779, max: 0.9985440479519074, mean: 0.9636987614446298, % err: 0.5781071725845196
+Est varg per-unit min: -0.1864198649421847, max: 0.07812280818742218, mean: -0.04303835392329228
+Publishing to goss.gridappsd.simulation.state-estimator.1561937847.output
+
+
+Estimating state for timestep: 6
+P is 19098 by 19098 with 19098 entries
+P min: -0.002692386135695235, max: 0.01599634611834286, absmin: 1.078963652420414e-08, sum: 0.1296754724916143, mean: 6.790002748539862e-06
+P1 is 19098 by 19098 with 19098 entries
+P1 min: 1, max: 1, absmin: 1, sum: 19098, mean: 1
+P2 is 19098 by 19098 with 19098 entries
+P2 min: -0.002692386135695235, max: 0.01599634611834286, absmin: 1.078963652420414e-08, sum: 0.1296754724916143, mean: 6.790002748539862e-06
+P3 is 19098 by 19098 with 19098 entries
+P3 min: -0.002692386135695235, max: 0.01599634611834286, absmin: 1.078963652420414e-08, sum: 0.1296754724916143, mean: 6.790002748539862e-06
+Q uncertainty scale factor: 0.0003
+Q is 19098 by 19098 with 19098 entries
+Q min: 0.0003, max: 0.000942477796076938, absmin: 0.0003, sum: 11.86442047473735, mean: 0.0006212388980383995
+Ppre is 19098 by 19098 with 19098 entries
+Ppre min: -0.001749908339618297, max: 0.0169388239144198, absmin: 0.0002991546860481616, sum: 11.99409594723031, mean: 0.0006280289007870097
+x is 19098 by 1 with 19098 entries
+x min: -0.1864198649421847, max: 0.9985440479519074, absmin: 2.36527388001416e-05, sum: 8791.386231421226, mean: 0.4603302037606674
+xpre is 19098 by 1 with 19098 entries
+xpre min: -0.1864198649421847, max: 0.9985440479519074, absmin: 2.36527388001416e-05, sum: 8791.386231421226, mean: 0.4603302037606674
+calc_J time -- 0:08.385577
+J is 31575 by 19098 with 223425 entries
+J min: -47376.82400551935, max: 47515.24186002771, absmin: 2.571796978078317e-10, sum: 12465.37592111704, mean: 0.05579221627444127
+S1 is 19098 by 31575 with 223425 entries
+S1 min: -47376.82400551935, max: 47515.24186002771, absmin: 2.571796978078317e-10, sum: 12465.37592111725, mean: 0.05579221627444222
+S2 is 19098 by 31575 with 223425 entries
+S2 min: -739.9861448838956, max: 739.9854147182823, absmin: 8.079781202035893e-14, sum: 3.89238933746755, mean: 1.742145837514848e-05
+S3 is 31575 by 31575 with 662041 entries
+S3 min: -40141248.8240483, max: 40141287.40386352, absmin: 6.765579448482833e-14, sum: 6.168237608975512, mean: 9.317002434857528e-06
+Rmat min: 9.796778365340498e-15, max: 0.0001, absmin: 9.796778365340498e-15, sum: 1.246223991349261, mean: 3.946869331272403e-05
+Supd is 31575 by 31575 with 662041 entries
+Supd min: -40141248.8240483, max: 40141287.40386352, absmin: 6.765579448482833e-14, sum: 7.414461598516819, mean: 1.119939943072532e-05
+klu_factor time -- 0:00.046983
+klu_condest Supd condition number: 9.24579546801375e+18
+klu_solve time (bottleneck) -- 1:01.107291
+klu_solve virtual memory: 13.854076 GB, timestep: 6
+K3 is 31575 by 31575 with 996980625 entries
+K3 min: -3467956359.974826, max: 8199614814.493861, absmin: 1.600326537953833e-09, sum: 204700980058691.3, mean: 205320.9209142769
+K2 is 19098 by 31575 with 223425 entries
+K2 min: -739.9861448838956, max: 739.9854147182823, absmin: 8.079781202035893e-14, sum: 3.89238933746755, mean: 1.742145837514848e-05
+Kupd time (bottleneck) -- 0:35.916736
+Kupd is 19098 by 31575 with 603019350 entries
+Kupd min: -905.8824897406266, max: 536.9670057529584, absmin: 1.600326926640312e-13, sum: 693393.2020878878, mean: 0.001149868908995852
+Kupd Peak virtual memory: 9.451221 GB, timestep: 6
+z is 31575 by 1 with 31575 entries
+z min: -0.00025425, max: 1.03125, absmin: 2.22428465e-06, sum: 12009.05177250622, mean: 0.3803341812353515
+calc_h time -- 0:01.045819
+h is 31575 by 1 with 31575 entries
+h min: -1.742922785989751, max: 1.764985741908984, absmin: 8.016127173112393e-13, sum: 12013.13218526287, mean: 0.3804634104596318
+yupd is 31575 by 1 with 31575 entries
+yupd min: -1.764985741908984, max: 1.742922785989751, absmin: 8.016127173112393e-13, sum: -4.080412757151203, mean: -0.0001292292242961585
+x1 is 19098 by 1 with 19098 entries
+x1 min: -0.01724656704810929, max: 0.01313565915437988, absmin: 2.849516615657084e-07, sum: -2.696266470750243, mean: -0.0001411805671143702
+xupd is 19098 by 1 with 19098 entries
+xupd min: -0.1882207189044071, max: 1.003379122768849, absmin: 1.908051798155206e-05, sum: 8788.689964950505, mean: 0.4601890231935545
+P4 time -- 0:16.055896
+P4 is 19098 by 19098 with 364733604 entries
+P4 min: -0.05896728626961582, max: 1.00106614006512, absmin: 5.72987295631433e-15, sum: 7675.891668706469, mean: 2.10452000707521e-05
+P5 is 19098 by 19098 with 364733604 entries
+P5 min: -0.04891378638515462, max: 0.1270252389444794, absmin: 5.72987295631433e-15, sum: 11422.10833128886, mean: 3.131630375162486e-05
+Pupd is 19098 by 19098 with 364733604 entries
+Pupd min: -5.287777575557523e-05, max: 0.0001373306731079263, absmin: 1.827105789632056e-18, sum: 9.617177422223074, mean: 2.63676757961218e-08
+Uvmag min: 1.094383825270358e-08, max: 3.945490309415517e-05
+Uvarg min: 5.997496853890769e-08, max: 0.0001373306731079263
+*** Total estimate time: 2:57.163427, timestamp: 1373814488, timestep: 6
+End of estimate virtual memory: 2.711948 GB, timestep: 6
+Meas vmag per-unit min: 0.8979389686779756, max: 1.001492576327639, mean: 0.9628503092308262
+Est vmag per-unit min: 0.8889040918865253, max: 1.003379122768849, mean: 0.9635261359559949, % err: 0.5649714109669379
+Est varg per-unit min: -0.1882207189044071, max: 0.07660473517683469, mean: -0.04314808956888707
+Publishing to goss.gridappsd.simulation.state-estimator.1561937847.output
+
+
+Estimating state for timestep: 9
+P is 19098 by 19098 with 19098 entries
+P min: -9.827457825049472e-07, max: 0.0001373306731079263, absmin: 1.094383825270358e-08, sum: 0.1131179936129993, mean: 5.923028254948125e-06
+P1 is 19098 by 19098 with 19098 entries
+P1 min: 1, max: 1, absmin: 1, sum: 19098, mean: 1
+P2 is 19098 by 19098 with 19098 entries
+P2 min: -9.827457825049472e-07, max: 0.0001373306731079263, absmin: 1.094383825270358e-08, sum: 0.1131179936129993, mean: 5.923028254948125e-06
+P3 is 19098 by 19098 with 19098 entries
+P3 min: -9.827457825049472e-07, max: 0.0001373306731079263, absmin: 1.094383825270358e-08, sum: 0.1131179936129993, mean: 5.923028254948125e-06
+Q uncertainty scale factor: 0.0003
+Q is 19098 by 19098 with 19098 entries
+Q min: 0.0003, max: 0.000942477796076938, absmin: 0.0003, sum: 11.86442047473735, mean: 0.0006212388980383995
+Ppre is 19098 by 19098 with 19098 entries
+Ppre min: 0.0003000109438382527, max: 0.001079808469184864, absmin: 0.0003000109438382527, sum: 11.97753846835162, mean: 0.0006271619262934138
+x is 19098 by 1 with 19098 entries
+x min: -0.1882207189044071, max: 1.003379122768849, absmin: 1.908051798155206e-05, sum: 8788.689964950505, mean: 0.4601890231935545
+xpre is 19098 by 1 with 19098 entries
+xpre min: -0.1882207189044071, max: 1.003379122768849, absmin: 1.908051798155206e-05, sum: 8788.689964950505, mean: 0.4601890231935545
+calc_J time -- 0:07.101464
+J is 31575 by 19098 with 223425 entries
+J min: -47726.90454035529, max: 47690.47118106837, absmin: 4.273636429756784e-10, sum: 12465.19412100682, mean: 0.05579140257807687
+S1 is 19098 by 31575 with 223425 entries
+S1 min: -47726.90454035529, max: 47690.47118106837, absmin: 4.273636429756784e-10, sum: 12465.19412100689, mean: 0.05579140257807717
+S2 is 19098 by 31575 with 223425 entries
+S2 min: -45.01924223927418, max: 41.44148250656281, absmin: 1.312748882139811e-13, sum: 3.847816528918028, mean: 1.7221960518823e-05
+S3 is 31575 by 31575 with 662041 entries
+S3 min: -3633742.632833752, max: 3633756.882749867, absmin: 1.312748882139811e-13, sum: 6.00675054482269, mean: 9.07307937850177e-06
+Rmat min: 9.796778365340498e-15, max: 0.0001, absmin: 9.796778365340498e-15, sum: 1.246223991349261, mean: 3.946869331272403e-05
+Supd is 31575 by 31575 with 662041 entries
+Supd min: -3633742.632833752, max: 3633756.882749867, absmin: 1.312748882139811e-13, sum: 7.252974537339288, mean: 1.095547637886368e-05
+klu_factor time -- 0:00.044146
+klu_condest Supd condition number: 8.376729637655745e+17
+klu_solve time (bottleneck) -- 0:53.858544
+klu_solve virtual memory: 13.854076 GB, timestep: 9
+K3 is 31575 by 31575 with 996980625 entries
+K3 min: -3484031992.597801, max: 8244649682.261651, absmin: 1.196541595680002e-11, sum: 205069294744719, mean: 205690.3510484158
+K2 is 19098 by 31575 with 223425 entries
+K2 min: -45.01924223927418, max: 41.44148250656281, absmin: 1.312748882139811e-13, sum: 3.847816528918028, mean: 1.7221960518823e-05
+Kupd time (bottleneck) -- 0:26.786417
+Kupd is 19098 by 31575 with 603019350 entries
+Kupd min: -906.3571445279977, max: 539.8840186768211, absmin: 7.105427357601002e-15, sum: 704548.2710164797, mean: 0.001168367600503167
+Kupd Peak virtual memory: 9.451221 GB, timestep: 9
+z is 31575 by 1 with 31575 entries
+z min: -0.00025425, max: 1.03125, absmin: 2.22428465e-06, sum: 12009.05177278109, mean: 0.3803341812440565
+calc_h time -- 0:00.813184
+h is 31575 by 1 with 31575 entries
+h min: -0.6295565775363046, max: 1.018750415351661, absmin: 1.902981652546187e-12, sum: 12011.10339291905, mean: 0.3803991573371037
+yupd is 31575 by 1 with 31575 entries
+yupd min: -0.6376028068460932, max: 0.6295565775363046, absmin: 1.902981652546187e-12, sum: -2.051620138335089, mean: -6.497609305891018e-05
+x1 is 19098 by 1 with 19098 entries
+x1 min: -0.01654961618149293, max: 0.01237568633491915, absmin: 1.565593102170658e-07, sum: -3.061009403090352, mean: -0.0001602790555602865
+xupd is 19098 by 1 with 19098 entries
+xupd min: -0.1919565811709358, max: 1.008409935636841, absmin: 6.803597600881645e-06, sum: 8785.628955547463, mean: 0.4600287441379968
+P4 time -- 0:17.501653
+P4 is 19098 by 19098 with 364733604 entries
+P4 min: -0.05931042996671733, max: 1.000073491293733, absmin: 1.744437927442277e-14, sum: 7677.404124298881, mean: 2.104934681121096e-05
+P5 is 19098 by 19098 with 364733604 entries
+P5 min: -0.04926838640562167, max: 0.1274265019526506, absmin: 1.744437927442277e-14, sum: 11420.59587569888, mean: 3.131215701117269e-05
+Pupd is 19098 by 19098 with 364733604 entries
+Pupd min: -5.319607700341457e-05, max: 0.0001375962160070738, absmin: 5.669395716349191e-18, sum: 9.610546436125508, mean: 2.634949544195415e-08
+Uvmag min: 2.989321977945387e-08, max: 3.947293697061294e-05
+Uvarg min: 6.929090077542443e-08, max: 0.0001375962160070738
+*** Total estimate time: 2:49.570145, timestamp: 1373814491, timestep: 9
+End of estimate virtual memory: 2.711948 GB, timestep: 9
+Meas vmag per-unit min: 0.8979389686779756, max: 1.001492576327639, mean: 0.962850309261129
+Est vmag per-unit min: 0.8886897671169042, max: 1.008409935636841, mean: 0.9633072826373096, % err: 0.5307179905717136
+Est varg per-unit min: -0.1919565811709358, max: 0.07630181021196378, mean: -0.04324979436131977
+Publishing to goss.gridappsd.simulation.state-estimator.1561937847.output
+
+
+Estimating state for timestep: 12
+P is 19098 by 19098 with 19098 entries
+P min: -6.929090077542443e-08, max: 0.0001375962160070738, absmin: 2.989321977945387e-08, sum: 0.1131554451648496, mean: 5.924989274523491e-06
+P1 is 19098 by 19098 with 19098 entries
+P1 min: 1, max: 1, absmin: 1, sum: 19098, mean: 1
+P2 is 19098 by 19098 with 19098 entries
+P2 min: -6.929090077542443e-08, max: 0.0001375962160070738, absmin: 2.989321977945387e-08, sum: 0.1131554451648496, mean: 5.924989274523491e-06
+P3 is 19098 by 19098 with 19098 entries
+P3 min: -6.929090077542443e-08, max: 0.0001375962160070738, absmin: 2.989321977945387e-08, sum: 0.1131554451648496, mean: 5.924989274523491e-06
+Q uncertainty scale factor: 0.0003
+Q is 19098 by 19098 with 19098 entries
+Q min: 0.0003, max: 0.000942477796076938, absmin: 0.0003, sum: 11.86442047473735, mean: 0.0006212388980383995
+Ppre is 19098 by 19098 with 19098 entries
+Ppre min: 0.0003000298932197795, max: 0.001080074012084012, absmin: 0.0003000298932197795, sum: 11.97757591990349, mean: 0.0006271638873129901
+x is 19098 by 1 with 19098 entries
+x min: -0.1919565811709358, max: 1.008409935636841, absmin: 6.803597600881645e-06, sum: 8785.628955547463, mean: 0.4600287441379968
+xpre is 19098 by 1 with 19098 entries
+xpre min: -0.1919565811709358, max: 1.008409935636841, absmin: 6.803597600881645e-06, sum: 8785.628955547463, mean: 0.4600287441379968
+calc_J time -- 0:06.019200
+J is 31575 by 19098 with 223425 entries
+J min: -48004.27201779145, max: 47828.84820285823, absmin: 1.11781143395788e-10, sum: 12465.0973619891, mean: 0.05579096950649705
+S1 is 19098 by 31575 with 223425 entries
+S1 min: -48004.27201779145, max: 47828.84820285823, absmin: 1.11781143395788e-10, sum: 12465.09736198905, mean: 0.05579096950649681
+S2 is 19098 by 31575 with 223425 entries
+S2 min: -45.27694913128632, max: 41.77253200286273, absmin: 3.429625629195885e-14, sum: 3.847796063005933, mean: 1.722186891800798e-05
+S3 is 31575 by 31575 with 662041 entries
+S3 min: -3695528.65926521, max: 3695543.247852725, absmin: 3.429625629195885e-14, sum: 6.005095362466568, mean: 9.070579257880656e-06
+Rmat min: 9.796778365340498e-15, max: 0.0001, absmin: 9.796778365340498e-15, sum: 1.246223991349261, mean: 3.946869331272403e-05
+Supd is 31575 by 31575 with 662041 entries
+Supd min: -3695528.65926521, max: 3695543.247852725, absmin: 3.429625629195885e-14, sum: 7.251319355659808, mean: 1.095297625926462e-05
+klu_factor time -- 0:00.041779
+klu_condest Supd condition number: 8.52050016036347e+17
+klu_solve time (bottleneck) -- 0:53.194928
+klu_solve virtual memory: 13.857407 GB, timestep: 12
+K3 is 31575 by 31575 with 996980625 entries
+K3 min: -3525128205.780104, max: 8299798769.324275, absmin: 8.512143767624991e-10, sum: 204517678041109.1, mean: 205137.0637630085
+K2 is 19098 by 31575 with 223425 entries
+K2 min: -45.27694913128632, max: 41.77253200286273, absmin: 3.429625629195885e-14, sum: 3.847796063005933, mean: 1.722186891800798e-05
+Kupd time (bottleneck) -- 0:45.814187
+Kupd is 19098 by 31575 with 603019350 entries
+Kupd min: -906.6101801818832, max: 543.2168035863433, absmin: 8.512114624270595e-14, sum: 723749.9821691199, mean: 0.001200210212440314
+Kupd Peak virtual memory: 9.454552 GB, timestep: 12
+z is 31575 by 1 with 31575 entries
+z min: -0.00025425, max: 1.03125, absmin: 2.22428465e-06, sum: 12009.05177243849, mean: 0.3803341812332063
+calc_h time -- 0:01.034528
+h is 31575 by 1 with 31575 entries
+h min: -0.6318820464126701, max: 1.025022631217762, absmin: 6.381916593608204e-13, sum: 12008.91730210407, mean: 0.3803299224736046
+yupd is 31575 by 1 with 31575 entries
+yupd min: -0.6399806766129256, max: 0.6318820464126701, absmin: 6.381916593608204e-13, sum: 0.1344703338842427, mean: 4.258759584615763e-06
+x1 is 19098 by 1 with 19098 entries
+x1 min: -0.01676495048807207, max: 0.01589539652852857, absmin: 1.294819164266899e-07, sum: -1.861768054518828, mean: -9.748497510309078e-05
+xupd is 19098 by 1 with 19098 entries
+xupd min: -0.1845433769678824, max: 1.006949635170114, absmin: 1.193196076599478e-05, sum: 8783.7671874929, mean: 0.4599312591628914
+P4 time -- 0:19.376456
+P4 is 19098 by 19098 with 364733604 entries
+P4 min: -0.0588905572593157, max: 1.000680660007845, absmin: 2.171170076950384e-14, sum: 7677.199492492113, mean: 2.104878576664439e-05
+P5 is 19098 by 19098 with 364733604 entries
+P5 min: -0.04862446720102045, max: 0.1266635886752099, absmin: 2.171170076950384e-14, sum: 11420.80050751412, mean: 3.131271805576246e-05
+Pupd is 19098 by 19098 with 364733604 entries
+Pupd min: -5.251373135534667e-05, max: 0.0001368060504053929, absmin: 7.042297601368453e-18, sum: 9.610632365579134, mean: 2.634973103706434e-08
+Uvmag min: 1.669219146288013e-08, max: 3.945510860285991e-05
+Uvarg min: 9.459938814431724e-10, max: 0.0001368060504053929
+*** Total estimate time: 2:48.940399, timestamp: 1373814494, timestep: 12
+End of estimate virtual memory: 2.715279 GB, timestep: 12
+Meas vmag per-unit min: 0.8979389686779756, max: 1.001492576327639, mean: 0.9628503092197662
+Est vmag per-unit min: 0.889357325211614, max: 1.006949635170114, mean: 0.9632025780850496, % err: 0.4943528079300022
+Est varg per-unit min: -0.1845433769678824, max: 0.07557700973031087, mean: -0.04334005975926537
+Publishing to goss.gridappsd.simulation.state-estimator.1561937847.output
+
+
+Estimating state for timestep: 15
+P is 19098 by 19098 with 19098 entries
+P min: -6.415914521733483e-07, max: 0.0001368060504053929, absmin: 9.459938814431724e-10, sum: 0.1131691887980279, mean: 5.92570891182469e-06
+P1 is 19098 by 19098 with 19098 entries
+P1 min: 1, max: 1, absmin: 1, sum: 19098, mean: 1
+P2 is 19098 by 19098 with 19098 entries
+P2 min: -6.415914521733483e-07, max: 0.0001368060504053929, absmin: 9.459938814431724e-10, sum: 0.1131691887980279, mean: 5.92570891182469e-06
+P3 is 19098 by 19098 with 19098 entries
+P3 min: -6.415914521733483e-07, max: 0.0001368060504053929, absmin: 9.459938814431724e-10, sum: 0.1131691887980279, mean: 5.92570891182469e-06
+Q uncertainty scale factor: 0.0003
+Q is 19098 by 19098 with 19098 entries
+Q min: 0.0003, max: 0.000942477796076938, absmin: 0.0003, sum: 11.86442047473735, mean: 0.0006212388980383995
+Ppre is 19098 by 19098 with 19098 entries
+Ppre min: 0.0002999833078085372, max: 0.001079283846482331, absmin: 0.0002999833078085372, sum: 11.97758966353672, mean: 0.0006271646069502945
+x is 19098 by 1 with 19098 entries
+x min: -0.1845433769678824, max: 1.006949635170114, absmin: 1.193196076599478e-05, sum: 8783.767187492898, mean: 0.4599312591628913
+xpre is 19098 by 1 with 19098 entries
+xpre min: -0.1845433769678824, max: 1.006949635170114, absmin: 1.193196076599478e-05, sum: 8783.767187492898, mean: 0.4599312591628913
+calc_J time -- 0:05.735332
+J is 31575 by 19098 with 223425 entries
+J min: -48318.14836045897, max: 47984.95814385568, absmin: 1.141834607611072e-11, sum: 12464.96719796685, mean: 0.05579038692163746
+S1 is 19098 by 31575 with 223425 entries
+S1 min: -48318.14836045897, max: 47984.95814385568, absmin: 1.141834607611072e-11, sum: 12464.96719796695, mean: 0.05579038692163789
+S2 is 19098 by 31575 with 223425 entries
+S2 min: -45.54880256544031, max: 41.93552679331503, absmin: 3.426342832402616e-15, sum: 3.84770478027519, mean: 1.722146035705579e-05
+S3 is 31575 by 31575 with 662041 entries
+S3 min: -3723691.219450605, max: 3723705.804642342, absmin: 3.426342832402616e-15, sum: 6.003642089459889, mean: 9.068384117388333e-06
+Rmat min: 9.796778365340498e-15, max: 0.0001, absmin: 9.796778365340498e-15, sum: 1.246223991349261, mean: 3.946869331272403e-05
+Supd is 31575 by 31575 with 662041 entries
+Supd min: -3723691.219450605, max: 3723705.804642342, absmin: 3.426342832402616e-15, sum: 7.249866079035955, mean: 1.095078111330863e-05
+klu_factor time -- 0:00.043385
+klu_condest Supd condition number: 8.589075692738615e+17
+klu_solve time (bottleneck) -- 0:44.769083
+klu_solve virtual memory: 13.857407 GB, timestep: 15
+K3 is 31575 by 31575 with 996980625 entries
+K3 min: -3523351805.148912, max: 8300488188.234527, absmin: 1.46810092106477e-09, sum: 204884785621949.2, mean: 205505.2831362186
+K2 is 19098 by 31575 with 223425 entries
+K2 min: -45.54880256544031, max: 41.93552679331503, absmin: 3.426342832402616e-15, sum: 3.84770478027519, mean: 1.722146035705579e-05
+Kupd time (bottleneck) -- 0:28.170809
+Kupd is 19098 by 31575 with 603019350 entries
+Kupd min: -906.5970846642076, max: 543.3002366656438, absmin: 1.468101017815769e-13, sum: 733211.929800811, mean: 0.001215901164366966
+Kupd Peak virtual memory: 9.454552 GB, timestep: 15
+z is 31575 by 1 with 31575 entries
+z min: -0.00025425, max: 1.03125, absmin: 2.22428465e-06, sum: 12009.05177606738, mean: 0.3803341813481356
+calc_h time -- 0:00.912224
+h is 31575 by 1 with 31575 entries
+h min: -0.005303441936485662, max: 1.031218503095523, absmin: 2.366304770719435e-13, sum: 12008.29878598216, mean: 0.3803103336811454
+yupd is 31575 by 1 with 31575 entries
+yupd min: -0.06036947435232802, max: 0.04278740723889307, absmin: 2.366304770719435e-13, sum: 0.7529900848136555, mean: 2.384766697747127e-05
+x1 is 19098 by 1 with 19098 entries
+x1 min: -0.01571104193099384, max: 0.008922668438138142, absmin: 1.660969895978619e-07, sum: -1.561833259218953, mean: -8.177993817252872e-05
+xupd is 19098 by 1 with 19098 entries
+xupd min: -0.1818806836790433, max: 1.00428316644938, absmin: 2.409545022848472e-05, sum: 8782.205354233665, mean: 0.459849479224718
+P4 time -- 0:11.794768
+P4 is 19098 by 19098 with 364733604 entries
+P4 min: -0.05896246762441171, max: 1.000820940752533, absmin: 3.878096303290557e-14, sum: 7677.27529969222, mean: 2.104899360929798e-05
+P5 is 19098 by 19098 with 364733604 entries
+P5 min: -0.04882277931083726, max: 0.1268583301272721, absmin: 3.878096303290557e-14, sum: 11420.72470031431, mean: 3.131251021310972e-05
+Pupd is 19098 by 19098 with 364733604 entries
+Pupd min: -5.268935548361779e-05, max: 0.0001369161464980876, absmin: 1.236598960532935e-17, sum: 9.610640339521717, mean: 2.634975289943868e-08
+Uvmag min: 4.082818412243077e-08, max: 3.945445525762885e-05
+Uvarg min: 7.072147019368492e-08, max: 0.0001369161464980876
+*** Total estimate time: 2:11.433201, timestamp: 1373814497, timestep: 15
+End of estimate virtual memory: 2.715279 GB, timestep: 15
+Meas vmag per-unit min: 0.8979389686779756, max: 1.001492576327639, mean: 0.9628503095173742
+Est vmag per-unit min: 0.8907767830763074, max: 1.00428316644938, mean: 0.9631217949557613, % err: 0.4949680551211891
+Est varg per-unit min: -0.1818806836790433, max: 0.07085110196522144, mean: -0.04342283650632529
+Publishing to goss.gridappsd.simulation.state-estimator.1561937847.output
+
+
+Estimating state for timestep: 18
+P is 19098 by 19098 with 19098 entries
+P min: -7.73944462883192e-07, max: 0.0001369161464980876, absmin: 4.082818412243077e-08, sum: 0.1131622230294671, mean: 5.925344173707564e-06
+P1 is 19098 by 19098 with 19098 entries
+P1 min: 1, max: 1, absmin: 1, sum: 19098, mean: 1
+P2 is 19098 by 19098 with 19098 entries
+P2 min: -7.73944462883192e-07, max: 0.0001369161464980876, absmin: 4.082818412243077e-08, sum: 0.1131622230294671, mean: 5.925344173707564e-06
+P3 is 19098 by 19098 with 19098 entries
+P3 min: -7.73944462883192e-07, max: 0.0001369161464980876, absmin: 4.082818412243077e-08, sum: 0.1131622230294671, mean: 5.925344173707564e-06
+Q uncertainty scale factor: 0.0003
+Q is 19098 by 19098 with 19098 entries
+Q min: 0.0003, max: 0.000942477796076938, absmin: 0.0003, sum: 11.86442047473735, mean: 0.0006212388980383995
+Ppre is 19098 by 19098 with 19098 entries
+Ppre min: 0.0002998527834747452, max: 0.001079393942575026, absmin: 0.0002998527834747452, sum: 11.9775826977682, mean: 0.0006271642422121795
+x is 19098 by 1 with 19098 entries
+x min: -0.1818806836790433, max: 1.00428316644938, absmin: 2.409545022848472e-05, sum: 8782.205354233665, mean: 0.459849479224718
+xpre is 19098 by 1 with 19098 entries
+xpre min: -0.1818806836790433, max: 1.00428316644938, absmin: 2.409545022848472e-05, sum: 8782.205354233665, mean: 0.459849479224718
+calc_J time -- 0:05.178271
+J is 31575 by 19098 with 223425 entries
+J min: -47997.88586376077, max: 47825.66673609957, absmin: 4.272329512590267e-11, sum: 12464.95359665829, mean: 0.05579032604524244
+S1 is 19098 by 31575 with 223425 entries
+S1 min: -47997.88586376077, max: 47825.66673609957, absmin: 4.272329512590267e-11, sum: 12464.95359665826, mean: 0.05579032604524232
+S2 is 19098 by 31575 with 223425 entries
+S2 min: -45.2686832020735, max: 42.0145111086896, absmin: 1.328062151163066e-14, sum: 3.847616555398769, mean: 1.722106548237113e-05
+S3 is 31575 by 31575 with 662041 entries
+S3 min: -3735998.641214555, max: 3736013.633573054, absmin: 1.328062151163066e-14, sum: 6.003853287804602, mean: 9.068703128363049e-06
+Rmat min: 9.796778365340498e-15, max: 0.0001, absmin: 9.796778365340498e-15, sum: 1.246223991349261, mean: 3.946869331272403e-05
+Supd is 31575 by 31575 with 662041 entries
+Supd min: -3735998.641214555, max: 3736013.633573054, absmin: 1.328062151163066e-14, sum: 7.250077280838716, mean: 1.095110012950666e-05
+klu_factor time -- 0:00.044617
+klu_condest Supd condition number: 8.617448517090371e+17
+klu_solve time (bottleneck) -- 0:45.984760
+klu_solve virtual memory: 13.857407 GB, timestep: 18
+K3 is 31575 by 31575 with 996980625 entries
+K3 min: -3503141760.724728, max: 8252464150.052409, absmin: 3.869272680034896e-10, sum: 205776704758879.2, mean: 206399.9034674111
+K2 is 19098 by 31575 with 223425 entries
+K2 min: -45.2686832020735, max: 42.0145111086896, absmin: 1.328062151163066e-14, sum: 3.847616555398769, mean: 1.722106548237113e-05
+Kupd time (bottleneck) -- 0:29.641084
+Kupd is 19098 by 31575 with 603019350 entries
+Kupd min: -905.7771496369978, max: 539.9911985762883, absmin: 3.869257345079369e-14, sum: 731846.8839204446, mean: 0.001213637479328722
+Kupd Peak virtual memory: 9.454552 GB, timestep: 18
+z is 31575 by 1 with 31575 entries
+z min: -0.00025425, max: 1.03125, absmin: 2.22428465e-06, sum: 12009.05177287884, mean: 0.3803341812471524
+calc_h time -- 0:00.840915
+h is 31575 by 1 with 31575 entries
+h min: -0.001186560002460909, max: 1.031251850316558, absmin: 5.174563813745103e-13, sum: 12007.97117106014, mean: 0.3802999579116434
+yupd is 31575 by 1 with 31575 entries
+yupd min: -0.04587860831339391, max: 0.04542623775835375, absmin: 5.174563813745103e-13, sum: 1.080601818173373, mean: 3.42233354924267e-05
+x1 is 19098 by 1 with 19098 entries
+x1 min: -0.003082090196168589, max: 0.003941309893477936, absmin: 4.611699982871295e-09, sum: -0.9096679313240992, mean: -4.763158086313222e-05
+xupd is 19098 by 1 with 19098 entries
+xupd min: -0.1799699724290087, max: 1.004074953424971, absmin: 1.021587289230319e-05, sum: 8781.295686302379, mean: 0.4598018476438569
+P4 time -- 0:12.053133
+P4 is 19098 by 19098 with 364733604 entries
+P4 min: -0.05908714803152139, max: 1.000400607999146, absmin: 4.455913041974055e-14, sum: 7677.02686453876, mean: 2.104831246790948e-05
+P5 is 19098 by 19098 with 364733604 entries
+P5 min: -0.04882591427944902, max: 0.1268099060368729, absmin: 4.455913041974055e-14, sum: 11420.97313545328, mean: 3.131319135445848e-05
+Pupd is 19098 by 19098 with 364733604 entries
+Pupd min: -5.269810838231232e-05, max: 0.0001368778444347088, absmin: 1.38500280465455e-17, sum: 9.610728911509044, mean: 2.634999573965508e-08
+Uvmag min: 5.686731450913056e-09, max: 3.94400318160842e-05
+Uvarg min: 4.077600127943439e-08, max: 0.0001368778444347088
+*** Total estimate time: 2:13.365445, timestamp: 1373814500, timestep: 18
+End of estimate virtual memory: 2.715279 GB, timestep: 18
+Meas vmag per-unit min: 0.8979389686779756, max: 1.001492576327639, mean: 0.9628503092596115
+Est vmag per-unit min: 0.8908236723995783, max: 1.004074953424971, mean: 0.9631088460192572, % err: 0.4943290434545098
+Est varg per-unit min: -0.1799699724290087, max: 0.06995567446382497, mean: -0.04350515073154123
+Publishing to goss.gridappsd.simulation.state-estimator.1561937847.output
+
+
+Estimating state for timestep: 21
+P is 19098 by 19098 with 19098 entries
+P min: -1.260421648221162e-07, max: 0.0001368778444347088, absmin: 5.686731450913056e-09, sum: 0.1131573354138136, mean: 5.925088250801845e-06
+P1 is 19098 by 19098 with 19098 entries
+P1 min: 1, max: 1, absmin: 1, sum: 19098, mean: 1
+P2 is 19098 by 19098 with 19098 entries
+P2 min: -1.260421648221162e-07, max: 0.0001368778444347088, absmin: 5.686731450913056e-09, sum: 0.1131573354138136, mean: 5.925088250801845e-06
+P3 is 19098 by 19098 with 19098 entries
+P3 min: -1.260421648221162e-07, max: 0.0001368778444347088, absmin: 5.686731450913056e-09, sum: 0.1131573354138136, mean: 5.925088250801845e-06
+Q uncertainty scale factor: 0.0003
+Q is 19098 by 19098 with 19098 entries
+Q min: 0.0003, max: 0.000942477796076938, absmin: 0.0003, sum: 11.86442047473735, mean: 0.0006212388980383995
+Ppre is 19098 by 19098 with 19098 entries
+Ppre min: 0.0002998798765763737, max: 0.001079355640511647, absmin: 0.0002998798765763737, sum: 11.97757781015243, mean: 0.0006271639862892673
+x is 19098 by 1 with 19098 entries
+x min: -0.1799699724290087, max: 1.004074953424971, absmin: 1.021587289230319e-05, sum: 8781.295686302377, mean: 0.4598018476438568
+xpre is 19098 by 1 with 19098 entries
+xpre min: -0.1799699724290087, max: 1.004074953424971, absmin: 1.021587289230319e-05, sum: 8781.295686302377, mean: 0.4598018476438568
+calc_J time -- 0:05.072390
+J is 31575 by 19098 with 223425 entries
+J min: -47939.12574240378, max: 47796.38312721151, absmin: 1.842242918937415e-11, sum: 12464.95308992328, mean: 0.05579032377721061
+S1 is 19098 by 31575 with 223425 entries
+S1 min: -47939.12574240378, max: 47796.38312721151, absmin: 1.842242918937415e-11, sum: 12464.95308992345, mean: 0.05579032377721139
+S2 is 19098 by 31575 with 223425 entries
+S2 min: -45.19792225797793, max: 41.98446691694965, absmin: 5.72744372974808e-15, sum: 3.847568732562263, mean: 1.722085143812135e-05
+S3 is 31575 by 31575 with 662041 entries
+S3 min: -3732873.671939212, max: 3732888.630126009, absmin: 5.72744372974808e-15, sum: 6.003733846357005, mean: 9.068522714389299e-06
+Rmat min: 9.796778365340498e-15, max: 0.0001, absmin: 9.796778365340498e-15, sum: 1.246223991349261, mean: 3.946869331272403e-05
+Supd is 31575 by 31575 with 662041 entries
+Supd min: -3732873.671939212, max: 3732888.630126009, absmin: 5.72744372974808e-15, sum: 7.249957837276935, mean: 1.095091971233947e-05
+klu_factor time -- 0:00.039096
+klu_condest Supd condition number: 8.610883623918176e+17
+klu_solve time (bottleneck) -- 0:46.777598
+klu_solve virtual memory: 13.857407 GB, timestep: 21
+K3 is 31575 by 31575 with 996980625 entries
+K3 min: -3501040576.959138, max: 8248945241.673355, absmin: 1.521769710244314e-09, sum: 205980889551594.8, mean: 206604.706637699
+K2 is 19098 by 31575 with 223425 entries
+K2 min: -45.19792225797793, max: 41.98446691694965, absmin: 5.72744372974808e-15, sum: 3.847568732562263, mean: 1.722085143812135e-05
+Kupd time (bottleneck) -- 0:26.057896
+Kupd is 19098 by 31575 with 603019350 entries
+Kupd min: -905.9155608674564, max: 539.74428431876, absmin: 1.521770448369153e-13, sum: 730917.6633518034, mean: 0.00121209653280911
+Kupd Peak virtual memory: 9.454552 GB, timestep: 21
+z is 31575 by 1 with 31575 entries
+z min: -0.00025425, max: 1.03125, absmin: 2.22428465e-06, sum: 12009.05177494693, mean: 0.3803341813126501
+calc_h time -- 0:00.762380
+h is 31575 by 1 with 31575 entries
+h min: -0.001141931485227958, max: 1.031252088598107, absmin: 2.090472667847898e-13, sum: 12007.85963605408, mean: 0.380296425528237
+yupd is 31575 by 1 with 31575 entries
+yupd min: -0.04462935684720383, max: 0.04585136800143663, absmin: 2.090472667847898e-13, sum: 1.192138892521784, mean: 3.775578440290686e-05
+x1 is 19098 by 1 with 19098 entries
+x1 min: -0.002810110428213594, max: 0.001698850643123292, absmin: 4.620323439266559e-09, sum: -0.7854233711687904, mean: -4.112594885164888e-05
+xupd is 19098 by 1 with 19098 entries
+xupd min: -0.1784637286538751, max: 1.003937657553529, absmin: 2.428768223777626e-06, sum: 8780.510262931173, mean: 0.4597607216950033
+P4 time -- 0:11.807224
+P4 is 19098 by 19098 with 364733604 entries
+P4 min: -0.05910715301264174, max: 0.9998867300030432, absmin: 2.634538095493133e-14, sum: 7676.989278530297, mean: 2.104820941733215e-05
+P5 is 19098 by 19098 with 364733604 entries
+P5 min: -0.04881678274724033, max: 0.1268230195441622, absmin: 2.634538095493133e-14, sum: 11421.01072147875, mean: 3.131329440508243e-05
+Pupd is 19098 by 19098 with 364733604 entries
+Pupd min: -5.268638915392091e-05, max: 0.0001368871414917103, absmin: 8.350878261732279e-18, sum: 9.610756043771152, mean: 2.635007012891292e-08
+Uvmag min: 3.396739270721796e-08, max: 3.943453129595626e-05
+Uvarg min: 1.608158123121293e-07, max: 0.0001368871414917103
+*** Total estimate time: 2:07.359415, timestamp: 1373814503, timestep: 21
+End of estimate virtual memory: 2.715279 GB, timestep: 21
+Meas vmag per-unit min: 0.8979389686779756, max: 1.00149257680858, mean: 0.962850309425946
+Est vmag per-unit min: 0.8908513371869113, max: 1.003937657553529, mean: 0.9631095466927299, % err: 0.4932821784923024
+Est varg per-unit min: -0.1784637286538751, max: 0.06959478244686795, mean: -0.04358810330272485
+Publishing to goss.gridappsd.simulation.state-estimator.1561937847.output
+
+
+Estimating state for timestep: 24
+P is 19098 by 19098 with 19098 entries
+P min: 3.396739270721796e-08, max: 0.0001368871414917103, absmin: 3.396739270721796e-08, sum: 0.1131571278005442, mean: 5.925077379858842e-06
+P1 is 19098 by 19098 with 19098 entries
+P1 min: 1, max: 1, absmin: 1, sum: 19098, mean: 1
+P2 is 19098 by 19098 with 19098 entries
+P2 min: 3.396739270721796e-08, max: 0.0001368871414917103, absmin: 3.396739270721796e-08, sum: 0.1131571278005442, mean: 5.925077379858842e-06
+P3 is 19098 by 19098 with 19098 entries
+P3 min: 3.396739270721796e-08, max: 0.0001368871414917103, absmin: 3.396739270721796e-08, sum: 0.1131571278005442, mean: 5.925077379858842e-06
+Q uncertainty scale factor: 0.0003
+Q is 19098 by 19098 with 19098 entries
+Q min: 0.0003, max: 0.000942477796076938, absmin: 0.0003, sum: 11.86442047473735, mean: 0.0006212388980383995
+Ppre is 19098 by 19098 with 19098 entries
+Ppre min: 0.0003000339673927072, max: 0.001079364937568648, absmin: 0.0003000339673927072, sum: 11.97757760253924, mean: 0.0006271639754183284
+x is 19098 by 1 with 19098 entries
+x min: -0.1784637286538751, max: 1.003937657553529, absmin: 2.428768223777626e-06, sum: 8780.510262931173, mean: 0.4597607216950033
+xpre is 19098 by 1 with 19098 entries
+xpre min: -0.1784637286538751, max: 1.003937657553529, absmin: 2.428768223777626e-06, sum: 8780.510262931173, mean: 0.4597607216950033
+calc_J time -- 0:04.123073
+J is 31575 by 19098 with 223425 entries
+J min: -47907.93176551136, max: 47780.83004991611, absmin: 7.528633342380704e-12, sum: 12464.95278805573, mean: 0.05579032242611943
+S1 is 19098 by 31575 with 223425 entries
+S1 min: -47907.93176551136, max: 47780.83004991611, absmin: 7.528633342380704e-12, sum: 12464.95278805576, mean: 0.05579032242611954
+S2 is 19098 by 31575 with 223425 entries
+S2 min: -45.16429229690511, max: 41.96879517693111, absmin: 2.340829919016848e-15, sum: 3.847562248725069, mean: 1.722082241792579e-05
+S3 is 31575 by 31575 with 662041 entries
+S3 min: -3730901.708086648, max: 3730916.636755907, absmin: 2.340829919016848e-15, sum: 6.003690975290989, mean: 9.068457958481408e-06
+Rmat min: 9.796778365340498e-15, max: 0.0001, absmin: 9.796778365340498e-15, sum: 1.246223991349261, mean: 3.946869331272403e-05
+Supd is 31575 by 31575 with 662041 entries
+Supd min: -3730901.708086648, max: 3730916.636755907, absmin: 2.340829919016848e-15, sum: 7.249914966660259, mean: 1.09508549571103e-05
+klu_factor time -- 0:00.066054
+klu_condest Supd condition number: 8.609025485005789e+17
+klu_solve time (bottleneck) -- 0:44.412015
+klu_solve virtual memory: 13.857407 GB, timestep: 24
+K3 is 31575 by 31575 with 996980625 entries
+K3 min: -3499228605.619076, max: 8245917511.894552, absmin: 2.990294869009264e-09, sum: 206011145702084.5, mean: 206635.0544195224
+K2 is 19098 by 31575 with 223425 entries
+K2 min: -45.16429229690511, max: 41.96879517693111, absmin: 2.340829919016848e-15, sum: 3.847562248725069, mean: 1.722082241792579e-05
+Kupd time (bottleneck) -- 0:25.119312
+Kupd is 19098 by 31575 with 603019350 entries
+Kupd min: -905.9546436371193, max: 539.5362745844759, absmin: 2.990297083300258e-13, sum: 729784.6673254794, mean: 0.001210217661050975
+Kupd Peak virtual memory: 9.454552 GB, timestep: 24
+z is 31575 by 1 with 31575 entries
+z min: -0.00025425, max: 1.03125, absmin: 2.22428465e-06, sum: 12009.05177418224, mean: 0.3803341812884318
+calc_h time -- 0:00.693512
+h is 31575 by 1 with 31575 entries
+h min: -0.001123544267623123, max: 1.031252083144001, absmin: 4.880727964169787e-14, sum: 12007.8740840964, mean: 0.3802968831067744
+yupd is 31575 by 1 with 31575 entries
+yupd min: -0.0442756021672268, max: 0.04606811469637007, absmin: 4.880727964169787e-14, sum: 1.177690085414591, mean: 3.729818164416756e-05
+x1 is 19098 by 1 with 19098 entries
+x1 min: -0.00225078030517168, max: 0.001258250379082054, absmin: 7.670817802242033e-09, sum: -0.7796138157246484, mean: -4.082175179205406e-05
+xupd is 19098 by 1 with 19098 entries
+xupd min: -0.1772341904996413, max: 1.0038568336777, absmin: 1.378576515565118e-06, sum: 8779.730649115421, mean: 0.4597198999432098
+P4 time -- 0:12.116121
+P4 is 19098 by 19098 with 364733604 entries
+P4 min: -0.05910472067088253, max: 1.000270101765379, absmin: 4.906588102395609e-14, sum: 7676.963009624984, mean: 2.104813739516303e-05
+P5 is 19098 by 19098 with 364733604 entries
+P5 min: -0.04881697666476473, max: 0.1268269585152992, absmin: 4.906588102395609e-14, sum: 11421.0369903754, mean: 3.13133664272278e-05
+Pupd is 19098 by 19098 with 364733604 entries
+Pupd min: -5.268705422652886e-05, max: 0.0001368925721598875, absmin: 1.482735018635785e-17, sum: 9.610766052022591, mean: 2.635009756880693e-08
+Uvmag min: 3.236497200728163e-08, max: 3.943085119430834e-05
+Uvarg min: 1.553073923858607e-07, max: 0.0001368925721598875
+*** Total estimate time: 2:02.924738, timestamp: 1373814506, timestep: 24
+End of estimate virtual memory: 2.715279 GB, timestep: 24
+Meas vmag per-unit min: 0.8979389686779756, max: 1.001492576327639, mean: 0.9628503093729299
+Est vmag per-unit min: 0.8908793969235068, max: 1.0038568336777, mean: 0.9631117973118274, % err: 0.4922709062164506
+Est varg per-unit min: -0.1772341904996413, max: 0.0693752791895019, mean: -0.04367199742540514
+Publishing to goss.gridappsd.simulation.state-estimator.1561937847.output
+
+
+Estimating state for timestep: 27
+P is 19098 by 19098 with 19098 entries
+P min: -2.546193316213474e-07, max: 0.0001368925721598875, absmin: 3.236497200728163e-08, sum: 0.1131564179800967, mean: 5.925040212592766e-06
+P1 is 19098 by 19098 with 19098 entries
+P1 min: 1, max: 1, absmin: 1, sum: 19098, mean: 1
+P2 is 19098 by 19098 with 19098 entries
+P2 min: -2.546193316213474e-07, max: 0.0001368925721598875, absmin: 3.236497200728163e-08, sum: 0.1131564179800967, mean: 5.925040212592766e-06
+P3 is 19098 by 19098 with 19098 entries
+P3 min: -2.546193316213474e-07, max: 0.0001368925721598875, absmin: 3.236497200728163e-08, sum: 0.1131564179800967, mean: 5.925040212592766e-06
+Q uncertainty scale factor: 0.0003
+Q is 19098 by 19098 with 19098 entries
+Q min: 0.0003, max: 0.000942477796076938, absmin: 0.0003, sum: 11.86442047473735, mean: 0.0006212388980383995
+Ppre is 19098 by 19098 with 19098 entries
+Ppre min: 0.0003000323649720073, max: 0.001079370368236826, absmin: 0.0003000323649720073, sum: 11.97757689271877, mean: 0.0006271639382510612
+x is 19098 by 1 with 19098 entries
+x min: -0.1772341904996413, max: 1.0038568336777, absmin: 1.378576515565118e-06, sum: 8779.730649115421, mean: 0.4597198999432098
+xpre is 19098 by 1 with 19098 entries
+xpre min: -0.1772341904996413, max: 1.0038568336777, absmin: 1.378576515565118e-06, sum: 8779.730649115421, mean: 0.4597198999432098
+calc_J time -- 0:04.517513
+J is 31575 by 19098 with 223425 entries
+J min: -47883.37209835312, max: 47768.58122519795, absmin: 2.897233580029353e-11, sum: 12464.95239448093, mean: 0.05579032066456721
+S1 is 19098 by 31575 with 223425 entries
+S1 min: -47883.37209835312, max: 47768.58122519795, absmin: 2.897233580029353e-11, sum: 12464.95239448109, mean: 0.05579032066456792
+S2 is 19098 by 31575 with 223425 entries
+S2 min: -45.15930050292413, max: 41.97510165025736, absmin: 9.008889653501128e-15, sum: 3.847561251418295, mean: 1.722081795420519e-05
+S3 is 31575 by 31575 with 662041 entries
+S3 min: -3729612.061461241, max: 3729626.940412111, absmin: 9.008889653501128e-15, sum: 6.003665409798697, mean: 9.068419342304626e-06
+Rmat min: 9.796778365340498e-15, max: 0.0001, absmin: 9.796778365340498e-15, sum: 1.246223991349261, mean: 3.946869331272403e-05
+Supd is 31575 by 31575 with 662041 entries
+Supd min: -3729612.061461241, max: 3729626.940412111, absmin: 9.008889653501128e-15, sum: 7.249889401122862, mean: 1.095081634086539e-05
+klu_factor time -- 0:00.035834
+klu_condest Supd condition number: 8.608392431499857e+17
+klu_solve time (bottleneck) -- 0:44.602712
+klu_solve virtual memory: 13.857407 GB, timestep: 27
+K3 is 31575 by 31575 with 996980625 entries
+K3 min: -3497461943.019854, max: 8243060325.623363, absmin: 1.904673091908334e-09, sum: 206055396412558.6, mean: 206679.4391441244
+K2 is 19098 by 31575 with 223425 entries
+K2 min: -45.15930050292413, max: 41.97510165025736, absmin: 9.008889653501128e-15, sum: 3.847561251418295, mean: 1.722081795420519e-05
+Kupd time (bottleneck) -- 0:26.870961
+Kupd is 19098 by 31575 with 603019350 entries
+Kupd min: -905.9500757213227, max: 539.3401216915809, absmin: 1.905348844194812e-13, sum: 729333.9428464542, mean: 0.001209470214921717
+Kupd Peak virtual memory: 9.454552 GB, timestep: 27
+z is 31575 by 1 with 31575 entries
+z min: -0.00025425, max: 1.03125, absmin: 2.22428465e-06, sum: 12009.05177215538, mean: 0.38033418122424
+calc_h time -- 0:00.786816
+h is 31575 by 1 with 31575 entries
+h min: -0.001113203770623257, max: 1.031252081807644, absmin: 9.869420801851504e-15, sum: 12007.90382277971, mean: 0.3802978249494761
+yupd is 31575 by 1 with 31575 entries
+yupd min: -0.04411247321160663, max: 0.04623362803183362, absmin: 9.869420801851504e-15, sum: 1.14794937530494, mean: 3.635627475233381e-05
+x1 is 19098 by 1 with 19098 entries
+x1 min: -0.002187163644601079, max: 0.001062034774901216, absmin: 1.034099814990145e-09, sum: -0.7887195716518949, mean: -4.129854286584432e-05
+xupd is 19098 by 1 with 19098 entries
+xupd min: -0.1761918544133717, max: 1.003789764230419, absmin: 6.772030916782639e-06, sum: 8778.94192954386, mean: 0.4596786014003487
+P4 time -- 0:11.405468
+P4 is 19098 by 19098 with 364733604 entries
+P4 min: -0.05910009553322787, max: 0.9999314612796535, absmin: 3.761997376106518e-14, sum: 7676.959064114012, mean: 2.104812657764874e-05
+P5 is 19098 by 19098 with 364733604 entries
+P5 min: -0.04882096422001161, max: 0.1268296250580626, absmin: 3.761997376106518e-14, sum: 11421.04093588708, mean: 3.131337724474403e-05
+Pupd is 19098 by 19098 with 364733604 entries
+Pupd min: -5.269162337203184e-05, max: 0.0001368961391022596, absmin: 1.129071944896998e-17, sum: 9.610768070989462, mean: 2.635010310426308e-08
+Uvmag min: 2.057245517165133e-08, max: 3.942830737581587e-05
+Uvarg min: 2.169415297383356e-07, max: 0.0001368961391022596
+*** Total estimate time: 2:04.884157, timestamp: 1373814509, timestep: 27
+End of estimate virtual memory: 2.715279 GB, timestep: 27
+Meas vmag per-unit min: 0.8979389650840393, max: 1.001492576327639, mean: 0.9628503092098348
+Est vmag per-unit min: 0.890898765977408, max: 1.003789764230419, mean: 0.9631140951831056, % err: 0.4913803857464557
+Est varg per-unit min: -0.1761918544133717, max: 0.06922740747857467, mean: -0.04375689238241035
+Publishing to goss.gridappsd.simulation.state-estimator.1561937847.output
+
+
+Estimating state for timestep: 30
+P is 19098 by 19098 with 19098 entries
+P min: 2.057245517165133e-08, max: 0.0001368961391022596, absmin: 2.057245517165133e-08, sum: 0.1131556939172688, mean: 5.925002299574237e-06
+P1 is 19098 by 19098 with 19098 entries
+P1 min: 1, max: 1, absmin: 1, sum: 19098, mean: 1
+P2 is 19098 by 19098 with 19098 entries
+P2 min: 2.057245517165133e-08, max: 0.0001368961391022596, absmin: 2.057245517165133e-08, sum: 0.1131556939172688, mean: 5.925002299574237e-06
+P3 is 19098 by 19098 with 19098 entries
+P3 min: 2.057245517165133e-08, max: 0.0001368961391022596, absmin: 2.057245517165133e-08, sum: 0.1131556939172688, mean: 5.925002299574237e-06
+Q uncertainty scale factor: 0.0003
+Q is 19098 by 19098 with 19098 entries
+Q min: 0.0003, max: 0.000942477796076938, absmin: 0.0003, sum: 11.86442047473735, mean: 0.0006212388980383995
+Ppre is 19098 by 19098 with 19098 entries
+Ppre min: 0.0003000205724551717, max: 0.001079373935179198, absmin: 0.0003000205724551717, sum: 11.97757616865594, mean: 0.0006271639003380425
+x is 19098 by 1 with 19098 entries
+x min: -0.1761918544133717, max: 1.003789764230419, absmin: 6.772030916782639e-06, sum: 8778.94192954386, mean: 0.4596786014003487
+xpre is 19098 by 1 with 19098 entries
+xpre min: -0.1761918544133717, max: 1.003789764230419, absmin: 6.772030916782639e-06, sum: 8778.94192954386, mean: 0.4596786014003487
+calc_J time -- 0:05.404182
+J is 31575 by 19098 with 223425 entries
+J min: -47862.74076398832, max: 47758.28917939661, absmin: 4.701156860468332e-11, sum: 12464.95209548742, mean: 0.05579031932633957
+S1 is 19098 by 31575 with 223425 entries
+S1 min: -47862.74076398832, max: 47758.28917939661, absmin: 4.701156860468332e-11, sum: 12464.95209548748, mean: 0.05579031932633985
+S2 is 19098 by 31575 with 223425 entries
+S2 min: -45.12432284515585, max: 41.98015112399708, absmin: 1.461914635717249e-14, sum: 3.847557063095539, mean: 1.722079920821546e-05
+S3 is 31575 by 31575 with 662041 entries
+S3 min: -3728603.480570965, max: 3728618.345723155, absmin: 1.461914635717249e-14, sum: 6.003632517409732, mean: 9.068369658993523e-06
+Rmat min: 9.796778365340498e-15, max: 0.0001, absmin: 9.796778365340498e-15, sum: 1.246223991349261, mean: 3.946869331272403e-05
+Supd is 31575 by 31575 with 662041 entries
+Supd min: -3728603.480570965, max: 3728618.345723155, absmin: 1.461914635717249e-14, sum: 7.249856507819293, mean: 1.095076665617279e-05
+klu_factor time -- 0:00.043697
+klu_condest Supd condition number: 8.606503118732133e+17
+klu_solve time (bottleneck) -- 0:44.269442
+klu_solve virtual memory: 13.857407 GB, timestep: 30
+K3 is 31575 by 31575 with 996980625 entries
+K3 min: -3495842353.707308, max: 8240459603.010883, absmin: 4.207568350570814e-10, sum: 206069372644531.5, mean: 206693.4577033847
+K2 is 19098 by 31575 with 223425 entries
+K2 min: -45.12432284515585, max: 41.98015112399708, absmin: 1.461914635717249e-14, sum: 3.847557063095539, mean: 1.722079920821546e-05
+Kupd time (bottleneck) -- 0:26.293939
+Kupd is 19098 by 31575 with 603019350 entries
+Kupd min: -905.9407987118111, max: 539.1622473073658, absmin: 1.420573728094787e-13, sum: 728959.4906177886, mean: 0.001208849252711026
+Kupd Peak virtual memory: 9.454552 GB, timestep: 30
+z is 31575 by 1 with 31575 entries
+z min: -0.00025425, max: 1.03125, absmin: 2.22428465e-06, sum: 12009.05177397445, mean: 0.3803341812818511
+calc_h time -- 0:00.827730
+h is 31575 by 1 with 31575 entries
+h min: -0.00110636014621381, max: 1.031252081572899, absmin: 1.790264628056265e-13, sum: 12007.93251067588, mean: 0.3802987335130919
+yupd is 31575 by 1 with 31575 entries
+yupd min: -0.04405135073063891, max: 0.0463843632482619, absmin: 1.790264628056265e-13, sum: 1.119263298119709, mean: 3.544776874488391e-05
+x1 is 19098 by 1 with 19098 entries
+x1 min: -0.002054903110740815, max: 0.0009206150362607714, absmin: 4.588776502626572e-10, sum: -0.8026382206735432, mean: -4.202734425979387e-05
+xupd is 19098 by 1 with 19098 entries
+xupd min: -0.1752862323362207, max: 1.003729536339919, absmin: 3.422922763688004e-05, sum: 8778.139291323138, mean: 0.4596365740560864
+P4 time -- 0:11.395251
+P4 is 19098 by 19098 with 364733604 entries
+P4 min: -0.05909673092975234, max: 0.9999994041186155, absmin: 2.504520570968671e-14, sum: 7676.95827920274, mean: 2.104812442563625e-05
+P5 is 19098 by 19098 with 364733604 entries
+P5 min: -0.04882478407012908, max: 0.1268305477889107, absmin: 2.504520570968671e-14, sum: 11421.04172079233, mean: 3.131337939674001e-05
+Pupd is 19098 by 19098 with 364733604 entries
+Pupd min: -5.26959203965952e-05, max: 0.0001368975874678498, absmin: 1.247313994126587e-17, sum: 9.610769035160679, mean: 2.635010574775742e-08
+Uvmag min: 4.052199614126801e-08, max: 3.942636369831331e-05
+Uvarg min: 5.618025805875314e-10, max: 0.0001368975874678498
+*** Total estimate time: 2:04.226479, timestamp: 1373814512, timestep: 30
+End of estimate virtual memory: 2.715279 GB, timestep: 30
+Meas vmag per-unit min: 0.8979389686779756, max: 1.001492576327639, mean: 0.962850309347303
+Est vmag per-unit min: 0.8909106274051176, max: 1.003729536339919, mean: 0.9631159177074523, % err: 0.4906525824247036
+Est varg per-unit min: -0.1752862323362207, max: 0.06913120846498987, mean: -0.04384276959528002
+Publishing to goss.gridappsd.simulation.state-estimator.1561937847.output
+
+
+Estimating state for timestep: 33
+P is 19098 by 19098 with 19098 entries
+P min: 5.618025805875314e-10, max: 0.0001368975874678498, absmin: 5.618025805875314e-10, sum: 0.113155485577898, mean: 5.924991390611475e-06
+P1 is 19098 by 19098 with 19098 entries
+P1 min: 1, max: 1, absmin: 1, sum: 19098, mean: 1
+P2 is 19098 by 19098 with 19098 entries
+P2 min: 5.618025805875314e-10, max: 0.0001368975874678498, absmin: 5.618025805875314e-10, sum: 0.113155485577898, mean: 5.924991390611475e-06
+P3 is 19098 by 19098 with 19098 entries
+P3 min: 5.618025805875314e-10, max: 0.0001368975874678498, absmin: 5.618025805875314e-10, sum: 0.113155485577898, mean: 5.924991390611475e-06
+Q uncertainty scale factor: 0.0003
+Q is 19098 by 19098 with 19098 entries
+Q min: 0.0003, max: 0.000942477796076938, absmin: 0.0003, sum: 11.86442047473735, mean: 0.0006212388980383995
+Ppre is 19098 by 19098 with 19098 entries
+Ppre min: 0.0003000405219961413, max: 0.001079375383544788, absmin: 0.0003000405219961413, sum: 11.97757596031659, mean: 0.0006271638894290811
+x is 19098 by 1 with 19098 entries
+x min: -0.1752862323362207, max: 1.003729536339919, absmin: 3.422922763688004e-05, sum: 8778.139291323138, mean: 0.4596365740560864
+xpre is 19098 by 1 with 19098 entries
+xpre min: -0.1752862323362207, max: 1.003729536339919, absmin: 3.422922763688004e-05, sum: 8778.139291323138, mean: 0.4596365740560864
+calc_J time -- 0:04.714705
+J is 31575 by 19098 with 223425 entries
+J min: -47844.93778368097, max: 47749.40628866408, absmin: 4.952687839655426e-11, sum: 12464.95174231571, mean: 0.05579031774562251
+S1 is 19098 by 31575 with 223425 entries
+S1 min: -47844.93778368097, max: 47749.40628866408, absmin: 4.952687839655426e-11, sum: 12464.95174231574, mean: 0.05579031774562266
+S2 is 19098 by 31575 with 223425 entries
+S2 min: -45.108357778683, max: 41.95231225905845, absmin: 1.533623494648209e-14, sum: 3.84755676526994, mean: 1.722079787521513e-05
+S3 is 31575 by 31575 with 662041 entries
+S3 min: -3727811.544793137, max: 3727826.364301649, absmin: 1.533623494648209e-14, sum: 6.003614105439687, mean: 9.06834184807238e-06
+Rmat min: 9.796778365340498e-15, max: 0.0001, absmin: 9.796778365340498e-15, sum: 1.246223991349261, mean: 3.946869331272403e-05
+Supd is 31575 by 31575 with 662041 entries
+Supd min: -3727811.544793137, max: 3727826.364301649, absmin: 1.533623494648209e-14, sum: 7.24983809425727, mean: 1.0950738842847e-05
+klu_factor time -- 0:00.036070
+klu_condest Supd condition number: 8.607002446687181e+17
+klu_solve time (bottleneck) -- 0:45.127497
+klu_solve virtual memory: 13.857407 GB, timestep: 33
+K3 is 31575 by 31575 with 996980625 entries
+K3 min: -3494373124.136215, max: 8238055778.306893, absmin: 4.195584575249838e-09, sum: 206149381758013.9, mean: 206773.7091260062
+K2 is 19098 by 31575 with 223425 entries
+K2 min: -45.108357778683, max: 41.95231225905845, absmin: 1.533623494648209e-14, sum: 3.84755676526994, mean: 1.722079787521513e-05
+Kupd time (bottleneck) -- 0:24.422790
+Kupd is 19098 by 31575 with 603019350 entries
+Kupd min: -905.9334226745859, max: 538.9959626537748, absmin: 4.189981694935341e-13, sum: 729271.2403371719, mean: 0.001209366233997586
+Kupd Peak virtual memory: 9.454552 GB, timestep: 33
+z is 31575 by 1 with 31575 entries
+z min: -0.00025425, max: 1.03125, absmin: 2.22428465e-06, sum: 12009.051771704, mean: 0.3803341812099447
+calc_h time -- 0:01.003741
+h is 31575 by 1 with 31575 entries
+h min: -0.001100032882008112, max: 1.031252081855538, absmin: 2.915747358860814e-13, sum: 12007.95600805014, mean: 0.3802994776896322
+yupd is 31575 by 1 with 31575 entries
+yupd min: -0.04403111062330767, max: 0.04653887230093268, absmin: 2.915747358860814e-13, sum: 1.095763653469835, mean: 3.470352029991559e-05
+x1 is 19098 by 1 with 19098 entries
+x1 min: -0.001908401451777351, max: 0.0008079783238741111, absmin: 6.339506506909696e-10, sum: -0.8093688985685239, mean: -4.237977267611917e-05
+xupd is 19098 by 1 with 19098 entries
+xupd min: -0.1744900436286722, max: 1.003671403124917, absmin: 2.190870258711778e-06, sum: 8777.329922424604, mean: 0.4595941942834121
+P4 time -- 0:12.165964
+P4 is 19098 by 19098 with 364733604 entries
+P4 min: -0.05909522680123557, max: 1.000009212446097, absmin: 1.047955938606598e-14, sum: 7676.977208223262, mean: 2.104817632384446e-05
+P5 is 19098 by 19098 with 364733604 entries
+P5 min: -0.04882770331413444, max: 0.126832166932287, absmin: 1.047955938606598e-14, sum: 11421.02279179506, mean: 3.131332749859555e-05
+Pupd is 19098 by 19098 with 364733604 entries
+Pupd min: -5.269914204040292e-05, max: 0.0001368995188283539, absmin: 1.000343215919097e-17, sum: 9.610764354327181, mean: 2.635009291418945e-08
+Uvmag min: 1.748227162412017e-09, max: 3.942452156707776e-05
+Uvarg min: 8.685705110021073e-09, max: 0.0001368995188283539
+*** Total estimate time: 2:03.916021, timestamp: 1373814515, timestep: 33
+End of estimate virtual memory: 2.715279 GB, timestep: 33
+Meas vmag per-unit min: 0.8979389686779756, max: 1.001492576327639, mean: 0.9628503091679804
+Est vmag per-unit min: 0.8909161975270435, max: 1.003671403124917, mean: 0.9631179559187518, % err: 0.4899700992279508
+Est varg per-unit min: -0.1744900436286722, max: 0.06904167623739571, mean: -0.04392956735192535
+Publishing to goss.gridappsd.simulation.state-estimator.1561937847.output
+
+
+Estimating state for timestep: 36
+P is 19098 by 19098 with 19098 entries
+P min: -8.685705110021073e-09, max: 0.0001368995188283539, absmin: 1.748227162412017e-09, sum: 0.1131541540139868, mean: 5.924921667922652e-06
+P1 is 19098 by 19098 with 19098 entries
+P1 min: 1, max: 1, absmin: 1, sum: 19098, mean: 1
+P2 is 19098 by 19098 with 19098 entries
+P2 min: -8.685705110021073e-09, max: 0.0001368995188283539, absmin: 1.748227162412017e-09, sum: 0.1131541540139868, mean: 5.924921667922652e-06
+P3 is 19098 by 19098 with 19098 entries
+P3 min: -8.685705110021073e-09, max: 0.0001368995188283539, absmin: 1.748227162412017e-09, sum: 0.1131541540139868, mean: 5.924921667922652e-06
+Q uncertainty scale factor: 0.0003
+Q is 19098 by 19098 with 19098 entries
+Q min: 0.0003, max: 0.000942477796076938, absmin: 0.0003, sum: 11.86442047473735, mean: 0.0006212388980383995
+Ppre is 19098 by 19098 with 19098 entries
+Ppre min: 0.0002999982517728376, max: 0.001079377314905292, absmin: 0.0002999982517728376, sum: 11.97757462875262, mean: 0.0006271638197063892
+x is 19098 by 1 with 19098 entries
+x min: -0.1744900436286722, max: 1.003671403124917, absmin: 2.190870258711778e-06, sum: 8777.329922424604, mean: 0.4595941942834121
+xpre is 19098 by 1 with 19098 entries
+xpre min: -0.1744900436286722, max: 1.003671403124917, absmin: 2.190870258711778e-06, sum: 8777.329922424604, mean: 0.4595941942834121
+calc_J time -- 0:04.949841
+J is 31575 by 19098 with 223425 entries
+J min: -47828.62441070795, max: 47741.26519510142, absmin: 5.042911562086394e-11, sum: 12464.95154183851, mean: 0.0557903168483317
+S1 is 19098 by 31575 with 223425 entries
+S1 min: -47828.62441070795, max: 47741.26519510142, absmin: 5.042911562086394e-11, sum: 12464.95154183833, mean: 0.05579031684833088
+S2 is 19098 by 31575 with 223425 entries
+S2 min: -45.08102007251586, max: 41.95386162161999, absmin: 1.561606881744761e-14, sum: 3.84755734828728, mean: 1.722080048466949e-05
+S3 is 31575 by 31575 with 662041 entries
+S3 min: -3726899.504639542, max: 3726914.283003103, absmin: 1.561606881744761e-14, sum: 6.003597754064176, mean: 9.068317149639033e-06
+Rmat min: 9.796778365340498e-15, max: 0.0001, absmin: 9.796778365340498e-15, sum: 1.246223991349261, mean: 3.946869331272403e-05
+Supd is 31575 by 31575 with 662041 entries
+Supd min: -3726899.504639542, max: 3726914.283003103, absmin: 1.561606881744761e-14, sum: 7.249821745974637, mean: 1.095071414908538e-05
+klu_factor time -- 0:00.030784
+klu_condest Supd condition number: 8.60474608935737e+17
+klu_solve time (bottleneck) -- 0:44.465919
+klu_solve virtual memory: 13.857407 GB, timestep: 36
+K3 is 31575 by 31575 with 996980625 entries
+K3 min: -3493033265.876627, max: 8235878459.0336, absmin: 4.263613692079956e-09, sum: 206042290286695.4, mean: 206666.2933261069
+K2 is 19098 by 31575 with 223425 entries
+K2 min: -45.08102007251586, max: 41.95386162161999, absmin: 1.561606881744761e-14, sum: 3.84755734828728, mean: 1.722080048466949e-05
+Kupd time (bottleneck) -- 0:24.943893
+Kupd is 19098 by 31575 with 603019350 entries
+Kupd min: -905.9301696869943, max: 538.8477207091637, absmin: 2.970956813896919e-13, sum: 727950.0790213514, mean: 0.001207175323679665
+Kupd Peak virtual memory: 9.454552 GB, timestep: 36
+z is 31575 by 1 with 31575 entries
+z min: -0.00025425, max: 1.03125, absmin: 2.22428465e-06, sum: 12009.05177508342, mean: 0.3803341813169728
+calc_h time -- 0:00.779356
+h is 31575 by 1 with 31575 entries
+h min: -0.001095126583957618, max: 1.031252082265021, absmin: 1.727599827246445e-13, sum: 12007.98008633179, mean: 0.3803002402638729
+yupd is 31575 by 1 with 31575 entries
+yupd min: -0.04402217224015687, max: 0.04666368252929753, absmin: 1.727599827246445e-13, sum: 1.071688751183553, mean: 3.394105308578157e-05
+x1 is 19098 by 1 with 19098 entries
+x1 min: -0.001720657047334681, max: 0.0007109206951569628, absmin: 5.563978187645065e-09, sum: -0.8216697656565952, mean: -4.302386457516992e-05
+xupd is 19098 by 1 with 19098 entries
+xupd min: -0.173787895250001, max: 1.003631589761179, absmin: 9.459947969723951e-06, sum: 8776.508252658954, mean: 0.4595511704188373
+P4 time -- 0:11.224885
+P4 is 19098 by 19098 with 364733604 entries
+P4 min: -0.05909437347339162, max: 1.000458556582331, absmin: 1.110223024625157e-16, sum: 7676.934042481133, mean: 2.104805797516023e-05
+P5 is 19098 by 19098 with 364733604 entries
+P5 min: -0.048828992776554, max: 0.1268340948929523, absmin: 1.110223024625157e-16, sum: 11421.0659575308, mean: 3.131344584726226e-05
+Pupd is 19098 by 19098 with 364733604 entries
+Pupd min: -5.27006282976247e-05, max: 0.0001369018447839978, absmin: 1.047361269300921e-19, sum: 9.610776403955066, mean: 2.635012595098056e-08
+Uvmag min: 4.051423806376859e-08, max: 3.942324684530547e-05
+Uvarg min: 1.575205288230049e-08, max: 0.0001369018447839978
+*** Total estimate time: 2:03.382291, timestamp: 1373814518, timestep: 36
+End of estimate virtual memory: 2.715279 GB, timestep: 36
+Meas vmag per-unit min: 0.8979389686779756, max: 1.001492576327639, mean: 0.9628503094354732
+Est vmag per-unit min: 0.8909196760217457, max: 1.003631589761179, mean: 0.9631195652827331, % err: 0.4891852529985996
+Est varg per-unit min: -0.173787895250001, max: 0.06893443932419951, mean: -0.04401722444506515
+Publishing to goss.gridappsd.simulation.state-estimator.1561937847.output
+
+
+Estimating state for timestep: 39
+P is 19098 by 19098 with 19098 entries
+P min: -1.375661730381487e-07, max: 0.0001369018447839978, absmin: 1.575205288230049e-08, sum: 0.113153637046442, mean: 5.924894598724577e-06
+P1 is 19098 by 19098 with 19098 entries
+P1 min: 1, max: 1, absmin: 1, sum: 19098, mean: 1
+P2 is 19098 by 19098 with 19098 entries
+P2 min: -1.375661730381487e-07, max: 0.0001369018447839978, absmin: 1.575205288230049e-08, sum: 0.113153637046442, mean: 5.924894598724577e-06
+P3 is 19098 by 19098 with 19098 entries
+P3 min: -1.375661730381487e-07, max: 0.0001369018447839978, absmin: 1.575205288230049e-08, sum: 0.113153637046442, mean: 5.924894598724577e-06
+Q uncertainty scale factor: 0.0003
+Q is 19098 by 19098 with 19098 entries
+Q min: 0.0003, max: 0.000942477796076938, absmin: 0.0003, sum: 11.86442047473735, mean: 0.0006212388980383995
+Ppre is 19098 by 19098 with 19098 entries
+Ppre min: 0.0002998624338269619, max: 0.001079379640860936, absmin: 0.0002998624338269619, sum: 11.97757411178512, mean: 0.0006271637926371935
+x is 19098 by 1 with 19098 entries
+x min: -0.173787895250001, max: 1.003631589761179, absmin: 9.459947969723953e-06, sum: 8776.508252658954, mean: 0.4595511704188373
+xpre is 19098 by 1 with 19098 entries
+xpre min: -0.173787895250001, max: 1.003631589761179, absmin: 9.459947969723953e-06, sum: 8776.508252658954, mean: 0.4595511704188373
+calc_J time -- 0:04.417300
+J is 31575 by 19098 with 223425 entries
+J min: -47813.12480346979, max: 47733.52891916482, absmin: 5.088820475049055e-11, sum: 12464.95130025984, mean: 0.05579031576707994
+S1 is 19098 by 31575 with 223425 entries
+S1 min: -47813.12480346979, max: 47733.52891916482, absmin: 5.088820475049055e-11, sum: 12464.95130025983, mean: 0.05579031576707992
+S2 is 19098 by 31575 with 223425 entries
+S2 min: -45.09496028147654, max: 41.9496353863675, absmin: 1.575856415857975e-14, sum: 3.847554897149929, mean: 1.722078951393053e-05
+S3 is 31575 by 31575 with 662041 entries
+S3 min: -3726338.692061955, max: 3726353.456617495, absmin: 1.575856415857975e-14, sum: 6.003575166223467, mean: 9.068283031146812e-06
+Rmat min: 9.796778365340498e-15, max: 0.0001, absmin: 9.796778365340498e-15, sum: 1.246223991349261, mean: 3.946869331272403e-05
+Supd is 31575 by 31575 with 662041 entries
+Supd min: -3726338.692061955, max: 3726353.456617495, absmin: 1.575856415857975e-14, sum: 7.249799158393696, mean: 1.095068003098554e-05
+klu_factor time -- 0:00.032593
+klu_condest Supd condition number: 8.604673556854301e+17
+klu_solve time (bottleneck) -- 0:44.118155
+klu_solve virtual memory: 13.857407 GB, timestep: 39
+K3 is 31575 by 31575 with 996980625 entries
+K3 min: -3491753674.830573, max: 8233896326.778401, absmin: 1.641560061493852e-09, sum: 206077440056702.4, mean: 206701.5495478685
+K2 is 19098 by 31575 with 223425 entries
+K2 min: -45.09496028147654, max: 41.9496353863675, absmin: 1.575856415857975e-14, sum: 3.847554897149929, mean: 1.722078951393053e-05
+Kupd time (bottleneck) -- 0:25.860108
+Kupd is 19098 by 31575 with 603019350 entries
+Kupd min: -905.9273666669342, max: 538.7102548454423, absmin: 1.641560151699473e-13, sum: 728026.1525353848, mean: 0.001207301478029494
+Kupd Peak virtual memory: 9.454552 GB, timestep: 39
+z is 31575 by 1 with 31575 entries
+z min: -0.00025425, max: 1.03125, absmin: 2.22428465e-06, sum: 12009.05177153928, mean: 0.3803341812047277
+calc_h time -- 0:00.831569
+h is 31575 by 1 with 31575 entries
+h min: -0.001089767805956787, max: 1.031252081795766, absmin: 1.422863247563304e-13, sum: 12008.00030362001, mean: 0.3803008805580366
+yupd is 31575 by 1 with 31575 entries
+yupd min: -0.04393757767916211, max: 0.04675057124949211, absmin: 1.422863247563304e-13, sum: 1.051467919059887, mean: 3.330064668439865e-05
+x1 is 19098 by 1 with 19098 entries
+x1 min: -0.001627343635374746, max: 0.0006427034077826644, absmin: 4.213363855205214e-09, sum: -0.8264499069682851, mean: -4.327415996273354e-05
+xupd is 19098 by 1 with 19098 entries
+xupd min: -0.173153061578524, max: 1.003583501529929, absmin: 3.170561176365832e-06, sum: 8775.681802751993, mean: 0.4595078962588749
+P4 time -- 0:11.684121
+P4 is 19098 by 19098 with 364733604 entries
+P4 min: -0.05909417321722836, max: 1.000172759800535, absmin: 6.699887972433198e-14, sum: 7676.943363029449, mean: 2.104808352955997e-05
+P5 is 19098 by 19098 with 364733604 entries
+P5 min: -0.04883346144391362, max: 0.1268365351308418, absmin: 6.699887972433198e-14, sum: 11421.05663696488, mean: 3.131342029281426e-05
+Pupd is 19098 by 19098 with 364733604 entries
+Pupd min: -5.270556505447114e-05, max: 0.0001369047737375735, absmin: 2.12624217085354e-17, sum: 9.610773749222208, mean: 2.635011867242758e-08
+Uvmag min: 6.440208153628236e-09, max: 3.942212227819032e-05
+Uvarg min: 1.629436832804644e-07, max: 0.0001369047737375735
+*** Total estimate time: 2:04.576240, timestamp: 1373814521, timestep: 39
+End of estimate virtual memory: 2.715279 GB, timestep: 39
+Meas vmag per-unit min: 0.8979389686779756, max: 1.001492576327639, mean: 0.9628503091569816
+Est vmag per-unit min: 0.8909188359558945, max: 1.003583501529929, mean: 0.9631214727765329, % err: 0.4886572014329609
+Est varg per-unit min: -0.173153061578524, max: 0.06886183551721121, mean: -0.0441056802587861
+Publishing to goss.gridappsd.simulation.state-estimator.1561937847.output
+
+
+Estimating state for timestep: 42
+P is 19098 by 19098 with 19098 entries
+P min: -1.629436832804644e-07, max: 0.0001369047737375735, absmin: 6.440208153628236e-09, sum: 0.113153638082382, mean: 5.924894652967954e-06
+P1 is 19098 by 19098 with 19098 entries
+P1 min: 1, max: 1, absmin: 1, sum: 19098, mean: 1
+P2 is 19098 by 19098 with 19098 entries
+P2 min: -1.629436832804644e-07, max: 0.0001369047737375735, absmin: 6.440208153628236e-09, sum: 0.113153638082382, mean: 5.924894652967954e-06
+P3 is 19098 by 19098 with 19098 entries
+P3 min: -1.629436832804644e-07, max: 0.0001369047737375735, absmin: 6.440208153628236e-09, sum: 0.113153638082382, mean: 5.924894652967954e-06
+Q uncertainty scale factor: 0.0003
+Q is 19098 by 19098 with 19098 entries
+Q min: 0.0003, max: 0.000942477796076938, absmin: 0.0003, sum: 11.86442047473735, mean: 0.0006212388980383995
+Ppre is 19098 by 19098 with 19098 entries
+Ppre min: 0.0003000064402081536, max: 0.001079382569814512, absmin: 0.0003000064402081536, sum: 11.97757411282108, mean: 0.000627163792691438
+x is 19098 by 1 with 19098 entries
+x min: -0.173153061578524, max: 1.003583501529929, absmin: 3.170561176365832e-06, sum: 8775.681802751993, mean: 0.4595078962588749
+xpre is 19098 by 1 with 19098 entries
+xpre min: -0.173153061578524, max: 1.003583501529929, absmin: 3.170561176365832e-06, sum: 8775.681802751993, mean: 0.4595078962588749
+calc_J time -- 0:05.326257
+J is 31575 by 19098 with 223425 entries
+J min: -47799.81421734715, max: 47726.88424374084, absmin: 5.352544939121908e-11, sum: 12464.95116267425, mean: 0.05579031515127784
+S1 is 19098 by 31575 with 223425 entries
+S1 min: -47799.81421734715, max: 47726.88424374084, absmin: 5.352544939121908e-11, sum: 12464.95116267429, mean: 0.05579031515127802
+S2 is 19098 by 31575 with 223425 entries
+S2 min: -45.08111013165567, max: 41.95074452985268, absmin: 1.657553939319261e-14, sum: 3.847559155445828, mean: 1.72208085731043e-05
+S3 is 31575 by 31575 with 662041 entries
+S3 min: -3725596.500852904, max: 3725611.223810025, absmin: 1.657553939319261e-14, sum: 6.003571824761683, mean: 9.068277983934051e-06
+Rmat min: 9.796778365340498e-15, max: 0.0001, absmin: 9.796778365340498e-15, sum: 1.246223991349261, mean: 3.946869331272403e-05
+Supd is 31575 by 31575 with 662041 entries
+Supd min: -3725596.500852904, max: 3725611.223810025, absmin: 1.657553939319261e-14, sum: 7.249795814624979, mean: 1.09506749802882e-05
+klu_factor time -- 0:00.044387
+klu_condest Supd condition number: 8.603499895869021e+17
+klu_solve time (bottleneck) -- 0:46.096951
+klu_solve virtual memory: 13.857407 GB, timestep: 42
+K3 is 31575 by 31575 with 996980625 entries
+K3 min: -3490638264.299561, max: 8232130103.8437, absmin: 2.317319095845409e-09, sum: 206153092612870.9, mean: 206777.4312192585
+K2 is 19098 by 31575 with 223425 entries
+K2 min: -45.08111013165567, max: 41.95074452985268, absmin: 1.657553939319261e-14, sum: 3.847559155445828, mean: 1.72208085731043e-05
+Kupd time (bottleneck) -- 0:26.206922
+Kupd is 19098 by 31575 with 603019350 entries
+Kupd min: -905.9279461678534, max: 538.5886533509474, absmin: 1.438849039914203e-13, sum: 728592.9457803492, mean: 0.00120824140349783
+Kupd Peak virtual memory: 9.454552 GB, timestep: 42
+z is 31575 by 1 with 31575 entries
+z min: -0.00025425, max: 1.03125, absmin: 2.22428465e-06, sum: 12009.05177296923, mean: 0.3803341812500153
+calc_h time -- 0:00.823802
+h is 31575 by 1 with 31575 entries
+h min: -0.001086026406385864, max: 1.031252082449827, absmin: 4.405602267106637e-14, sum: 12008.02185538358, mean: 0.3803015631158695
+yupd is 31575 by 1 with 31575 entries
+yupd min: -0.04395189876753822, max: 0.04685592414895468, absmin: 4.405602267106637e-14, sum: 1.029917585299016, mean: 3.2618134134569e-05
+x1 is 19098 by 1 with 19098 entries
+x1 min: -0.001483085524304528, max: 0.0005761060874421783, absmin: 2.126288325106557e-09, sum: -0.8391404927280917, mean: -4.393865811750401e-05
+xupd is 19098 by 1 with 19098 entries
+xupd min: -0.172583764055274, max: 1.003547708085842, absmin: 2.93746777942853e-06, sum: 8774.842662259232, mean: 0.4594639576007557
+P4 time -- 0:11.559715
+P4 is 19098 by 19098 with 364733604 entries
+P4 min: -0.05909419731967901, max: 1.000510651388952, absmin: 2.156883409398271e-13, sum: 7676.965743051745, mean: 2.104814488947321e-05
+P5 is 19098 by 19098 with 364733604 entries
+P5 min: -0.04883456511652787, max: 0.1268362212103247, absmin: 2.156883409398271e-13, sum: 11421.03425693387, mean: 3.131335893287712e-05
+Pupd is 19098 by 19098 with 364733604 entries
+Pupd min: -5.27068993839403e-05, max: 0.0001369048063955621, absmin: 6.532474423079514e-17, sum: 9.610768707836941, mean: 2.635010485032506e-08
+Uvmag min: 3.578720075881596e-08, max: 3.942102803635563e-05
+Uvarg min: 1.569251997418537e-07, max: 0.0001369048063955621
+*** Total estimate time: 2:08.509113, timestamp: 1373814524, timestep: 42
+End of estimate virtual memory: 2.715279 GB, timestep: 42
+Meas vmag per-unit min: 0.8979389686779756, max: 1.001492576327639, mean: 0.9628503092683288
+Est vmag per-unit min: 0.8909180366109239, max: 1.003547708085842, mean: 0.9631227150515352, % err: 0.4881432721469537
+Est varg per-unit min: -0.172583764055274, max: 0.06877397315592305, mean: -0.04419479985002202
+Publishing to goss.gridappsd.simulation.state-estimator.1561937847.output
+
+
+Estimating state for timestep: 45
+P is 19098 by 19098 with 19098 entries
+P min: -1.53266072837428e-07, max: 0.0001369048063955621, absmin: 3.578720075881596e-08, sum: 0.1131529522438032, mean: 5.924858741428591e-06
+P1 is 19098 by 19098 with 19098 entries
+P1 min: 1, max: 1, absmin: 1, sum: 19098, mean: 1
+P2 is 19098 by 19098 with 19098 entries
+P2 min: -1.53266072837428e-07, max: 0.0001369048063955621, absmin: 3.578720075881596e-08, sum: 0.1131529522438032, mean: 5.924858741428591e-06
+P3 is 19098 by 19098 with 19098 entries
+P3 min: -1.53266072837428e-07, max: 0.0001369048063955621, absmin: 3.578720075881596e-08, sum: 0.1131529522438032, mean: 5.924858741428591e-06
+Q uncertainty scale factor: 0.0003
+Q is 19098 by 19098 with 19098 entries
+Q min: 0.0003, max: 0.000942477796076938, absmin: 0.0003, sum: 11.86442047473735, mean: 0.0006212388980383995
+Ppre is 19098 by 19098 with 19098 entries
+Ppre min: 0.0002998467339271626, max: 0.0010793826024725, absmin: 0.0002998467339271626, sum: 11.97757342698251, mean: 0.0006271637567798991
+x is 19098 by 1 with 19098 entries
+x min: -0.172583764055274, max: 1.003547708085842, absmin: 2.93746777942853e-06, sum: 8774.842662259232, mean: 0.4594639576007557
+xpre is 19098 by 1 with 19098 entries
+xpre min: -0.172583764055274, max: 1.003547708085842, absmin: 2.93746777942853e-06, sum: 8774.842662259232, mean: 0.4594639576007557
+calc_J time -- 0:04.571292
+J is 31575 by 19098 with 223425 entries
+J min: -47788.13529936367, max: 47721.05333710126, absmin: 5.554796827154598e-11, sum: 12464.95095159498, mean: 0.05579031420653455
+S1 is 19098 by 31575 with 223425 entries
+S1 min: -47788.13529936367, max: 47721.05333710126, absmin: 5.554796827154598e-11, sum: 12464.95095159473, mean: 0.05579031420653343
+S2 is 19098 by 31575 with 223425 entries
+S2 min: -45.0632307451516, max: 41.93904001249021, absmin: 1.720213377063182e-14, sum: 3.847554541224292, mean: 1.722078792088751e-05
+S3 is 31575 by 31575 with 662041 entries
+S3 min: -3725040.181763344, max: 3725054.883851796, absmin: 1.720213377063182e-14, sum: 6.003545922228137, mean: 9.06823885866304e-06
+Rmat min: 9.796778365340498e-15, max: 0.0001, absmin: 9.796778365340498e-15, sum: 1.246223991349261, mean: 3.946869331272403e-05
+Supd is 31575 by 31575 with 662041 entries
+Supd min: -3725040.181763344, max: 3725054.883851796, absmin: 1.720213377063182e-14, sum: 7.249769915384777, mean: 1.095063585999172e-05
+klu_factor time -- 0:00.050736
+klu_condest Supd condition number: 8.602435344203064e+17
+klu_solve time (bottleneck) -- 0:45.037342
+klu_solve virtual memory: 13.857407 GB, timestep: 45
+K3 is 31575 by 31575 with 996980625 entries
+K3 min: -3489609093.429215, max: 8230470377.96637, absmin: 7.666697277031176e-10, sum: 206005759761322.2, mean: 206629.652167335
+K2 is 19098 by 31575 with 223425 entries
+K2 min: -45.0632307451516, max: 41.93904001249021, absmin: 1.720213377063182e-14, sum: 3.847554541224292, mean: 1.722078792088751e-05
+Kupd time (bottleneck) -- 0:27.342652
+Kupd is 19098 by 31575 with 603019350 entries
+Kupd min: -905.9280678372934, max: 538.4753140169196, absmin: 5.819910525728389e-14, sum: 726858.4468425396, mean: 0.001205365046482405
+Kupd Peak virtual memory: 9.454552 GB, timestep: 45
+z is 31575 by 1 with 31575 entries
+z min: -0.00025425, max: 1.03125, absmin: 2.22428465e-06, sum: 12009.05177303242, mean: 0.3803341812520166
+calc_h time -- 0:00.911914
+h is 31575 by 1 with 31575 entries
+h min: -0.001082459152396819, max: 1.031252082523674, absmin: 2.847260492969909e-13, sum: 12008.03733456592, mean: 0.3803020533512563
+yupd is 31575 by 1 with 31575 entries
+yupd min: -0.04394316163825818, max: 0.04695522806920771, absmin: 2.847260492969909e-13, sum: 1.01443846614342, mean: 3.212790074880189e-05
+x1 is 19098 by 1 with 19098 entries
+x1 min: -0.001330298581799055, max: 0.0005131881326350734, absmin: 4.728782049793049e-09, sum: -0.8451920083787897, mean: -4.425552457737929e-05
+xupd is 19098 by 1 with 19098 entries
+xupd min: -0.1720757076337829, max: 1.003523230388623, absmin: 1.988700899153333e-05, sum: 8773.997470250873, mean: 0.4594197020761794
+P4 time -- 0:12.908083
+P4 is 19098 by 19098 with 364733604 entries
+P4 min: -0.05909458942809727, max: 0.999863556126642, absmin: 3.335729587515546e-14, sum: 7676.903550572875, mean: 2.104797437466956e-05
+P5 is 19098 by 19098 with 364733604 entries
+P5 min: -0.04883428657102579, max: 0.1268375044007815, absmin: 3.335729587515546e-14, sum: 11421.09644941936, mean: 3.131352944769894e-05
+Pupd is 19098 by 19098 with 364733604 entries
+Pupd min: -5.270660054839565e-05, max: 0.0001369061955912327, absmin: 1.055013794027933e-17, sum: 9.610785940628222, mean: 2.635015209793563e-08
+Uvmag min: 4.09387975672247e-08, max: 3.942004206675981e-05
+Uvarg min: 1.295221346160434e-07, max: 0.0001369061955912327
+*** Total estimate time: 2:17.462663, timestamp: 1373814527, timestep: 45
+End of estimate virtual memory: 2.715279 GB, timestep: 45
+Meas vmag per-unit min: 0.8979389686779756, max: 1.001492576327639, mean: 0.9628503092769303
+Est vmag per-unit min: 0.8909169449816847, max: 1.003523230388623, mean: 0.9631239508623749, % err: 0.4875260558437861
+Est varg per-unit min: -0.1720757076337829, max: 0.06866143723806657, mean: -0.04428454671001808
+Publishing to goss.gridappsd.simulation.state-estimator.1561937847.output
+
+
+Estimating state for timestep: 48
+P is 19098 by 19098 with 19098 entries
+P min: 4.09387975672247e-08, max: 0.0001369061955912327, absmin: 4.09387975672247e-08, sum: 0.1131525523398913, mean: 5.924837801858378e-06
+P1 is 19098 by 19098 with 19098 entries
+P1 min: 1, max: 1, absmin: 1, sum: 19098, mean: 1
+P2 is 19098 by 19098 with 19098 entries
+P2 min: 4.09387975672247e-08, max: 0.0001369061955912327, absmin: 4.09387975672247e-08, sum: 0.1131525523398913, mean: 5.924837801858378e-06
+P3 is 19098 by 19098 with 19098 entries
+P3 min: 4.09387975672247e-08, max: 0.0001369061955912327, absmin: 4.09387975672247e-08, sum: 0.1131525523398913, mean: 5.924837801858378e-06
+Q uncertainty scale factor: 0.0003
+Q is 19098 by 19098 with 19098 entries
+Q min: 0.0003, max: 0.000942477796076938, absmin: 0.0003, sum: 11.86442047473735, mean: 0.0006212388980383995
+Ppre is 19098 by 19098 with 19098 entries
+Ppre min: 0.0003000409387975673, max: 0.001079383991668171, absmin: 0.0003000409387975673, sum: 11.97757302707861, mean: 0.0006271637358403291
+x is 19098 by 1 with 19098 entries
+x min: -0.1720757076337829, max: 1.003523230388623, absmin: 1.988700899153333e-05, sum: 8773.997470250873, mean: 0.4594197020761794
+xpre is 19098 by 1 with 19098 entries
+xpre min: -0.1720757076337829, max: 1.003523230388623, absmin: 1.988700899153333e-05, sum: 8773.997470250873, mean: 0.4594197020761794
+calc_J time -- 0:04.644854
+J is 31575 by 19098 with 223425 entries
+J min: -47776.2323049003, max: 47715.10982406683, absmin: 5.675736879172401e-11, sum: 12464.95077906246, mean: 0.05579031343431783
+S1 is 19098 by 31575 with 223425 entries
+S1 min: -47776.2323049003, max: 47715.10982406683, absmin: 5.675736879172401e-11, sum: 12464.95077906263, mean: 0.05579031343431858
+S2 is 19098 by 31575 with 223425 entries
+S2 min: -45.05251084580718, max: 41.93586624849801, absmin: 1.757686349894391e-14, sum: 3.847553561871591, mean: 1.722078353752531e-05
+S3 is 31575 by 31575 with 662041 entries
+S3 min: -3724704.056325621, max: 3724718.739907522, absmin: 1.757686349894391e-14, sum: 6.003531228888392, mean: 9.068216664660333e-06
+Rmat min: 9.796778365340498e-15, max: 0.0001, absmin: 9.796778365340498e-15, sum: 1.246223991349261, mean: 3.946869331272403e-05
+Supd is 31575 by 31575 with 662041 entries
+Supd min: -3724704.056325621, max: 3724718.739907522, absmin: 1.757686349894391e-14, sum: 7.249755221292808, mean: 1.095061366485279e-05
+klu_factor time -- 0:00.046360
+klu_condest Supd condition number: 8.601603697528695e+17
+klu_solve time (bottleneck) -- 0:43.840463
+klu_solve virtual memory: 13.857407 GB, timestep: 48
+K3 is 31575 by 31575 with 996980625 entries
+K3 min: -3488633781.281034, max: 8229009980.910022, absmin: 1.403884064554717e-09, sum: 206027638077719.2, mean: 206651.596742634
+K2 is 19098 by 31575 with 223425 entries
+K2 min: -45.05251084580718, max: 41.93586624849801, absmin: 1.757686349894391e-14, sum: 3.847553561871591, mean: 1.722078353752531e-05
+Kupd time (bottleneck) -- 0:26.924437
+Kupd is 19098 by 31575 with 603019350 entries
+Kupd min: -905.9280718045475, max: 538.3745270522777, absmin: 1.40388568825589e-13, sum: 727080.0478186973, mean: 0.001205732532162852
+Kupd Peak virtual memory: 9.454552 GB, timestep: 48
+z is 31575 by 1 with 31575 entries
+z min: -0.00025425, max: 1.03125, absmin: 2.22428465e-06, sum: 12009.0517724123, mean: 0.380334181232377
+calc_h time -- 0:00.840989
+h is 31575 by 1 with 31575 entries
+h min: -0.001078825600049791, max: 1.031252082863189, absmin: 3.64446830099507e-13, sum: 12008.05244824544, mean: 0.3803025320109404
+yupd is 31575 by 1 with 31575 entries
+yupd min: -0.04386393766269431, max: 0.04700998359770781, absmin: 3.64446830099507e-13, sum: 0.9993241665882784, mean: 3.164922142797398e-05
+x1 is 19098 by 1 with 19098 entries
+x1 min: -0.001245841282245108, max: 0.0004687956567784906, absmin: 2.506338964173628e-09, sum: -0.8524023680679081, mean: -4.463306985380187e-05
+xupd is 19098 by 1 with 19098 entries
+xupd min: -0.17161234380145, max: 1.00348540976004, absmin: 2.558203547097648e-05, sum: 8773.145067882835, mean: 0.4593750690063271
+P4 time -- 0:11.319764
+P4 is 19098 by 19098 with 364733604 entries
+P4 min: -0.05909498338206456, max: 1.000542963916359, absmin: 4.796163466380676e-14, sum: 7676.917888384145, mean: 2.104801368503502e-05
+P5 is 19098 by 19098 with 364733604 entries
+P5 min: -0.04883771175986387, max: 0.1268389383057383, absmin: 4.796163466380676e-14, sum: 11421.08211161435, mean: 3.131349013735062e-05
+Pupd is 19098 by 19098 with 364733604 entries
+Pupd min: -5.271036537741292e-05, max: 0.0001369079195274007, absmin: 4.522294673131973e-17, sum: 9.610782219124387, mean: 2.635014189458777e-08
+Uvmag min: 6.416505041396966e-09, max: 3.941932838529743e-05
+Uvarg min: 1.018210506953723e-07, max: 0.0001369079195274007
+*** Total estimate time: 2:05.153404, timestamp: 1373814530, timestep: 48
+End of estimate virtual memory: 2.715279 GB, timestep: 48
+Meas vmag per-unit min: 0.8979389686779756, max: 1.00149257680858, mean: 0.9628503092289875
+Est vmag per-unit min: 0.8909146692767514, max: 1.00348540976004, mean: 0.9631249679957672, % err: 0.4871525319948136
+Est varg per-unit min: -0.17161234380145, max: 0.06859270472352942, mean: -0.04437482998311672
+Publishing to goss.gridappsd.simulation.state-estimator.1561937847.output
+
+
+Estimating state for timestep: 51
+P is 19098 by 19098 with 19098 entries
+P min: -5.118491801886124e-07, max: 0.0001369079195274007, absmin: 6.416505041396966e-09, sum: 0.1131521687481022, mean: 5.924817716415445e-06
+P1 is 19098 by 19098 with 19098 entries
+P1 min: 1, max: 1, absmin: 1, sum: 19098, mean: 1
+P2 is 19098 by 19098 with 19098 entries
+P2 min: -5.118491801886124e-07, max: 0.0001369079195274007, absmin: 6.416505041396966e-09, sum: 0.1131521687481022, mean: 5.924817716415445e-06
+P3 is 19098 by 19098 with 19098 entries
+P3 min: -5.118491801886124e-07, max: 0.0001369079195274007, absmin: 6.416505041396966e-09, sum: 0.1131521687481022, mean: 5.924817716415445e-06
+Q uncertainty scale factor: 0.0003
+Q is 19098 by 19098 with 19098 entries
+Q min: 0.0003, max: 0.000942477796076938, absmin: 0.0003, sum: 11.86442047473735, mean: 0.0006212388980383995
+Ppre is 19098 by 19098 with 19098 entries
+Ppre min: 0.0003000064165050414, max: 0.001079385715604339, absmin: 0.0003000064165050414, sum: 11.97757264348674, mean: 0.0006271637157548821
+x is 19098 by 1 with 19098 entries
+x min: -0.17161234380145, max: 1.00348540976004, absmin: 2.558203547097648e-05, sum: 8773.145067882835, mean: 0.4593750690063271
+xpre is 19098 by 1 with 19098 entries
+xpre min: -0.17161234380145, max: 1.00348540976004, absmin: 2.558203547097648e-05, sum: 8773.145067882835, mean: 0.4593750690063271
+calc_J time -- 0:04.318862
+J is 31575 by 19098 with 223425 entries
+J min: -47765.88869640265, max: 47709.94435679387, absmin: 5.973815222498582e-11, sum: 12464.95059929648, mean: 0.05579031262972577
+S1 is 19098 by 31575 with 223425 entries
+S1 min: -47765.88869640265, max: 47709.94435679387, absmin: 5.973815222498582e-11, sum: 12464.95059929647, mean: 0.0557903126297257
+S2 is 19098 by 31575 with 223425 entries
+S2 min: -45.02744048998551, max: 41.92473871726693, absmin: 1.850018119721335e-14, sum: 3.847555248080639, mean: 1.722079108461738e-05
+S3 is 31575 by 31575 with 662041 entries
+S3 min: -3724145.488490944, max: 3724160.154871898, absmin: 1.850018119721335e-14, sum: 6.003525510221809, mean: 9.068208026726152e-06
+Rmat min: 9.796778365340498e-15, max: 0.0001, absmin: 9.796778365340498e-15, sum: 1.246223991349261, mean: 3.946869331272403e-05
+Supd is 31575 by 31575 with 662041 entries
+Supd min: -3724145.488490944, max: 3724160.154871898, absmin: 1.850018119721335e-14, sum: 7.249749500613912, mean: 1.095060502387905e-05
+klu_factor time -- 0:00.037553
+klu_condest Supd condition number: 8.600494369580972e+17
+klu_solve time (bottleneck) -- 0:42.451233
+klu_solve virtual memory: 13.857407 GB, timestep: 51
+K3 is 31575 by 31575 with 996980625 entries
+K3 min: -3487775905.668906, max: 8227585254.053387, absmin: 4.916129489764366e-10, sum: 206016268786960.9, mean: 206640.19301976
+K2 is 19098 by 31575 with 223425 entries
+K2 min: -45.02744048998551, max: 41.92473871726693, absmin: 1.850018119721335e-14, sum: 3.847555248080639, mean: 1.722079108461738e-05
+Kupd time (bottleneck) -- 0:26.437149
+Kupd is 19098 by 31575 with 603019350 entries
+Kupd min: -905.9287851787831, max: 538.2766069867648, absmin: 4.916128573293713e-14, sum: 726867.9222831996, mean: 0.001205380759810112
+Kupd Peak virtual memory: 9.454552 GB, timestep: 51
+z is 31575 by 1 with 31575 entries
+z min: -0.00025425, max: 1.03125, absmin: 2.22428465e-06, sum: 12009.05177530923, mean: 0.3803341813241245
+calc_h time -- 0:01.462912
+h is 31575 by 1 with 31575 entries
+h min: -0.00107485797447282, max: 1.031252082796435, absmin: 1.703077689792676e-15, sum: 12008.06504522588, mean: 0.3803029309651902
+yupd is 31575 by 1 with 31575 entries
+yupd min: -0.04382397421345252, max: 0.04710209726599424, absmin: 1.703077689792676e-15, sum: 0.9867300829384665, mean: 3.125035892124993e-05
+x1 is 19098 by 1 with 19098 entries
+x1 min: -0.001138935109098183, max: 0.0004184738270175235, absmin: 1.053348903893812e-10, sum: -0.8571864600259458, mean: -4.488357210314932e-05
+xupd is 19098 by 1 with 19098 entries
+xupd min: -0.1711985883269847, max: 1.003463991269542, absmin: 1.516749649920065e-06, sum: 8772.287881422744, mean: 0.4593301854342206
+P4 time -- 0:12.908333
+P4 is 19098 by 19098 with 364733604 entries
+P4 min: -0.05909602407057112, max: 1.000408211263799, absmin: 1.197778448690581e-13, sum: 7676.909221261049, mean: 2.104798992214891e-05
+P5 is 19098 by 19098 with 364733604 entries
+P5 min: -0.0488385377695825, max: 0.1268391444502457, absmin: 1.197778448690581e-13, sum: 11421.09077874332, mean: 3.131351390025286e-05
+Pupd is 19098 by 19098 with 364733604 entries
+Pupd min: -5.271134113037192e-05, max: 0.0001369083606990705, absmin: 3.782593969881394e-17, sum: 9.610784930494251, mean: 2.635014932842396e-08
+Uvmag min: 4.069340168698224e-08, max: 3.94182865490363e-05
+Uvarg min: 6.4119677260929e-08, max: 0.0001369083606990705
+*** Total estimate time: 2:04.740993, timestamp: 1373814533, timestep: 51
+End of estimate virtual memory: 2.715279 GB, timestep: 51
+Meas vmag per-unit min: 0.8979389686779756, max: 1.001492576327639, mean: 0.9628503094595712
+Est vmag per-unit min: 0.8909124657162663, max: 1.003463991269542, mean: 0.963125931391852, % err: 0.4866801342043456
+Est varg per-unit min: -0.1711985883269847, max: 0.06848581837100401, mean: -0.04446556052341099
+Publishing to goss.gridappsd.simulation.state-estimator.1561937847.output
+
+
+Estimating state for timestep: 54
+P is 19098 by 19098 with 19098 entries
+P min: -1.224982859575024e-07, max: 0.0001369083606990705, absmin: 4.069340168698224e-08, sum: 0.1131531375100038, mean: 5.924868442245459e-06
+P1 is 19098 by 19098 with 19098 entries
+P1 min: 1, max: 1, absmin: 1, sum: 19098, mean: 1
+P2 is 19098 by 19098 with 19098 entries
+P2 min: -1.224982859575024e-07, max: 0.0001369083606990705, absmin: 4.069340168698224e-08, sum: 0.1131531375100038, mean: 5.924868442245459e-06
+P3 is 19098 by 19098 with 19098 entries
+P3 min: -1.224982859575024e-07, max: 0.0001369083606990705, absmin: 4.069340168698224e-08, sum: 0.1131531375100038, mean: 5.924868442245459e-06
+Q uncertainty scale factor: 0.0003
+Q is 19098 by 19098 with 19098 entries
+Q min: 0.0003, max: 0.000942477796076938, absmin: 0.0003, sum: 11.86442047473735, mean: 0.0006212388980383995
+Ppre is 19098 by 19098 with 19098 entries
+Ppre min: 0.0002998775017140425, max: 0.001079386156776009, absmin: 0.0002998775017140425, sum: 11.97757361224863, mean: 0.0006271637664807117
+x is 19098 by 1 with 19098 entries
+x min: -0.1711985883269847, max: 1.003463991269542, absmin: 1.516749649920065e-06, sum: 8772.287881422746, mean: 0.4593301854342207
+xpre is 19098 by 1 with 19098 entries
+xpre min: -0.1711985883269847, max: 1.003463991269542, absmin: 1.516749649920065e-06, sum: 8772.287881422746, mean: 0.4593301854342207
+calc_J time -- 0:04.703240
+J is 31575 by 19098 with 223425 entries
+J min: -47756.39241708443, max: 47705.20154280657, absmin: 6.107363872869729e-11, sum: 12464.9505004592, mean: 0.05579031218735234
+S1 is 19098 by 31575 with 223425 entries
+S1 min: -47756.39241708443, max: 47705.20154280657, absmin: 6.107363872869729e-11, sum: 12464.95050045917, mean: 0.05579031218735222
+S2 is 19098 by 31575 with 223425 entries
+S2 min: -45.02001340194997, max: 41.94014512616652, absmin: 1.891394369539092e-14, sum: 3.847551816413418, mean: 1.722077572524748e-05
+S3 is 31575 by 31575 with 662041 entries
+S3 min: -3723852.679143923, max: 3723867.337080943, absmin: 1.891394369539092e-14, sum: 6.003505558684597, mean: 9.068177890318873e-06
+Rmat min: 9.796778365340498e-15, max: 0.0001, absmin: 9.796778365340498e-15, sum: 1.246223991349261, mean: 3.946869331272403e-05
+Supd is 31575 by 31575 with 662041 entries
+Supd min: -3723852.679143923, max: 3723867.337080943, absmin: 1.891394369539092e-14, sum: 7.249729548805798, mean: 1.095057488706258e-05
+klu_factor time -- 0:00.040934
+klu_condest Supd condition number: 8.599482962224748e+17
+klu_solve time (bottleneck) -- 0:42.888107
+klu_solve virtual memory: 13.857407 GB, timestep: 54
+K3 is 31575 by 31575 with 996980625 entries
+K3 min: -3486968466.315675, max: 8226356279.417883, absmin: 6.187185250250415e-09, sum: 206054790607670.2, mean: 206678.8315045442
+K2 is 19098 by 31575 with 223425 entries
+K2 min: -45.02001340194997, max: 41.94014512616652, absmin: 1.891394369539092e-14, sum: 3.847551816413418, mean: 1.722077572524748e-05
+Kupd time (bottleneck) -- 0:30.888571
+Kupd is 19098 by 31575 with 603019350 entries
+Kupd min: -905.9300563630222, max: 538.1923955881502, absmin: 6.187184011657854e-13, sum: 727124.2788370247, mean: 0.001205805881414957
+Kupd Peak virtual memory: 9.454552 GB, timestep: 54
+z is 31575 by 1 with 31575 entries
+z min: -0.00025425, max: 1.03125, absmin: 2.22428465e-06, sum: 12009.05177265874, mean: 0.3803341812401817
+calc_h time -- 0:00.844795
+h is 31575 by 1 with 31575 entries
+h min: -0.001072222210229905, max: 1.031252082808626, absmin: 4.140410831291198e-13, sum: 12008.07673490585, mean: 0.3803033011846667
+yupd is 31575 by 1 with 31575 entries
+yupd min: -0.04376101674168345, max: 0.04715769040034801, absmin: 4.140410831291198e-13, sum: 0.9750377525769138, mean: 3.088005550520709e-05
+x1 is 19098 by 1 with 19098 entries
+x1 min: -0.001062062341012203, max: 0.0003797256720879258, absmin: 2.964640633505974e-09, sum: -0.860571937548632, mean: -4.506084079739408e-05
+xupd is 19098 by 1 with 19098 entries
+xupd min: -0.1708236632867398, max: 1.00343403876862, absmin: 3.315301920499389e-06, sum: 8771.42730948518, mean: 0.4592851245934224
+P4 time -- 0:11.769487
+P4 is 19098 by 19098 with 364733604 entries
+P4 min: -0.05909629776479525, max: 0.9998645025004742, absmin: 7.369231872671796e-14, sum: 7676.917010746795, mean: 2.104801127879293e-05
+P5 is 19098 by 19098 with 364733604 entries
+P5 min: -0.04883957023411756, max: 0.1268396103347452, absmin: 7.369231872671796e-14, sum: 11421.0829892609, mean: 3.131349254361794e-05
+Pupd is 19098 by 19098 with 364733604 entries
+Pupd min: -5.27124771748236e-05, max: 0.0001369089195261871, absmin: 2.327793954041885e-17, sum: 9.610783984302122, mean: 2.635014673422338e-08
+Uvmag min: 4.065487567746015e-08, max: 3.941766931558279e-05
+Uvarg min: 1.511510020393958e-07, max: 0.0001369089195261871
+*** Total estimate time: 2:10.820876, timestamp: 1373814536, timestep: 54
+End of estimate virtual memory: 2.715279 GB, timestep: 54
+Meas vmag per-unit min: 0.8979389686779756, max: 1.001492576327639, mean: 0.9628503092489217
+Est vmag per-unit min: 0.8909093831520556, max: 1.00343403876862, mean: 0.9631269737047281, % err: 0.4863771824057355
+Est varg per-unit min: -0.1708236632867398, max: 0.06840587823916552, mean: -0.04455672451788265
+Publishing to goss.gridappsd.simulation.state-estimator.1561937847.output
+
+Got COMPLETED for simulation status, normal exit because full estimate just done
