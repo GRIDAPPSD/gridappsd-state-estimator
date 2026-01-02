@@ -1787,6 +1787,17 @@ class SELoopWorker {
             *selog << "\tERROR: KLU message: " << msg << "\n" << std::flush;
             throw "klu_error";
         }
+#if 000
+        // GDB 1/2/26: Check the validity of the matrix inverse by recreating
+        // an identity matrix as Supd*K3 and comparing this to an actual
+        // identity matrix
+        cs *newIdentity = cs_multiply(Supd,K3);
+        cs *negIdentity = gs_singleval_diagonal(zqty,-1.0);
+        cs *diffIdentity = cs_add(newIdentity,negIdentity,1,1);
+        print_cs_summary(diffIdentity, "diffIdentity");
+        print_cs_stats(diffIdentity, "diffIdentity");
+	exit(0);
+#endif
 #ifndef GADAL_INTERFACE
         cs_spfree(Supd);
 #endif
