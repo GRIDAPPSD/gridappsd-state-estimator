@@ -337,11 +337,11 @@ namespace state_estimator_util{
 #ifdef PLATFORM_OLD
         json jregs = sparql_query(gad,"regs",
                 sparq_ratio_tap_changer_nodes_old(gad.modelID));
-        *selog << "SPARQ_RATIO_TAP_CHANGER_OLD returns (" << jregs.dump(2) << ")\n";
+        //*selog << "SPARQ_RATIO_TAP_CHANGER_OLD returns (" << jregs.dump(2) << ")\n";
 #else
         json jregs = sparql_query(gad,"regs",
                 sparq_ratio_tap_changer_nodes(gad.modelID));
-        *selog << "SPARQ_RATIO_TAP_CHANGER returns (" << jregs.dump(2) << ")\n";
+        //*selog << "SPARQ_RATIO_TAP_CHANGER returns (" << jregs.dump(2) << ")\n";
 #endif
 
         // *selog << jregs.dump(2);
