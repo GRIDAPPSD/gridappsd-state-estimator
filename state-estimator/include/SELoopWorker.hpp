@@ -270,6 +270,10 @@ class SELoopWorker {
             // ----------------------------------------------------------------
             // Estimate the state
             // ----------------------------------------------------------------
+#if 000
+            *selog << "\nSkip estimating state for timestep: " << timestamp-timeZero << "\n" << std::flush;
+	    continue;
+#endif
 #ifdef DEBUG_PRIMARY
             *selog << "\nEstimating state for timestep: " << timestamp-timeZero << "\n" << std::flush;
 #endif
