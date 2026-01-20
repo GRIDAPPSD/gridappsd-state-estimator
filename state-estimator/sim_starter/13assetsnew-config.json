@@ -12,10 +12,12 @@
    "simulation_config":{
        "start_time":"1593118960",
        "duration":"120",
+       "duration_14days":"1209600",
        "simulator":"GridLAB-D",
        "timestep_frequency":"1000",
        "timestep_increment":"1000",
        "run_realtime":true,
+       "run_realtime_false":false,
        "simulation_name":"ieee13nodecktassets",
        "power_flow_solver_method":"NR",
        "model_creation_config":{
