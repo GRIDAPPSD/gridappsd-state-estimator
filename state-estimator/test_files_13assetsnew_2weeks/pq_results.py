@@ -59,7 +59,7 @@ def _main():
       items = line.split(',')
       if items[0] == 'Nodename': # skip header
         continue
-      vnom_dict[items[0]] = float(items[1])
+      vnom_dict[items[0]] = (float(items[1]), float(items[2]))
 
   node_name = []
   vnom_list = []
@@ -99,9 +99,9 @@ def _main():
       V_ang = np.zeros(num_nodes, dtype=float)
 
       for idx in range(num_nodes):
-        #V_mag[idx] = float(items[idx+1]) * vnom_list[idx]/1000.0
-        V_mag[idx] = float(items[idx+1]) * vnom_list[idx]
-        V_ang[idx] = float(items[num_nodes+idx+1])
+        V_mag[idx] = float(items[idx+1]) * vnom_list[idx][0]
+        #V_ang[idx] = float(items[num_nodes+idx+1])
+        V_ang[idx] = math.radians(vnom_list[idx][1])
       #print(V_mag)
       #print(V_ang)
 
