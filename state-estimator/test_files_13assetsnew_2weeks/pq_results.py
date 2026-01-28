@@ -115,8 +115,8 @@ def _main():
       #print(S)
 
       for idx in range(num_nodes):
-        fout.write(items[0] + ',' + node_name[idx] + ',' + str(S[idx].real/1000.0) + ',' + str(S[idx].imag) + ',' + str(V_mag[idx]) + ',' + str(math.degrees(V_ang[idx])) + ',' + str(V_ang[idx]) + '\n')
-        print(node_name[idx] + ': P: ' + str(S[idx].real/1000.0) + ', Q: ' + str(S[idx].imag))
+        fout.write(items[0] + ',' + node_name[idx] + ',' + str(S[idx].real/1000.0) + ',' + str(S[idx].imag/1000.0) + ',' + str(V_mag[idx]) + ',' + str(math.degrees(V_ang[idx])) + ',' + str(V_ang[idx]) + '\n')
+        print(node_name[idx] + ': P: ' + str(S[idx].real/1000.0) + ', Q: ' + str(S[idx].imag/1000.0))
 
       break # debug break after first timestamp
 
