@@ -53,11 +53,23 @@ import numpy as np
 
 
 def _main():
+  vnom_dict = {}
+  with open('vnom.csv', 'r') as fin:
+    for line in fin:
+      items = line.split(',')
+      if items[0] == 'Nodename': # skip header
+        continue
+      vnom_dict[items[0]] = float(items[1])
+
   node_name = []
+  vnom_list = []
   with open('nodelist.csv', 'r') as fin:
     for line in fin:
-      node_name.append(line.strip('\"\n'))
+      name = line.strip('\"\n')
+      node_name.append(name)
+      vnom_list.append(vnom_dict[name])
   print(node_name)
+  print(vnom_list)
 
   num_nodes = len(node_name)
   Y = np.zeros((num_nodes, num_nodes), dtype=complex)
@@ -87,7 +99,7 @@ def _main():
       V_ang = np.zeros(num_nodes, dtype=float)
 
       for idx in range(num_nodes):
-        V_mag[idx] = float(items[idx+1])
+        V_mag[idx] = float(items[idx+1]) * vnom_list[idx]/1000.0
         V_ang[idx] = float(items[num_nodes+idx+1])
       #print(V_mag)
       #print(V_ang)
