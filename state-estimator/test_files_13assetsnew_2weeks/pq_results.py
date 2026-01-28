@@ -81,7 +81,7 @@ def _main():
       items = line.split(',')
       if items[0] == 'timestamp': # skip header
         continue
-      print('timestamp: ' + items[0])
+      print('\ntimestamp: ' + items[0])
 
       V_mag = np.zeros(num_nodes, dtype=float)
       V_ang = np.zeros(num_nodes, dtype=float)
@@ -99,7 +99,7 @@ def _main():
       #print(I)
 
       S = V * np.conj(I)
-      print(S)
+      #print(S)
 
       for idx in range(num_nodes):
         fout.write(items[0] + ',' + node_name[idx] + ',' + str(S[idx].real) + ',' + str(S[idx].imag) + ',' + str(V_mag[idx]) + ',' + str(math.degrees(V_ang[idx])) + ',' + str(V_ang[idx]) + '\n')
