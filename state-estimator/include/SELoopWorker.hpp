@@ -902,7 +902,7 @@ class SELoopWorker {
         *selog << "Writing results to test harness file: " << filename << "\n\n" << std::flush;
 #endif
         results_fh.open(filename,std::ofstream::out);
-        results_fh << "timestamp,";
+        results_fh << "timestamp";
         for ( auto& node_name : node_names )
             results_fh << ',' << "vmag_"+node_name;
         for ( auto& node_name : node_names )
@@ -1243,8 +1243,12 @@ class SELoopWorker {
             ofh_data.open("test_files/simulation_data.csv", std::ofstream::out);
 
             ofh_data << "timestamp";
+            //for ( auto& node_name : node_names )
+            //    ofh_data << ",vmag_" << node_name << ",varg_" << node_name;
             for ( auto& node_name : node_names )
-                ofh_data << ',' << "vmag_" << node_name << ",varg_" << node_name;
+                ofh_data << ",vmag_" << node_name;
+            for ( auto& node_name : node_names )
+                ofh_data << ",varg_" << node_name;
             ofh_data << '\n';
             ofh_data.close();
 
@@ -1254,8 +1258,16 @@ class SELoopWorker {
 
         ofh_data << timestamp;
 
+        //for ( auto& node_name : node_names )
+        //    ofh_data << ',' << node_mag[node_name] << ',' << node_ang[node_name];
         for ( auto& node_name : node_names )
-            ofh_data << ',' << node_mag[node_name] << ',' << node_ang[node_name];
+            ofh_data << ',' << node_mag[node_name];
+        for ( auto& node_name : node_names )
+            //ofh_data << ',' << node_ang[node_name];
+            // GDB 2/2/26: Convert to degrees to compare with results_data.csv
+            // angles and add 30 degrees as the magic offset that SHIVA
+            // came up with
+            ofh_data << ',' <<  180.0/M_PI * node_ang[node_name] + 30.0;
         ofh_data << '\n';
         ofh_data.close();
 
@@ -1429,7 +1441,10 @@ class SELoopWorker {
         for ( auto& node_name : node_names )
             results_fh << ',' << est_vmagpu[node_name];
         for ( auto& node_name : node_names )
-            results_fh << ',' << est_vargpu[node_name];
+            // GDB 2/2/26: The per-unit varg_pu isn't what we want for use with
+            // the forecasting app so output the est_angle in degrees instead
+            //results_fh << ',' << est_vargpu[node_name];
+            results_fh << ',' << est_angle[node_name];
         results_fh << '\n';
         results_fh.close();
 #endif
