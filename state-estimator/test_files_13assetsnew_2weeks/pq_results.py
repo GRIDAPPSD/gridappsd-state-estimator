@@ -100,8 +100,8 @@ def _main():
 
       for idx in range(num_nodes):
         V_mag[idx] = float(items[idx+1]) * vnom_list[idx][0]
-        #V_ang[idx] = float(items[num_nodes+idx+1])
-        V_ang[idx] = math.radians(vnom_list[idx][1])
+        V_ang[idx] = math.radians(float(items[num_nodes+idx+1]))
+        #V_ang[idx] = math.radians(vnom_list[idx][1])
       #print(V_mag)
       #print(V_ang)
 
