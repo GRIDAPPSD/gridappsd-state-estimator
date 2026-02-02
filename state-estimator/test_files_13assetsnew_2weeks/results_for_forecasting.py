@@ -85,7 +85,7 @@ def _main():
                          complex(float(items[2]), float(items[3]))
   #print(Y)
 
-  fout = open('13node_se_results.csv', 'w')
+  fout = open('results_for_forecasting_data.csv', 'w')
   fout.write('Timestamp,Node,kW,kvar,Voltage_pu,Angle_deg,Angle_rad\n')
 
   with open('results_data.csv', 'r') as fin:
