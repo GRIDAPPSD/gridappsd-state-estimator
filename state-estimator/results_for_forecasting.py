@@ -102,7 +102,7 @@ def _main():
       if timestamp % skipSec != 0:
         continue
 
-      print('timestamp: ' + items[0])
+      print('timestamp: ' + items[0], flush=True)
 
       V_mag = np.zeros(num_nodes, dtype=float)
       V_ang = np.zeros(num_nodes, dtype=float)
