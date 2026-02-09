@@ -88,8 +88,8 @@ def _main():
   fout = open('results_for_forecasting_data.csv', 'w')
   fout.write('Timestamp,Node,kW,kvar,Voltage_pu,Angle_deg,Angle_rad\n')
 
-  #skipMin = 1 # Don't skip any timestamps
-  skipMin = 15 # Skip 15 minutes of timestamps
+  skipMin = 1 # Don't skip any timestamps
+  #skipMin = 15 # Skip 15 minutes of timestamps
   skipSec = skipMin*60
 
   with open('results_data.csv', 'r') as fin:
@@ -104,10 +104,12 @@ def _main():
 
       print('timestamp: ' + items[0], flush=True)
 
+      V_mag_pu = np.zeros(num_nodes, dtype=float)
       V_mag = np.zeros(num_nodes, dtype=float)
       V_ang = np.zeros(num_nodes, dtype=float)
 
       for idx in range(num_nodes):
+        V_mag_pu[idx] = float(items[idx+1])
         V_mag[idx] = float(items[idx+1]) * vnom_list[idx][0]
         V_ang[idx] = math.radians(float(items[num_nodes+idx+1]))
         #V_ang[idx] = math.radians(vnom_list[idx][1])
@@ -124,7 +126,7 @@ def _main():
       #print(S)
 
       for idx in range(num_nodes):
-        fout.write(items[0] + ',' + node_name[idx] + ',' + str(S[idx].real/1000.0) + ',' + str(S[idx].imag/1000.0) + ',' + str(V_mag[idx]) + ',' + str(math.degrees(V_ang[idx])) + ',' + str(V_ang[idx]) + '\n')
+        fout.write(items[0] + ',' + node_name[idx] + ',' + str(S[idx].real/1000.0) + ',' + str(S[idx].imag/1000.0) + ',' + str(V_mag_pu[idx]) + ',' + str(math.degrees(V_ang[idx])) + ',' + str(V_ang[idx]) + '\n')
         #print(node_name[idx] + ': P: ' + str(S[idx].real/1000.0) + ', Q: ' + str(S[idx].imag/1000.0))
 
       #break # debug break after first timestamp
