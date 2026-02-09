@@ -1267,7 +1267,10 @@ class SELoopWorker {
             // GDB 2/2/26: Convert to degrees to compare with results_data.csv
             // angles and add 30 degrees as the magic offset that SHIVA
             // came up with
-            ofh_data << ',' <<  180.0/M_PI * node_ang[node_name] + 30.0;
+            // GDB 2/9/26: The 30 degree offset is only needed for the 13
+            // node model so don't add that
+            //ofh_data << ',' <<  180.0/M_PI * node_ang[node_name] + 30.0;
+            ofh_data << ',' <<  180.0/M_PI * node_ang[node_name];
         ofh_data << '\n';
         ofh_data.close();
 
