@@ -91,11 +91,18 @@ def _main():
   skipMin = 1 # Don't skip any timestamps
   #skipMin = 15 # Skip 15 minutes of timestamps
   skipSec = skipMin*60
+  lineCount = 0
 
   with open('results_data.csv', 'r') as fin:
     for line in fin:
       items = line.split(',')
       if items[0] == 'timestamp': # skip header
+        continue
+
+      # discard the first 12 timestamps because state estimates are off
+      # and would result in bad training data
+      lineCount += 1
+      if lineCount <= 12:
         continue
 
       timestamp = int(items[0])
