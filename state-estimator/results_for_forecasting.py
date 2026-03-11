@@ -80,9 +80,18 @@ def _main():
       if items[0] == 'Row': # skip header
         continue
 
+      '''
       Y[int(items[0])-1][int(items[1])-1] = \
       Y[int(items[1])-1][int(items[0])-1] = \
                          complex(float(items[2]), float(items[3]))
+      '''
+      r = int(items[0]) - 1
+      c = int(items[1]) - 1
+      yrc = complex(float(items[2]), float(items[3]))
+      Y[r,c] += yrc
+      if r != c:
+        Y[c,r] += yrc
+
   #print(Y)
 
   fout = open('results_for_forecasting_data.csv', 'w')
