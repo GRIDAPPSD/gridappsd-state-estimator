@@ -102,7 +102,11 @@ def _main():
   skipSec = skipMin*60
   lineCount = 0
 
+  skipEstimates = 12 # for results_data.csv
+  #skipEstimates = 0 # for avijit_data.csv
+
   with open('results_data.csv', 'r') as fin:
+  #with open('avijit_data.csv', 'r') as fin:
     for line in fin:
       items = line.split(',')
       if items[0] == 'timestamp': # skip header
@@ -111,7 +115,7 @@ def _main():
       # discard the first 12 timestamps because state estimates are off
       # and would result in bad training data
       lineCount += 1
-      if lineCount <= 12:
+      if lineCount <= skipEstimates:
         continue
 
       timestamp = int(items[0])
@@ -127,6 +131,7 @@ def _main():
       for idx in range(num_nodes):
         V_mag_pu[idx] = float(items[idx+1])
         V_mag[idx] = float(items[idx+1]) * vnom_list[idx][0]
+        #V_mag[idx] = float(items[idx+1]) # for avijit_data.csv
         V_ang[idx] = math.radians(float(items[num_nodes+idx+1]))
         #V_ang[idx] = math.radians(vnom_list[idx][1])
       #print(V_mag)
