@@ -129,12 +129,12 @@ def _main():
       I = Y @ V
       #print(I)
 
-      S = V * np.conj(I)
+      S = V * np.conj(I) / 1000.0
       #print(S)
 
       for idx in range(num_nodes):
-        fout.write(items[0] + ',' + node_name[idx] + ',' + str(S[idx].real/1000.0) + ',' + str(S[idx].imag/1000.0) + ',' + str(V_mag_pu[idx]) + ',' + str(math.degrees(V_ang[idx])) + ',' + str(V_ang[idx]) + '\n')
-        #print(node_name[idx] + ': P: ' + str(S[idx].real/1000.0) + ', Q: ' + str(S[idx].imag/1000.0))
+        fout.write(items[0] + ',' + node_name[idx] + ',' + str(S[idx].real) + ',' + str(S[idx].imag) + ',' + str(V_mag_pu[idx]) + ',' + str(math.degrees(V_ang[idx])) + ',' + str(V_ang[idx]) + '\n')
+        #print(node_name[idx] + ': P: ' + str(S[idx].real) + ', Q: ' + str(S[idx].imag))
 
       #break # debug break after first timestamp
 
