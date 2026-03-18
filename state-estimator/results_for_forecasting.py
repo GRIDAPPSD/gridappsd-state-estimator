@@ -53,6 +53,10 @@ import numpy as np
 
 
 def _main():
+  # Flag for choosing whether to get Y from static_ybus.csv or ysparse.csv
+  static_ybus_flag = False
+  #static_ybus_flag = True
+
   vnom_dict = {}
   with open('vnom.csv', 'r') as fin:
     for line in fin:
@@ -61,36 +65,61 @@ def _main():
         continue
       vnom_dict[items[0]] = (float(items[1]), float(items[2]))
 
+
   node_name = []
   vnom_list = []
+  # node_dict is mapping from name to index for filling Y from static_ybus.csv
+  node_dict = {}
+  node_idx = 0
   with open('nodelist.csv', 'r') as fin:
     for line in fin:
       name = line.strip('\"\n')
       node_name.append(name)
       vnom_list.append(vnom_dict[name])
+      node_dict[name] = node_idx
+      node_idx += 1
   #print(node_name)
   #print(vnom_list)
 
   num_nodes = len(node_name)
   Y = np.zeros((num_nodes, num_nodes), dtype=complex)
 
-  with open('ysparse.csv', 'r') as fin:
-    for line in fin:
-      items = line.split(',')
-      if items[0] == 'Row': # skip header
-        continue
+  if static_ybus_flag:
+    with open('static_ybus.csv', 'r') as fin:
+      for line in fin:
+        items = line.split(',')
+        r = node_dict[items[0]]
+        c = node_dict[items[1]]
+        yrc = complex(float(items[2]), float(items[3]))
+        Y[r,c] = yrc
+      '''
+      # check for symmetric Y
+      for row in range(num_nodes):
+        for col in range(num_nodes):
+          if Y[row,col] != Y[col,row]:
+            print(str(row) + ',' + str(col) + ',' + str(Y[row,col]) + ',' + str(Y[col,row]))
+      '''
 
-      '''
-      Y[int(items[0])-1][int(items[1])-1] = \
-      Y[int(items[1])-1][int(items[0])-1] = \
-                         complex(float(items[2]), float(items[3]))
-      '''
-      r = int(items[0]) - 1
-      c = int(items[1]) - 1
-      yrc = complex(float(items[2]), float(items[3]))
-      Y[r,c] += yrc
-      if r != c:
-        Y[c,r] += yrc
+  else:
+    with open('ysparse.csv', 'r') as fin:
+      for line in fin:
+        items = line.split(',')
+        if items[0] == 'Row': # skip header
+          continue
+
+        '''
+        # original way Y was populated
+        Y[int(items[0])-1][int(items[1])-1] = \
+        Y[int(items[1])-1][int(items[0])-1] = \
+                           complex(float(items[2]), float(items[3]))
+        '''
+        # Avijit's way Y is populated
+        r = int(items[0]) - 1
+        c = int(items[1]) - 1
+        yrc = complex(float(items[2]), float(items[3]))
+        Y[r,c] += yrc
+        if r != c:
+          Y[c,r] += yrc
 
   #print(Y)
 
