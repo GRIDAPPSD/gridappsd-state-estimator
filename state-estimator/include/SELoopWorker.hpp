@@ -909,6 +909,25 @@ class SELoopWorker {
             results_fh << ',' << "varg_"+node_name;
         results_fh << '\n';
         results_fh.close();
+
+        filename = "test_files/results_pq_data.csv";
+#ifdef DEBUG_PRIMARY
+        *selog << "Writing P and Q injection results to test harness file: " << filename << "\n\n" << std::flush;
+#endif
+        results_fh.open(filename,std::ofstream::out);
+        results_fh << "timestamp";
+        for ( auto& zid : Zary.zids ) {
+            string ztype = Zary.ztypes[zid];
+            // Determine the type of z component
+            if ( !ztype.compare("Pi") ) {
+                results_fh << ',' << zid;
+            }
+            else if ( !ztype.compare("Qi") ) {
+                results_fh << ',' << zid;
+            }
+        }
+        results_fh << '\n';
+        results_fh.close();
 #endif
     }
 
@@ -1934,7 +1953,7 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
         *selog << "calc_h time -- " << std::flush;
 #endif
-        cs *hmat; this->calc_h(hmat);
+        cs *hmat; this->calc_h(hmat, timestamp);
 #ifdef DEBUG_PRIMARY
         print_cs_summary(hmat, "h");
 #endif
@@ -2759,7 +2778,7 @@ class SELoopWorker {
 
 
     private:
-    void calc_h(cs *&h) {
+    void calc_h(cs *&h, const uint& timestamp) {
         // each z component has a measurement function component
 #ifdef GS_OPTIMIZE
         h = gs_spalloc_firstcol(zqty);
@@ -2770,6 +2789,14 @@ class SELoopWorker {
 
 #ifdef DEBUG_PRIMARY
         double startTime = getWallTime();
+#endif
+#ifdef WRITE_FILES
+        string filename = "test_files/results_pq_data.csv";
+        results_fh.open(filename,std::ofstream::app);
+
+        results_fh << timestamp;
+        results_fh << std::fixed;
+        results_fh << std::setprecision(10);
 #endif
         for ( auto& zid : Zary.zids ) {
             uint zidx = Zary.zidxs[zid];
@@ -2801,6 +2828,10 @@ class SELoopWorker {
                     double vi, g, b;
                     set_ni(i, vi, g, b);
                     Pi += vi*vi * g;
+#ifdef WRITE_FILES
+                    results_fh << ',' << -sbase*Pi/1000.0;
+#endif
+                    //*selog << "SHIVA: calc_h zid: " << zid << ", zidx: " << zidx << ", ztype: " << ztype << ", Pi: " << -sbase*Pi/1000.0 << "\n" << std::flush;
                     if (std::isnan(Pi))
                         *selog << "\tERROR: calc_h zid: " << zid << ", zidx: " << zidx << ", ztype: " << ztype << ", g: " << g << ", b: " << b << "\n" << std::flush;
                 } catch ( const std::out_of_range& oor ) {}
@@ -2839,6 +2870,10 @@ class SELoopWorker {
                     double vi, g, b;
                     set_ni(i, vi, g, b);
                     Qi += - vi*vi * b;
+#ifdef WRITE_FILES
+                    results_fh << ',' << -sbase*Qi/1000.0;
+#endif
+                    //*selog << "SHIVA: calc_h zid: " << zid << ", zidx: " << zidx << ", ztype: " << ztype << ", Qi: " << -sbase*Qi/1000.0 << "\n" << std::flush;
                     if (std::isnan(Qi))
                         *selog << "\tERROR: calc_h zid: " << zid << ", zidx: " << zidx << ", ztype: " << ztype << ", g: " << g << ", b: " << b << "\n" << std::flush;
                 } catch ( const std::out_of_range& oor ) {}
@@ -2894,6 +2929,10 @@ class SELoopWorker {
                 *selog << "\tERROR: Undefined measurement type " + ztype + "\n" << std::flush;
             }
         }
+#ifdef WRITE_FILES
+        results_fh << '\n';
+        results_fh.close();
+#endif
 #ifndef GS_OPTIMIZE
         h = cs_compress(hraw);
         cs_spfree(hraw);
