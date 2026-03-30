@@ -72,7 +72,7 @@ def _main():
 
   num_nodes = len(node_name)
 
-  fout = open('results_for_forecasting_data_pq.csv', 'w')
+  fout = open('results_for_forecasting_data.csv', 'w')
   fout.write('Timestamp,Node,kW,kvar,Voltage_pu,Angle_deg,Angle_rad\n')
 
   skipMin = 1 # Don't skip any timestamps
@@ -82,10 +82,22 @@ def _main():
 
   skipEstimates = 12 # for results_data.csv
 
+  PidxDict = {}
+  QidxDict = {}
+
   with open('results_data.csv', 'r') as f1in, open('results_pq_data.csv', 'r') as f2in:
     for line1, line2 in zip(f1in, f2in):
       items1 = line1.split(',')
+      items2 = line2.split(',')
       if items1[0] == 'timestamp': # skip header
+        # build P and Q index dictionaries from header line
+        for i in range(1, len(items2)):
+          node = items2[i][9:].strip()
+          if items2[i].startswith('pseudo_P_'):
+            PidxDict[node] = i
+          else:
+            QidxDict[node] = i
+
         continue
 
       # discard the first 12 timestamps because state estimates are off
@@ -101,8 +113,18 @@ def _main():
       print('timestamp: ' + items1[0], flush=True)
 
       for idx in range(num_nodes):
-        fout.write(items1[0] + ',' + node_name[idx] + ',' + 'Pval' + ',' + 'Qval' + ',' + items1[idx+1] + ',' + items1[num_nodes+idx+1] + ',' + str(math.radians(float(items1[num_nodes+idx+1]))) + '\n')
-        #print(node_name[idx] + ': P: ' + str(P[idx]) + ', Q: ' + str(Q[idx]))
+        ts = items1[0]
+        vmag = items1[idx+1].strip()
+        vang = items1[num_nodes+idx+1].strip()
+        vang_rad = str(math.radians(float(vang)))
+        node = node_name[idx]
+        Pinj = 'NA'
+        Qinj = 'NA'
+        if node in PidxDict:
+          Pinj = items2[PidxDict[node]].strip()
+          Qinj = items2[QidxDict[node]].strip()
+
+        fout.write(ts + ',' + node + ',' + Pinj + ',' + Qinj + ',' + vmag + ',' + vang + ',' + vang_rad + '\n')
 
       #break # debug break after first timestamp
 
