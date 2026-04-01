@@ -920,10 +920,11 @@ class SELoopWorker {
             string ztype = Zary.ztypes[zid];
             // Determine the type of z component
             if ( !ztype.compare("Pi") ) {
-                results_fh << ',' << zid;
+                // Note zid has this as a pseudo-measurement and Shiva wants Pest/Qest
+                results_fh << ',' << Zary.znode1s[zid] << "_Pest";
             }
             else if ( !ztype.compare("Qi") ) {
-                results_fh << ',' << zid;
+                results_fh << ',' << Zary.znode1s[zid] << "_Qest";
             }
         }
         results_fh << '\n';
@@ -1049,6 +1050,7 @@ class SELoopWorker {
         SDMAP meas_values = plint->getmeas_values();
 #ifdef WRITE_FILES
         SDMAP node_mag, node_ang;
+        SDMAP node_va_p, node_va_q;
 #endif
 
         for ( auto& mmrid : meas_mrids ) {
@@ -1200,7 +1202,7 @@ class SELoopWorker {
 #endif
                 }
             }
-#ifdef NET_INJECTION
+#if defined(WRITE_FILES) || defined(NET_INJECTION)
             else if ( !Zary.mtypes[mmrid].compare("VA") ) {
                 if ( !Zary.mcetypes[mmrid].compare("EnergyConsumer") ) {
                     // P and Q injection measurements are composed of physical
@@ -1215,8 +1217,8 @@ class SELoopWorker {
                     // for all existing devices at a node, we could overwrite
                     // the pseudo-measurement with an accumulator over physical
                     // measurements at that node.
-
                     string meas_node = Zary.mnodes[mmrid];
+#ifdef NET_INJECTION
                     string pinj_zid = meas_node+"_Pinj";
                     string qinj_zid = meas_node+"_Qinj";
 
@@ -1230,6 +1232,7 @@ class SELoopWorker {
                         Zary.ztimes[pinj_zid] = timestamp;
                         Zary.ztimes[qinj_zid] = timestamp;
                     }
+#endif
 
                     if (meas_magnitudes.find(mmrid) != meas_magnitudes.end() &&
                         meas_angles.find(mmrid) != meas_angles.end()) {
@@ -1237,9 +1240,17 @@ class SELoopWorker {
                         double vang_phys = meas_angles[mmrid];
                         double vang_rad = vang_phys*M_PI/180.0;
 
+#ifdef NET_INJECTION
                         // convert from polar to rectangular coordinates
                         Zary.zvals[pinj_zid] -= vmag_phys*cos(vang_rad)/sbase;
                         Zary.zvals[qinj_zid] -= vmag_phys*sin(vang_rad)/sbase;
+#endif
+
+#ifdef WRITE_FILES
+                        // convert from polar to rectangular coordinates
+                        node_va_p[meas_node] = vmag_phys*cos(vang_rad)/1000.0;
+                        node_va_q[meas_node] = vmag_phys*sin(vang_rad)/1000.0;
+#endif
                     }
                 }
                 // check other conducting equipment types
@@ -1270,7 +1281,6 @@ class SELoopWorker {
                 ofh_data << ",varg_" << node_name;
             ofh_data << '\n';
             ofh_data.close();
-
         }
         ofh_data.open("test_files/simulation_data.csv", std::ofstream::app);
         ofh_data << std::setprecision(16);
@@ -1300,7 +1310,7 @@ class SELoopWorker {
         //ctr = 0;
 
         if (firstTimeFlag) {
-            firstTimeFlag = false;
+            //firstTimeFlag = false;
             ofh_data.open("test_files/measurement_data.csv", std::ofstream::out);
 
             ofh_data << "timestamp";
@@ -1308,7 +1318,6 @@ class SELoopWorker {
                 ofh_data << ',' << zid;
             ofh_data << '\n';
             ofh_data.close();
-
         }
         ofh_data.open("test_files/measurement_data.csv", std::ofstream::app);
         ofh_data << std::setprecision(16);
@@ -1317,6 +1326,26 @@ class SELoopWorker {
 
         for ( auto& zid : Zary.zids )
             ofh_data << ',' << Zary.zvals[zid];
+        ofh_data << '\n';
+        ofh_data.close();
+
+        if (firstTimeFlag) {
+            firstTimeFlag = false;
+            ofh_data.open("test_files/measurement_pq_data.csv", std::ofstream::out);
+
+            ofh_data << "timestamp";
+            for ( auto& pair : node_va_p )
+                ofh_data << ',' << pair.first << "_Pinj," << pair.first << "_Qinj";
+            ofh_data << '\n';
+            ofh_data.close();
+        }
+        ofh_data.open("test_files/measurement_pq_data.csv", std::ofstream::app);
+        ofh_data << std::setprecision(16);
+
+        ofh_data << timestamp;
+
+        for ( auto& pair : node_va_p )
+            ofh_data << ',' << node_va_p[pair.first] << ',' << node_va_q[pair.first];
         ofh_data << '\n';
         ofh_data.close();
 #endif
