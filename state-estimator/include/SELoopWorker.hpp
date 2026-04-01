@@ -1335,7 +1335,7 @@ class SELoopWorker {
 
             ofh_data << "timestamp";
             for ( auto& pair : node_va_p )
-                ofh_data << ',' << pair.first << "_Pinj," << pair.first << "_Qinj";
+                ofh_data << ',' << "P_meas_" << pair.first << ",Q_meas_" << pair.first;
             ofh_data << '\n';
             ofh_data.close();
         }
