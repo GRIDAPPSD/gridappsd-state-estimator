@@ -226,7 +226,7 @@ class SensorDefConsumer : public SEConsumer {
 
                     if (!ce_type.compare("EnergyConsumer")) {
                         string pinj_zid = meas_node + "_Pinj";
-                         string qinj_zid = meas_node + "_Qinj";
+                        string qinj_zid = meas_node + "_Qinj";
 
                         // instead of poor performing n^2 complexity find,
                         // we could create a map from node name to aggregate
