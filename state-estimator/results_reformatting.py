@@ -92,8 +92,8 @@ def _main():
       if items1[0] == 'timestamp': # skip header
         # build P and Q index dictionaries from header line
         for i in range(1, len(items2)):
-          node = items2[i][9:].strip()
-          if items2[i].startswith('pseudo_P_'):
+          node = items2[i][6:].strip()
+          if items2[i].startswith('P_est_'):
             PidxDict[node] = i
           else:
             QidxDict[node] = i
