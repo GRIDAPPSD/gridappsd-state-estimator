@@ -920,11 +920,11 @@ class SELoopWorker {
             string ztype = Zary.ztypes[zid];
             // Determine the type of z component
             if ( !ztype.compare("Pi") ) {
-                // Note zid has this as a pseudo-measurement and Shiva wants Pest/Qest
-                results_fh << ',' << Zary.znode1s[zid] << "_Pest";
+                // Note zid has this as a pseudo-measurement and Shiva wants P_est/Q_est
+                results_fh << ',' << "P_est_" << Zary.znode1s[zid];
             }
             else if ( !ztype.compare("Qi") ) {
-                results_fh << ',' << Zary.znode1s[zid] << "_Qest";
+                results_fh << ',' << "Q_est_" << Zary.znode1s[zid];
             }
         }
         results_fh << '\n';
