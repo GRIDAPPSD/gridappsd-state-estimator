@@ -72,7 +72,7 @@ def _main():
 
   num_nodes = len(node_name)
 
-  fout = open('results_for_forecasting_data.csv', 'w')
+  fout = open('results_forecasting_data.csv', 'w')
   fout.write('Timestamp,Node,kW,kvar,Voltage_pu,Angle_deg,Angle_rad\n')
 
   skipMin = 1 # Don't skip any timestamps
