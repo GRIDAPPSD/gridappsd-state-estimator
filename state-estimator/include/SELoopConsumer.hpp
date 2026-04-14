@@ -69,6 +69,14 @@ class SELoopConsumer : public SEConsumer {
                 blockedFlag = false;
             }
 #endif
+        } else {
+            *selog << "\nSELoopConsumer received unknown message of " << text.length()
+                   << " bytes\n" << std::flush;
+            *selog << "UNKNOWN MESSAGE START\n" << std::flush;
+            for (uint ibuff=0; ibuff<text.length(); ibuff+=4095) {
+                *selog << text.substr(ibuff,4095) << "\n" << std::flush;
+            }
+            *selog << "UNKNOWN MESSAGE END\n" << std::flush;
         }
     }
 };
