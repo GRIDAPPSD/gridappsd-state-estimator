@@ -22,7 +22,7 @@
        "power_flow_solver_method":"NR",
        "model_creation_config":{
           "load_scaling_factor":"1",
-          "schedule_name":"ieeezipload",
+          "schedule_name":"ieeezipload_2weeks",
           "z_fraction":"0",
           "i_fraction":"1",
           "p_fraction":"0",
