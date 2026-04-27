@@ -72,7 +72,7 @@ def _main():
 
   num_nodes = len(node_name)
 
-  fout = open('results_forecasting_data.csv', 'w')
+  fout = open('results_data_forecasting.csv', 'w')
   fout.write('Timestamp,Node,kW,kvar,Voltage_pu,Angle_deg,Angle_rad\n')
 
   skipMin = 1 # Don't skip any timestamps
@@ -85,7 +85,8 @@ def _main():
   PidxDict = {}
   QidxDict = {}
 
-  with open('results_data.csv', 'r') as f1in, open('results_pq_data.csv', 'r') as f2in:
+  #with open('results_data.csv', 'r') as f1in, open('results_pq_data.csv', 'r') as f2in:
+  with open('results_data_pnv.csv', 'r') as f1in, open('results_data_pq.csv', 'r') as f2in:
     for line1, line2 in zip(f1in, f2in):
       items1 = line1.split(',')
       items2 = line2.split(',')
