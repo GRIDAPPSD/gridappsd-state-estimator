@@ -187,7 +187,6 @@ public:
         sensConsumer.waitUntilReady();    // wait for latch release
 
         // Request sensor data with previously created producer
-        string sensRequestTopic = "goss.gridappsd.process.request.config";
         string sensRequestText = "{\"configurationType\":\"CIM Dictionary\",\"parameters\":{\"simulation_id\":\""
             + gad_ref->simid + "\"}}";
         requester_ref->send(sensRequestText, sensTopic);
