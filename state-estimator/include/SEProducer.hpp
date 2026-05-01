@@ -13,10 +13,6 @@
 #include <cms/Connection.h>
 #include <cms/Session.h>
 #include <cms/TextMessage.h>
-#include <cms/BytesMessage.h>
-#include <cms/MapMessage.h>
-#include <cms/ExceptionListener.h>
-#include <cms/MessageListener.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <memory>

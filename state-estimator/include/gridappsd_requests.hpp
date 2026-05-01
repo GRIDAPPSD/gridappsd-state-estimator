@@ -25,6 +25,7 @@ namespace gridappsd_requests {
         string resultText;
         activeConsumer.get(resultText);
 
+        //*selog << "sparql_query resultText (" << resultText << ")\n" << std::flush;
         // return json
         return json::parse(resultText);
     }
