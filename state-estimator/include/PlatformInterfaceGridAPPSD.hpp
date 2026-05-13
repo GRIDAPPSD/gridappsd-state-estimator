@@ -187,8 +187,13 @@ public:
         sensConsumer.waitUntilReady();    // wait for latch release
 
         // Request sensor data with previously created producer
+#ifdef PLATFORM_OLD
         string sensRequestText = "{\"configurationType\":\"CIM Dictionary\",\"parameters\":{\"simulation_id\":\""
             + gad_ref->simid + "\"}}";
+#else
+        string sensRequestText = "{\"configurationType\":\"CIM Dictionary\",\"parameters\":{\"model_id\":\""
+            + gad_ref->modelID + "\"}}";
+#endif
         requester_ref->send(sensRequestText, sensTopic);
         requester_ref->close(); // this is the last request so close it off
 
