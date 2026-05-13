@@ -13,7 +13,7 @@
 #include <cms/Connection.h>
 #include <cms/Session.h>
 #include <cms/TextMessage.h>
-#include <cms/BytesMessage.h>
+//#include <cms/BytesMessage.h>
 #include <cms/MapMessage.h>
 #include <cms/ExceptionListener.h>
 #include <cms/MessageListener.h>
@@ -150,18 +150,40 @@ class SEConsumer : public ExceptionListener,
             // wait for init() to finish -- otherwise messages interrupt this thread
             latch.await();
 
-            const BytesMessage* bytesMessage = 
+#ifdef PLATFORM_OLD
+            const BytesMessage* bytesMessage =
                     dynamic_cast<const BytesMessage*> (message);
             text = "";
             // 10M characters is enough for the 9500 node model and nothing
             // will break if more space is needed
             text.reserve(10000000);
             if (bytesMessage != NULL) {
-                for ( int idx = 0 ; idx < bytesMessage->getBodyLength() ; idx++ )
+                for ( int idx=0; idx<bytesMessage->getBodyLength(); idx++ )
                     text.push_back(bytesMessage->readChar());
             } else {
                 text = "NOT A BYTESMESSAGE!";
             }
+#else
+            const TextMessage* textMessage =
+                    dynamic_cast<const TextMessage*> (message);
+            text = "";
+            if (textMessage != NULL) {
+                text = textMessage->getText();
+            } else {
+                const BytesMessage* bytesMessage =
+                        dynamic_cast<const BytesMessage*> (message);
+                if (bytesMessage != NULL) {
+                    // 10M characters is enough for the 9500 node model and
+                    // nothing will break if more space is needed
+                    text.reserve(10000000);
+                    for ( int idx=0; idx<bytesMessage->getBodyLength(); idx++ )
+                        text.push_back(bytesMessage->readChar());
+                } else {
+                    text = "NOT A TESTMESSAGE OR BYTESMESSAGE!";
+                }
+            }
+            //*selog << "onMessage (" << text << ")\n" << std::flush;
+#endif
             // implementation-specific actions:
             process();
 
