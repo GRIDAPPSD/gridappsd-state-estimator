@@ -179,7 +179,7 @@ class SEConsumer : public ExceptionListener,
                     for ( int idx=0; idx<bytesMessage->getBodyLength(); idx++ )
                         text.push_back(bytesMessage->readChar());
                 } else {
-                    text = "NOT A TESTMESSAGE OR BYTESMESSAGE!";
+                    text = "NOT A TEXTMESSAGE OR BYTESMESSAGE!";
                 }
             }
             //*selog << "onMessage (" << text << ")\n" << std::flush;
