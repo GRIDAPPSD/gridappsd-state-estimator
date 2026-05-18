@@ -90,7 +90,13 @@ namespace state_estimator_gridappsd {
             password = se.password;
 
             json jsimreq = json::parse(se.simreq);
+#ifdef PLATFORM_OLD
             modelID = jsimreq["power_system_config"]["Line_name"];
+#else
+            // GDB 5/18/26: Hardwire to the first config since this app only
+            // supports a single simulation
+            modelID = jsimreq["power_system_configs"][0]["Line_name"];
+#endif
 
             // as long as the key used below isn't set when running from the
             // command line, this check will be sufficient for distinguishing
