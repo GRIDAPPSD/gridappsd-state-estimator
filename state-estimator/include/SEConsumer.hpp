@@ -150,7 +150,7 @@ class SEConsumer : public ExceptionListener,
             // wait for init() to finish -- otherwise messages interrupt this thread
             latch.await();
 
-#ifdef PLATFORM_OLD
+#ifndef PLATFORM_NEW
             const BytesMessage* bytesMessage =
                     dynamic_cast<const BytesMessage*> (message);
             text = "";
@@ -182,8 +182,8 @@ class SEConsumer : public ExceptionListener,
                     text = "NOT A TEXTMESSAGE OR BYTESMESSAGE!";
                 }
             }
-            //*selog << "onMessage (" << text << ")\n" << std::flush;
 #endif
+            //*selog << "onMessage (" << text << ")\n" << std::flush;
             // implementation-specific actions:
             process();
 
