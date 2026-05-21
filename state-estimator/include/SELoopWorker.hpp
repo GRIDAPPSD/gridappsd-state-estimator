@@ -1498,6 +1498,16 @@ class SELoopWorker {
             results_fh << ',' << est_angle[node_name];
         results_fh << '\n';
         results_fh.close();
+
+        // GDB 5/21/26: Write Shiva's voltage magnitude % error file
+        filename = "test_files/results_err_data.csv";
+        results_fh.open(filename,std::ofstream::app);
+
+        results_fh << timestamp;
+        results_fh << std::fixed;
+        results_fh << std::setprecision(10);
+        results_fh << ',' << perErrMag << '\n';
+        results_fh.close();
 #endif
     }
 
