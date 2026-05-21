@@ -64,9 +64,42 @@ class VnomConsumer: public SEConsumer {
         // PARSE THE MESSAGE AND PROCESS THE TOPOLOGY
         // --------------------------------------------------------------------
 #ifdef DEBUG_PRIMARY
-        *selog << "Received vnom message of " << text.length() << " bytes\n\n" << std::flush;
+        *selog << "Received vnom message of " << text.length() << " bytes\n" << std::flush;
+        *selog << "Vnom message (" << text << ")\n\n" << std::flush;
 #endif
 
+#if 000
+#define FILE_INTERFACE_READ "test_files_13assetsnew"
+//#define FILE_INTERFACE_READ "test_files_123new"
+        string filename = FILE_INTERFACE_READ;
+        filename += "/vnom.csv";
+#ifdef DEBUG_PRIMARY
+        *selog << "Reading vnom from test harness file: " << filename <<
+            "\n" << std::flush;
+#endif
+        std::ifstream ifs(filename);
+        if (!ifs.is_open()) {
+            *selog << "\n*** ERROR: vnom file not found: " << filename <<
+                "\n\n" << std::flush;
+            exit(0);
+        }
+
+        string line;
+        getline(ifs, line);  // throwaway header line
+
+        while ( getline(ifs, line) ) {
+            std::stringstream lineStream(line);
+            string node, cell;
+            getline(lineStream, node, ',');
+            getline(lineStream, cell, ','); double mag = std::stod(cell);
+            getline(lineStream, cell, ','); double arg = std::stod(cell);
+            double vre = mag * cos( arg * M_PI/180.0 );
+            double vim = mag * sin( arg * M_PI/180.0 );
+            complex<double> vnom = complex<double>(vre,vim);
+            node_vnoms[node] = vnom;
+        }
+        ifs.close();
+#else
 #ifdef WRITE_FILES
         std::ofstream ofs("test_files/vnom.csv", ofstream::out);
         ofs << "Nodename,Mag,Arg\n";
@@ -186,6 +219,7 @@ class VnomConsumer: public SEConsumer {
 
 #ifdef DEBUG_PRIMARY
         *selog << "complete.\n\n" << std::flush;
+#endif
 #endif
 
         // --------------------------------------------------------------------
