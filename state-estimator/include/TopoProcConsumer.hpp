@@ -170,20 +170,28 @@ class TopoProcConsumer : public SEConsumer {
 #ifdef WRITE_FILES
         ofs.close();
 #endif
-//        // print
-//        for ( auto& inode : node_names ) {
-//            auto i = node_idxs[inode];
-//            try {
-//                auto row = Y.at(i);
-//                for ( auto& jnode: node_names ) {
-//                    auto j = node_idxs[jnode];
-//                    try {
-//                        complex<double> ycomp = row.at(j);
-//                        *selog << "Y(" << i << "," << j << ") -> " << ycomp << "\n" << std::flush;
-//                    } catch( const std::out_of_range& oor ) {}
-//                }
-//            } catch( const std::out_of_range& oor ) {}
-//        }
+#if 000
+        // GDB 5/22/26: Print YBus at nodes for investigating discrepancies
+        SIMAP node_indexes;
+        uint idx = 0;
+        for ( auto& node_name : node_names ) {
+            node_indexes[node_name] = ++idx;
+        }
+        for ( auto& inode : node_names ) {
+            auto i = node_indexes[inode];
+            try {
+                auto row = Y.at(i);
+                for ( auto& jnode: node_names ) {
+                    auto j = node_indexes[jnode];
+                    try {
+                        complex<double> ycomp = row.at(j);
+                        *selog << "Y(" << inode << "," << jnode << ") -> " << ycomp << "\n" << std::flush;
+                        //*selog << "Y(" << i << "," << j << ") -> " << ycomp << "\n" << std::flush;
+                    } catch( const std::out_of_range& oor ) {}
+                }
+            } catch( const std::out_of_range& oor ) {}
+        }
+#endif
 #endif
 
         // --------------------------------------------------------------------
