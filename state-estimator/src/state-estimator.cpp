@@ -33,7 +33,7 @@
 //#define PLATFORM_OLD
 // This PLATFORM_NEW define is used for platorms after v2025.01.0 where
 // multiple simulations were supported
-//#define PLATFORM_NEW
+#define PLATFORM_NEW
 // different sparql queries are needed if the GridAPPS-D platform version
 // pre-dates CIM-Graph. v2023.07.0 requires OLD_PLATFORM to be defined while
 // v2025.01.0 does not.
