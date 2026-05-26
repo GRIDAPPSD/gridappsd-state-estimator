@@ -71,12 +71,14 @@ def _main():
   # node_dict is mapping from name to index for filling Y from static_ybus.csv
   node_dict = {}
   node_idx = 0
+  #index_dict = {}
   with open('nodelist.csv', 'r') as fin:
     for line in fin:
       name = line.strip('\"\n')
       node_name.append(name)
       vnom_list.append(vnom_dict[name])
       node_dict[name] = node_idx
+      #index_dict[node_idx] = name
       node_idx += 1
   #print(node_name)
   #print(vnom_list)
@@ -92,6 +94,8 @@ def _main():
         c = node_dict[items[1]]
         yrc = complex(float(items[2]), float(items[3]))
         Y[r,c] = yrc
+        #if r >= c:
+        #  print(items[0] + ',' + items[1] + ',' + items[2] + ',' + items[3].strip() + ',static_ybus')
       '''
       # check for symmetric Y
       for row in range(num_nodes):
@@ -120,8 +124,10 @@ def _main():
         Y[r,c] += yrc
         if r != c:
           Y[c,r] += yrc
+        #print(index_dict[r] + ',' + index_dict[c] + ',' + items[2] + ',' + items[3].strip() + ',ysparse')
 
   #print(Y)
+  #sys.exit(0)
 
   fout = open('results_for_forecasting_data.csv', 'w')
   fout.write('Timestamp,Node,kW,kvar,Voltage_pu,Angle_deg,Angle_rad\n')
