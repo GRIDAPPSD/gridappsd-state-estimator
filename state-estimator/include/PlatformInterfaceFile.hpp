@@ -288,7 +288,8 @@ public:
 
 
     void publishEstimate(const uint& timestamp,
-        SDMAP&, SDMAP&, SDMAP&, SDMAP&, SDMAP& est_vmagpu, SDMAP& est_vargpu) {
+        SDMAP&, SDMAP&, SDMAP&, SDMAP&, SDMAP& est_vmagpu, SDMAP& est_vargpu,
+	SDMAP&, SDMAP&) {
 
         string filename = FILE_INTERFACE_READ;
         filename += "/results_data.csv";

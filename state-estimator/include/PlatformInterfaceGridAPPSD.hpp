@@ -291,7 +291,7 @@ public:
 
     void publishEstimate(const uint& timestamp,
         SDMAP& est_v, SDMAP& est_angle, SDMAP& est_vvar, SDMAP& est_anglevar,
-        SDMAP&,  SDMAP&) {
+        SDMAP&,  SDMAP&, SDMAP& est_pinj, SDMAP& est_qinj) {
 
         json jmessage;
         jmessage["simulation_id"] = gad_ref->simid;
@@ -314,6 +314,10 @@ public:
             // Add v and angle variance values
             node_state["vVariance"] = est_vvar[node_name];
             node_state["angleVariance"] = est_anglevar[node_name];
+
+            // add the net injections
+            node_state["P"] = est_pinj[node_name];
+            node_state["Q"] = est_qinj[node_name];
 
             // append this state to the measurement array
             jmessage["message"]["Estimate"]["SvEstVoltages"].

@@ -117,7 +117,10 @@ class SELoopWorker {
 #else
     cs *Pmat=NULL;      // x comes from V and A but P is persistent 
 #endif
-    IMDMAP Bmat;         // binary switch state matrix
+    IMDMAP Bmat;        // binary switch state matrix
+
+    SDMAP est_pinj;     // P net active injection
+    SDMAP est_qinj;     // Q net reactive injection
 
     cs *Fmat;           // process model
     cs *Rmat;           // measurement covariance (diagonal)
@@ -1449,7 +1452,7 @@ class SELoopWorker {
 #endif
 
         plint->publishEstimate(timestamp, est_v, est_angle,
-            est_vvar, est_anglevar, est_vmagpu, est_vargpu);
+            est_vvar, est_anglevar, est_vmagpu, est_vargpu, est_pinj, est_qinj);
 
 #ifdef DEBUG_FILES
         string simpath = "output/" + plint->getOutputDir() + "/";
@@ -2867,10 +2870,12 @@ class SELoopWorker {
                     double vi, g, b;
                     set_ni(i, vi, g, b);
                     Pi += vi*vi * g;
+
+                    est_pinj[Zary.znode1s[zid]] = -sbase*Pi/1000.0;
 #ifdef WRITE_FILES
-                    results_fh << ',' << -sbase*Pi/1000.0;
+                    results_fh << ',' << est_pinj[Zary.znode1s[zid]];
 #endif
-                    //*selog << "SHIVA: calc_h zid: " << zid << ", zidx: " << zidx << ", ztype: " << ztype << ", Pi: " << -sbase*Pi/1000.0 << "\n" << std::flush;
+                    //*selog << "SHIVA: calc_h zid: " << zid << ", zidx: " << zidx << ", ztype: " << ztype << ", Pi: " << est_pinj[Zary.znode1s[zid]] << "\n" << std::flush;
                     if (std::isnan(Pi))
                         *selog << "\tERROR: calc_h zid: " << zid << ", zidx: " << zidx << ", ztype: " << ztype << ", g: " << g << ", b: " << b << "\n" << std::flush;
                 } catch ( const std::out_of_range& oor ) {}
@@ -2909,10 +2914,12 @@ class SELoopWorker {
                     double vi, g, b;
                     set_ni(i, vi, g, b);
                     Qi += - vi*vi * b;
+
+                    est_qinj[Zary.znode1s[zid]] = -sbase*Qi/1000.0;
 #ifdef WRITE_FILES
-                    results_fh << ',' << -sbase*Qi/1000.0;
+                    results_fh << ',' << est_qinj[Zary.znode1s[zid]];
 #endif
-                    //*selog << "SHIVA: calc_h zid: " << zid << ", zidx: " << zidx << ", ztype: " << ztype << ", Qi: " << -sbase*Qi/1000.0 << "\n" << std::flush;
+                    //*selog << "SHIVA: calc_h zid: " << zid << ", zidx: " << zidx << ", ztype: " << ztype << ", Qi: " << est_qinj[Zary.znode1s[zid]] << "\n" << std::flush;
                     if (std::isnan(Qi))
                         *selog << "\tERROR: calc_h zid: " << zid << ", zidx: " << zidx << ", ztype: " << ztype << ", g: " << g << ", b: " << b << "\n" << std::flush;
                 } catch ( const std::out_of_range& oor ) {}

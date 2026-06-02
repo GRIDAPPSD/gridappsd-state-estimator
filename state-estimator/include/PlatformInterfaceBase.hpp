@@ -169,7 +169,8 @@ public:
 
     virtual void publishEstimate(const uint& timestamp,
         SDMAP& est_v, SDMAP& est_angle, SDMAP& est_vvar, SDMAP& est_anglevar,
-        SDMAP& est_vmagpu, SDMAP& est_vargpu)=0;
+        SDMAP& est_vmagpu, SDMAP& est_vargpu,
+        SDMAP& est_pinj, SDMAP& est_qinj)=0;
     // Sends a full state estimate for a given timestamp to the disposition
     // established setupPublishing(). The platform interface implementation
     // for this method can choose to use any/all of the provided data
@@ -188,6 +189,8 @@ public:
     //                       (double)
     //     SDMAP est_vargpu: estimated per-unit voltage phase angle per node
     //                       (double)
+    //     SDMAP est_pinj: estimated P net active injection per node (double)
+    //     SDMAP est_qinj: estimated Q net reactive injection per node (double)
 
 
     virtual string getOutputDir()=0;
