@@ -315,9 +315,15 @@ public:
             node_state["vVariance"] = est_vvar[node_name];
             node_state["angleVariance"] = est_anglevar[node_name];
 
-            // add the net injections
-            node_state["P"] = est_pinj[node_name];
-            node_state["Q"] = est_qinj[node_name];
+            // add the net injections or NA if they don't exist for node
+            if (est_pinj.find(node_name) != est_pinj.end()) {
+                // assume Q values alway pair with P values
+                node_state["P"] = est_pinj[node_name];
+                node_state["Q"] = est_qinj[node_name];
+            } else {
+                node_state["P"] = "NA";
+                node_state["Q"] = "NA";
+            }
 
             // append this state to the measurement array
             jmessage["message"]["Estimate"]["SvEstVoltages"].
