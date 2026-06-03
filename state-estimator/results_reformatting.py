@@ -85,8 +85,8 @@ def _main():
   PidxDict = {}
   QidxDict = {}
 
-  #with open('results_data.csv', 'r') as f1in, open('results_pq_data.csv', 'r') as f2in:
-  with open('results_data_pnv.csv', 'r') as f1in, open('results_data_pq.csv', 'r') as f2in:
+  with open('results_data.csv', 'r') as f1in, open('results_pq_data.csv', 'r') as f2in:
+  #with open('results_data_pnv.csv', 'r') as f1in, open('results_data_pq.csv', 'r') as f2in:
     for line1, line2 in zip(f1in, f2in):
       items1 = line1.split(',')
       items2 = line2.split(',')
