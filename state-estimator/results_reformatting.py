@@ -78,9 +78,10 @@ def _main():
   skipMin = 1 # Don't skip any timestamps
   #skipMin = 15 # Skip 15 minutes of timestamps
   skipSec = skipMin*60
-  lineCount = 0
 
-  skipEstimates = 12 # for results_data.csv
+  # GDB 6/23/26: Skipping is now done in SE app
+  #skipEstimates = 12 # for results_data.csv
+  #lineCount = 0
 
   PidxDict = {}
   QidxDict = {}
@@ -101,11 +102,12 @@ def _main():
 
         continue
 
+      # GDB 6/23/26: Skipping is now done in SE app
       # discard the first 12 timestamps because state estimates are off
       # and would result in bad training data
-      lineCount += 1
-      if lineCount <= skipEstimates:
-        continue
+      #lineCount += 1
+      #if lineCount <= skipEstimates:
+      #  continue
 
       timestamp = int(items1[0])
       if timestamp % skipSec != 0:

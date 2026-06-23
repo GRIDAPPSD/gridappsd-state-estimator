@@ -135,10 +135,11 @@ def _main():
   skipMin = 1 # Don't skip any timestamps
   #skipMin = 15 # Skip 15 minutes of timestamps
   skipSec = skipMin*60
-  lineCount = 0
 
-  skipEstimates = 12 # for results_data.csv
+  # GDB 6/23/26: skipping is now done in the SE app
+  #skipEstimates = 12 # for results_data.csv
   #skipEstimates = 0 # for avijit_data.csv
+  #lineCount = 0
 
   with open('results_data.csv', 'r') as fin:
   #with open('avijit_data.csv', 'r') as fin:
@@ -149,9 +150,9 @@ def _main():
 
       # discard the first 12 timestamps because state estimates are off
       # and would result in bad training data
-      lineCount += 1
-      if lineCount <= skipEstimates:
-        continue
+      #lineCount += 1
+      #if lineCount <= skipEstimates:
+      #  continue
 
       timestamp = int(items[0])
       if timestamp % skipSec != 0:
