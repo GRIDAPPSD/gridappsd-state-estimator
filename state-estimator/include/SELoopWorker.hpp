@@ -1451,6 +1451,14 @@ class SELoopWorker {
         *selog << "Est varg per-unit min: " << estMinArg << ", max: " << estMaxArg << ", mean: " << estMeanArg << "\n" << std::flush;
 #endif
 
+	// GDB 6/23/26: Don't publish/output the first dozen estimates because
+	// they are always inaccurate
+        static uint estimateCounter = 0;
+        if (++estimateCounter <= 12) {
+          *selog << "Skip publishing estimate: " << estimateCounter << " of 12 due to warm-up inaccuracy\n\n" << std::flush;
+          return;
+        }
+
         plint->publishEstimate(timestamp, est_v, est_angle,
             est_vvar, est_anglevar, est_vmagpu, est_vargpu, est_pinj, est_qinj);
 
