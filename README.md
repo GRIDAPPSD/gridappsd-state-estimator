@@ -4,7 +4,6 @@
 
 The state estimator service will produce and output the best available system state from measurements for use by other applications.
 
-
 ## State estimator service layout
 
 The following is the structure of the state estimator:
@@ -22,7 +21,6 @@ The following is the structure of the state estimator:
     └── state-estimator.config
 └───(Prerequisite libraries--SuiteSparse, ActiveMQ-CPP, Json)
 ````
-
 
 ## Prerequisites
 
@@ -45,7 +43,6 @@ The following is the structure of the state estimator:
 
 7. Alternatively, to build the state estimator from source code and then run that version from the command line, skip to the section [Building state estimator](#building-state-estimator) below.
 
-
 ## Running state estimator from the gridappsd-docker container
 
 1. Configure the simulation from the GRIDAPPSD platform web browser visualization.
@@ -59,7 +56,6 @@ The following is the structure of the state estimator:
 5. The gridappsd-state-plotter application can be used to plot state estimator output as described at <https://github.com/GRIDAPPSD/gridappsd-state-plotter>.
 
 The remainder of these instructions apply only when building the state estimator from source code and running that build from the command line.
-
 
 ## Building state estimator
 
@@ -111,7 +107,6 @@ make
 ````
 
 6. The executable application will be placed in bin/state-estimator.  The Json distribution consists entirely of include files and therefore is not compiled separately from the application using it.
-
 
 ## Running state estimator from the command line
 
