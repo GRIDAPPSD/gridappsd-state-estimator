@@ -1,0 +1,45 @@
+{
+  "power_system_configs": [
+    {
+      "SubGeographicalRegion_name": "ABEB635F-729D-24BF-B8A4-E2EF268D8B9E",
+      "GeographicalRegion_name": "73C512BD-7249-4F50-50DA-D93849B89C43",
+      "Line_name": "5B816B93-7A5F-B64C-8460-47C17D6E4B0F",
+      "simulator_config": {
+        "simulator": "GridLAB-D",
+        "simulation_output": {},
+        "power_flow_solver_method": "NR",
+        "model_creation_config": {
+          "load_scaling_factor": "1.0",
+          "schedule_name": "ieeezipload",
+          "triplex": "y",
+          "encoding": "u",
+          "system_frequency": "60",
+          "voltage_multiplier": "1.0",
+          "power_unit_conversion": "1.0",
+          "unique_names": "y",
+          "z_fraction": "0.0",
+          "i_fraction": "1.0",
+          "p_fraction": "0.0",
+          "randomize_zipload_fractions": false,
+          "use_houses": false
+        }
+      }
+    }
+  ],
+  "application_config": {
+    "applications": []
+  },
+  "simulation_config": {
+    "start_time": "1778881646",
+    "duration": "3600",
+    "timestep_frequency": "1000",
+    "timestep_increment": "1000",
+    "run_realtime": false,
+    "simulation_name": "ieee13nodecktassets"
+  },
+  "test_config": {
+    "events": [],
+    "appId": ""
+  },
+  "service_configs": []
+}
