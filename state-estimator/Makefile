@@ -59,7 +59,7 @@ bin/state-estimator: obj/state-estimator.o
 
 obj/state-estimator.o: src/state-estimator.cpp $(wildcard include/*.hpp)
 	mkdir -p obj
-	g++ $(CXXFLAGS) -Wno-deprecated-declarations -std=c++11 -DGRIDAPPSD_INTERFACE -c $(GRIDAPPSD_INCLUDES) $< -o $@
+	g++ $(CXXFLAGS) $(EXTRA_CXXFLAGS) -Wno-deprecated-declarations -std=c++11 -DGRIDAPPSD_INTERFACE -c $(GRIDAPPSD_INCLUDES) $< -o $@
 
 file bin/state-estimator-file: obj/state-estimator-file.o
 	mkdir -p bin
@@ -67,7 +67,7 @@ file bin/state-estimator-file: obj/state-estimator-file.o
 
 obj/state-estimator-file.o: src/state-estimator.cpp $(wildcard include/*.hpp)
 	mkdir -p obj
-	g++ $(CXXFLAGS) -Wno-deprecated-declarations -std=c++11 -DFILE_INTERFACE -c $(FILE_INCLUDES) $< -o $@
+	g++ $(CXXFLAGS) $(EXTRA_CXXFLAGS) -Wno-deprecated-declarations -std=c++11 -DFILE_INTERFACE -c $(FILE_INCLUDES) $< -o $@
 
 gadal bin/state-estimator-gadal: obj/state-estimator-gadal.o
 	mkdir -p bin
@@ -75,7 +75,7 @@ gadal bin/state-estimator-gadal: obj/state-estimator-gadal.o
 
 obj/state-estimator-gadal.o: src/state-estimator.cpp $(wildcard include/*.hpp)
 	mkdir -p obj
-	g++ $(CXXFLAGS) -Wno-deprecated-declarations -std=c++11 -DGADAL_INTERFACE -c $(GADAL_INCLUDES) $< -o $@
+	g++ $(CXXFLAGS) $(EXTRA_CXXFLAGS) -Wno-deprecated-declarations -std=c++11 -DGADAL_INTERFACE -c $(GADAL_INCLUDES) $< -o $@
 
 clean:
 	rm -f obj/*

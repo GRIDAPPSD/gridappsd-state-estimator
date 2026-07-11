@@ -86,21 +86,23 @@ public:
     
     sub_Q = vfed->registerSubscription(inputMap["sensor_power_imaginary"],"W");
 
-    
-
     if(sub_topo.isValid()){
+        sub_topo.setOption(HELICS_HANDLE_OPTION_CONNECTION_OPTIONAL, 1);
         std::cout << " Subscription registered for feeder Topology with port " << inputMap["topology"] << std::endl;
     }
 
     if(sub_P.isValid()){
+        sub_P.setOption(HELICS_HANDLE_OPTION_CONNECTION_OPTIONAL, 1);
         std::cout << " Subscription registered for feeder real power P with port " << inputMap["sensor_power_real"] << std::endl;
     }
 
     if(sub_Q.isValid()){
+        sub_Q.setOption(HELICS_HANDLE_OPTION_CONNECTION_OPTIONAL, 1);
         std::cout << " Subscription registered for feeder reactive power Q with port " << inputMap["sensor_power_imaginary"] << std::endl;
     }
 
     if(sub_V.isValid()){
+        sub_V.setOption(HELICS_HANDLE_OPTION_CONNECTION_OPTIONAL, 1);
         std::cout << " Subscription registered for feeder voltage V with port " << inputMap["sensor_voltage_magnitude"] << std::endl;
     }
 
@@ -162,21 +164,21 @@ public:
         // Get the voltage magnitude subscription
         sub_V.getString(voltages);
         V_meas = json::parse(voltages);
-        std::cout<< V_meas<< std::endl;
+        //std::cout<< V_meas<< std::endl;
         workQueue.push(V_meas);
 
         // Get the real power subscription
         sub_P.getString(power_real);
         P_meas = json::parse(power_real);
         convertUnits(P_meas);
-        std::cout <<P_meas << std::endl;
+        //std::cout <<P_meas << std::endl;
         workQueue.push(P_meas);
 
         // Get the reactive power subscription
         sub_Q.getString(power_imag);
         Q_meas = json::parse(power_imag);
         convertUnits(Q_meas);
-        std::cout <<Q_meas << std::endl;
+        //std::cout <<Q_meas << std::endl;
         workQueue.push(Q_meas);
         } catch (...) {
 
@@ -528,7 +530,7 @@ public:
         //_________________________________________________________________
         bool ret = true;
 
-		if (currenttime <= Total_ts)
+		if (currenttime < HELICS_TIME_MAXTIME)
         {
 			std::cout << "Current Time: " << currenttime << std::endl;
 
@@ -539,9 +541,9 @@ public:
 			json P_message = workQueue.pop();
 			json Q_message = workQueue.pop();
 
-			std::cout<< V_message<< std::endl;
-			std::cout<< P_message << std::endl;
-			std::cout<< Q_message<< std::endl;
+			//std::cout<< V_message<< std::endl;
+			//std::cout<< P_message << std::endl;
+			//std::cout<< Q_message<< std::endl;
 
 			json V_meas_sim, P_meas_sim, Q_meas_sim;
 
@@ -635,6 +637,7 @@ public:
 
     void setupPublishing() {
         std::cout << "Setting up publishing" << std::endl;
+#ifdef WRITE_FILES
         string filename = FILE_INTERFACE_READ;
         filename += "/results_data.csv";
         est_fh.open(filename, std::ofstream::trunc);
@@ -648,12 +651,14 @@ public:
             est_fh << "varg_"+node_name << ( ++nctr < node_qty ? "," : "\n" );
 
         est_fh.close();
+#endif
     }
 
 
     void publishEstimate(const uint& timestamp,
         SDMAP& est_v, SDMAP& est_angle, SDMAP&, SDMAP&, SDMAP& est_vmagpu, SDMAP& est_vargpu) {
 
+#ifdef WRITE_FILES
         string filename = FILE_INTERFACE_READ;
         filename += "/results_data.csv";
         est_fh.open(filename, std::ofstream::app);
@@ -661,22 +666,27 @@ public:
         est_fh << timestamp << ',';
         est_fh << std::fixed;
         est_fh << std::setprecision(10);
+#endif
 		std::list<double> est_volt;
 		std::list<double> est_ang;
         for ( auto& node_name : node_names ){
+#ifdef WRITE_FILES
             est_fh << est_vmagpu[node_name] << ",";
+#endif
 			//std::cout<< "-------------------------------" << std::endl;
 			//std::cout<< est_v[node_name] << std::endl;
 			//std::cout<< node_name << std::endl;
 			est_volt.push_back(est_v[node_name]);
 			est_ang.push_back(est_angle[node_name]);
 		}
+#ifdef WRITE_FILES
         uint node_qty = node_names.size();
         uint nctr = 0;
         for ( auto& node_name : node_names )
             est_fh << est_vargpu[node_name] << ( ++nctr < node_qty ? "," : "\n" );
 
         est_fh.close();
+#endif
 		time_t now = time(0);
    
 		// convert now to string form
@@ -695,7 +705,7 @@ public:
 		jmessage_vang["units"] =  "deg";
 		pub_Vang.publish(jmessage_vang.dump());
 			
-		currenttime = vfed->requestTime(10000);
+		currenttime = vfed->requestTime(HELICS_TIME_MAXTIME);
     }
 
 

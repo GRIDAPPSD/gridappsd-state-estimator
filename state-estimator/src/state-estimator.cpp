@@ -1,23 +1,35 @@
+#ifndef DIAGONAL_P
 #define DIAGONAL_P
+#endif
+
+#ifndef SWITCHES
 #define SWITCHES
+#endif
+
 //#define NET_INJECTION
 #ifdef NET_INJECTION
 #define COMPARE_INJ_MEAS
 #endif
 
-#define DEBUG_PRIMARY
-#define DEBUG_STATS
-#define DEBUG_FILES
-#define DEBUG_SIZES
+// Debug and logging flags are commented out by default to simplify logging,
+// but can be overridden/enabled via CXXFLAGS (e.g. -DDEBUG_PRIMARY)
+//#define DEBUG_PRIMARY
+//#define DEBUG_STATS
+//#define DEBUG_FILES
+//#define DEBUG_SIZES
 
 //#define SBASE_TESTING
 //#define SBASE_NONE
+
+#ifndef GS_OPTIMIZE
 #define GS_OPTIMIZE
+#endif
+
 // whether to store negligable values in sparse matrices or not
 // defining USE_NEGL indicates not to store negligable values
 //#define USE_NEGL // be careful using this as it can throw away needed values
 
-#define WRITE_FILES
+//#define WRITE_FILES
 
 #include <iostream>
 #include <fstream>
