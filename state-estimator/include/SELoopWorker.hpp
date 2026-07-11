@@ -3413,7 +3413,7 @@ class SELoopWorker {
         }
         res_used = std::to_string(resident_set) + units;
     }
-};
 #endif
+};
 
 #endif
