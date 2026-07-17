@@ -291,7 +291,7 @@ public:
 
     void publishEstimate(const uint& timestamp,
         SDMAP& est_v, SDMAP& est_angle, SDMAP& est_vvar, SDMAP& est_anglevar,
-        SDMAP&,  SDMAP&, SDMAP& est_pinj, SDMAP& est_qinj) {
+        SDMAP& est_vmagpu, SDMAP&, SDMAP& est_pinj, SDMAP& est_qinj) {
 
         json jmessage;
         jmessage["simulation_id"] = gad_ref->simid;
@@ -309,6 +309,7 @@ public:
 
             // add the state values
             node_state["v"] = est_v[node_name];
+            node_state["vpu"] = est_vmagpu[node_name];
             node_state["angle"] = est_angle[node_name];
             node_state["angleRad"] = est_angle[node_name] * M_PI/180.0;
 
@@ -330,6 +331,13 @@ public:
             jmessage["message"]["Estimate"]["SvEstVoltages"].
                 push_back(node_state);
         }
+
+#if 000
+        json est = jmessage["message"]["Estimate"];
+        *selog << "BEFORE JSON ESTIMATE\n" << std::flush;
+        *selog << est.dump() << std::flush;
+        *selog << "\nAFTER JSON ESTIMATE\n" << std::flush;
+#endif
 
         // Publish the message
         publisher_ref->send(jmessage.dump());
