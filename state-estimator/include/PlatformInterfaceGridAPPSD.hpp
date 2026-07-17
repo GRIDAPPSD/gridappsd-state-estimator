@@ -310,6 +310,7 @@ public:
             // add the state values
             node_state["v"] = est_v[node_name];
             node_state["angle"] = est_angle[node_name];
+            node_state["angleRad"] = est_angle[node_name] * M_PI/180.0;
 
             // Add v and angle variance values
             node_state["vVariance"] = est_vvar[node_name];
