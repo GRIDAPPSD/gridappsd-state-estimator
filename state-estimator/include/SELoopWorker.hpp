@@ -230,7 +230,9 @@ class SELoopWorker {
                         // measurement so proceed to estimate z-averaging + estimate
                         break;
                     } else {
+                        plint->publishComplete();
 #ifdef DEBUG_PRIMARY
+                        *selog << "Published processStatus COMPLETE message\n" << std::flush;
                         *selog << "Got COMPLETED for simulation status, normal exit because full estimate just done\n" << std::flush;
 #endif
                         exit(0);
@@ -330,8 +332,10 @@ class SELoopWorker {
             }
 
             if (exitAfterEstimateFlag) {
+                plint->publishComplete();
 #ifdef DEBUG_PRIMARY
-                *selog << "Normal exit after COMPLETE/CLOSED log message and full estimate\n" << std::flush;
+                *selog << "Published processStatus COMPLETE message\n" << std::flush;
+                *selog << "Normal exit after COMPLETE/CLOSED simulation log message and full estimate\n" << std::flush;
 #endif
                 exit(0);
             }

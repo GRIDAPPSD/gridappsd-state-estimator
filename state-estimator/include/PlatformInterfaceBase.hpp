@@ -193,6 +193,12 @@ public:
     //     SDMAP est_qinj: estimated Q net reactive injection per node (double)
 
 
+    virtual void publishComplete()=0;
+    // Sends a processStatus of COMPLETE as a convenience to consumers so that
+    // those not otherwise needing to subscribe to simulation log messages
+    // don't need to do so
+
+
     virtual string getOutputDir()=0;
     // Returns the directory name for diagnostic output files, typically
     // a unique name per invocation to avoid overwriting files.  E.g.,

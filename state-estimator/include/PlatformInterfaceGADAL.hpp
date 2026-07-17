@@ -658,6 +658,11 @@ public:
     }
 
 
+    void publishComplete() {
+        // No completion message for Gadal platform--add if needed
+    }
+
+
     std::vector<string> getZids() {
         return meas_zids;
     }

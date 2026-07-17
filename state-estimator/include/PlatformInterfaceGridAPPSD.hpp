@@ -336,6 +336,17 @@ public:
     }
 
 
+    void publishComplete() {
+
+        json jmessage;
+        jmessage["simulation_id"] = gad_ref->simid;
+        jmessage["processStatus"] = "COMPLETE";
+
+        // Publish the message
+        publisher_ref->send(jmessage.dump());
+    }
+
+
     state_estimator_gridappsd::gridappsd_session* getGad() {
         return gad_ref;
     }

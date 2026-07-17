@@ -308,6 +308,11 @@ public:
     }
 
 
+    void publishComplete() {
+        // End-of-file signifies completion so nothing extra needed here
+    }
+
+
     std::vector<string> getZids() {
         return meas_zids;
     }
