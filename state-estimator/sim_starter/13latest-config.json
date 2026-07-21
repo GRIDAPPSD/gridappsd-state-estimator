@@ -10,7 +10,9 @@
         "power_flow_solver_method": "NR",
         "model_creation_config": {
           "load_scaling_factor": "1.0",
-          "schedule_name": "ieeezipload",
+          "schedule_name": "ieeezipload_2weeks",
+          "schedule_name_orig": "ieeezipload",
+          "schedule_name_2weeks": "ieeezipload_2weeks",
           "triplex": "y",
           "encoding": "u",
           "system_frequency": "60",
@@ -30,10 +32,14 @@
     "applications": []
   },
   "simulation_config": {
-    "start_time": "1778881646",
-    "duration": "3600",
-    "timestep_frequency": "1000",
-    "timestep_increment": "1000",
+    "start_time": "1735689600",
+    "start_time_broken": "1778881646",
+    "start_time_fixed": "1735689600",
+    "duration": 1209600,
+    "duration_hour": 3600,
+    "duration_2weeks": 1209600,
+    "interval": 60,
+    "publish_period": 60,
     "run_realtime": false,
     "simulation_name": "ieee13nodecktassets"
   },
