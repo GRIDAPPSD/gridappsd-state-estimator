@@ -341,6 +341,8 @@ public:
 
         // Publish the message
         publisher_ref->send(jmessage.dump());
+        //usleep(250000); // .25 seconds -- for for publish 300, interval 60
+        usleep(100000); // .10 seconds -- good for publish 60, interval 60
     }
 
 
