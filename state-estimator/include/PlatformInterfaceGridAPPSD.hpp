@@ -119,9 +119,16 @@ public:
         ybusConsumer.waitUntilReady();    // wait for latch release
 
         // Request ybus with previously created producer
+#ifndef PLATFORM_NEW
         string ybusRequestText =
             "{\"configurationType\":\"YBus Export\",\"parameters\":{\"simulation_id\":\""
             + gad_ref->simid + "\"}}";
+#else
+	// GDB 7/27/26: YBus Export now requires model_id
+        string ybusRequestText =
+            "{\"configurationType\":\"YBus Export\",\"parameters\":{\"model_id\":\""
+            + gad_ref->modelID + "\"}}";
+#endif
         requester_ref->send(ybusRequestText, ybusTopic);
 
         // Wait for topology processor and retrieve topology (ybus, node info)
@@ -141,9 +148,16 @@ public:
         vnomConsumer.waitUntilReady();    // wait for latch release
 
         // Request vnom with previously created producer
+#ifndef PLATFORM_NEW
         string vnomRequestText =
             "{\"configurationType\":\"Vnom Export\",\"parameters\":{\"simulation_id\":\""
             + gad_ref->simid + "\"}}";
+#else
+	// GDB 7/27/26: Vnom Export now requires model_id
+        string vnomRequestText =
+            "{\"configurationType\":\"Vnom Export\",\"parameters\":{\"model_id\":\""
+            + gad_ref->modelID + "\"}}";
+#endif
         requester_ref->send(vnomRequestText, vnomTopic);
 
         // Wait for the vnom processor and retrive vnom
