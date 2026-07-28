@@ -359,8 +359,8 @@ public:
 
         // Throttle back state estimates so the forecaster can ingest them
         // at a rate that allows it to keep up when training
-        //usleep(250000); // .25 seconds -- for for publish 300, interval 60
-        //usleep(100000); // .10 seconds -- good for publish 60, interval 60
+        //usleep(100000); // .10 seconds -- good for most cases
+        //usleep(250000); // .25 seconds -- might be better for big increments
     }
 
 
