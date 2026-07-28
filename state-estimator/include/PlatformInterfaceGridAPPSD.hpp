@@ -346,17 +346,21 @@ public:
                 push_back(node_state);
         }
 
-#if 000
-        json est = jmessage["message"]["Estimate"];
-        *selog << "BEFORE JSON ESTIMATE\n" << std::flush;
-        *selog << est.dump() << std::flush;
-        *selog << "\nAFTER JSON ESTIMATE\n" << std::flush;
-#endif
-
         // Publish the message
         publisher_ref->send(jmessage.dump());
+
+#ifdef WRITE_FILES
+        string filename = "test_files/results_data_forecasting.jsonl";
+        std::ofstream results_fh;
+        results_fh.open(filename,std::ofstream::app);
+        results_fh << jmessage["message"]["Estimate"].dump() << "\n";
+        results_fh.close();
+#endif
+
+        // Throttle back state estimates so the forecaster can ingest them
+        // at a rate that allows it to keep up when training
         //usleep(250000); // .25 seconds -- for for publish 300, interval 60
-        usleep(100000); // .10 seconds -- good for publish 60, interval 60
+        //usleep(100000); // .10 seconds -- good for publish 60, interval 60
     }
 
 

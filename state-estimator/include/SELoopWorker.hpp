@@ -917,6 +917,12 @@ class SELoopWorker {
         results_fh << '\n';
         results_fh.close();
 
+        filename = "test_files/results_data_forecasting.jsonl";
+#ifdef DEBUG_PRIMARY
+        *selog << "Writing published estimates for forecasting to JSON lines file: " << filename << "\n\n" << std::flush;
+#endif
+        results_fh.open(filename,std::ofstream::out);
+        results_fh.close();
 #if 000
         filename = "test_files/results_pq_data.csv";
 #ifdef DEBUG_PRIMARY
