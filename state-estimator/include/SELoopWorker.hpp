@@ -917,6 +917,7 @@ class SELoopWorker {
         results_fh << '\n';
         results_fh.close();
 
+#if 000
         filename = "test_files/results_pq_data.csv";
 #ifdef DEBUG_PRIMARY
         *selog << "Writing P and Q injection results to test harness file: " << filename << "\n\n" << std::flush;
@@ -936,6 +937,7 @@ class SELoopWorker {
         }
         results_fh << '\n';
         results_fh.close();
+#endif
 #endif
     }
 
@@ -2844,6 +2846,7 @@ class SELoopWorker {
 #ifdef DEBUG_PRIMARY
         double startTime = getWallTime();
 #endif
+#if 000
 #ifdef WRITE_FILES
         string filename = "test_files/results_pq_data.csv";
         results_fh.open(filename,std::ofstream::app);
@@ -2851,6 +2854,7 @@ class SELoopWorker {
         results_fh << timestamp;
         results_fh << std::fixed;
         results_fh << std::setprecision(10);
+#endif
 #endif
         for ( auto& zid : Zary.zids ) {
             uint zidx = Zary.zidxs[zid];
@@ -2884,8 +2888,10 @@ class SELoopWorker {
                     Pi += vi*vi * g;
 
                     est_pinj[Zary.znode1s[zid]] = -sbase*Pi/1000.0;
+#if 000
 #ifdef WRITE_FILES
                     results_fh << ',' << est_pinj[Zary.znode1s[zid]];
+#endif
 #endif
                     //*selog << "SHIVA: calc_h zid: " << zid << ", zidx: " << zidx << ", ztype: " << ztype << ", Pi: " << est_pinj[Zary.znode1s[zid]] << "\n" << std::flush;
                     if (std::isnan(Pi))
@@ -2928,8 +2934,10 @@ class SELoopWorker {
                     Qi += - vi*vi * b;
 
                     est_qinj[Zary.znode1s[zid]] = -sbase*Qi/1000.0;
+#if 000
 #ifdef WRITE_FILES
                     results_fh << ',' << est_qinj[Zary.znode1s[zid]];
+#endif
 #endif
                     //*selog << "SHIVA: calc_h zid: " << zid << ", zidx: " << zidx << ", ztype: " << ztype << ", Qi: " << est_qinj[Zary.znode1s[zid]] << "\n" << std::flush;
                     if (std::isnan(Qi))
@@ -2987,9 +2995,11 @@ class SELoopWorker {
                 *selog << "\tERROR: Undefined measurement type " + ztype + "\n" << std::flush;
             }
         }
+#if 000
 #ifdef WRITE_FILES
         results_fh << '\n';
         results_fh.close();
+#endif
 #endif
 #ifndef GS_OPTIMIZE
         h = cs_compress(hraw);
