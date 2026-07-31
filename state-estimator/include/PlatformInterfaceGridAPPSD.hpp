@@ -358,9 +358,10 @@ public:
 #endif
 
         // Throttle back state estimates so the forecaster can ingest them
-        // at a rate that allows it to keep up when training
+        // at a rate that allows it to keep up with training
+	// GDB 7/30/26: Should no longer be needed after platform fix that
+	// allows small sim config interval values to serve as throttle
         //usleep(100000); // .10 seconds -- good for most cases
-        //usleep(250000); // .25 seconds -- might be better for big increments
     }
 
 
