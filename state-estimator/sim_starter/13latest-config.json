@@ -33,13 +33,14 @@
   },
   "simulation_config": {
     "start_time": "1735689600",
-    "start_time_broken": "1778881646",
+    "start_time_broken_nonreal": "1778881646",
     "start_time_fixed": "1735689600",
     "duration": 1209600,
     "duration_hour": 3600,
     "duration_2weeks": 1209600,
-    "interval": 60,
-    "publish_period": 60,
+    "duration_year": 31536000,
+    "interval": 300,
+    "publish_period": 300,
     "run_realtime": false,
     "simulation_name": "ieee13nodecktassets"
   },
