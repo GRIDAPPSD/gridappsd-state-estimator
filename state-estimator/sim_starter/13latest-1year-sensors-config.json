@@ -1,0 +1,68 @@
+{
+  "power_system_configs": [
+    {
+      "SubGeographicalRegion_name": "ABEB635F-729D-24BF-B8A4-E2EF268D8B9E",
+      "GeographicalRegion_name": "73C512BD-7249-4F50-50DA-D93849B89C43",
+      "Line_name": "5B816B93-7A5F-B64C-8460-47C17D6E4B0F",
+      "simulator_config": {
+        "simulator": "GridLAB-D",
+        "simulation_output": {},
+        "power_flow_solver_method": "NR",
+        "model_creation_config": {
+          "load_scaling_factor": "1.0",
+          "schedule_name": "ieeezipload_yearly",
+          "schedule_name_orig": "ieeezipload_yearly",
+          "schedule_name_2weeks": "ieeezipload_2weeks",
+          "schedule_name_yearly": "ieeezipload_yearly",
+          "triplex": "y",
+          "encoding": "u",
+          "system_frequency": "60",
+          "voltage_multiplier": "1.0",
+          "power_unit_conversion": "1.0",
+          "unique_names": "y",
+          "z_fraction": "0.0",
+          "i_fraction": "1.0",
+          "p_fraction": "0.0",
+          "randomize_zipload_fractions": false,
+          "use_houses": false
+        }
+      }
+    }
+  ],
+  "application_config": {
+    "applications": []
+  },
+  "simulation_config": {
+    "start_time": "1735689600",
+    "start_time_broken_nonreal": "1778881646",
+    "start_time_fixed": "1735689600",
+    "duration": 2419200,
+    "duration_hour": 3600,
+    "duration_2weeks": 1209600,
+    "duration_4weeks": 2419200,
+    "duration_year": 31536000,
+    "interval": 60,
+    "interval_with_forecaster": 1,
+    "publish_period": 60,
+    "run_realtime": false,
+    "simulation_name": "ieee13nodecktassets"
+  },
+  "test_config": {
+    "events": [],
+    "appId": ""
+  },
+  "service_configs":[
+    {"id":"state-estimator",
+     "user_options":{"use-sensors-for-estimates":false}},
+    {"id":"gridappsd-sensor-simulator",
+     "user_options":{
+       "default-perunit-confidence-band":0.02,
+       "simulate-all":true,
+       "sensors-config":{},
+       "default-normal-value":100.0,
+       "random-seed":0.0,
+       "default-aggregation-interval":0.0,
+       "passthrough-if-not-specified":false,
+       "default-perunit-drop-rate":0.0}}
+  ]
+}
