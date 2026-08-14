@@ -41,7 +41,7 @@
     "duration_2weeks": 1209600,
     "duration_4weeks": 2419200,
     "duration_year": 31536000,
-    "interval": 60,
+    "interval": 6,
     "interval_with_forecaster": 1,
     "publish_period": 60,
     "run_realtime": false,
