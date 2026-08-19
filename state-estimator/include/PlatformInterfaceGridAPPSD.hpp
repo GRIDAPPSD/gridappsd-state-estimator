@@ -18,6 +18,10 @@
 #include "state_estimator_util.hpp"
 #include "SELoopConsumer.hpp"
 
+#ifdef ADD_SENSOR_NOISE
+#include <random>
+#endif
+
 // if defined, produces an estimate for every simulation timestamp rather than
 // catching up by doing measurement average to drain the queue which leads to
 // state estimator falling way behind with complex models
@@ -30,8 +34,19 @@ bool blockedFlag = true;
 #endif
 
 class PlatformInterface : public PlatformInterfaceBase {
+#ifdef ADD_SENSOR_NOISE
+private:
+    std::mt19937 gen;
+    std::normal_distribution<double> gauss;
+#endif
+
 public:
+#ifdef ADD_SENSOR_NOISE
+    // stddev argument to gauss() taken from sensor-simulator code
+    PlatformInterface(int argc, char** argv, const double& sbase) : PlatformInterfaceBase(argc, argv, sbase), gen(0), gauss(0.0, 100.0 * 0.02/3.92) {
+#else
     PlatformInterface(int argc, char** argv, const double& sbase) : PlatformInterfaceBase(argc, argv, sbase) {
+#endif
         // --------------------------------------------------------------------
         // INITIALIZE THE STATE ESTIMATOR SESSION WITH RUNTIME ARGS
         // --------------------------------------------------------------------
@@ -253,8 +268,18 @@ public:
                 meas_mrids.push_back(mmrid);
                 if (m.find("magnitude") != m.end())
                     meas_magnitudes[mmrid] = m["magnitude"];
+#ifdef ADD_SENSOR_NOISE
+                    // TODO: multiply gauss(gen) by the nominal voltage because
+                    // the original distribution is per-unit?
+                    meas_magnitudes[mmrid] += gauss(gen);
+#endif
                 if (m.find("angle") != m.end())
                     meas_angles[mmrid] = m["angle"];
+#ifdef ADD_SENSOR_NOISE
+                    // TODO: Should noise be applied to angles at all?
+                    // If so, what should be done because this is per-unit?
+                    meas_angles[mmrid] += gauss(gen);
+#endif
                 if (m.find("value") != m.end())
                     meas_values[mmrid] = m["value"];
             }

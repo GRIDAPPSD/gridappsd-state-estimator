@@ -38,6 +38,15 @@
 // pre-dates CIM-Graph. v2023.07.0 requires OLD_PLATFORM to be defined while
 // v2025.01.0 does not.
 
+// GDB 8/18/26: Getting sensor-simulator service to work for long non-
+// realtime simulations was just crashing and burning due to platform 
+// issues related to ActiveMQ or who knows what so removing that service
+// from the workflow and adding simple support for gaussian random noise
+// added to measurement values via this conditional compilation directive
+// that does the same as sensor-simulator would be doing. Just make
+// sure to never run a simulation with sensor-simulator when this is set.
+#define ADD_SENSOR_NOISE
+
 #include <iostream>
 #include <fstream>
 #include <regex>
