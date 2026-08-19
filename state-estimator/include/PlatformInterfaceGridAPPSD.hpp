@@ -260,7 +260,8 @@ public:
 
             //*selog << "SIMULATION TIMESTAMP: " << meas_timestamp << ", MEASUREMENTS: " << jmessage["message"]["measurements"] << "\n";
 
-            string mmrid;
+            string mmrid, node;
+            double vang_rad;
             for ( auto& m : jmessage["message"]["measurements"] ) {
                 //*selog << "SIMULATION MEASUREMENT: " << m << "\n";
 
@@ -270,15 +271,21 @@ public:
                     meas_magnitudes[mmrid] = m["magnitude"];
 #ifdef ADD_SENSOR_NOISE
                     // TODO: multiply gauss(gen) by the nominal voltage because
-                    // the original distribution is per-unit?
-                    meas_magnitudes[mmrid] += gauss(gen);
+                    // the random gaussian distribution is per-unit?
+                    //node = Zary.mnodes[mmrid];
+                    //meas_magnitudes[mmrid] += real(node_vnoms[node])*gauss(gen);
 #endif
                 if (m.find("angle") != m.end())
                     meas_angles[mmrid] = m["angle"];
 #ifdef ADD_SENSOR_NOISE
-                    // TODO: Should noise be applied to angles at all?
-                    // If so, what should be done because this is per-unit?
-                    meas_angles[mmrid] += gauss(gen);
+                    // TODO: How should noise be applied to angles given
+                    // it is a per-unit distribution?
+                    // Should I convert from degrees I have to radians,
+                    // add the noise, and then convert back to degrees?
+                    // Should I apply arg(node_vnoms[node]) or imag() somehow?
+                    //vang_rad = meas_angles[mmrid]*M_PI/180.0;
+                    //vang_rad += gauss(gen);
+                    //meas_angles[mmrid] = vang_rad*180.0/M_PI;
 #endif
                 if (m.find("value") != m.end())
                     meas_values[mmrid] = m["value"];
