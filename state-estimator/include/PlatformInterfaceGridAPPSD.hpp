@@ -37,13 +37,11 @@ class PlatformInterface : public PlatformInterfaceBase {
 #ifdef ADD_SENSOR_NOISE
 private:
     std::mt19937 gen;
-    std::normal_distribution<double> gauss;
 #endif
 
 public:
 #ifdef ADD_SENSOR_NOISE
-    // stddev argument to gauss() taken from sensor-simulator code
-    PlatformInterface(int argc, char** argv, const double& sbase) : PlatformInterfaceBase(argc, argv, sbase), gen(0), gauss(0.0, 100.0 * 0.02/3.92) {
+    PlatformInterface(int argc, char** argv, const double& sbase) : PlatformInterfaceBase(argc, argv, sbase), gen(0) {
 #else
     PlatformInterface(int argc, char** argv, const double& sbase) : PlatformInterfaceBase(argc, argv, sbase) {
 #endif
@@ -260,33 +258,35 @@ public:
 
             //*selog << "SIMULATION TIMESTAMP: " << meas_timestamp << ", MEASUREMENTS: " << jmessage["message"]["measurements"] << "\n";
 
-            string mmrid, node;
-            double vang_rad;
+            string mmrid;
             for ( auto& m : jmessage["message"]["measurements"] ) {
                 //*selog << "SIMULATION MEASUREMENT: " << m << "\n";
 
                 mmrid = m["measurement_mrid"];
                 meas_mrids.push_back(mmrid);
-                if (m.find("magnitude") != m.end())
+                if (m.find("magnitude") != m.end()) {
                     meas_magnitudes[mmrid] = m["magnitude"];
 #ifdef ADD_SENSOR_NOISE
-                    // TODO: multiply gauss(gen) by the nominal voltage because
-                    // the random gaussian distribution is per-unit?
-                    //node = Zary.mnodes[mmrid];
-                    //meas_magnitudes[mmrid] += real(node_vnoms[node])*gauss(gen);
+                    // To add sensor noise for magnitudes, use a random
+                    // gaussian distribution with normal value as the nominal
+                    // voltage of the node
+                    //*selog << "NOISE magnitude node: " << Zary.mnodes[mmrid] << ", nomv: " << abs(node_vnoms[Zary.mnodes[mmrid]]) << ", before: " << meas_magnitudes[mmrid];
+                    std::normal_distribution<double> gauss(0.0, abs(node_vnoms[Zary.mnodes[mmrid]]) * 0.02/3.92);
+                    meas_magnitudes[mmrid] += gauss(gen);
+                    //*selog << ", after: " << meas_magnitudes[mmrid] << ", noise: " << noise << "\n";
 #endif
-                if (m.find("angle") != m.end())
+                }
+                if (m.find("angle") != m.end()) {
                     meas_angles[mmrid] = m["angle"];
 #ifdef ADD_SENSOR_NOISE
-                    // TODO: How should noise be applied to angles given
-                    // it is a per-unit distribution?
-                    // Should I convert from degrees I have to radians,
-                    // add the noise, and then convert back to degrees?
-                    // Should I apply arg(node_vnoms[node]) or imag() somehow?
-                    //vang_rad = meas_angles[mmrid]*M_PI/180.0;
-                    //vang_rad += gauss(gen);
-                    //meas_angles[mmrid] = vang_rad*180.0/M_PI;
+                    // To add sensor noise for angles, use a random gaussian
+                    // distribution with normal value of 180 degrees
+                    //*selog << "NOISE angle before: " << meas_angles[mmrid];
+                    std::normal_distribution<double> gauss(0.0, 180.0 * 0.02/3.92);
+                    meas_angles[mmrid] += gauss(gen);
+                    //*selog << ", after: " << meas_angles[mmrid] << ", noise: " << noise << "\n";
 #endif
+                }
                 if (m.find("value") != m.end())
                     meas_values[mmrid] = m["value"];
             }
